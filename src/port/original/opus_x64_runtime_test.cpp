@@ -47,6 +47,19 @@ extern "C" int FInCa(int doc, long cp, const TestCa* range);
 
 extern "C" void AddDcbToLprgbst(int* offsets, int count, int delta,
                                   int threshold);
+extern "C" void OpusX64TraceRibbon(const char* stage, int message, int tmc,
+                                    int first_value, int second_value,
+                                    long cp_first, long cp_limit,
+                                    int insertion) {
+    static_cast<void>(stage);
+    static_cast<void>(message);
+    static_cast<void>(tmc);
+    static_cast<void>(first_value);
+    static_cast<void>(second_value);
+    static_cast<void>(cp_first);
+    static_cast<void>(cp_limit);
+    static_cast<void>(insertion);
+}
 
 using TestWord = std::uint16_t;
 
