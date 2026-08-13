@@ -226,6 +226,8 @@ popup and submenu labels, table-menu labels, fixed submenu attachment labels, fi
 Window-menu labels, root/file/view menu rewrite labels, document context-menu labels,
 the `dwmapi.dll` dynamic-library lookup and the zoom combo's fixed choice labels also
 use the same boundary. Its dynamic zoom-percent text now uses `WCHAR` storage too.
+Its menu lookup helpers now use `WCHAR` buffers, `std::basic_string<WCHAR>` and
+`LPCWSTR` lookup keys instead of host `wchar_t` storage.
 `opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable

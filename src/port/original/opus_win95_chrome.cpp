@@ -342,19 +342,22 @@ void configure_word95_menus(HWND window) {
     }
 
     auto menu_name = [root](int index) {
-        wchar_t label[80]{};
+        WCHAR label[80]{};
         GetMenuStringW(root, index, label,
                        static_cast<int>(sizeof(label) / sizeof(label[0])),
                        MF_BYPOSITION);
-        std::wstring name;
-        for (const wchar_t character : std::wstring(label)) {
-            if (character != L'&') {
+        std::basic_string<WCHAR> name;
+        for (const WCHAR character : label) {
+            if (character == 0) {
+                break;
+            }
+            if (character != OPUSW("&")[0]) {
                 name.push_back(character);
             }
         }
         return name;
     };
-    auto find_named = [&menu_name, root](const wchar_t* expected) {
+    auto find_named = [&menu_name, root](LPCWSTR expected) {
         const int count = GetMenuItemCount(root);
         for (int index = 0; index < count; ++index) {
             if (lstrcmpiW(menu_name(index).c_str(), expected) == 0) {
@@ -363,16 +366,19 @@ void configure_word95_menus(HWND window) {
         }
         return -1;
     };
-    auto find_named_in = [](HMENU menu, const wchar_t* expected) {
+    auto find_named_in = [](HMENU menu, LPCWSTR expected) {
         const int count = menu != nullptr ? GetMenuItemCount(menu) : 0;
         for (int index = 0; index < count; ++index) {
-            wchar_t label[80]{};
+            WCHAR label[80]{};
             GetMenuStringW(menu, index, label,
                            static_cast<int>(sizeof(label) / sizeof(label[0])),
                            MF_BYPOSITION);
-            std::wstring name;
-            for (const wchar_t character : std::wstring(label)) {
-                if (character != L'&') {
+            std::basic_string<WCHAR> name;
+            for (const WCHAR character : label) {
+                if (character == 0) {
+                    break;
+                }
+                if (character != OPUSW("&")[0]) {
                     name.push_back(character);
                 }
             }
@@ -385,7 +391,7 @@ void configure_word95_menus(HWND window) {
 
     // Word's menu loader can finish replacing the startup menu after this layer
     // is created, so normalize by label every time we resync.
-    const int file_index = find_named(L"File");
+    const int file_index = find_named(OPUSW("File"));
     if (file_index >= 0 && GetMenuItemCount(root) > file_index + 4) {
         HMENU insert = GetSubMenu(root, file_index + 3);
         HMENU format = GetSubMenu(root, file_index + 4);
@@ -405,21 +411,21 @@ void configure_word95_menus(HWND window) {
     if (file_menu != nullptr &&
         GetMenuState(file_menu, kCmdExportPdf, MF_BYCOMMAND) ==
             static_cast<UINT>(-1)) {
-        int exit_position = find_named_in(file_menu, L"Exit");
+        int exit_position = find_named_in(file_menu, OPUSW("Exit"));
         if (exit_position < 0) exit_position = GetMenuItemCount(file_menu);
         InsertMenuW(file_menu, exit_position, MF_BYPOSITION | MF_SEPARATOR,
                     0, nullptr);
         InsertMenuW(file_menu, exit_position, MF_BYPOSITION | MF_STRING,
                     kCmdExportPdf, OPUSW("E&xport as PDF..."));
     }
-    const int utilities_index = find_named(L"Utilities");
+    const int utilities_index = find_named(OPUSW("Utilities"));
     if (utilities_index >= 0) {
         HMENU tools = GetSubMenu(root, utilities_index);
         ModifyMenuW(root, utilities_index,
                     MF_BYPOSITION | MF_POPUP | MF_STRING,
                     reinterpret_cast<UINT_PTR>(tools), OPUSW("&Tools"));
     }
-    const int tools_index = find_named(L"Tools");
+    const int tools_index = find_named(OPUSW("Tools"));
     HMENU tools_menu = tools_index >= 0 ? GetSubMenu(root, tools_index) :
         (utilities_index >= 0 ? GetSubMenu(root, utilities_index) : nullptr);
     if (g_language_menu == nullptr || !IsMenu(g_language_menu)) {
@@ -477,7 +483,7 @@ void configure_word95_menus(HWND window) {
             RemoveMenu(root, index, MF_BYPOSITION);
         }
     }
-    const int window_index = find_named(L"Window");
+    const int window_index = find_named(OPUSW("Window"));
     if (g_table_menu != nullptr && window_index >= 0) {
         InsertMenuW(root, window_index,
                     MF_BYPOSITION | MF_POPUP | MF_STRING,
@@ -503,13 +509,13 @@ void configure_word95_menus(HWND window) {
         }
     }
 
-    const int view_index = find_named(L"View");
+    const int view_index = find_named(OPUSW("View"));
     HMENU view_menu = view_index >= 0 ? GetSubMenu(root, view_index) : nullptr;
     if (view_menu != nullptr && g_toolbars_menu != nullptr) {
         for (int index = GetMenuItemCount(view_menu) - 1; index >= 0;
              --index) {
             if (GetSubMenu(view_menu, index) == g_toolbars_menu ||
-                find_named_in(view_menu, L"Toolbars") == index) {
+                find_named_in(view_menu, OPUSW("Toolbars")) == index) {
                 RemoveMenu(view_menu, index, MF_BYPOSITION);
             }
         }
@@ -526,7 +532,7 @@ void configure_word95_menus(HWND window) {
         }
     }
 
-    const int normalized_window_index = find_named(L"Window");
+    const int normalized_window_index = find_named(OPUSW("Window"));
     HMENU window_menu = normalized_window_index >= 0 ?
         GetSubMenu(root, normalized_window_index) : nullptr;
     if (window_menu != nullptr) {
