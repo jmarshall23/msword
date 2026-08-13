@@ -277,6 +277,12 @@ The pure rect-helper blind spot has been closed for `SetRect`, `InflateRect`, an
 gate can see them without adding stale uncovered entries. Paint/update-region rect
 helpers remain out of scope until the paint slice.
 
+Capture and cursor-position state are now in the shim: `SetCapture`,
+`GetCapture`, `ReleaseCapture`, `SetCursor`, `SetCursorPos`, and `GetCursorPos`
+all have process-local state and coverage entries removed. This is still not the
+headless event source; it gives later mouse/scripted input somewhere to store
+capture and screen cursor coordinates.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

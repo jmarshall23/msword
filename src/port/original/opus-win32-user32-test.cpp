@@ -162,23 +162,37 @@ int main() {
     if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 13;
     if (SetFocus(window) != nullptr || GetFocus() != window) return 14;
 
+    HCURSOR cursor_a = reinterpret_cast<HCURSOR>(0x1010);
+    HCURSOR cursor_b = reinterpret_cast<HCURSOR>(0x2020);
+    POINT cursor_position{};
+    if (SetCursor(cursor_a) != nullptr || SetCursor(cursor_b) != cursor_a ||
+        SetCapture(window) != nullptr || GetCapture() != window ||
+        SetCapture(child) != window || GetCapture() != child ||
+        !ReleaseCapture() || GetCapture() != nullptr ||
+        !SetCursorPos(31, 41) || !GetCursorPos(&cursor_position) ||
+        cursor_position.x != 31 || cursor_position.y != 41 ||
+        GetCursorPos(nullptr) || SetCapture(child) != nullptr ||
+        !DestroyWindow(child) || GetCapture() != nullptr) {
+        return 15;
+    }
+
     RECT adjusted{0, 0, 100, 50};
     if (!AdjustWindowRectEx(&adjusted, WS_CAPTION | WS_BORDER, FALSE,
                             WS_EX_DLGMODALFRAME) ||
         adjusted.left >= 0 || adjusted.top >= 0 || adjusted.right <= 100 ||
         adjusted.bottom <= 50) {
-        return 15;
+        return 16;
     }
     RECT work_area{};
     if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &work_area, 0) ||
         work_area.right != 640 || work_area.bottom != 480) {
-        return 16;
+        return 17;
     }
 
-    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 17;
+    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 18;
     if (SendMessageA(window, WM_USER + 1, 0, 35) != 42 ||
         g_user_message_count != 1) {
-        return 18;
+        return 19;
     }
 
     MSG message{};
@@ -189,13 +203,19 @@ int main() {
         !PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2,
                       PM_REMOVE) ||
         PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2, PM_REMOVE)) {
-        return 19;
-    }
-    if (!PostMessageW(child, WM_USER + 3, 5, 6) ||
-        PeekMessageA(&message, window, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
-        !PeekMessageA(&message, child, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
-        message.hwnd != child || message.wParam != 5 || message.lParam != 6) {
         return 20;
+    }
+    HWND message_child = CreateWindowExA(0, "STATIC", "message-child", WS_CHILD,
+                                         1, 2, 3, 4, window, nullptr, nullptr,
+                                         nullptr);
+    if (message_child == nullptr ||
+        !PostMessageW(message_child, WM_USER + 3, 5, 6) ||
+        PeekMessageA(&message, window, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
+        !PeekMessageA(&message, message_child, WM_USER + 3, WM_USER + 3,
+                      PM_REMOVE) ||
+        message.hwnd != message_child || message.wParam != 5 ||
+        message.lParam != 6) {
+        return 21;
     }
 
     BYTE key_state[256]{};
@@ -210,22 +230,22 @@ int main() {
         g_last_char != 'A' || !PostMessageA(window, WM_KEYUP, 'A', 1) ||
         !PeekMessageA(&message, window, WM_KEYUP, WM_KEYUP, PM_REMOVE) ||
         GetKeyState('A') < 0) {
-        return 21;
+        return 22;
     }
 
     PostQuitMessage(23);
     if (GetMessageA(&message, nullptr, 0, 0) != 0 ||
         message.message != WM_QUIT || message.wParam != 23) {
-        return 22;
+        return 23;
     }
 
-    if (!PostMessageA(child, WM_USER + 4, 0, 0) || !DestroyWindow(window) ||
-        IsWindow(window) || IsWindow(child) ||
+    if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
+        !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 23;
+        return 24;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 24;
+    if (second == nullptr || second == window) return 25;
     return 0;
 }

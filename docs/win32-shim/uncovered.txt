@@ -31,12 +31,10 @@ FindWindowA
 FindWindowExW
 FrameRect
 GetAncestor
-GetCapture
 GetClassNameW
 GetClipboardData
 GetClipboardOwner
 GetCurrentThreadId
-GetCursorPos
 GetDlgCtrlID
 GetMenu
 GetMenuItemCount
@@ -72,14 +70,10 @@ Polygon
 Rectangle
 RedrawWindow
 RegisterClipboardFormatA
-ReleaseCapture
 RemoveMenu
 RemovePropW
 SetBkMode
-SetCapture
 SetClipboardData
-SetCursor
-SetCursorPos
 SetMapMode
 SetMenuInfo
 SetMenuItemBitmaps

@@ -623,3 +623,33 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14f -R
 Reviewed by agy before implementation; claude was asked for this slice but had not
 returned before implementation, so the prechecks followed claude's prior warning
 about declaring and defining hidden rect helpers in the same commit.
+
+## Add user32 capture and cursor state
+
+The non-Windows user32 shim now owns process-local mouse capture, current cursor,
+and screen cursor position state. `SetCapture`, `GetCapture`, `ReleaseCapture`,
+`SetCursor`, `SetCursorPos`, and `GetCursorPos` are implemented, and destroying a
+captured window clears capture.
+
+`opus_win32_user32_test` covers capture previous-window returns, capture handoff,
+release, cursor-handle previous returns, cursor-position round trip, null
+`GetCursorPos`, and capture clearing when a child window is destroyed. The Win32
+coverage baseline no longer lists `GetCapture`, `GetCursorPos`, `ReleaseCapture`,
+`SetCapture`, `SetCursor`, or `SetCursorPos`.
+
+Validated with `cmake --build build-item14g --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14g -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14g --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14g -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this capture/cursor
+slice but had not returned before implementation.

@@ -44,6 +44,9 @@ SHORT g_key_state[256]{};
 ATOM g_next_atom = 1;
 HWND g_active_window = nullptr;
 HWND g_focus_window = nullptr;
+HWND g_capture_window = nullptr;
+HCURSOR g_current_cursor = nullptr;
+POINT g_cursor_position{0, 0};
 
 WindowObject* window_from_handle(HWND handle) {
     auto* window = static_cast<WindowObject*>(handle);
@@ -367,6 +370,7 @@ BOOL DestroyWindow(HWND window) {
     }
     if (g_active_window == window) g_active_window = nullptr;
     if (g_focus_window == window) g_focus_window = nullptr;
+    if (g_capture_window == window) g_capture_window = nullptr;
     for (auto it = g_messages.begin(); it != g_messages.end();) {
         if (it->hwnd == window) {
             it = g_messages.erase(it);
@@ -823,6 +827,39 @@ HWND SetFocus(HWND window) {
 
 HWND GetFocus(void) {
     return g_focus_window;
+}
+
+HCURSOR SetCursor(HCURSOR cursor) {
+    const HCURSOR previous = g_current_cursor;
+    g_current_cursor = cursor;
+    return previous;
+}
+
+HWND SetCapture(HWND window) {
+    if (window != nullptr && !IsWindow(window)) return nullptr;
+    const HWND previous = g_capture_window;
+    g_capture_window = window;
+    return previous;
+}
+
+HWND GetCapture(void) {
+    return g_capture_window;
+}
+
+BOOL ReleaseCapture(void) {
+    g_capture_window = nullptr;
+    return TRUE;
+}
+
+BOOL SetCursorPos(int x, int y) {
+    g_cursor_position = {x, y};
+    return TRUE;
+}
+
+BOOL GetCursorPos(LPPOINT point) {
+    if (point == nullptr) return FALSE;
+    *point = g_cursor_position;
+    return TRUE;
 }
 
 BOOL SetWindowPos(HWND window, HWND, int x, int y, int cx, int cy, UINT flags) {
