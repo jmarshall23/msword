@@ -188,6 +188,10 @@ src/port/win32/
 Status: non-Windows original-engine include paths now expose `src/port/win32`, and
 that directory has the minimal `shellapi.h` surface needed by `opus_win16_platform.cpp`:
 `SW_SHOWNORMAL` plus `ShellExecuteA`.
+`src/port/win32/windows.h` also declares the first non-Windows compile surfaces used by
+the Win16 adapter, startup diagnostics, RESN2 character typing, and x64 heap code. The
+current `opus_word1_ui_test` build now advances to the next gaps: `commdlg.h`,
+non-MSVC `__declspec(dllimport)` handling in `opus_asm_resn2_sttb.cpp`, and `FILE_BEGIN`.
 
 Build the first pass mechanically:
 
