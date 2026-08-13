@@ -34,17 +34,17 @@ int OpusSaveDocumentAsDocx(int, const char*);
 
 extern "C" void OpusX64TraceRibbon(const char*, int, int, int, int,
                                      long, long, int) {
-    /* Ribbon tracing used during the bring-up of the x64 port.  Keep the ABI
-       for original call sites without writing diagnostic files in product or
-       test processes. */
+    /* Ribbon tracing used during the bring-up of the x64 port. Keep the ABI for
+     * original call sites without writing diagnostic files in product or test
+     * processes.
+     */
 }
 
-/*
- * Flat, stateful implementation of the public SDM 2.21 dialog API used by
- * Opus.  The archive contains the SDM headers and 16-bit .obj files, but not
- * its C sources.  This layer retains the original CAB/TMC/HDLG contracts and
- * supplies the dialog state that the original Word modules expect.  Native
- * window creation is deliberately separate from this state layer.
+/* Flat, stateful implementation of the public SDM 2.21 dialog API used by Opus.
+ * The archive contains the SDM headers and 16-bit .obj files, but not its C
+ * sources. This layer retains the original CAB/TMC/HDLG contracts and supplies
+ * the dialog state that the original Word modules expect. Native window
+ * creation is deliberately separate from this state layer.
  */
 
 namespace {
@@ -213,8 +213,10 @@ bool make_win95_staging_path(std::string& path,
             _snprintf_s(leaf, std::size(leaf), _TRUNCATE, "W%07lX",
                         identifier.Data1 & 0x0ffffffful);
             const std::string candidate = std::string(temporary_root) + leaf;
+
             /* The original normalizer requires DOS 8.3-safe path components
-               even though the native file APIs support long names. */
+             * even though the native file APIs support long names.
+             */
             if (candidate.size() >= 52) return false;
             if (CreateDirectoryA(candidate.c_str(), nullptr)) {
                 const DWORD attributes = GetFileAttributesA(candidate.c_str());
@@ -535,10 +537,11 @@ HWND create_dialog_host(const DialogState& dialog, const Dli* initializer) {
         height = (std::max)(1, scaled_y(rec.dy));
     }
 
-    /* HdlgStartDlg is used by Opus only for ribbon/ruler child dialogs.
-       Win16 propagated WM_SETVISIBLE when their icon-bar parent was shown;
-       Win64 does not.  Keep the child style visible so parent visibility is
-       inherited without depending on that retired message. */
+    /* HdlgStartDlg is used by Opus only for ribbon/ruler child dialogs. Win16
+     * propagated WM_SETVISIBLE when their icon-bar parent was shown; Win64 does
+     * not. Keep the child style visible so parent visibility is inherited
+     * without depending on that retired message.
+     */
     const DWORD style =
         WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
     return CreateWindowExA(
@@ -1256,7 +1259,7 @@ void refresh_font_control_value(DialogState& dialog, const Tmc raw_tmc,
             }
         }
         const int wide_length = GetWindowTextLengthW(text_window);
-        std::vector<wchar_t> wide_text(
+        std::vector<WCHAR> wide_text(
             static_cast<std::size_t>(wide_length) + 1);
         GetWindowTextW(text_window, wide_text.data(),
                        static_cast<int>(wide_text.size()));
@@ -1447,7 +1450,8 @@ void read_style_cab(DialogState& dialog, const Tmc tmc) {
     char style_name[256] = {};
     if (dialog.cab != nullptr) {
         /* Pointer arguments begin at iag 1 in the native, aligned CAB layout
-           used by CABAPPLYSTYLE and CABDEFINESTYLE. */
+         * used by CABAPPLYSTYLE and CABDEFINESTYLE.
+         */
         GetCabSz(dialog.cab, style_name,
                  static_cast<Word>(sizeof(style_name)), 1);
     }
@@ -1878,13 +1882,14 @@ void commit_ribbon_list_selection(DialogState& dialog, const Tmc tmc) {
     if (dialog.hid != kCxtRibbonIconBar || !dialog.commands_active) {
         return;
     }
+
     /* The Win16 SDM/icon-bar loop applied a combo selection when its dialog
-       focus was terminated.  A native Win32 drop-down keeps focus on the
-       combo after the list closes, so that termination never reliably
-       occurs.  CBN_SELENDOK identifies the completed choice, after all
-       intermediate CBN_SELCHANGE notifications, and is the safe point to
-       send the same original callbacks.  Typed edit text still commits on
-       CBN_KILLFOCUS. */
+     * focus was terminated. A native Win32 drop-down keeps focus on the combo
+     * after the list closes, so that termination never reliably occurs.
+     * CBN_SELENDOK identifies the completed choice, after all intermediate
+     * CBN_SELCHANGE notifications, and is the safe point to send the same
+     * original callbacks. Typed edit text still commits on CBN_KILLFOCUS.
+     */
     OpusX64TraceRibbon("commit-begin", kDlmKillDialogFocus, tmc,
                        dialog.controls[tmc].value, dialog.commands_active,
                        0, 0, 0);
@@ -1893,11 +1898,13 @@ void commit_ribbon_list_selection(DialogState& dialog, const Tmc tmc) {
     const bool dialog_result =
         invoke_dialog_proc(dialog, kDlmKillDialogFocus, tmc);
     dialog.commands_active = false;
-    /* Win16 SDM returned focus to the document when an icon-bar session
-       ended.  A native combo otherwise retains focus, forcing the user to
-       click the document; that mouse click reloads the properties at the
-       caret and discards the just-applied insertion font and size.  Route
-       the focus return through Microsoft's original FDlgIb handler. */
+
+    /* Win16 SDM returned focus to the document when an icon-bar session ended.
+     * A native combo otherwise retains focus, forcing the user to click the
+     * document; that mouse click reloads the properties at the caret and
+     * discards the just-applied insertion font and size. Route the focus return
+     * through Microsoft's original FDlgIb handler.
+     */
     const bool focus_result =
         invoke_dialog_proc(dialog, kDlmDialogClick, tmc);
     OpusX64TraceRibbon("commit-end", kDlmKillDialogFocus, tmc,
@@ -3015,8 +3022,10 @@ int FSetTmcLargeVal(Tmc tmc, void* source) {
     if (source == nullptr) {
         return false;
     }
-    /* Large values are application records; retain one pointer-sized unit
-       when SDM has no generated TM metadata describing a larger record. */
+
+    /* Large values are application records; retain one pointer-sized unit when
+     * SDM has no generated TM metadata describing a larger record.
+     */
     auto& value = control(tmc).large_value;
     value.resize(sizeof(void*));
     std::memcpy(value.data(), source, value.size());

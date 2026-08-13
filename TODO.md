@@ -237,6 +237,8 @@ also use `WCHAR`/`OPUSW` instead of host `wchar_t`/raw `L` literals.
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable
 default path buffer still follows the file's current `std::wstring` path model.
+`opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
+`GetWindowTextW` before converting it back to the dialog's ANSI state.
 
 Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
 or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit
