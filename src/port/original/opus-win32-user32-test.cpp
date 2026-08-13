@@ -174,6 +174,8 @@ int main() {
     HCURSOR cursor_b = reinterpret_cast<HCURSOR>(0x2020);
     POINT cursor_position{};
     if (SetCursor(cursor_a) != nullptr || SetCursor(cursor_b) != cursor_a ||
+        ShowCursor(FALSE) != -1 || GetSystemMetrics(SM_CURSORLEVEL) != -1 ||
+        ShowCursor(TRUE) != 0 || GetSystemMetrics(SM_CURSORLEVEL) != 0 ||
         SetCapture(window) != nullptr || GetCapture() != window ||
         SetCapture(child) != window || GetCapture() != child ||
         !ReleaseCapture() || GetCapture() != nullptr ||
@@ -253,14 +255,23 @@ int main() {
     key_state[VK_SHIFT] = 0x80;
     if (!SetKeyboardState(key_state) || GetKeyState(VK_SHIFT) >= 0 ||
         !PostMessageA(window, WM_KEYDOWN, 'A', 1) ||
-        GetKeyState('A') >= 0 ||
+        GetKeyState('A') >= 0 || GetAsyncKeyState('A') >= 0 ||
         !PeekMessageA(&message, window, WM_KEYDOWN, WM_KEYDOWN, PM_REMOVE) ||
         !TranslateMessage(&message) ||
         !PeekMessageA(&message, window, WM_CHAR, WM_CHAR, PM_REMOVE) ||
         message.wParam != 'A' || DispatchMessageA(&message) != 0 ||
         g_last_char != 'A' || !PostMessageA(window, WM_KEYUP, 'A', 1) ||
         !PeekMessageA(&message, window, WM_KEYUP, WM_KEYUP, PM_REMOVE) ||
-        GetKeyState('A') < 0) {
+        GetKeyState('A') < 0 || GetAsyncKeyState('A') < 0 ||
+        GetAsyncKeyState(300) != 0 ||
+        !PostMessageA(window, WM_LBUTTONDOWN, 0, 0) ||
+        GetAsyncKeyState(VK_LBUTTON) >= 0 ||
+        !PeekMessageA(&message, window, WM_LBUTTONDOWN, WM_LBUTTONDOWN,
+                      PM_REMOVE) ||
+        !PostMessageA(window, WM_LBUTTONUP, 0, 0) ||
+        !PeekMessageA(&message, window, WM_LBUTTONUP, WM_LBUTTONUP,
+                      PM_REMOVE) ||
+        GetAsyncKeyState(VK_LBUTTON) < 0) {
         return 32;
     }
 

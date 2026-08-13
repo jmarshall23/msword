@@ -2980,6 +2980,7 @@ BOOL UpdateWindow(HWND window);
 HWND SetActiveWindow(HWND window);
 HWND SetFocus(HWND window);
 HCURSOR SetCursor(HCURSOR cursor);
+int ShowCursor(BOOL show);
 HWND SetCapture(HWND window);
 HWND GetCapture(void);
 BOOL ReleaseCapture(void);
@@ -3131,6 +3132,7 @@ int EnumFontFamiliesExA(HDC device_context, LPLOGFONTA logfont,
 int EnumFontsA(HDC device_context, LPCSTR face_name,
                FONTENUMPROCA enum_font_proc, LPARAM parameter);
 SHORT GetKeyState(int virtual_key);
+SHORT GetAsyncKeyState(int virtual_key);
 BOOL PatBlt(HDC device_context, int x, int y, int width, int height,
             DWORD raster_operation);
 BOOL SetCursorPos(int x, int y);

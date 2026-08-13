@@ -301,6 +301,12 @@ the next timer deadline, and due timers enter the queue as `WM_TIMER` without
 duplicating an already queued timer message. SDL input and full mouse packing
 remain the event-source work before the headless keystroke gate.
 
+The hidden input/cursor state entries are now declared and implemented:
+`GetAsyncKeyState` reads the same key state as the queue path, mouse button
+messages update `VK_LBUTTON`/`VK_RBUTTON`, and `ShowCursor` maintains the
+cursor display counter reported by `SM_CURSORLEVEL`. SDL event translation is
+still needed to feed those states from real backend events.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

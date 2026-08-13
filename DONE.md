@@ -757,3 +757,35 @@ The exact reviewer commands to agy and claude were attempted before
 implementation, but both stalled without output and were stopped. This slice
 follows agy's prior warning that missing `WM_TIMER` delivery belongs in the
 user32 queue work because it can leave applications blocked in `GetMessage`.
+
+## Add user32 async key and cursor visibility state
+
+The non-Windows user32 shim now declares and implements `GetAsyncKeyState` and
+`ShowCursor`, closing two previously hidden inventory rows. `GetAsyncKeyState`
+returns the current shim key state used by `GetKeyState`, and mouse button
+messages now update `VK_LBUTTON` and `VK_RBUTTON` in the same shared path.
+`ShowCursor` maintains the Win32-style display counter, and `SM_CURSORLEVEL`
+reports that counter.
+
+`opus_win32_user32_test` covers cursor display count transitions, system metric
+tracking, async key state for posted key down/up, invalid virtual-key handling,
+and mouse button down/up state.
+
+Validated with `cmake -S src -B build-item14k -DCMAKE_BUILD_TYPE=Debug`,
+`cmake --build build-item14k --target opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine --parallel 8`, and `ctest --test-dir
+build-item14k -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14k --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14k -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this exact slice but
+stalled without output and was stopped. The implementation includes agy's
+mouse-button state trap.

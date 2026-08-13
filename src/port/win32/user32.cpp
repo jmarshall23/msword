@@ -59,6 +59,7 @@ HWND g_focus_window = nullptr;
 HWND g_capture_window = nullptr;
 HCURSOR g_current_cursor = nullptr;
 POINT g_cursor_position{0, 0};
+int g_cursor_show_count = 0;
 bool g_quit_posted = false;
 int g_quit_code = 0;
 
@@ -223,13 +224,28 @@ void remove_window_timers(HWND window) {
 }
 
 void update_key_state(UINT message, WPARAM wparam) {
-    if (wparam > 255) return;
-    auto& state = g_key_state[wparam];
+    int virtual_key = static_cast<int>(wparam);
     switch (message) {
+        case WM_LBUTTONDOWN:
+        case WM_LBUTTONUP:
+            virtual_key = VK_LBUTTON;
+            break;
+        case WM_RBUTTONDOWN:
+        case WM_RBUTTONUP:
+            virtual_key = VK_RBUTTON;
+            break;
+    }
+    if (virtual_key < 0 || virtual_key >= 256) return;
+    auto& state = g_key_state[virtual_key];
+    switch (message) {
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN:
             state = static_cast<SHORT>(state | 0x8000);
             break;
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
         case WM_KEYUP:
         case WM_SYSKEYUP:
             state = static_cast<SHORT>(state & ~0x8000);
@@ -528,7 +544,7 @@ int GetSystemMetrics(int index) {
         case SM_CYCURSOR:
             return 32;
         case SM_CURSORLEVEL:
-            return 0;
+            return g_cursor_show_count;
         default:
             return 0;
     }
@@ -948,6 +964,10 @@ HCURSOR SetCursor(HCURSOR cursor) {
     return previous;
 }
 
+int ShowCursor(BOOL show) {
+    return show ? ++g_cursor_show_count : --g_cursor_show_count;
+}
+
 HWND SetCapture(HWND window) {
     if (window != nullptr && !IsWindow(window)) return nullptr;
     const HWND previous = g_capture_window;
@@ -1185,6 +1205,10 @@ BOOL WaitMessage(void) {
 
 SHORT GetKeyState(int virtual_key) {
     return virtual_key >= 0 && virtual_key < 256 ? g_key_state[virtual_key] : 0;
+}
+
+SHORT GetAsyncKeyState(int virtual_key) {
+    return GetKeyState(virtual_key);
 }
 
 BOOL SetKeyboardState(BYTE* key_state) {
