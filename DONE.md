@@ -197,3 +197,34 @@ Validated with `cmake -S src --preset macos-debug`,
 Reviewed by agy and claude: both required the shim to sit beneath the existing
 `OpusGetProcAddress` wrapper, to use exact sentinel handles, to omit the dead
 `GDI` 440 mapping, and to land the ordinal TSV with the code.
+
+## Replace PE resources
+
+Non-Windows builds now generate raw byte arrays for
+`src/port/assets/word95-toolbar.bmp`, `src/port/icons/ICON8_1.ico`, and
+`src/port/icons/ICON2_1.ico`. The shim implements resource ID lookup for
+`LoadImageA/W`, `LoadBitmapA/W`, and `LoadIconA/W`, plus `DestroyIcon` and
+`DrawIconEx` for the generated icon handles.
+
+The toolbar bitmap handle is no longer only a non-null token: `GetObjectA`,
+`GetBitmapBits`, and `GetBitmapDimensionEx` expose the generated 340x20x24 BMP
+metadata and pixel bytes. Stock `OBM_*` bitmap IDs used by the port return
+stable shim handles.
+
+`WORD1` compiles `port/word1.rc` and `port/winword.manifest` only on Windows.
+The toolbar render proof belongs to the later device-context and windowing
+work: this item supplies the resource bytes, not the screen path.
+
+Validated with `cmake -S src --preset macos-debug`,
+`cmake --build out/macos-debug --target opus_win32_resource_test WORD1`,
+`ctest --test-dir out/macos-debug -R 'opus_win32_resource_test|opus_win16_module_test|word1_port_smoke_test|opus_original_command_test' --output-on-failure`,
+`rg -n "word1\\.rc|winword\\.manifest" out/macos-debug/build.ninja`
+returning no matches, `nm -u build/tests/Debug/opus_win32_resource_test`
+showing no unresolved resource shim APIs, `commentflow
+src/port/win32/resource.cpp src/port/original/opus-win32-resource-test.cpp`,
+and `git diff --check`.
+
+Reviewed by agy and claude: both rejected adding narrow GDI/User32 shims here
+and agreed that the original visual-render criterion depended on later
+device-context and windowing work. Claude also caught that the resource test
+should link without Darwin dynamic lookup, which now passes.

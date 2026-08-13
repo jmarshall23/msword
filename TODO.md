@@ -112,19 +112,6 @@ Done when: the three jobs are green on a pull request.
 Execution order in this phase is 7, then 6, then 8, 9, 10, 11. The numbering is
 kept stable so citations elsewhere do not rot.
 
-### 10. Replace PE resources
-
-Item 1 stops compiling `word1.rc`, but its contents are not cosmetic.
-`opus_win95_chrome.cpp:43` defines `kToolbarBitmap = 201` and `:2565` calls `LoadImageW`
-to fetch it at runtime. `word1.rc` also carries icons 301 and 302 and the manifest.
-
-Do: emit `src/port/assets/word95-toolbar.bmp` and the two `.ico` files as generated C
-byte arrays, reusing `opus_dibapp_tool` (`src/CMakeLists.txt:265`), and implement
-`LoadImageW`, `LoadBitmap` and `LoadIcon` in the shim over that array. Version info and
-the manifest are Windows-only and get dropped off Windows.
-
-Done when: the toolbar renders on macOS with no `.rc` in the build.
-
 ### 11. Coverage gate over the inventory
 
 Make `src/port/win32/windows.h` the single source of truth: the check scans for every
@@ -225,6 +212,8 @@ the whole engine and belongs at the end of item 14. Add one assert-style memory 
 The DC model is the design work: `CreateCompatibleDC`, `SelectObject` (167 sites in
 `src/Opus`, the most-called Win32 function in the tree), `SaveDC`/`RestoreDC`, clipping,
 and the raster ops (`PatBlt` at 96 sites, `BitBlt`, `StretchBlt`, `SetROP2`).
+This is where the Word 95 toolbar sprite from resource 201 first has to blit through
+the shim instead of merely loading as bytes.
 
 Start from the state models and the four-step raster shape in
 `docs/win32-shim/reference-notes.md`. They came from an implementation that ran real

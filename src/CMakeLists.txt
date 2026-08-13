@@ -401,6 +401,30 @@ set_target_properties(opus_generated_dib_resources PROPERTIES
     FOLDER "Original Opus x64/generated"
 )
 
+set(OPUS_GENERATED_WIN32_RESOURCE_ARRAYS
+    "${OPUS_GENERATED_COMMAND_DIR}/opus-win32-resource-arrays.h")
+add_custom_command(
+    OUTPUT "${OPUS_GENERATED_WIN32_RESOURCE_ARRAYS}"
+    COMMAND "${CMAKE_COMMAND}"
+        "-DOUTPUT=${OPUS_GENERATED_WIN32_RESOURCE_ARRAYS}"
+        "-DTOOLBAR_BMP=${CMAKE_CURRENT_SOURCE_DIR}/port/assets/word95-toolbar.bmp"
+        "-DICON_301=${CMAKE_CURRENT_SOURCE_DIR}/port/icons/ICON8_1.ico"
+        "-DICON_302=${CMAKE_CURRENT_SOURCE_DIR}/port/icons/ICON2_1.ico"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateWin32ResourceArrays.cmake"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateWin32ResourceArrays.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/assets/word95-toolbar.bmp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/icons/ICON8_1.ico"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/icons/ICON2_1.ico"
+    VERBATIM
+)
+add_custom_target(opus_generated_win32_resources
+    DEPENDS "${OPUS_GENERATED_WIN32_RESOURCE_ARRAYS}"
+)
+set_target_properties(opus_generated_win32_resources PROPERTIES
+    FOLDER "Original Opus x64/generated"
+)
+
 set(OPUS_GENERATED_COMMAND_FILES
     "${OPUS_GENERATED_COMMAND_DIR}/opuscmd.h"
     "${OPUS_GENERATED_COMMAND_DIR}/IBCM.H"
@@ -772,6 +796,7 @@ add_dependencies(opus_original_engine
     opus_generated_cursors
     opus_generated_embedded_resources
     opus_generated_dib_resources
+    opus_generated_win32_resources
     opus_generated_dlgcheck
     opus_generated_elxinfo
 )
@@ -888,7 +913,9 @@ else()
         port/win32/commdlg.c
         port/win32/module.cpp
         port/win32/objbase.c
+        port/win32/resource.cpp
     )
+    add_dependencies(opus_x64_runtime opus_generated_win32_resources)
 endif()
 if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string
@@ -1021,10 +1048,12 @@ endif()
 # Microsoft's original Opus WinMain and its original window/message loop.
 add_executable(WORD1 WIN32
     port/original/opus_original_startup_probe.cpp
-    port/winword.manifest
 )
 if(WIN32)
-    target_sources(WORD1 PRIVATE port/word1.rc)
+    target_sources(WORD1 PRIVATE
+        port/winword.manifest
+        port/word1.rc
+    )
 endif()
 add_dependencies(WORD1 opus_original_engine)
 target_compile_features(WORD1 PRIVATE cxx_std_20)
@@ -1119,6 +1148,29 @@ if(NOT WIN32)
     endforeach()
 endif()
 
+if(NOT WIN32)
+    add_executable(opus_win32_resource_test
+        port/original/opus-win32-resource-test.cpp
+    )
+    target_compile_features(opus_win32_resource_test PRIVATE cxx_std_20)
+    target_compile_definitions(opus_win32_resource_test PRIVATE
+        WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
+    )
+    target_include_directories(opus_win32_resource_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+    target_link_libraries(opus_win32_resource_test PRIVATE opus_x64_runtime)
+    set_target_properties(opus_win32_resource_test PROPERTIES
+        FOLDER "Original Opus x64/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_win32_resource_test PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        )
+    endforeach()
+endif()
+
 add_executable(opus_x64_runtime_test
     port/original/opus_x64_runtime_test.cpp
     port/original/opus_x64_layout_test_fixture.c
@@ -1206,6 +1258,7 @@ add_test(NAME opus_original_strtbl_test COMMAND $<TARGET_FILE:opus_original_strt
 add_test(NAME opus_x64_runtime_test COMMAND $<TARGET_FILE:opus_x64_runtime_test>)
 if(NOT WIN32)
     add_test(NAME opus_win16_module_test COMMAND $<TARGET_FILE:opus_win16_module_test>)
+    add_test(NAME opus_win32_resource_test COMMAND $<TARGET_FILE:opus_win32_resource_test>)
 endif()
 add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)

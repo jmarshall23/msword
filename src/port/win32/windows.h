@@ -1877,6 +1877,12 @@ typedef DWORD COLORREF;
 #ifndef OBM_OLD_UPARROW
 #define OBM_OLD_UPARROW 32765
 #endif
+#ifndef OBM_OLD_CLOSE
+#define OBM_OLD_CLOSE 32767
+#endif
+#ifndef OBM_CLOSE
+#define OBM_CLOSE 32754
+#endif
 #ifndef OBM_OLD_DNARROW
 #define OBM_OLD_DNARROW 32764
 #endif
@@ -2955,9 +2961,12 @@ HANDLE LoadImageA(HINSTANCE instance, LPCSTR name, UINT type, int desired_x,
 HANDLE LoadImageW(HINSTANCE instance, LPCWSTR name, UINT type, int desired_x,
                   int desired_y, UINT load_flags);
 #define LoadImage LoadImageA
+HICON LoadIconA(HINSTANCE instance, LPCSTR icon_name);
+HICON LoadIconW(HINSTANCE instance, LPCWSTR icon_name);
 BOOL DrawIconEx(HDC device_context, int x, int y, HICON icon, int width,
                 int height, UINT step_if_ani_cur, HBRUSH flicker_free_draw,
                 UINT flags);
+BOOL DestroyIcon(HICON icon);
 HRGN CreateRectRgn(int left, int top, int right, int bottom);
 int GetObjectA(HANDLE object, int buffer_size, LPVOID object_data);
 LONG GetBitmapBits(HBITMAP bitmap, LONG count, LPVOID bits);
@@ -3010,6 +3019,7 @@ HPEN CreatePenIndirect(const LOGPEN* log_pen);
 HDC CreateMetaFile(LPSTR file_name);
 HMETAFILE CloseMetaFile(HDC device_context);
 HBITMAP LoadBitmapA(HANDLE instance, LPSTR bitmap_name);
+HBITMAP LoadBitmapW(HANDLE instance, LPWSTR bitmap_name);
 int GetDeviceCaps(HDC device_context, int index);
 int SetStretchBltMode(HDC device_context, int stretch_mode);
 int Escape(HDC device_context, int escape, int count, LPSTR input, LPSTR output);
@@ -3064,6 +3074,9 @@ SIZE_T GlobalSize(HANDLE memory);
 #endif
 #ifndef LoadBitmap
 #define LoadBitmap LoadBitmapA
+#endif
+#ifndef LoadIcon
+#define LoadIcon LoadIconA
 #endif
 #ifndef GetTextMetrics
 #define GetTextMetrics GetTextMetricsA
