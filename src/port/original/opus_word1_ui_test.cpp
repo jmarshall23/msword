@@ -1212,7 +1212,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             if (font_combo == nullptr) {
                 font_index = SendMessageW(
                     combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-                    reinterpret_cast<LPARAM>(L"Courier New"));
+                    reinterpret_cast<LPARAM>(OPUSW("Courier New")));
                 if (font_index != CB_ERR) {
                     font_combo = combo;
                 }
@@ -1220,7 +1220,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             if (size_combo == nullptr) {
                 size_index = SendMessageW(
                     combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-                    reinterpret_cast<LPARAM>(L"24"));
+                    reinterpret_cast<LPARAM>(OPUSW("24")));
                 if (size_index != CB_ERR) {
                     size_combo = combo;
                 }
@@ -1232,16 +1232,16 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
         }
         const LRESULT second_font_index = SendMessageW(
             font_combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-            reinterpret_cast<LPARAM>(L"Arial"));
+            reinterpret_cast<LPARAM>(OPUSW("Arial")));
         const LRESULT second_size_index = SendMessageW(
             size_combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-            reinterpret_cast<LPARAM>(L"36"));
+            reinterpret_cast<LPARAM>(OPUSW("36")));
         const LRESULT large_size_index = SendMessageW(
             size_combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-            reinterpret_cast<LPARAM>(L"72"));
+            reinterpret_cast<LPARAM>(OPUSW("72")));
         const LRESULT listed_size_index = SendMessageW(
             size_combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-            reinterpret_cast<LPARAM>(L"72"));
+            reinterpret_cast<LPARAM>(OPUSW("72")));
         if (second_font_index == CB_ERR || second_size_index == CB_ERR ||
             large_size_index == CB_ERR || listed_size_index == CB_ERR) {
             return fail(process, 47,
