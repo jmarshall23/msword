@@ -40,7 +40,6 @@ GetClipboardOwner
 GetCurrentThreadId
 GetCursorPos
 GetDlgCtrlID
-GetKeyState
 GetMenu
 GetMenuItemCount
 GetMenuItemID
@@ -89,7 +88,6 @@ SetCapture
 SetClipboardData
 SetCursor
 SetCursorPos
-SetKeyboardState
 SetMapMode
 SetMenuInfo
 SetMenuItemBitmaps

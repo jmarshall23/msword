@@ -40,6 +40,7 @@ struct WindowObject {
 std::vector<RegisteredClass> g_classes;
 std::vector<WindowObject*> g_windows;
 std::deque<MSG> g_messages;
+SHORT g_key_state[256]{};
 ATOM g_next_atom = 1;
 HWND g_active_window = nullptr;
 HWND g_focus_window = nullptr;
@@ -131,6 +132,45 @@ BOOL queue_take(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
         return TRUE;
     }
     return FALSE;
+}
+
+void queue_front(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    g_messages.push_front({window, message, wparam, lparam, 0, {0, 0}});
+}
+
+void queue_back(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    g_messages.push_back({window, message, wparam, lparam, 0, {0, 0}});
+}
+
+void update_key_state(UINT message, WPARAM wparam) {
+    if (wparam > 255) return;
+    auto& state = g_key_state[wparam];
+    switch (message) {
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+            state = static_cast<SHORT>(state | 0x8000);
+            break;
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+            state = static_cast<SHORT>(state & ~0x8000);
+            break;
+    }
+}
+
+UINT translated_char(WPARAM virtual_key) {
+    const bool shift_down = (g_key_state[VK_SHIFT] & 0x8000) != 0;
+    if (virtual_key >= 'A' && virtual_key <= 'Z') {
+        return static_cast<UINT>(shift_down ? virtual_key : virtual_key + 32);
+    }
+    if (virtual_key >= '0' && virtual_key <= '9') {
+        return static_cast<UINT>(virtual_key);
+    }
+    switch (virtual_key) {
+        case VK_SPACE: return ' ';
+        case VK_RETURN: return '\r';
+        case VK_TAB: return '\t';
+        default: return 0;
+    }
 }
 
 void pump_block_until_message() {
@@ -718,8 +758,17 @@ BOOL IsDialogMessageA(HWND, LPMSG) {
     return FALSE;
 }
 
-BOOL TranslateMessage(const MSG*) {
-    return FALSE;
+BOOL TranslateMessage(const MSG* message) {
+    if (message == nullptr) return FALSE;
+    if (message->message != WM_KEYDOWN && message->message != WM_SYSKEYDOWN) {
+        return FALSE;
+    }
+    const UINT character = translated_char(message->wParam);
+    if (character == 0) return FALSE;
+    queue_front(message->hwnd,
+                message->message == WM_SYSKEYDOWN ? WM_SYSCHAR : WM_CHAR,
+                character, message->lParam);
+    return TRUE;
 }
 
 LRESULT SendMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
@@ -748,7 +797,8 @@ LRESULT DispatchMessageA(const MSG* message) {
 
 BOOL PostMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     if (window != nullptr && !IsWindow(window)) return FALSE;
-    g_messages.push_back({window, message, wparam, lparam, 0, {0, 0}});
+    update_key_state(message, wparam);
+    queue_back(window, message, wparam, lparam);
     return TRUE;
 }
 
@@ -757,8 +807,7 @@ BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 }
 
 VOID PostQuitMessage(int exit_code) {
-    g_messages.push_back(
-        {nullptr, WM_QUIT, static_cast<WPARAM>(exit_code), 0, 0, {0, 0}});
+    queue_back(nullptr, WM_QUIT, static_cast<WPARAM>(exit_code), 0);
 }
 
 BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max) {
@@ -780,6 +829,20 @@ BOOL WaitMessage(void) {
     if (!g_messages.empty()) return TRUE;
     pump_block_until_message();
     return FALSE;
+}
+
+SHORT GetKeyState(int virtual_key) {
+    return virtual_key >= 0 && virtual_key < 256 ? g_key_state[virtual_key] : 0;
+}
+
+BOOL SetKeyboardState(BYTE* key_state) {
+    if (key_state == nullptr) return FALSE;
+    for (int index = 0; index < 256; ++index) {
+        g_key_state[index] =
+            static_cast<SHORT>((key_state[index] & 0x80) != 0 ? 0x8000 : 0) |
+            static_cast<SHORT>(key_state[index] & 1);
+    }
+    return TRUE;
 }
 
 int MessageBoxA(HWND, LPCSTR, LPCSTR, UINT) {

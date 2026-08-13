@@ -7,8 +7,9 @@ constexpr LONG_PTR kExtraData = 0x123456789;
 int g_nc_create_count = 0;
 int g_create_count = 0;
 int g_user_message_count = 0;
+WPARAM g_last_char = 0;
 
-LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM,
+LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM wparam,
                                 LPARAM parameter) {
     if (message == WM_NCCREATE) {
         ++g_nc_create_count;
@@ -24,6 +25,10 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM,
     if (message == WM_USER + 1) {
         ++g_user_message_count;
         return static_cast<LRESULT>(parameter + 7);
+    }
+    if (message == WM_CHAR) {
+        g_last_char = wparam;
+        return 0;
     }
     return DefWindowProcA(window, message, 0, parameter);
 }
@@ -149,19 +154,34 @@ int main() {
         return 19;
     }
 
+    BYTE key_state[256]{};
+    key_state[VK_SHIFT] = 0x80;
+    if (!SetKeyboardState(key_state) || GetKeyState(VK_SHIFT) >= 0 ||
+        !PostMessageA(window, WM_KEYDOWN, 'A', 1) ||
+        GetKeyState('A') >= 0 ||
+        !PeekMessageA(&message, window, WM_KEYDOWN, WM_KEYDOWN, PM_REMOVE) ||
+        !TranslateMessage(&message) ||
+        !PeekMessageA(&message, window, WM_CHAR, WM_CHAR, PM_REMOVE) ||
+        message.wParam != 'A' || DispatchMessageA(&message) != 0 ||
+        g_last_char != 'A' || !PostMessageA(window, WM_KEYUP, 'A', 1) ||
+        !PeekMessageA(&message, window, WM_KEYUP, WM_KEYUP, PM_REMOVE) ||
+        GetKeyState('A') < 0) {
+        return 20;
+    }
+
     PostQuitMessage(23);
     if (GetMessageA(&message, nullptr, 0, 0) != 0 ||
         message.message != WM_QUIT || message.wParam != 23) {
-        return 20;
+        return 21;
     }
 
     if (!PostMessageA(child, WM_USER + 4, 0, 0) || !DestroyWindow(window) ||
         IsWindow(window) || IsWindow(child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 21;
+        return 22;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 22;
+    if (second == nullptr || second == window) return 23;
     return 0;
 }

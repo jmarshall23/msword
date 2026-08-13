@@ -521,3 +521,35 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14c -R
 Reviewed by agy for this slice; claude was asked and returned after implementation
 was underway with guidance for the next input-message slice and a warning that the
 final WORD1 link gate is still masked by macOS `dynamic_lookup`.
+
+## Add user32 key translation core
+
+The non-Windows `user32.cpp` shim now tracks key state for posted
+`WM_KEYDOWN`/`WM_KEYUP` and `WM_SYSKEYDOWN`/`WM_SYSKEYUP` messages, exposes
+`GetKeyState`, and accepts `SetKeyboardState`. `TranslateMessage` now synthesizes
+printable `WM_CHAR` or `WM_SYSCHAR` messages for letters, digits, space, return,
+and tab, inserting the generated character ahead of later queued input so the next
+peek/get sees it.
+
+`opus_win32_user32_test` covers shift key state, posted keydown state updates,
+`TranslateMessage` producing a shifted `WM_CHAR`, dispatch through the test window
+procedure, and keyup clearing the down bit. The Win32 coverage baseline no longer
+lists `GetKeyState` or `SetKeyboardState`.
+
+Validated with `cmake --build build-item14d --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14d -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14d --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14d -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy and claude before implementation: agy recommended the key
+translation slice; claude returned with client geometry as the next preferred slice
+and confirmed the input core as the following bounded step.

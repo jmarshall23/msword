@@ -256,6 +256,14 @@ the call-site audit proves this tree needs them. The final WORD1 link gate is st
 not flipped because the app target keeps macOS `dynamic_lookup` while many user32
 entries remain uncovered.
 
+The in-memory input core now tracks key down/up state from posted key messages and
+`SetKeyboardState`, exposes `GetKeyState`, and has `TranslateMessage` synthesize
+printable `WM_CHAR`/`WM_SYSCHAR` messages. This proves dispatch through the existing
+queue and window procedure, but it is not yet the headless event source: blocking
+`GetMessage`/`WaitMessage` still fail fast until the SDL or scripted pump feeds the
+queue. The next reviewed small slice is client geometry and rect algebra, because
+mouse packing and paint/update work need coherent client coordinates.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so
