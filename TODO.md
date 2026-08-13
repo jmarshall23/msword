@@ -196,11 +196,13 @@ also past `objbase.h` in `opus_sdm_runtime.cpp` and the Windows-only OPC headers
 `opus_modern_formats.cpp`; non-Windows uses a failing modern-format stub until item 14
 needs real import/export behavior. The next compile blockers are the SDM runtime file
 API surface: `DeleteFileA`, `RemoveDirectoryA`, `GetFileAttributesA`,
-`WIN32_FILE_ATTRIBUTE_DATA`, `_stricmp`, and related error constants. That file API
-declaration batch now compiles through to the SDM dialog/window surface: `WM_APP`,
-`MulDiv`, `WNDCLASSEXA`, window styles, `IsWindow`, `GetActiveWindow`,
-`AdjustWindowRectEx`, `GetWindowRect`, `SystemParametersInfoA`, and related UI
-declarations.
+`WIN32_FILE_ATTRIBUTE_DATA`, `_stricmp`, and related error constants. Those file API
+and SDM dialog/window declaration batches now compile through
+`opus_sdm_runtime.cpp`, including `WNDCLASSEXA`, child/window styles, native control
+messages, text/font structs, dialog message pump declarations, and related UI
+constants. The next compile blockers are in `src/Opus/command2.c`: the
+`SaveCabs(FRecordCab, ...)` callback type mismatch and missing `VK_*` key constants
+from `src/Opus/keys.h`.
 
 Build the first pass mechanically:
 

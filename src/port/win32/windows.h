@@ -49,6 +49,7 @@ typedef uintptr_t UINT_PTR;
 typedef uintptr_t ULONG_PTR;
 typedef uintptr_t SIZE_T;
 typedef intptr_t LPARAM;
+typedef intptr_t LONG_PTR;
 typedef uintptr_t WPARAM;
 typedef intptr_t LRESULT;
 typedef void* LPVOID;
@@ -104,6 +105,7 @@ typedef struct tagRECT {
     LONG right;
     LONG bottom;
 } RECT;
+typedef RECT* LPRECT;
 
 typedef struct tagSIZE {
     LONG cx;
@@ -137,6 +139,76 @@ typedef struct tagBITMAP {
     WORD bmBitsPixel;
     LPVOID bmBits;
 } BITMAP;
+
+typedef LRESULT(CALLBACK* WNDPROC)(HWND, UINT, WPARAM, LPARAM);
+
+typedef struct tagWNDCLASSEXA {
+    UINT cbSize;
+    UINT style;
+    WNDPROC lpfnWndProc;
+    int cbClsExtra;
+    int cbWndExtra;
+    HINSTANCE hInstance;
+    HICON hIcon;
+    HCURSOR hCursor;
+    HBRUSH hbrBackground;
+    LPCSTR lpszMenuName;
+    LPCSTR lpszClassName;
+    HICON hIconSm;
+} WNDCLASSEXA, *LPWNDCLASSEXA;
+
+typedef struct tagCREATESTRUCTA {
+    LPVOID lpCreateParams;
+    HINSTANCE hInstance;
+    HMENU hMenu;
+    HWND hwndParent;
+    int cy;
+    int cx;
+    int y;
+    int x;
+    LONG style;
+    LPCSTR lpszName;
+    LPCSTR lpszClass;
+    DWORD dwExStyle;
+} CREATESTRUCTA, *LPCREATESTRUCTA;
+
+typedef struct tagCOMBOBOXINFO {
+    DWORD cbSize;
+    RECT rcItem;
+    RECT rcButton;
+    DWORD stateButton;
+    HWND hwndCombo;
+    HWND hwndItem;
+    HWND hwndList;
+} COMBOBOXINFO, *PCOMBOBOXINFO;
+
+#ifndef LF_FACESIZE
+#define LF_FACESIZE 32
+#endif
+
+typedef struct tagLOGFONTA {
+    LONG lfHeight;
+    LONG lfWidth;
+    LONG lfEscapement;
+    LONG lfOrientation;
+    LONG lfWeight;
+    BYTE lfItalic;
+    BYTE lfUnderline;
+    BYTE lfStrikeOut;
+    BYTE lfCharSet;
+    BYTE lfOutPrecision;
+    BYTE lfClipPrecision;
+    BYTE lfQuality;
+    BYTE lfPitchAndFamily;
+    CHAR lfFaceName[LF_FACESIZE];
+} LOGFONTA, *LPLOGFONTA;
+
+typedef struct tagTEXTMETRICA {
+    LONG tmHeight;
+} TEXTMETRICA, *LPTEXTMETRICA;
+
+typedef int(CALLBACK* FONTENUMPROCA)(const LOGFONTA*, const TEXTMETRICA*,
+                                     DWORD, LPARAM);
 
 #ifndef MAX_PATH
 #define MAX_PATH 260
@@ -187,6 +259,175 @@ typedef struct _WIN32_FIND_DATAA {
 #define MB_ICONEXCLAMATION 0x0030
 #endif
 
+#ifndef WM_SETFONT
+#define WM_SETFONT 0x0030
+#endif
+#ifndef WM_APP
+#define WM_APP 0x8000
+#endif
+#ifndef WM_CLOSE
+#define WM_CLOSE 0x0010
+#endif
+#ifndef WM_NCCREATE
+#define WM_NCCREATE 0x0081
+#endif
+#ifndef WM_COMMAND
+#define WM_COMMAND 0x0111
+#endif
+
+#ifndef BN_CLICKED
+#define BN_CLICKED 0
+#endif
+#ifndef CBN_SELCHANGE
+#define CBN_SELCHANGE 1
+#endif
+#ifndef CBN_DROPDOWN
+#define CBN_DROPDOWN 7
+#endif
+#ifndef CBN_SETFOCUS
+#define CBN_SETFOCUS 3
+#endif
+#ifndef CBN_KILLFOCUS
+#define CBN_KILLFOCUS 4
+#endif
+#ifndef CBN_EDITCHANGE
+#define CBN_EDITCHANGE 5
+#endif
+#ifndef CBN_SELENDOK
+#define CBN_SELENDOK 9
+#endif
+#ifndef EN_CHANGE
+#define EN_CHANGE 0x0300
+#endif
+#ifndef LBN_SELCHANGE
+#define LBN_SELCHANGE 1
+#endif
+#ifndef LBN_DBLCLK
+#define LBN_DBLCLK 2
+#endif
+
+#ifndef CS_DBLCLKS
+#define CS_DBLCLKS 0x0008
+#endif
+
+#ifndef MAKEINTRESOURCEA
+#define MAKEINTRESOURCEA(id) ((LPSTR)(ULONG_PTR)((WORD)(id)))
+#endif
+#ifndef IDC_ARROW
+#define IDC_ARROW MAKEINTRESOURCEA(32512)
+#endif
+
+#ifndef COLOR_BTNFACE
+#define COLOR_BTNFACE 15
+#endif
+#ifndef COLOR_WINDOW
+#define COLOR_WINDOW 5
+#endif
+#ifndef COLOR_WINDOWFRAME
+#define COLOR_WINDOWFRAME 6
+#endif
+#ifndef COLOR_WINDOWTEXT
+#define COLOR_WINDOWTEXT 8
+#endif
+#ifndef COLOR_BTNTEXT
+#define COLOR_BTNTEXT 18
+#endif
+
+#ifndef WS_POPUP
+#define WS_POPUP 0x80000000u
+#endif
+#ifndef WS_CHILD
+#define WS_CHILD 0x40000000u
+#endif
+#ifndef WS_VISIBLE
+#define WS_VISIBLE 0x10000000u
+#endif
+#ifndef WS_CLIPSIBLINGS
+#define WS_CLIPSIBLINGS 0x04000000u
+#endif
+#ifndef WS_CLIPCHILDREN
+#define WS_CLIPCHILDREN 0x02000000u
+#endif
+#ifndef WS_CAPTION
+#define WS_CAPTION 0x00c00000u
+#endif
+#ifndef WS_SYSMENU
+#define WS_SYSMENU 0x00080000u
+#endif
+#ifndef WS_GROUP
+#define WS_GROUP 0x00020000u
+#endif
+#ifndef WS_TABSTOP
+#define WS_TABSTOP 0x00010000u
+#endif
+#ifndef WS_VSCROLL
+#define WS_VSCROLL 0x00200000u
+#endif
+#ifndef WS_BORDER
+#define WS_BORDER 0x00800000u
+#endif
+
+#ifndef WS_EX_DLGMODALFRAME
+#define WS_EX_DLGMODALFRAME 0x00000001
+#endif
+#ifndef WS_EX_CONTROLPARENT
+#define WS_EX_CONTROLPARENT 0x00010000
+#endif
+
+#ifndef GWL_STYLE
+#define GWL_STYLE (-16)
+#endif
+#ifndef GWL_EXSTYLE
+#define GWL_EXSTYLE (-20)
+#endif
+#ifndef GWLP_USERDATA
+#define GWLP_USERDATA (-21)
+#endif
+
+#ifndef SW_HIDE
+#define SW_HIDE 0
+#endif
+#ifndef SW_SHOW
+#define SW_SHOW 5
+#endif
+#ifndef SW_SHOWNA
+#define SW_SHOWNA 8
+#endif
+
+#ifndef SWP_NOSIZE
+#define SWP_NOSIZE 0x0001
+#endif
+#ifndef SWP_NOMOVE
+#define SWP_NOMOVE 0x0002
+#endif
+#ifndef SWP_NOZORDER
+#define SWP_NOZORDER 0x0004
+#endif
+#ifndef SWP_NOACTIVATE
+#define SWP_NOACTIVATE 0x0010
+#endif
+
+#ifndef GW_OWNER
+#define GW_OWNER 4
+#endif
+
+#ifndef SM_CXBORDER
+#define SM_CXBORDER 5
+#endif
+#ifndef SM_CYBORDER
+#define SM_CYBORDER 6
+#endif
+#ifndef SM_CYCAPTION
+#define SM_CYCAPTION 4
+#endif
+#ifndef SM_CXVSCROLL
+#define SM_CXVSCROLL 2
+#endif
+
+#ifndef SPI_GETWORKAREA
+#define SPI_GETWORKAREA 0x0030
+#endif
+
 #ifndef MF_CHANGE
 #define MF_CHANGE 0x0080
 #endif
@@ -221,12 +462,131 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef OBJ_FONT
 #define OBJ_FONT 6
 #endif
+#ifndef DEFAULT_GUI_FONT
+#define DEFAULT_GUI_FONT 17
+#endif
+
+#ifndef SS_LEFT
+#define SS_LEFT 0x00000000
+#endif
+#ifndef SS_CENTER
+#define SS_CENTER 0x00000001
+#endif
+#ifndef SS_RIGHT
+#define SS_RIGHT 0x00000002
+#endif
+#ifndef SS_ETCHEDHORZ
+#define SS_ETCHEDHORZ 0x00000010
+#endif
+#ifndef BS_PUSHBUTTON
+#define BS_PUSHBUTTON 0x00000000
+#endif
+#ifndef BS_DEFPUSHBUTTON
+#define BS_DEFPUSHBUTTON 0x00000001
+#endif
+#ifndef BS_AUTOCHECKBOX
+#define BS_AUTOCHECKBOX 0x00000003
+#endif
+#ifndef BS_GROUPBOX
+#define BS_GROUPBOX 0x00000007
+#endif
+#ifndef BS_AUTORADIOBUTTON
+#define BS_AUTORADIOBUTTON 0x00000009
+#endif
+#ifndef ES_AUTOHSCROLL
+#define ES_AUTOHSCROLL 0x0080
+#endif
+#ifndef LBS_NOTIFY
+#define LBS_NOTIFY 0x0001
+#endif
+#ifndef LBS_SORT
+#define LBS_SORT 0x0002
+#endif
+#ifndef LBS_NOINTEGRALHEIGHT
+#define LBS_NOINTEGRALHEIGHT 0x0100
+#endif
+#ifndef CBS_DROPDOWN
+#define CBS_DROPDOWN 0x0002
+#endif
+#ifndef CBS_DROPDOWNLIST
+#define CBS_DROPDOWNLIST 0x0003
+#endif
+#ifndef CBS_AUTOHSCROLL
+#define CBS_AUTOHSCROLL 0x0040
+#endif
+#ifndef EM_SETSEL
+#define EM_SETSEL 0x00b1
+#endif
+#ifndef CB_ADDSTRING
+#define CB_ADDSTRING 0x0143
+#endif
+#ifndef CB_DELETESTRING
+#define CB_DELETESTRING 0x0144
+#endif
+#ifndef CB_GETCURSEL
+#define CB_GETCURSEL 0x0147
+#endif
+#ifndef CB_GETLBTEXT
+#define CB_GETLBTEXT 0x0148
+#endif
+#ifndef CB_GETLBTEXTLEN
+#define CB_GETLBTEXTLEN 0x0149
+#endif
+#ifndef CB_INSERTSTRING
+#define CB_INSERTSTRING 0x014a
+#endif
+#ifndef CB_RESETCONTENT
+#define CB_RESETCONTENT 0x014b
+#endif
+#ifndef CB_SETCURSEL
+#define CB_SETCURSEL 0x014e
+#endif
+#ifndef CB_ERR
+#define CB_ERR (-1)
+#endif
+#ifndef LB_ADDSTRING
+#define LB_ADDSTRING 0x0180
+#endif
+#ifndef LB_SETCURSEL
+#define LB_SETCURSEL 0x0186
+#endif
+#ifndef LB_GETCURSEL
+#define LB_GETCURSEL 0x0188
+#endif
+#ifndef LB_GETTEXT
+#define LB_GETTEXT 0x0189
+#endif
+#ifndef LB_GETTEXTLEN
+#define LB_GETTEXTLEN 0x018a
+#endif
+#ifndef LB_RESETCONTENT
+#define LB_RESETCONTENT 0x0184
+#endif
+#ifndef LB_ERR
+#define LB_ERR (-1)
+#endif
+#ifndef BM_GETCHECK
+#define BM_GETCHECK 0x00f0
+#endif
+#ifndef BM_SETCHECK
+#define BM_SETCHECK 0x00f1
+#endif
+#ifndef BST_UNCHECKED
+#define BST_UNCHECKED 0x0000
+#endif
+#ifndef BST_CHECKED
+#define BST_CHECKED 0x0001
+#endif
 
 #ifndef FORMAT_MESSAGE_IGNORE_INSERTS
 #define FORMAT_MESSAGE_IGNORE_INSERTS 0x00000200
 #endif
 #ifndef FORMAT_MESSAGE_FROM_SYSTEM
 #define FORMAT_MESSAGE_FROM_SYSTEM 0x00001000
+#endif
+
+#ifndef CP_ACP
+#define CP_ACP 0
 #endif
 
 #ifndef GENERIC_READ
@@ -285,6 +645,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef GetFileExInfoStandard
 #define GetFileExInfoStandard 0
+#endif
+#ifndef DEFAULT_CHARSET
+#define DEFAULT_CHARSET 1
 #endif
 #ifndef REPLACEFILE_WRITE_THROUGH
 #define REPLACEFILE_WRITE_THROUGH 0x00000001
@@ -382,8 +745,13 @@ DWORD GetCurrentProcessId(void);
 DWORD CharUpperBuffA(LPSTR text, DWORD length);
 UINT RegisterClipboardFormatA(LPCSTR name);
 BOOL MessageBeep(UINT type);
+int MessageBoxA(HWND window, LPCSTR text, LPCSTR caption, UINT type);
 BOOL GetStringTypeA(DWORD locale, DWORD type, LPCSTR source, int count,
                     WORD* char_type);
+int MulDiv(int number, int numerator, int denominator);
+LPSTR lstrcpynA(LPSTR destination, LPCSTR source, int count);
+DWORD GetEnvironmentVariableA(LPCSTR name, LPSTR buffer, DWORD size);
+BOOL SetEnvironmentVariableA(LPCSTR name, LPCSTR value);
 
 VOID OutputDebugStringA(LPCSTR text);
 DWORD FormatMessageA(DWORD flags, LPCVOID source, DWORD message_id,
@@ -403,6 +771,59 @@ BOOL ModifyMenuA(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
 BOOL InsertMenuA(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
                  LPCSTR new_item_text);
 UINT GetMenuItemID(HMENU menu, int position);
+
+ATOM RegisterClassExA(const WNDCLASSEXA* window_class);
+HCURSOR LoadCursorA(HINSTANCE instance, LPCSTR cursor_name);
+BOOL IsWindow(HWND window);
+BOOL IsChild(HWND parent, HWND window);
+HWND GetActiveWindow(void);
+BOOL AdjustWindowRectEx(LPRECT rectangle, DWORD style, BOOL menu,
+                        DWORD extended_style);
+BOOL GetWindowRect(HWND window, LPRECT rectangle);
+BOOL SystemParametersInfoA(UINT action, UINT parameter, LPVOID data, UINT flags);
+BOOL ShowWindow(HWND window, int command_show);
+BOOL EnableWindow(HWND window, BOOL enable);
+BOOL IsWindowEnabled(HWND window);
+BOOL UpdateWindow(HWND window);
+HWND SetActiveWindow(HWND window);
+HWND SetFocus(HWND window);
+HWND GetWindow(HWND window, UINT command);
+int GetSystemMetrics(int index);
+BOOL SetWindowPos(HWND window, HWND insert_after, int x, int y, int cx, int cy,
+                  UINT flags);
+LONG_PTR GetWindowLongPtrA(HWND window, int index);
+LONG_PTR SetWindowLongPtrA(HWND window, int index, LONG_PTR new_long);
+LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,
+                       LPARAM lparam);
+BOOL DestroyWindow(HWND window);
+DWORD GetSysColor(int index);
+HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
+                     LPCSTR window_name, DWORD style, int x, int y, int width,
+                     int height, HWND parent, HMENU menu, HINSTANCE instance,
+                     LPVOID parameter);
+LRESULT SendMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+BOOL TranslateMessage(const MSG* message);
+LRESULT DispatchMessageA(const MSG* message);
+BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max);
+BOOL IsDialogMessageA(HWND dialog, LPMSG message);
+VOID PostQuitMessage(int exit_code);
+HGDIOBJ GetStockObject(int object);
+int GetClassNameA(HWND window, LPSTR class_name, int max_count);
+BOOL SetWindowTextA(HWND window, LPCSTR text);
+int GetWindowTextLengthA(HWND window);
+int GetWindowTextA(HWND window, LPSTR text, int max_count);
+int GetWindowTextLengthW(HWND window);
+int GetWindowTextW(HWND window, LPWSTR text, int max_count);
+BOOL GetComboBoxInfo(HWND combo_box, PCOMBOBOXINFO combo_box_info);
+int WideCharToMultiByte(UINT code_page, DWORD flags, LPCWSTR wide_char,
+                        int wide_char_count, LPSTR multi_byte, int multi_byte_count,
+                        LPCSTR default_char, BOOL* used_default_char);
+HDC GetDC(HWND window);
+int ReleaseDC(HWND window, HDC device_context);
+int EnumFontFamiliesExA(HDC device_context, LPLOGFONTA logfont,
+                        FONTENUMPROCA enum_font_proc, LPARAM parameter,
+                        DWORD flags);
 
 HGDIOBJ GetCurrentObject(HDC device_context, UINT object_type);
 BOOL GetBitmapDimensionEx(HBITMAP bitmap, SIZE* size);
@@ -435,6 +856,9 @@ BOOL GetFileAttributesExA(LPCSTR file_name, int info_level_id,
 BOOL CreateDirectoryA(LPCSTR path_name, LPVOID security_attributes);
 BOOL RemoveDirectoryA(LPCSTR path_name);
 BOOL DeleteFileA(LPCSTR file_name);
+DWORD GetCurrentDirectoryA(DWORD buffer_length, LPSTR buffer);
+DWORD GetFullPathNameA(LPCSTR file_name, DWORD buffer_length, LPSTR buffer,
+                       LPSTR* file_part);
 BOOL CopyFileA(LPCSTR existing_file_name, LPCSTR new_file_name,
                BOOL fail_if_exists);
 BOOL ReplaceFileA(LPCSTR replaced_file_name, LPCSTR replacement_file_name,
