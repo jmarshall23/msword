@@ -1,4 +1,5 @@
 #include "opus_x64_layout.h"
+#include "opus_x64_compat.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -10,13 +11,12 @@ RtlCaptureStackBackTrace(unsigned long frames_to_skip,
                          unsigned long frames_to_capture,
                          void** back_trace,
                          unsigned long* back_trace_hash);
-extern "C" __declspec(dllimport) void* __stdcall
-GetModuleHandleW(const wchar_t* module_name);
+extern "C" __declspec(dllimport) HMODULE __stdcall
+GetModuleHandleW(LPCWSTR module_name);
 
-/*
- * AMD64 translations of the STTB access block in Opus/asm/resn2.asm.
- * STTB storage and offset-table layout continue to come from original
- * word.h; only segmented-pointer arithmetic is replaced here.
+/* AMD64 translations of the STTB access block in Opus/asm/resn2.asm. STTB
+ * storage and offset-table layout continue to come from original word.h; only
+ * segmented-pointer arithmetic is replaced here.
  */
 
 namespace {

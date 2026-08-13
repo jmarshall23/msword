@@ -216,6 +216,8 @@ Status: `src/port/win32/windows.h` defines `WCHAR`, `LPWSTR`, `LPCWSTR`, `PWSTR`
 defines `OPUSW("")` for C++ port code so non-Windows literals can use UTF-16 storage
 instead of host `wchar_t`. `opus_original_startup_probe.cpp` uses that boundary for
 `--self-test` detection before narrowing the command line with `WideCharToMultiByte`.
+`opus_asm_resn2_sttb.cpp` also declares `GetModuleHandleW` with `LPCWSTR` for its trace
+base-address lookup.
 
 Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
 or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit
