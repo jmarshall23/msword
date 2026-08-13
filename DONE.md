@@ -10,3 +10,14 @@ past `project()` and stops at the next known non-Windows gate, with no RC compil
 error.
 
 Reviewed by agy and claude: no findings.
+
+## Commit `src/cmake/`
+
+`src/cmake/GenerateElxInfoHeader.cmake` and
+`src/cmake/GenerateMenuHelpHeader.cmake` are committed from the jphonorato reference
+tree. The ELX generation command now uses `cmake -P` instead of PowerShell.
+
+Validated with `rg -n "powershell" src/CMakeLists.txt`, direct `cmake -P` runs for both
+generators, and non-Windows configure reaching the next known gate.
+
+Reviewed by agy and claude: no blocking findings.

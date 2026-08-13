@@ -82,12 +82,12 @@ set(OPUS_GENERATED_ELXINFO
     "${CMAKE_CURRENT_BINARY_DIR}/generated/original/elxinfo.h")
 add_custom_command(
     OUTPUT "${OPUS_GENERATED_ELXINFO}"
-    COMMAND powershell -NoProfile -ExecutionPolicy Bypass
-        -File "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateElxStid.ps1"
-        -InputPath "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src/mergeelx.c"
-        -OutputPath "${OPUS_GENERATED_ELXINFO}"
+    COMMAND "${CMAKE_COMMAND}"
+        -DINPUT=${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src/mergeelx.c
+        -DOUTPUT=${OPUS_GENERATED_ELXINFO}
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateElxInfoHeader.cmake"
     DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateElxStid.ps1"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateElxInfoHeader.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src/mergeelx.c"
     VERBATIM
 )

@@ -90,34 +90,6 @@ into this one: item 5a's SDL decision has to be made before item 4 writes the pr
 because it sets their cache variables. It is numbered there because that is where its
 work lives, not because it can wait.
 
-### 2. Commit `src/cmake/`
-
-`src/CMakeLists.txt:82` runs `powershell -File .../cmake/GenerateElxStid.ps1` and `:349`
-runs `cmake -P .../cmake/GenerateMenuHelpHeader.cmake`. Neither exists in any commit
-(`git log --all --diff-filter=A -- 'src/cmake/*'` is empty). Both earlier forks hit this
-first and independently rebuilt the generators.
-
-Do: replace `src/CMakeLists.txt:78-89` wholesale with jphonorato's `add_custom_command`
-at `DONT-MERGE/jphonorato/src/CMakeLists.txt:114-124`, and copy both of his generators.
-This is not a file copy of the scripts alone: the current command passes
-`-InputPath`/`-OutputPath` to PowerShell, his passes `-DINPUT=`/`-DOUTPUT=` to
-`cmake -P`, and the `DEPENDS` at `:85-88` names the `.ps1`.
-
-Take his pair over bahree's for three reasons. The CMake version extracts the payload
-from `OpusEtAl/tools/src/mergeelx.c` at build time so it cannot drift from Microsoft's
-generator, where bahree's pastes a literal. bahree's menuhelp generator has four
-`continue` statements that skip unparseable lines, and the `iidstr` contract at
-`mkcmd.c:2923-2960` is positional, so one skipped line shifts every later help string
-silently. And PowerShell is not a dependency we can carry to macOS, Linux and Emscripten.
-
-Neither generator can rebuild the `#ifdef elkAppMac` dialog tables; the Dialog Editor
-that produced the intermediate `.elx` files is gone, leaving only 86 `.des` under
-`src/Opus/dlg/` and zero `.elx`. The zero-filled, correctly dimensioned stub both forks
-emit is the right answer.
-
-Done when: `grep -c powershell src/CMakeLists.txt` returns 0 and configure regenerates
-`elxinfo.h` and `menuhelp.h`.
-
 ### 3. Port the five host tools
 
 `mkcmd`, `mkdlg`, `mergeelx`, `bitapp` and `dibapp` (`src/CMakeLists.txt:98, 152, 265,
