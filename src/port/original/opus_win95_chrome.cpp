@@ -2389,23 +2389,24 @@ void show_document_context_menu(HWND pane, POINT screen_point) {
     if (popup == nullptr) {
         return;
     }
-    AppendMenuW(popup, MF_STRING, bcmUndo, L"&Undo");
+    AppendMenuW(popup, MF_STRING, bcmUndo, OPUSW("&Undo"));
     AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(popup, MF_STRING, bcmCut, L"Cu&t");
-    AppendMenuW(popup, MF_STRING, bcmCopy, L"&Copy");
-    AppendMenuW(popup, MF_STRING, bcmPaste, L"&Paste");
-    AppendMenuW(popup, MF_STRING, bcmSelectAll, L"Select &All");
+    AppendMenuW(popup, MF_STRING, bcmCut, OPUSW("Cu&t"));
+    AppendMenuW(popup, MF_STRING, bcmCopy, OPUSW("&Copy"));
+    AppendMenuW(popup, MF_STRING, bcmPaste, OPUSW("&Paste"));
+    AppendMenuW(popup, MF_STRING, bcmSelectAll, OPUSW("Select &All"));
     AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(popup, MF_STRING, bcmCharacter, L"&Font...");
-    AppendMenuW(popup, MF_STRING, bcmParagraph, L"&Paragraph...");
-    AppendMenuW(popup, MF_STRING, bcmTabs, L"&Tabs...");
+    AppendMenuW(popup, MF_STRING, bcmCharacter, OPUSW("&Font..."));
+    AppendMenuW(popup, MF_STRING, bcmParagraph, OPUSW("&Paragraph..."));
+    AppendMenuW(popup, MF_STRING, bcmTabs, OPUSW("&Tabs..."));
     AppendMenuW(popup, MF_STRING, imiRenumParas,
-                L"&Bullets and Numbering...");
+                OPUSW("&Bullets and Numbering..."));
     AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(popup, MF_STRING, bcmInsTable, L"Insert &Table...");
-    AppendMenuW(popup, MF_STRING, bcmFormatTable, L"Table &Properties...");
-    AppendMenuW(popup, MF_STRING, bcmInsPic, L"Insert &Picture...");
-    AppendMenuW(popup, MF_STRING, bcmInsField, L"Insert F&ield...");
+    AppendMenuW(popup, MF_STRING, bcmInsTable, OPUSW("Insert &Table..."));
+    AppendMenuW(popup, MF_STRING, bcmFormatTable,
+                OPUSW("Table &Properties..."));
+    AppendMenuW(popup, MF_STRING, bcmInsPic, OPUSW("Insert &Picture..."));
+    AppendMenuW(popup, MF_STRING, bcmInsField, OPUSW("Insert F&ield..."));
     style_menu_tree(popup);
     const HWND app = GetAncestor(pane, GA_ROOT);
     const UINT command = TrackPopupMenu(
