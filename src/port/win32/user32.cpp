@@ -111,6 +111,20 @@ WindowObject* next_sibling(HWND window) {
     return nullptr;
 }
 
+POINT window_screen_origin(HWND window) {
+    POINT point{0, 0};
+    for (auto* object = window_from_handle(window); object != nullptr;
+         object = window_from_handle(object->parent)) {
+        point.x += object->rectangle.left;
+        point.y += object->rectangle.top;
+    }
+    return point;
+}
+
+bool rect_empty(const RECT& rectangle) {
+    return rectangle.right <= rectangle.left || rectangle.bottom <= rectangle.top;
+}
+
 bool message_matches(const MSG& message, HWND window, UINT filter_min,
                      UINT filter_max) {
     if (window != nullptr && message.hwnd != window) return false;
@@ -297,6 +311,7 @@ HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
     window->owner = (style & WS_CHILD) == 0 ? parent : nullptr;
     window->menu = menu;
     window->instance = instance;
+    window->visible = (style & WS_VISIBLE) != 0;
     window->extra.resize(static_cast<std::size_t>(klass.window_extra));
     HWND handle = static_cast<HWND>(window);
     g_windows.push_back(window);
@@ -619,8 +634,74 @@ HWND GetTopWindow(HWND window) {
 BOOL GetWindowRect(HWND window, LPRECT rectangle) {
     auto* object = window_from_handle(window);
     if (object == nullptr || rectangle == nullptr) return FALSE;
+    const POINT origin = window_screen_origin(object->parent);
     *rectangle = object->rectangle;
+    rectangle->left += origin.x;
+    rectangle->right += origin.x;
+    rectangle->top += origin.y;
+    rectangle->bottom += origin.y;
     return TRUE;
+}
+
+BOOL GetClientRect(HWND window, LPRECT rectangle) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || rectangle == nullptr) return FALSE;
+    rectangle->left = 0;
+    rectangle->top = 0;
+    rectangle->right = object->rectangle.right - object->rectangle.left;
+    rectangle->bottom = object->rectangle.bottom - object->rectangle.top;
+    return TRUE;
+}
+
+BOOL ClientToScreen(HWND window, LPPOINT point) {
+    if (!IsWindow(window) || point == nullptr) return FALSE;
+    const POINT origin = window_screen_origin(window);
+    point->x += origin.x;
+    point->y += origin.y;
+    return TRUE;
+}
+
+BOOL ScreenToClient(HWND window, LPPOINT point) {
+    if (!IsWindow(window) || point == nullptr) return FALSE;
+    const POINT origin = window_screen_origin(window);
+    point->x -= origin.x;
+    point->y -= origin.y;
+    return TRUE;
+}
+
+BOOL IntersectRect(LPRECT destination, const RECT* source1,
+                   const RECT* source2) {
+    if (destination == nullptr || source1 == nullptr || source2 == nullptr) {
+        return FALSE;
+    }
+    RECT result{(std::max)(source1->left, source2->left),
+                (std::max)(source1->top, source2->top),
+                (std::min)(source1->right, source2->right),
+                (std::min)(source1->bottom, source2->bottom)};
+    if (rect_empty(result)) {
+        result = {0, 0, 0, 0};
+        *destination = result;
+        return FALSE;
+    }
+    *destination = result;
+    return TRUE;
+}
+
+BOOL OffsetRect(LPRECT rectangle, int dx, int dy) {
+    if (rectangle == nullptr) return FALSE;
+    rectangle->left += dx;
+    rectangle->right += dx;
+    rectangle->top += dy;
+    rectangle->bottom += dy;
+    return TRUE;
+}
+
+BOOL PtInRect(const RECT* rectangle, POINT point) {
+    return rectangle != nullptr && point.x >= rectangle->left &&
+           point.x < rectangle->right && point.y >= rectangle->top &&
+           point.y < rectangle->bottom
+               ? TRUE
+               : FALSE;
 }
 
 BOOL AdjustWindowRectEx(LPRECT rectangle, DWORD style, BOOL menu,
@@ -657,6 +738,11 @@ BOOL ShowWindow(HWND window, int command_show) {
     if (object == nullptr) return FALSE;
     const BOOL was_visible = object->visible ? TRUE : FALSE;
     object->visible = command_show != SW_HIDE;
+    if (object->visible) {
+        object->style |= WS_VISIBLE;
+    } else {
+        object->style &= ~static_cast<DWORD>(WS_VISIBLE);
+    }
     return was_visible;
 }
 
@@ -671,6 +757,14 @@ BOOL EnableWindow(HWND window, BOOL enable) {
 BOOL IsWindowEnabled(HWND window) {
     auto* object = window_from_handle(window);
     return object != nullptr && object->enabled ? TRUE : FALSE;
+}
+
+BOOL IsWindowVisible(HWND window) {
+    for (auto* object = window_from_handle(window); object != nullptr;
+         object = window_from_handle(object->parent)) {
+        if (!object->visible) return FALSE;
+    }
+    return window_from_handle(window) != nullptr ? TRUE : FALSE;
 }
 
 HWND SetActiveWindow(HWND window) {
@@ -706,9 +800,14 @@ BOOL SetWindowPos(HWND window, HWND, int x, int y, int cx, int cy, UINT flags) {
         object->rectangle.right = object->rectangle.left + cx;
         object->rectangle.bottom = object->rectangle.top + cy;
     }
-    if ((flags & SWP_SHOWWINDOW) != 0) object->visible = true;
-    if ((flags & SWP_HIDEWINDOW) != 0) object->visible = false;
+    if ((flags & SWP_SHOWWINDOW) != 0) ShowWindow(window, SW_SHOW);
+    if ((flags & SWP_HIDEWINDOW) != 0) ShowWindow(window, SW_HIDE);
     return TRUE;
+}
+
+BOOL MoveWindow(HWND window, int x, int y, int width, int height, BOOL repaint) {
+    return SetWindowPos(window, nullptr, x, y, width, height,
+                        repaint ? 0 : SWP_NOREDRAW);
 }
 
 BOOL SetWindowTextA(HWND window, LPCSTR text) {

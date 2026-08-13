@@ -264,6 +264,14 @@ queue and window procedure, but it is not yet the headless event source: blockin
 queue. The next reviewed small slice is client geometry and rect algebra, because
 mouse packing and paint/update work need coherent client coordinates.
 
+Client geometry and the common rect helpers now exist for the declared user32
+surface: `GetClientRect`, `GetWindowRect` with child-to-screen conversion,
+`ClientToScreen`, `ScreenToClient`, `IntersectRect`, `OffsetRect`, `PtInRect`,
+`MoveWindow`, and ancestor-aware `IsWindowVisible`. The coverage baseline no longer
+lists those names. Undeclared rect helpers such as `SetRect`, `InflateRect`, and
+`UnionRect` remain hidden from `win32_coverage` until they are declared and
+implemented together.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

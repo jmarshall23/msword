@@ -115,26 +115,56 @@ int main() {
         !IsChild(window, child)) {
         return 11;
     }
-    if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 12;
-    if (SetFocus(window) != nullptr || GetFocus() != window) return 13;
+
+    RECT client{};
+    RECT window_rect{};
+    POINT point{2, 3};
+    RECT rect_a{0, 0, 10, 10};
+    RECT rect_b{5, 6, 12, 7};
+    RECT rect_out{1, 1, 1, 1};
+    RECT rect_empty{20, 20, 21, 21};
+    if (!GetClientRect(child, &client) || client.left != 0 ||
+        client.top != 0 || client.right != 3 || client.bottom != 4 ||
+        !ClientToScreen(child, &point) || point.x != 13 || point.y != 25 ||
+        !ScreenToClient(child, &point) || point.x != 2 || point.y != 3 ||
+        !PtInRect(&rect_a, {9, 9}) || PtInRect(&rect_a, {10, 9}) ||
+        !IntersectRect(&rect_out, &rect_a, &rect_b) ||
+        rect_out.left != 5 || rect_out.top != 6 || rect_out.right != 10 ||
+        rect_out.bottom != 7 || IntersectRect(&rect_out, &rect_a, &rect_empty) ||
+        rect_out.left != 0 || rect_out.top != 0 || rect_out.right != 0 ||
+        rect_out.bottom != 0 || !OffsetRect(&rect_a, 1, -2) ||
+        rect_a.left != 1 || rect_a.top != -2 || rect_a.right != 11 ||
+        rect_a.bottom != 8 || IsWindowVisible(child) ||
+        ShowWindow(window, SW_SHOW) || ShowWindow(child, SW_SHOW) ||
+        !IsWindowVisible(child) || !ShowWindow(window, SW_HIDE) ||
+        IsWindowVisible(child) || !MoveWindow(child, 4, 5, 6, 7, TRUE) ||
+        !GetWindowRect(child, &window_rect) || window_rect.left != 14 ||
+        window_rect.top != 25 || window_rect.right != 20 ||
+        window_rect.bottom != 32 || !GetClientRect(child, &client) ||
+        client.right != 6 || client.bottom != 7) {
+        return 12;
+    }
+
+    if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 13;
+    if (SetFocus(window) != nullptr || GetFocus() != window) return 14;
 
     RECT adjusted{0, 0, 100, 50};
     if (!AdjustWindowRectEx(&adjusted, WS_CAPTION | WS_BORDER, FALSE,
                             WS_EX_DLGMODALFRAME) ||
         adjusted.left >= 0 || adjusted.top >= 0 || adjusted.right <= 100 ||
         adjusted.bottom <= 50) {
-        return 14;
+        return 15;
     }
     RECT work_area{};
     if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &work_area, 0) ||
         work_area.right != 640 || work_area.bottom != 480) {
-        return 15;
+        return 16;
     }
 
-    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 16;
+    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 17;
     if (SendMessageA(window, WM_USER + 1, 0, 35) != 42 ||
         g_user_message_count != 1) {
-        return 17;
+        return 18;
     }
 
     MSG message{};
@@ -145,13 +175,13 @@ int main() {
         !PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2,
                       PM_REMOVE) ||
         PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2, PM_REMOVE)) {
-        return 18;
+        return 19;
     }
     if (!PostMessageW(child, WM_USER + 3, 5, 6) ||
         PeekMessageA(&message, window, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
         !PeekMessageA(&message, child, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
         message.hwnd != child || message.wParam != 5 || message.lParam != 6) {
-        return 19;
+        return 20;
     }
 
     BYTE key_state[256]{};
@@ -166,22 +196,22 @@ int main() {
         g_last_char != 'A' || !PostMessageA(window, WM_KEYUP, 'A', 1) ||
         !PeekMessageA(&message, window, WM_KEYUP, WM_KEYUP, PM_REMOVE) ||
         GetKeyState('A') < 0) {
-        return 20;
+        return 21;
     }
 
     PostQuitMessage(23);
     if (GetMessageA(&message, nullptr, 0, 0) != 0 ||
         message.message != WM_QUIT || message.wParam != 23) {
-        return 21;
+        return 22;
     }
 
     if (!PostMessageA(child, WM_USER + 4, 0, 0) || !DestroyWindow(window) ||
         IsWindow(window) || IsWindow(child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 22;
+        return 23;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 23;
+    if (second == nullptr || second == window) return 24;
     return 0;
 }

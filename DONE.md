@@ -553,3 +553,42 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14d -R
 Reviewed by agy and claude before implementation: agy recommended the key
 translation slice; claude returned with client geometry as the next preferred slice
 and confirmed the input core as the following bounded step.
+
+## Add user32 client geometry
+
+The non-Windows `user32.cpp` shim now owns the declared client-geometry surface:
+`GetClientRect`, child-aware `GetWindowRect`, `ClientToScreen`,
+`ScreenToClient`, `MoveWindow`, and ancestor-aware `IsWindowVisible`. Window
+creation now seeds visibility from `WS_VISIBLE`, and `ShowWindow`/`SetWindowPos`
+keep the visibility bit and stored state in sync.
+
+The same slice implements the pure rect helpers already declared in the shim:
+`IntersectRect`, `OffsetRect`, and `PtInRect`. Empty intersections zero the
+destination and return `FALSE`, and point containment uses the Win32 exclusive
+right/bottom edge convention.
+
+`opus_win32_user32_test` covers child client size, child-to-screen conversion,
+round-trip coordinate conversion, point inclusion edges, non-empty and empty
+intersection, offsetting, parent-hidden visibility inheritance, `MoveWindow`, and
+the updated child window screen rect. The Win32 coverage baseline no longer lists
+`ClientToScreen`, `GetClientRect`, `IntersectRect`, `IsWindowVisible`,
+`MoveWindow`, `OffsetRect`, `PtInRect`, or `ScreenToClient`.
+
+Validated with `cmake --build build-item14e --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14e -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14e --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14e -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked again but had not
+returned before implementation, so this slice used claude's prior geometry review
+for the child-coordinate conversion, visibility inheritance, and hidden
+undeclared rect-helper traps.
