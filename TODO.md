@@ -289,6 +289,12 @@ reverse creation order while skipping `HTNOWHERE` and `HTTRANSPARENT`. This is
 still not a mouse pump; it supplies hit-test routing for future mouse/scripted
 input.
 
+A minimal scripted-input pump is now in place for tests. `PeekMessageA`,
+`GetMessageA`, and `WaitMessage` can pull one scripted event at a time into the
+existing queue, and `PostQuitMessage` is modeled as a quit flag so `PM_NOREMOVE`
+can observe it without consuming it. This is still not SDL input, timer
+delivery, or full mouse packing; those are the remaining event-source slices.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

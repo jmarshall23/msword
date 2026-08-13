@@ -1,5 +1,7 @@
 #include "windows.h"
 
+#include "opusinputscript.h"
+
 namespace {
 
 constexpr LONG_PTR kUserData = 0x12345678;
@@ -8,6 +10,7 @@ int g_nc_create_count = 0;
 int g_create_count = 0;
 int g_user_message_count = 0;
 WPARAM g_last_char = 0;
+WPARAM g_last_keyup = 0;
 
 LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM wparam,
                                 LPARAM parameter) {
@@ -28,6 +31,11 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM wparam,
     }
     if (message == WM_CHAR) {
         g_last_char = wparam;
+        return 0;
+    }
+    if (message == WM_KEYUP) {
+        g_last_keyup = wparam;
+        PostQuitMessage(7);
         return 0;
     }
     return DefWindowProcA(window, message, 0, parameter);
@@ -261,14 +269,51 @@ int main() {
         message.message != WM_QUIT || message.wParam != 23) {
         return 33;
     }
+    if (PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) return 34;
+
+    g_last_char = 0;
+    g_last_keyup = 0;
+    BYTE clear_key_state[256]{};
+    if (!SetKeyboardState(clear_key_state)) return 35;
+    OpusUser32PushScriptedInput(window, WM_KEYDOWN, 'B', 1);
+    OpusUser32PushScriptedInput(window, WM_KEYUP, 'B', 2);
+    while (GetMessageA(&message, nullptr, 0, 0)) {
+        TranslateMessage(&message);
+        DispatchMessageA(&message);
+    }
+    if (message.message != WM_QUIT || message.wParam != 7 ||
+        g_last_char != 'b' || g_last_keyup != 'B') {
+        return 36;
+    }
+    if (PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) return 37;
+
+    OpusUser32PushScriptedInput(window, WM_USER + 5, 8, 9);
+    if (!PeekMessageA(&message, nullptr, WM_USER + 5, WM_USER + 5,
+                      PM_REMOVE) ||
+        message.hwnd != window || message.wParam != 8 || message.lParam != 9) {
+        return 38;
+    }
+    PostQuitMessage(11);
+    if (!PeekMessageA(&message, window, WM_USER + 6, WM_USER + 6,
+                      PM_NOREMOVE) ||
+        message.message != WM_QUIT || message.wParam != 11 ||
+        !PeekMessageA(&message, nullptr, 0, 0, PM_NOREMOVE) ||
+        message.message != WM_QUIT || message.wParam != 11 ||
+        !PeekMessageA(&message, nullptr, 0, 0, PM_NOREMOVE) ||
+        message.message != WM_QUIT || message.wParam != 11 ||
+        !PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE) ||
+        message.message != WM_QUIT || message.wParam != 11 ||
+        PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
+        return 39;
+    }
 
     if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
         !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 34;
+        return 40;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 35;
+    if (second == nullptr || second == window) return 41;
     return 0;
 }

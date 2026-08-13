@@ -40,6 +40,7 @@ struct WindowObject {
 std::vector<RegisteredClass> g_classes;
 std::vector<WindowObject*> g_windows;
 std::deque<MSG> g_messages;
+std::deque<MSG> g_scripted_messages;
 SHORT g_key_state[256]{};
 ATOM g_next_atom = 1;
 HWND g_active_window = nullptr;
@@ -47,6 +48,8 @@ HWND g_focus_window = nullptr;
 HWND g_capture_window = nullptr;
 HCURSOR g_current_cursor = nullptr;
 POINT g_cursor_position{0, 0};
+bool g_quit_posted = false;
+int g_quit_code = 0;
 
 WindowObject* window_from_handle(HWND handle) {
     auto* window = static_cast<WindowObject*>(handle);
@@ -158,6 +161,13 @@ BOOL queue_take(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
         if ((remove_message & PM_REMOVE) != 0) g_messages.erase(it);
         return TRUE;
     }
+    if (g_quit_posted) {
+        MSG quit{nullptr, WM_QUIT, static_cast<WPARAM>(g_quit_code), 0, 0,
+                 {0, 0}};
+        *message = quit;
+        if ((remove_message & PM_REMOVE) != 0) g_quit_posted = false;
+        return TRUE;
+    }
     return FALSE;
 }
 
@@ -184,6 +194,15 @@ void update_key_state(UINT message, WPARAM wparam) {
     }
 }
 
+bool pump_once() {
+    if (g_scripted_messages.empty()) return false;
+    MSG message = g_scripted_messages.front();
+    g_scripted_messages.pop_front();
+    update_key_state(message.message, message.wParam);
+    g_messages.push_back(message);
+    return true;
+}
+
 UINT translated_char(WPARAM virtual_key) {
     const bool shift_down = (g_key_state[VK_SHIFT] & 0x8000) != 0;
     if (virtual_key >= 'A' && virtual_key <= 'Z') {
@@ -201,6 +220,7 @@ UINT translated_char(WPARAM virtual_key) {
 }
 
 void pump_block_until_message() {
+    if (pump_once()) return;
     OutputDebugStringA("user32 GetMessage/WaitMessage needs an event backend\n");
     std::abort();
 }
@@ -1005,6 +1025,11 @@ LRESULT DispatchMessageA(const MSG* message) {
                         message->lParam);
 }
 
+void OpusUser32PushScriptedInput(HWND window, UINT message, WPARAM wparam,
+                                 LPARAM lparam) {
+    g_scripted_messages.push_back({window, message, wparam, lparam, 0, {0, 0}});
+}
+
 BOOL PostMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     if (window != nullptr && !IsWindow(window)) return FALSE;
     update_key_state(message, wparam);
@@ -1017,7 +1042,8 @@ BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 }
 
 VOID PostQuitMessage(int exit_code) {
-    queue_back(nullptr, WM_QUIT, static_cast<WPARAM>(exit_code), 0);
+    g_quit_posted = true;
+    g_quit_code = exit_code;
 }
 
 BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max) {
@@ -1032,13 +1058,14 @@ BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max) {
 
 BOOL PeekMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
                   UINT remove_message) {
+    pump_once();
     return queue_take(message, window, filter_min, filter_max, remove_message);
 }
 
 BOOL WaitMessage(void) {
-    if (!g_messages.empty()) return TRUE;
+    if (!g_messages.empty() || g_quit_posted || pump_once()) return TRUE;
     pump_block_until_message();
-    return FALSE;
+    return TRUE;
 }
 
 SHORT GetKeyState(int virtual_key) {

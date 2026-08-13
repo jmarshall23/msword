@@ -685,3 +685,42 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14h -R
 
 Reviewed by agy before implementation; claude was asked for this exact slice but
 had not returned before implementation.
+
+## Add user32 scripted pump seam
+
+The non-Windows user32 shim now has a minimal scripted input source for tests.
+`OpusUser32PushScriptedInput` lives outside `windows.h` in `opusinputscript.h`,
+so the coverage gate still tracks only declared Win32 surface. The pump moves at
+most one scripted event at a time into the existing queue, updates key state when
+that event becomes visible, lets `PeekMessageA` drain without sleeping, and lets
+`GetMessageA`/`WaitMessage` keep the existing fail-fast abort when the script is
+exhausted.
+
+`PostQuitMessage` is now a quit flag plus exit code instead of a queued message.
+`queue_take` synthesizes `WM_QUIT` after ordinary queued messages miss, leaves it
+visible for `PM_NOREMOVE`, and consumes it only for `PM_REMOVE`.
+
+`opus_win32_user32_test` covers the canonical
+`GetMessageA`/`TranslateMessage`/`DispatchMessageA` loop over scripted
+`WM_KEYDOWN` and `WM_KEYUP`, dispatch-posted quit, scripted `PeekMessageA`
+drain, and repeated `PM_NOREMOVE` observation of `WM_QUIT` before removal.
+
+Validated with `cmake -S src -B build-item14i -DCMAKE_BUILD_TYPE=Debug`,
+`cmake --build build-item14i --target opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine --parallel 8`, and `ctest --test-dir
+build-item14i -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14i --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14i -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+The exact reviewer commands to agy and claude were attempted before
+implementation, but both stalled without output and were stopped. This slice
+follows agy's prior review that identified the blocking pump seam, scripted
+input source, and quit-flag model as the next user32 step.
