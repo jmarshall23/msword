@@ -223,8 +223,9 @@ lookups.
 Its repeated fixed class names, font faces, default combo text, empty window captions,
 format-button glyph labels, text-color palette labels, language menu labels, toolbar
 popup and submenu labels, table-menu labels, fixed submenu attachment labels, fixed
-Window-menu labels, document context-menu labels, the `dwmapi.dll` dynamic-library
-lookup and the zoom combo's fixed choice labels also use the same boundary.
+Window-menu labels, root/file/view menu rewrite labels, document context-menu labels,
+the `dwmapi.dll` dynamic-library lookup and the zoom combo's fixed choice labels also
+use the same boundary.
 `opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable

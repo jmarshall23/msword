@@ -392,12 +392,13 @@ void configure_word95_menus(HWND window) {
         if (insert != nullptr) {
             ModifyMenuW(root, file_index + 3,
                         MF_BYPOSITION | MF_POPUP | MF_STRING,
-                        reinterpret_cast<UINT_PTR>(insert), L"&Insert");
+                        reinterpret_cast<UINT_PTR>(insert), OPUSW("&Insert"));
         }
         if (format != nullptr) {
             ModifyMenuW(root, file_index + 4,
                         MF_BYPOSITION | MF_POPUP | MF_STRING,
-                        reinterpret_cast<UINT_PTR>(format), L"F&ormat");
+                        reinterpret_cast<UINT_PTR>(format),
+                        OPUSW("F&ormat"));
         }
     }
     HMENU file_menu = file_index >= 0 ? GetSubMenu(root, file_index) : nullptr;
@@ -409,14 +410,14 @@ void configure_word95_menus(HWND window) {
         InsertMenuW(file_menu, exit_position, MF_BYPOSITION | MF_SEPARATOR,
                     0, nullptr);
         InsertMenuW(file_menu, exit_position, MF_BYPOSITION | MF_STRING,
-                    kCmdExportPdf, L"E&xport as PDF...");
+                    kCmdExportPdf, OPUSW("E&xport as PDF..."));
     }
     const int utilities_index = find_named(L"Utilities");
     if (utilities_index >= 0) {
         HMENU tools = GetSubMenu(root, utilities_index);
         ModifyMenuW(root, utilities_index,
                     MF_BYPOSITION | MF_POPUP | MF_STRING,
-                    reinterpret_cast<UINT_PTR>(tools), L"&Tools");
+                    reinterpret_cast<UINT_PTR>(tools), OPUSW("&Tools"));
     }
     const int tools_index = find_named(L"Tools");
     HMENU tools_menu = tools_index >= 0 ? GetSubMenu(root, tools_index) :
@@ -521,7 +522,7 @@ void configure_word95_menus(HWND window) {
             ModifyMenuW(view_menu, bcmRibbon,
                         MF_BYCOMMAND | MF_STRING,
                         kCmdToggleFormattingToolbar,
-                        L"&Formatting Toolbar");
+                        OPUSW("&Formatting Toolbar"));
         }
     }
 
