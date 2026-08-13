@@ -137,3 +137,32 @@ wide-literal/`wchar_t` greps over the live item files.
 
 Reviewed by agy and claude: they identified the DbgHelp load-time binding as
 the only blocking proof gap; the follow-up patch removed that blocker.
+
+## Replace self-module command lookup
+
+`ResolveCommandAddress` no longer asks `GetProcAddress` to find Word commands
+through the executable export table. A CMake generation step now reads
+`opuscmd_native.inc`, writes `opuscmddata.inc` without the forced `/export:`
+pragmas, and writes `opuscmdtable.h` with 427 direct command declarations and a
+sorted address table. `opus_asm_movecmds.c` includes the filtered command data
+and uses `bsearch` over the generated table.
+
+`mkcmd.c` remains untouched. The raw `opuscmd_native.inc` is still the generated
+intermediate, but it is no longer compiled by `opus_asm_movecmds.c`, so the
+product no longer needs platform-specific self-export linker tricks for command
+resolution.
+
+Validated with `cmake -S src --preset macos-debug`,
+`cmake --build out/macos-debug --target opus_generated_commands`,
+`cmake --build out/macos-debug --target opus_original_command_test`,
+`cmake --build out/macos-debug --target WORD1`,
+`ctest --test-dir out/macos-debug -R 'opus_original_command_test|word1_port_smoke_test' --output-on-failure`,
+`bin/WORD1 --self-test`, `commentflow src/port/original/opus_asm_movecmds.c`,
+`git diff --check`, generated table count of 427 entries, no `/export:` or
+`#pragma comment` lines in `opuscmddata.inc`, no command-table names unresolved
+in `bin/WORD1`, and no `/export:` strings in `libopus_original_engine.a`.
+
+Reviewed by agy and claude: agy caught that compiling raw `opuscmd_native.inc`
+would leave forced exports in place; claude confirmed the generated filtered
+include and table approach and narrowed the proof away from an invalid
+zero-global-symbol `nm` check.

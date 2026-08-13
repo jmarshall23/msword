@@ -1,6 +1,7 @@
 #include "opus_x64_compat.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef int (*OPUS_PFN)();
@@ -159,7 +160,14 @@ typedef struct _OpusNativeMenuInit
 	int bsy;
 	} OpusNativeMenuInit;
 
-#include "opuscmd_native.inc"
+typedef struct _OpusNativeCommandAddress
+	{
+	const char *name;
+	OPUS_PFN function;
+	} OpusNativeCommandAddress;
+
+#include "opuscmddata.inc"
+#include "opuscmdtable.h"
 
 typedef char OpusAssertSySize[(sizeof(OPUS_NATIVE_SY) == 15) ? 1 : -1];
 typedef char OpusAssertSytSize[(sizeof(OPUS_NATIVE_SYT) == 258) ? 1 : -1];
@@ -169,12 +177,22 @@ typedef char OpusAssertMtmSize[(sizeof(OPUS_NATIVE_MTM) == 8) ? 1 : -1];
 typedef char OpusAssertMudSize[(sizeof(OPUS_NATIVE_MUD) == 8) ? 1 : -1];
 typedef char OpusAssertSttbSize[(sizeof(OPUS_NATIVE_STTB) == 24) ? 1 : -1];
 
+static int CompareCommandAddressByName(const void *key, const void *entryRaw)
+	{
+	const OpusNativeCommandAddress *entry =
+		(const OpusNativeCommandAddress *)entryRaw;
+	return strcmp((const char *)key, entry->name);
+	}
+
 static OPUS_PFN ResolveCommandAddress(const char *name)
 	{
-	HMODULE module = GetModuleHandleW(NULL);
-	if (module == NULL)
-		return NULL;
-	return (OPUS_PFN)(uintptr_t)GetProcAddress(module, name);
+	const OpusNativeCommandAddress *entry =
+		(const OpusNativeCommandAddress *)bsearch(name, kOpusNativeCommandAddresses,
+				sizeof(kOpusNativeCommandAddresses) /
+					sizeof(kOpusNativeCommandAddresses[0]),
+				sizeof(kOpusNativeCommandAddresses[0]),
+				CompareCommandAddressByName);
+	return entry != NULL ? entry->function : NULL;
 	}
 
 static size_t CopySymbolPayload(OPUS_NATIVE_SY *symbol,
@@ -213,8 +231,9 @@ static size_t CopySymbolPayload(OPUS_NATIVE_SY *symbol,
 	return sizeof(OPUS_NATIVE_SY) + variableBytes;
 	}
 
-/* Native replacement for asm/movecmds.asm.  Microsoft's original MKCMD
- * parser still owns all command, key, menu, and help-table source data. */
+/* Native replacement for asm/movecmds.asm. Microsoft's original MKCMD parser
+ * still owns all command, key, menu, and help-table source data.
+ */
 void MoveCmds(void *sytRaw, void *kmpRaw, void *mudRaw,
 		void *sttbRaw, void *rgbstRaw)
 	{

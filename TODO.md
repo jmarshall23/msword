@@ -112,25 +112,6 @@ Done when: the three jobs are green on a pull request.
 Execution order in this phase is 7, then 6, then 8, 9, 10, 11. The numbering is
 kept stable so citations elsewhere do not rot.
 
-### 8. Replace `GetProcAddress` on our own module with a generated table
-
-`src/port/original/opus_asm_movecmds.c:172` resolves 427 Word commands by name against
-the executable's own export table. Every platform needs a different trick: jphonorato
-spent a phase generating a winebuild `.spec`, ELF needs `-rdynamic`, Mach-O needs
-`-Wl,-export_dynamic`, Emscripten needs `EXPORTED_FUNCTIONS`.
-
-The catch, and the reason this item previously was not executable: `mkcmd.c:1415` emits
-only `#pragma comment(linker, "/export:%s")` lines plus a name-string table into
-`opuscmd_native.inc`. There are no C declarations for the 427 symbols, so the table
-cannot simply be written by hand, and rule 1 puts `mkcmd.c` off limits.
-
-Do: add a CMake script step that reads the generated `opuscmd_native.inc`, emits
-`extern int NAME();` and `{ "NAME", (OPUS_PFN)NAME }` into a second generated header,
-and make `ResolveCommandAddress` bsearch it. `OpusEtAl` is not touched.
-
-Done when: `nm` on the WORD1 binary shows zero dynamic exports and
-`opus_original_command_test` still passes.
-
 ### 9. Module resolution for everything item 8 does not cover
 
 Item 8 handles our own module. Word does dynamic loading in two other shapes:

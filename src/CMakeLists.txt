@@ -411,6 +411,8 @@ set(OPUS_GENERATED_COMMAND_FILES
     "${OPUS_GENERATED_COMMAND_DIR}/menuhelp.h"
     "${OPUS_GENERATED_COMMAND_DIR}/opuscmd.asm"
     "${OPUS_GENERATED_COMMAND_DIR}/opuscmd_native.inc"
+    "${OPUS_GENERATED_COMMAND_DIR}/opuscmddata.inc"
+    "${OPUS_GENERATED_COMMAND_DIR}/opuscmdtable.h"
 )
 file(RELATIVE_PATH OPUS_DLG_SOURCE_ARG
     "${OPUS_GENERATED_COMMAND_DIR}"
@@ -448,6 +450,11 @@ add_custom_command(
         -DINPUT=${OPUS_GENERATED_COMMAND_DIR}/MENUHELP.TXT
         -DOUTPUT=${OPUS_GENERATED_COMMAND_DIR}/menuhelp.h
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateMenuHelpHeader.cmake"
+    COMMAND "${CMAKE_COMMAND}"
+        -DINPUT=${OPUS_GENERATED_COMMAND_DIR}/opuscmd_native.inc
+        -DDATA_OUTPUT=${OPUS_GENERATED_COMMAND_DIR}/opuscmddata.inc
+        -DOUTPUT=${OPUS_GENERATED_COMMAND_DIR}/opuscmdtable.h
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateCommandTableHeader.cmake"
     DEPENDS
         ${OPUS_MKCMD_TOOL_DEP}
         Opus/resource/opuscmd.cmd
@@ -458,6 +465,7 @@ add_custom_command(
         "${OPUS_GENERATED_CABI_OPEN}"
         ${OPUS_RECONSTRUCTED_DIALOG_HEADERS}
         cmake/GenerateMenuHelpHeader.cmake
+        cmake/GenerateCommandTableHeader.cmake
     WORKING_DIRECTORY "${OPUS_GENERATED_COMMAND_DIR}"
     COMMENT "Regenerating original Opus command tables with MKCMD"
     VERBATIM
