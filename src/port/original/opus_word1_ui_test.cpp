@@ -1,5 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "opus_x64_compat.h"
 
 #include <array>
 #include <cstring>
@@ -31,10 +31,24 @@ constexpr LRESULT kEditSelectAll = 5106;
 
 struct WindowSearch {
     DWORD process_id;
-    const wchar_t* class_name;
-    const wchar_t* caption_fragment;
+    LPCWSTR class_name;
+    LPCWSTR caption_fragment;
     HWND result;
 };
+
+bool wide_contains(LPCWSTR text, LPCWSTR needle) {
+    if (text == nullptr || needle == nullptr || *needle == 0) return false;
+    for (; *text != 0; ++text) {
+        LPCWSTR cursor = text;
+        LPCWSTR expected = needle;
+        while (*cursor != 0 && *expected != 0 && *cursor == *expected) {
+            ++cursor;
+            ++expected;
+        }
+        if (*expected == 0) return true;
+    }
+    return false;
+}
 
 BOOL CALLBACK find_window_callback(const HWND window, const LPARAM value) {
     auto& search = *reinterpret_cast<WindowSearch*>(value);
@@ -44,22 +58,22 @@ BOOL CALLBACK find_window_callback(const HWND window, const LPARAM value) {
         return TRUE;
     }
 
-    wchar_t class_name[128] = {};
-    wchar_t caption[512] = {};
+    WCHAR class_name[128] = {};
+    WCHAR caption[512] = {};
     GetClassNameW(window, class_name, static_cast<int>(std::size(class_name)));
     GetWindowTextW(window, caption, static_cast<int>(std::size(caption)));
     if ((search.class_name == nullptr ||
-         std::wcscmp(class_name, search.class_name) == 0) &&
+         lstrcmpW(class_name, search.class_name) == 0) &&
         (search.caption_fragment == nullptr ||
-         std::wcsstr(caption, search.caption_fragment) != nullptr)) {
+         wide_contains(caption, search.caption_fragment))) {
         search.result = window;
         return FALSE;
     }
     return TRUE;
 }
 
-HWND find_process_window(const DWORD process_id, const wchar_t* class_name,
-                         const wchar_t* caption_fragment) {
+HWND find_process_window(const DWORD process_id, LPCWSTR class_name,
+                         LPCWSTR caption_fragment) {
     WindowSearch search{process_id, class_name, caption_fragment, nullptr};
     EnumWindows(find_window_callback, reinterpret_cast<LPARAM>(&search));
     return search.result;
@@ -86,14 +100,13 @@ void log_process_windows(const DWORD process_id) {
     EnumWindows(log_window_callback, static_cast<LPARAM>(process_id));
 }
 
-HWND find_descendant_by_class(const HWND parent,
-                              const wchar_t* expected_class) {
+HWND find_descendant_by_class(const HWND parent, LPCWSTR expected_class) {
     for (HWND child = GetWindow(parent, GW_CHILD); child != nullptr;
          child = GetWindow(child, GW_HWNDNEXT)) {
-        wchar_t class_name[128] = {};
+        WCHAR class_name[128] = {};
         if (GetClassNameW(child, class_name,
                           static_cast<int>(std::size(class_name))) != 0 &&
-            _wcsicmp(class_name, expected_class) == 0) {
+            lstrcmpiW(class_name, expected_class) == 0) {
             return child;
         }
         if (const HWND descendant =
@@ -105,14 +118,13 @@ HWND find_descendant_by_class(const HWND parent,
     return nullptr;
 }
 
-HWND find_visible_descendant_by_class(const HWND parent,
-                                      const wchar_t* expected_class) {
+HWND find_visible_descendant_by_class(const HWND parent, LPCWSTR expected_class) {
     for (HWND child = GetWindow(parent, GW_CHILD); child != nullptr;
          child = GetWindow(child, GW_HWNDNEXT)) {
-        wchar_t class_name[128] = {};
+        WCHAR class_name[128] = {};
         if (GetClassNameW(child, class_name,
                           static_cast<int>(std::size(class_name))) != 0 &&
-            _wcsicmp(class_name, expected_class) == 0 &&
+            lstrcmpiW(class_name, expected_class) == 0 &&
             IsWindowVisible(child)) {
             return child;
         }
@@ -126,14 +138,14 @@ HWND find_visible_descendant_by_class(const HWND parent,
 }
 
 void collect_descendants_by_class(const HWND parent,
-                                  const wchar_t* expected_class,
+                                  LPCWSTR expected_class,
                                   std::vector<HWND>& matches) {
     for (HWND child = GetWindow(parent, GW_CHILD); child != nullptr;
          child = GetWindow(child, GW_HWNDNEXT)) {
-        wchar_t class_name[128] = {};
+        WCHAR class_name[128] = {};
         if (GetClassNameW(child, class_name,
                           static_cast<int>(std::size(class_name))) != 0 &&
-            _wcsicmp(class_name, expected_class) == 0) {
+            lstrcmpiW(class_name, expected_class) == 0) {
             matches.push_back(child);
         }
         collect_descendants_by_class(child, expected_class, matches);
@@ -141,8 +153,8 @@ void collect_descendants_by_class(const HWND parent,
 }
 
 HWND wait_for_window(const HANDLE process, const DWORD process_id,
-                     const wchar_t* class_name,
-                     const wchar_t* caption_fragment,
+                     LPCWSTR class_name,
+                     LPCWSTR caption_fragment,
                      const DWORD timeout_ms) {
     const ULONGLONG deadline = GetTickCount64() + timeout_ms;
     do {
@@ -160,7 +172,7 @@ HWND wait_for_window(const HANDLE process, const DWORD process_id,
 }
 
 bool wait_for_window_to_close(const HANDLE process, const DWORD process_id,
-                              const wchar_t* class_name,
+                              LPCWSTR class_name,
                               const DWORD timeout_ms) {
     const ULONGLONG deadline = GetTickCount64() + timeout_ms;
     do {
@@ -176,13 +188,13 @@ bool wait_for_window_to_close(const HANDLE process, const DWORD process_id,
 }
 
 bool control_has_class(const HWND dialog, const int id,
-                       const wchar_t* expected) {
+                       LPCWSTR expected) {
     const HWND control = GetDlgItem(dialog, id);
-    wchar_t class_name[64] = {};
+    WCHAR class_name[64] = {};
     return control != nullptr &&
            GetClassNameW(control, class_name,
                          static_cast<int>(std::size(class_name))) != 0 &&
-           _wcsicmp(class_name, expected) == 0;
+           lstrcmpiW(class_name, expected) == 0;
 }
 
 std::size_t count_dark_client_pixels(const HWND window,
@@ -444,10 +456,12 @@ bool send_control_key(const WORD virtual_key) {
     input[2].ki.dwFlags = KEYEVENTF_KEYUP;
     input[3] = input[0];
     input[3].ki.dwFlags = KEYEVENTF_KEYUP;
-    /* Word's Win16 key loop samples modifier state as each dequeued message
-       is handled.  Deliver the transitions separately to model a real held
-       Ctrl key instead of allowing the whole synthetic chord to be released
-       before the target thread samples it. */
+
+    /* Word's Win16 key loop samples modifier state as each dequeued message is
+     * handled. Deliver the transitions separately to model a real held Ctrl key
+     * instead of allowing the whole synthetic chord to be released before the
+     * target thread samples it.
+     */
     for (INPUT& event : input) {
         if (SendInput(1, &event, sizeof(INPUT)) != 1) {
             return false;
@@ -786,12 +800,13 @@ int wmain(const int argument_count, wchar_t** arguments) {
 
     const HWND main_window = wait_for_window(
         process.hProcess, process.dwProcessId, nullptr,
-        L"Microsoft Word - Document1", 8000);
+        OPUSW("Microsoft Word - Document1"), 8000);
     if (main_window == nullptr) {
         return fail(process, 3, "WORD1 main window did not appear");
     }
     if (pdf_export_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window,
+                                                   OPUSW("OpusWwd"));
         DWORD ignored_process_id = 0;
         const DWORD thread_id =
             GetWindowThreadProcessId(main_window, &ignored_process_id);
@@ -858,8 +873,8 @@ int wmain(const int argument_count, wchar_t** arguments) {
             return fail(process, 69, "could not send File Save As");
         }
         const HWND save_as_dialog = wait_for_window(
-            process.hProcess, process.dwProcessId, L"#32770",
-            L"Save As", 5000);
+            process.hProcess, process.dwProcessId, OPUSW("#32770"),
+            OPUSW("Save As"), 5000);
         if (save_as_dialog == nullptr) {
             std::cerr << "Save As stage="
                       << reinterpret_cast<INT_PTR>(GetPropA(
@@ -869,7 +884,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
             return fail(process, 70,
                         "Windows 95 File Save As dialog did not appear");
         }
-        if (!control_has_class(save_as_dialog, 2, L"Button") ||
+        if (!control_has_class(save_as_dialog, 2, OPUSW("Button")) ||
             !window_is_responsive(process.hProcess, save_as_dialog)) {
             return fail(process, 71,
                         "File Save As dialog did not finish initializing");
@@ -878,9 +893,9 @@ int wmain(const int argument_count, wchar_t** arguments) {
             PostMessageW(save_as_dialog, kWmCommand, 2, 0) != FALSE;
         const bool dialog_closed = cancel_posted &&
             wait_for_window_to_close(process.hProcess, process.dwProcessId,
-                                     L"#32770", 5000) &&
+                                     OPUSW("#32770"), 5000) &&
             wait_for_window_to_close(process.hProcess, process.dwProcessId,
-                                     L"OpusSdmDialog", 5000);
+                                     OPUSW("OpusSdmDialog"), 5000);
         const bool app_responsive = dialog_closed &&
             window_is_responsive(process.hProcess, main_window);
         if (!cancel_posted || !dialog_closed || !app_responsive) {
@@ -902,7 +917,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (docx_open_mode) {
-        HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         if (pane == nullptr ||
             !PostMessageW(main_window, kWmCommand, kFileOpen, 0)) {
             return fail(process, 78, "DOCX open test could not open its document");
@@ -918,10 +933,12 @@ int wmain(const int argument_count, wchar_t** arguments) {
             Sleep(100);
         } while (GetTickCount64() < open_deadline &&
                  WaitForSingleObject(process.hProcess, 0) != WAIT_OBJECT_0);
+
         // The legacy open command updates the caption before it has finished
         // activating the replacement MDI child and document pane.
         Sleep(750);
-        pane = find_visible_descendant_by_class(main_window, L"OpusWwd");
+        pane = find_visible_descendant_by_class(main_window,
+                                                OPUSW("OpusWwd"));
         const bool reopened =
             std::wcsstr(document_caption, L"Document1") == nullptr;
         const LRESULT imported_length = pane != nullptr ?
@@ -1023,8 +1040,8 @@ int wmain(const int argument_count, wchar_t** arguments) {
             return fail(process, 65, "could not send Help About");
         }
         const HWND about_dialog = wait_for_window(
-            process.hProcess, process.dwProcessId, L"OpusSdmDialog", nullptr,
-            5000);
+            process.hProcess, process.dwProcessId, OPUSW("OpusSdmDialog"),
+            nullptr, 5000);
         if (about_dialog == nullptr) {
             DWORD exit_code = 0;
             GetExitCodeProcess(process.hProcess, &exit_code);
@@ -1039,14 +1056,14 @@ int wmain(const int argument_count, wchar_t** arguments) {
             log_process_windows(process.dwProcessId);
             return fail(process, 66, "Help About dialog did not appear");
         }
-        if (!control_has_class(about_dialog, 1, L"Button") ||
+        if (!control_has_class(about_dialog, 1, OPUSW("Button")) ||
             !window_is_responsive(process.hProcess, about_dialog)) {
             return fail(process, 67,
                         "Help About dialog did not finish initializing");
         }
         if (!PostMessageW(about_dialog, kWmCommand, 1, 0) ||
             !wait_for_window_to_close(process.hProcess, process.dwProcessId,
-                                      L"OpusSdmDialog", 5000) ||
+                                      OPUSW("OpusSdmDialog"), 5000) ||
             !window_is_responsive(process.hProcess, main_window)) {
             return fail(process, 68, "Help About dialog did not close cleanly");
         }
@@ -1057,7 +1074,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (clipboard_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         if (pane == nullptr) {
             return fail(process, 73,
                         "shortcut test could not find the document pane");
@@ -1101,7 +1118,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (unicode_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         DWORD ignored_process_id = 0;
         const DWORD thread_id =
             GetWindowThreadProcessId(main_window, &ignored_process_id);
@@ -1162,12 +1179,12 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (font_typing_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         DWORD ignored_process_id = 0;
         const DWORD thread_id =
             GetWindowThreadProcessId(main_window, &ignored_process_id);
         std::vector<HWND> combos;
-        collect_descendants_by_class(main_window, L"ComboBox", combos);
+        collect_descendants_by_class(main_window, OPUSW("ComboBox"), combos);
         HWND font_combo = nullptr;
         HWND size_combo = nullptr;
         LRESULT font_index = CB_ERR;
@@ -1591,7 +1608,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (formatting_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         DWORD ignored_process_id = 0;
         const DWORD thread_id =
             GetWindowThreadProcessId(main_window, &ignored_process_id);
@@ -1640,7 +1657,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (color_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         DWORD ignored_process_id = 0;
         const DWORD thread_id =
             GetWindowThreadProcessId(main_window, &ignored_process_id);
@@ -1688,7 +1705,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (caret_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         if (pane == nullptr) {
             return fail(process, 40, "caret test could not find OpusWwd");
         }
@@ -1753,9 +1770,10 @@ int wmain(const int argument_count, wchar_t** arguments) {
         if (!send_physical_text(L"ab\rc")) {
             return fail(process, 41, "caret test could not send its keys");
         }
+
         // A cursor key leaves the original quick-insert loop and commits its
-        // reserved 32-byte piece before the diagnostic query reads selCur.
-        // At the document end VK_RIGHT does not change the insertion CP.
+        // reserved 32-byte piece before the diagnostic query reads selCur. At
+        // the document end VK_RIGHT does not change the insertion CP.
         if (!send_virtual_key(VK_RIGHT)) {
             return fail(process, 41,
                         "caret test could not commit the insert loop");
@@ -1782,7 +1800,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 0;
     }
     if (selection_mode) {
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         if (pane == nullptr) {
             return fail(process, 36, "selection test could not find OpusWwd");
         }
@@ -1890,7 +1908,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
             return fail(process, 19, "WORD1 did not restore from maximize");
         }
 
-        const HWND pane = find_descendant_by_class(main_window, L"OpusWwd");
+        const HWND pane = find_descendant_by_class(main_window, OPUSW("OpusWwd"));
         RECT window_before_move{};
         if (pane == nullptr ||
             !make_foreground_and_focus(main_window, pane, thread_id) ||
@@ -1942,15 +1960,15 @@ int wmain(const int argument_count, wchar_t** arguments) {
             return fail(process, 21, "could not choose File New by mnemonic");
         }
         const HWND new_dialog = wait_for_window(
-            process.hProcess, process.dwProcessId, L"OpusSdmDialog", L"New",
-            5000);
+            process.hProcess, process.dwProcessId, OPUSW("OpusSdmDialog"),
+            OPUSW("New"), 5000);
         if (new_dialog == nullptr) {
             return fail(process, 22,
                         "File New did not execute through the real menu loop");
         }
         if (!PostMessageW(new_dialog, kWmCommand, 2, 0) ||
             !wait_for_window_to_close(process.hProcess, process.dwProcessId,
-                                      L"OpusSdmDialog", 5000)) {
+                                      OPUSW("OpusSdmDialog"), 5000)) {
             return fail(process, 23, "File New dialog did not cancel");
         }
 
@@ -1971,15 +1989,17 @@ int wmain(const int argument_count, wchar_t** arguments) {
         if (!send_physical_text(physical_text)) {
             return fail(process, 25, "SendInput could not type into WORD1");
         }
-        // SendInput returns after placing events in the GUI input queue.  Give
+
+        // SendInput returns after placing events in the GUI input queue. Give
         // the original insert loop time to drain the complete long sequence
         // before a synchronous diagnostic message can overtake its tail.
         Sleep(2500);
         const LRESULT typed_cp_first =
             SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
-        // The first non-key message commits Word's quick-insert block.  Let
-        // its normal idle pass finish rebuilding all display lines before
-        // issuing more cross-thread diagnostic messages.
+
+        // The first non-key message commits Word's quick-insert block. Let its
+        // normal idle pass finish rebuilding all display lines before issuing
+        // more cross-thread diagnostic messages.
         Sleep(750);
         const LRESULT typed_cp_lim =
             SendMessageW(pane, kWmOpusX64QuerySelection, 1, 0);
@@ -2203,6 +2223,7 @@ int wmain(const int argument_count, wchar_t** arguments) {
         }
         const std::size_t dark_pixels_before =
             count_dark_client_pixels(gui.hwndFocus);
+
         // Cross the original 32-byte quick-insert boundary and fill enough
         // display lines to exercise idle normalization and the SCC-above PLC.
         std::wstring text;
@@ -2261,19 +2282,19 @@ int wmain(const int argument_count, wchar_t** arguments) {
     }
 
     const HWND new_dialog = wait_for_window(
-        process.hProcess, process.dwProcessId, L"OpusSdmDialog", L"New",
-        5000);
+        process.hProcess, process.dwProcessId, OPUSW("OpusSdmDialog"),
+        OPUSW("New"), 5000);
     if (new_dialog == nullptr) {
         return fail(process, 5, "File New dialog did not appear");
     }
     const bool controls_present =
-        control_has_class(new_dialog, 1, L"Button") &&
-        control_has_class(new_dialog, 2, L"Button") &&
-        control_has_class(new_dialog, 0x0400, L"Button") &&
-        control_has_class(new_dialog, 0x0402, L"Button") &&
-        control_has_class(new_dialog, 0x0403, L"Button") &&
-        control_has_class(new_dialog, 0x0404, L"Edit") &&
-        control_has_class(new_dialog, 0x0405, L"ListBox");
+        control_has_class(new_dialog, 1, OPUSW("Button")) &&
+        control_has_class(new_dialog, 2, OPUSW("Button")) &&
+        control_has_class(new_dialog, 0x0400, OPUSW("Button")) &&
+        control_has_class(new_dialog, 0x0402, OPUSW("Button")) &&
+        control_has_class(new_dialog, 0x0403, OPUSW("Button")) &&
+        control_has_class(new_dialog, 0x0404, OPUSW("Edit")) &&
+        control_has_class(new_dialog, 0x0405, OPUSW("ListBox"));
     if (!controls_present) {
         return fail(process, 6, "File New controls do not match the SDM contract");
     }
@@ -2281,11 +2302,11 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return fail(process, 7, "could not accept File New");
     }
     if (!wait_for_window_to_close(process.hProcess, process.dwProcessId,
-                                  L"OpusSdmDialog", 5000)) {
+                                  OPUSW("OpusSdmDialog"), 5000)) {
         return fail(process, 8, "File New dialog did not finish");
     }
     if (wait_for_window(process.hProcess, process.dwProcessId, nullptr,
-                        L"Microsoft Word - Document2", 5000) == nullptr) {
+                        OPUSW("Microsoft Word - Document2"), 5000) == nullptr) {
         return fail(process, 9,
                     "original File New action did not create Document2");
     }

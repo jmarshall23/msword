@@ -272,6 +272,8 @@ buffers at Win32 conversion API boundaries while preserving the file's current
 `std::wstring` model.
 Its remaining small modern format scalar/byte conversion API calls now use
 `WCHAR` storage at their Win32 boundaries too.
+`opus_word1_ui_test.cpp` now uses `WCHAR`/`OPUSW` for its shared window/class
+lookup helpers and their fixed class/caption literals.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 `opus_original_startup_probe.cpp` now has a non-Windows `main` bridge that
