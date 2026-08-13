@@ -235,6 +235,7 @@ Its toolbar numbered-button glyph buffer and pending `WM_CHAR` surrogate storage
 also use `WCHAR`/`OPUSW` instead of host `wchar_t`/raw `L` literals.
 Its ANSI combo mirror conversion helpers and mirrored combo text now use `WCHAR`
 storage for values passed through `W` APIs.
+Its ruler tick labels now use `WCHAR` storage before passing text to `TextOutW`.
 `opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable

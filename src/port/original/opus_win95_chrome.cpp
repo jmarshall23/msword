@@ -1925,7 +1925,11 @@ void draw_vertical_ruler(HWND pane, HDC dc) {
             MoveToEx(dc, ruler.right - scale(pane, 2) - length, y, nullptr);
             LineTo(dc, ruler.right - scale(pane, 2), y);
             if (tick_index > 0 && tick_index % 8 == 0) {
-                const std::wstring label = std::to_wstring(tick_index / 8);
+                std::basic_string<WCHAR> label;
+                for (const char digit : std::to_string(tick_index / 8)) {
+                    label.push_back(static_cast<WCHAR>(
+                        static_cast<unsigned char>(digit)));
+                }
                 SetTextColor(dc, writable_tick ? RGB(0, 0, 0) :
                                                  RGB(80, 80, 80));
                 TextOutW(dc, ruler.left + scale(pane, 3),
@@ -2168,7 +2172,11 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
         MoveToEx(dc, x, scale_line, nullptr);
         LineTo(dc, x, scale_line - length);
         if (tick % 8 == 0) {
-            const std::wstring label = std::to_wstring(tick / 8);
+            std::basic_string<WCHAR> label;
+            for (const char digit : std::to_string(tick / 8)) {
+                label.push_back(static_cast<WCHAR>(
+                    static_cast<unsigned char>(digit)));
+            }
             SetTextColor(dc, writable ? RGB(0, 0, 0) : RGB(80, 80, 80));
             TextOutW(dc, x + 3, client.top - 1, label.c_str(),
                      static_cast<int>(label.size()));
