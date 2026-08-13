@@ -90,7 +90,7 @@ into this one: item 5a's SDL decision has to be made before item 4 writes the pr
 because it sets their cache variables. It is numbered there because that is where its
 work lives, not because it can wait.
 
-### 3. Port the five host tools
+### 3. Import native host tools for cross builds and add the BITAPP regression test
 
 `mkcmd`, `mkdlg`, `mergeelx`, `bitapp` and `dibapp` (`src/CMakeLists.txt:98, 152, 265,
 374, 411`) are built and then executed during every build to generate headers. They must
@@ -99,38 +99,30 @@ compile and run under clang and gcc before anything else can be attempted.
 `src/port/tools/opus_cabi_tool.cpp` runs at build time too but is not one of the five and
 must not be treated as one; see the constraints below.
 
-Three separate problems:
+The native clang/gcc fixes already landed: the legacy C tools have non-MSVC
+`-std=gnu89 -funsigned-char` flags, host CRT shims, guarded `mkcmd`/`mkdlg` fixes, and
+`BITAPP` keeps its serialized `BITMAP` at 14 bytes on LP64. Those guarded
+`src/OpusEtAl/tools/src/` edits are the explicit exception to the original-source rule
+for this item because the checked-in Microsoft host tools themselves are the broken
+build-machine programs.
 
-- `/J` for unsigned char is inside `if(MSVC)` at `:106, 160, 378, 418`. Non-MSVC needs
-  `-funsigned-char`.
-- `mkcmd.c` is K&R-era C with implicit-int definitions such as
-  `FLookupHelp(szHelp, piszHelp)` at `mkcmd.c:2923`. That is a hard error under current
-  clang and gcc defaults. Add `-std=gnu89`, or `-Wno-implicit-int
-  -Wno-implicit-function-declaration`.
-- `OpusEtAl/tools/src/bitapp.h:29` is `typedef unsigned long DWORD;`, and the packed
-  `tagBITMAP` that uses it starts at `:40` under the `#pragma pack(push, 2)` at `:37`.
-  macOS is LP64, so `sizeof(BITMAP)` goes from 14 to 18 there exactly as it does on
-  Linux. jphonorato measured the consequence: `fread` consumed
-  four extra bytes per resource and 46 of 51 bitmap headers came out corrupt before the
-  tool hit EOF. Apply his fix (fixed-width types under a non-MSVC guard).
+Two constraints remain. First, `opus_cabi_tool` is not one of the host tools: it includes
+`windows.h` and measures the engine's own `sizeof` (`src/CMakeLists.txt:120-130`), so it
+stays on the target compiler, and `-std=gnu89` would be a hard error on it since it is
+`cxx_std_20` at `:123`. Second, under a cross toolchain `add_executable` produces
+artifacts the host cannot run, so for `wasm-debug` the five host tools must be imported
+from a native build directory rather than built. jphonorato split them for exactly this
+reason (`DONT-MERGE/jphonorato/src/CMakeLists.txt:129-140`).
 
-Correction to an earlier draft of this file: LP64 is not a Linux-only concern. This
-lands on the first macOS build.
-
-Two more constraints this item has to carry. First, `opus_cabi_tool` is not one of the
-host tools: it includes `windows.h` and measures the engine's own `sizeof`
-(`src/CMakeLists.txt:120-130`), so it stays on the target compiler, and `-std=gnu89`
-would be a hard error on it since it is `cxx_std_20` at `:123`. Scope the C flags to the
-five `.c` tools. Second, under a cross toolchain `add_executable` produces artifacts the
-host cannot run, so for `wasm-debug` the five must be imported from a native build
-directory rather than built. jphonorato split them for exactly this reason
-(`DONT-MERGE/jphonorato/src/CMakeLists.txt:129-140`); take that split, not just his LP64
-fix.
+The earlier check naming `src/port/assets/word95-toolbar.bmp` was wrong: that file is a
+Windows 3.x BMP used by `word1.rc`, while `BITAPP` consumes the original resource format
+under `src/Opus/resource/`. Use a checked-in or generated reference from
+`src/Opus/resource/8hdr.bmp` until a real Windows-build header is available.
 
 Done when: `cmake --build --preset macos-debug --target opus_mkcmd_tool opus_mkdlg_tool
 opus_mergeelx_tool opus_bitapp_tool opus_dibapp_tool opus_cabi_tool` succeeds, and a new
-CTest runs `opus_bitapp_tool` over `src/port/assets/word95-toolbar.bmp` and byte-diffs
-its output against the header the Windows build produces.
+CTest runs `opus_bitapp_tool` over `src/Opus/resource/8hdr.bmp` and byte-diffs its output
+against the reference header.
 
 ### 4. Non-Windows presets and the remaining gates
 

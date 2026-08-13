@@ -21,3 +21,16 @@ Validated with `rg -n "powershell" src/CMakeLists.txt`, direct `cmake -P` runs f
 generators, and non-Windows configure reaching the next known gate.
 
 Reviewed by agy and claude: no blocking findings.
+
+## Port native non-MSVC host-tool builds
+
+The legacy C host tools now get native clang/gcc flags and host CRT shims without
+touching `opus_cabi_tool`. `BITAPP` pins its serialized `BITMAP` layout to the Win16
+14-byte form on LP64, `mkcmd` avoids nonstandard lvalue-cast increments and packed host
+pointers, and `mkdlg` has a normal host `main` under `OPUS_X64_TOOL`.
+
+Validated by linking `mkcmd`, `mkdlg`, `mergeelx`, `bitapp`, and `opus_dibapp_tool`
+directly with AppleClang, then running `bitapp` on `src/Opus/resource/8hdr.bmp`.
+
+Reviewed by agy and claude: cross-build host-tool imports and the CTest reference remain
+open in `TODO.md`.

@@ -26,7 +26,12 @@
 
 typedef unsigned char	BYTE;
 typedef unsigned short	WORD;
+#if defined(OPUS_X64_TOOL) && !defined(_MSC_VER)
+#include <stdint.h>
+typedef uint32_t DWORD;
+#else
 typedef unsigned long  DWORD;
+#endif
 typedef int	  BOOL;
 typedef char	 *PSTR;
 typedef char NEAR *NPSTR;
@@ -50,6 +55,10 @@ typedef struct tagBITMAP {
 	LPSTR      bmBits;
 #endif
 } BITMAP;
+
+#if defined(OPUS_X64_TOOL)
+typedef char OPUS_X64_BITMAP_MUST_MATCH_WIN16[(sizeof(BITMAP) == 14) ? 1 : -1];
+#endif
 
 typedef struct {
 	short      xHotspot;

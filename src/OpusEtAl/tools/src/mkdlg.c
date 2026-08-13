@@ -207,9 +207,13 @@ int tkPush = tkNil;
 char szToken [256] = "";
 
 
+#ifdef OPUS_X64_TOOL
+int main(int argc, char *argv[])
+#else
 main(argc, argv)
 int argc;
 SZ argv [];
+#endif
 {
 	if (argc != 3)
 		UsageExit();
@@ -827,5 +831,4 @@ SZ sz;
 
 	return szRet;
 }
-
 

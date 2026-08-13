@@ -16,6 +16,27 @@
 #define OPUS_WORD unsigned short
 #define OPUS_SWORD short
 #pragma pack(push, 1)
+#if !defined(_MSC_VER)
+static OPUS_SWORD OpusReadSWord(char **ppch)
+{
+	OPUS_SWORD value;
+	memcpy(&value, *ppch, sizeof(value));
+	*ppch += sizeof(value);
+	return value;
+}
+static void OpusWriteSWord(char **ppch, OPUS_SWORD value)
+{
+	memcpy(*ppch, &value, sizeof(value));
+	*ppch += sizeof(value);
+}
+#define OPUS_READ_SWORD(pch) OpusReadSWord(&(pch))
+#define OPUS_WRITE_SWORD(pch, value) OpusWriteSWord(&(pch), (OPUS_SWORD)(value))
+#define OPUS_PUT_SWORD(pch, value) memcpy((pch), &(OPUS_SWORD){(OPUS_SWORD)(value)}, sizeof(OPUS_SWORD))
+#else
+#define OPUS_READ_SWORD(pch) (*((OPUS_SWORD *) (pch))++)
+#define OPUS_WRITE_SWORD(pch, value) (*((OPUS_SWORD *) (pch))++ = (value))
+#define OPUS_PUT_SWORD(pch, value) (*((OPUS_SWORD *) (pch)) = (value))
+#endif
 #else
 #define OPUS_WORD unsigned
 #define OPUS_SWORD int
@@ -232,6 +253,9 @@ char * rgszUcc [] =
 
 #define iszMaxUcc 7
 
+#ifdef OPUS_X64_TOOL
+#pragma pack(pop)
+#endif
 
 #define vkNil (-1)
 
@@ -311,6 +335,10 @@ VKD rgvkd [] =
 
 
 /* From CASHMERE\CMDTBL.H */
+
+#ifdef OPUS_X64_TOOL
+#pragma pack(push, 1)
+#endif
 
 typedef struct _ard
 	{
@@ -1164,7 +1192,7 @@ WriteAsmFile()
 			}
 		else
 			{
-			fprintf(pflAsm, "\n\tdw\t%d", *((OPUS_SWORD *) pch)++);
+			fprintf(pflAsm, "\n\tdw\t%d", OPUS_READ_SWORD(pch));
 			}
 		fprintf(pflAsm, "\n");
 
@@ -1173,9 +1201,9 @@ WriteAsmFile()
 			{
 			bsy += 4;
 			fprintf(pflAsm, "\tdw\t%d\t; cabi\n", 
-					*((OPUS_SWORD *) pch)++);
+					OPUS_READ_SWORD(pch));
 			fprintf(pflAsm, "\tdw\t%d\t; ieldi\n",
-					*((OPUS_SWORD *) pch)++);
+					OPUS_READ_SWORD(pch));
 			}
 		else  if (mct != mctCmd) /* mct == mctEl */
 			{
@@ -1733,7 +1761,7 @@ int w1, w2, mct;
 
 	if (fChain)
 		{
-		*((OPUS_SWORD *) pch)++ = bsyChain; /* back pointer */
+		OPUS_WRITE_SWORD(pch, bsyChain); /* back pointer */
 		}
 	else
 		{
@@ -1763,8 +1791,8 @@ int w1, w2, mct;
 
 	case mctSdm:
 		psy->u.ssdm.iidstr = 0;
-		*((OPUS_SWORD *) pch)++ = w1; /* cabi */
-		*((OPUS_SWORD *) pch) = w2; /* ieldi */
+		OPUS_WRITE_SWORD(pch, w1); /* cabi */
+		OPUS_PUT_SWORD(pch, w2); /* ieldi */
 		break;
 
 	case mctEl:

@@ -105,9 +105,15 @@ add_executable(opus_mkcmd_tool EXCLUDE_FROM_ALL
 target_compile_definitions(opus_mkcmd_tool PRIVATE OPUS_X64_TOOL)
 target_include_directories(opus_mkcmd_tool PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
 )
 if(MSVC)
     target_compile_options(opus_mkcmd_tool PRIVATE /J /W3 /wd4996)
+else()
+    target_compile_options(opus_mkcmd_tool PRIVATE
+        -std=gnu89 -funsigned-char
+        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
 endif()
 set_target_properties(opus_mkcmd_tool PROPERTIES
     FOLDER "Original Opus x64/build tools"
@@ -159,9 +165,15 @@ add_executable(opus_bitapp_tool EXCLUDE_FROM_ALL
 target_compile_definitions(opus_bitapp_tool PRIVATE OPUS_X64_TOOL)
 target_include_directories(opus_bitapp_tool PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
 )
 if(MSVC)
     target_compile_options(opus_bitapp_tool PRIVATE /J /W3 /wd4996)
+else()
+    target_compile_options(opus_bitapp_tool PRIVATE
+        -std=gnu89 -funsigned-char
+        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
 endif()
 set_target_properties(opus_bitapp_tool PROPERTIES
     FOLDER "Original Opus x64/build tools"
@@ -378,8 +390,18 @@ set_target_properties(opus_generated_commands PROPERTIES
 add_executable(opus_mkdlg_tool EXCLUDE_FROM_ALL
     OpusEtAl/tools/src/mkdlg.c
 )
+target_compile_definitions(opus_mkdlg_tool PRIVATE OPUS_X64_TOOL)
+target_include_directories(opus_mkdlg_tool PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
+)
 if(MSVC)
     target_compile_options(opus_mkdlg_tool PRIVATE /J /W3 /wd4996)
+else()
+    target_compile_options(opus_mkdlg_tool PRIVATE
+        -std=gnu89 -funsigned-char
+        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
 endif()
 set_target_properties(opus_mkdlg_tool PROPERTIES
     FOLDER "Original Opus x64/build tools"
@@ -417,9 +439,15 @@ add_executable(opus_mergeelx_tool EXCLUDE_FROM_ALL
 )
 target_include_directories(opus_mergeelx_tool PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
 )
 if(MSVC)
     target_compile_options(opus_mergeelx_tool PRIVATE /J /W3 /wd4996)
+else()
+    target_compile_options(opus_mergeelx_tool PRIVATE
+        -std=gnu89 -funsigned-char
+        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
 endif()
 set_target_properties(opus_mergeelx_tool PROPERTIES
     FOLDER "Original Opus x64/build tools"
