@@ -242,6 +242,8 @@ and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its PDF export dialog strings and writable default path buffer now also use
 `OPUSW`/`WCHAR`, with a boundary copy back to the file's current `std::wstring`
 path model.
+Its hidden RichEdit text extraction now reads `GetWindowTextW` into `WCHAR`
+storage before copying back to the file's current `std::wstring` text model.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 

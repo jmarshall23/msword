@@ -2285,11 +2285,16 @@ public:
     HWND window() const { return window_; }
     std::wstring text() const {
         const int length = GetWindowTextLengthW(window_);
-        std::wstring value(length > 0 ? static_cast<std::size_t>(length + 1) : 0,
-                           L'\0');
-        if (length > 0) {
-            GetWindowTextW(window_, value.data(), length + 1);
-            value.resize(static_cast<std::size_t>(length));
+        if (length <= 0) return {};
+        std::basic_string<WCHAR> buffer(
+            static_cast<std::size_t>(length) + 1, WCHAR{});
+        const int copied = GetWindowTextW(window_, buffer.data(), length + 1);
+        if (copied <= 0) return {};
+        std::wstring value;
+        value.reserve(static_cast<std::size_t>(copied));
+        for (int index = 0; index < copied; ++index) {
+            value.push_back(static_cast<wchar_t>(
+                buffer[static_cast<std::size_t>(index)]));
         }
         return value;
     }
