@@ -653,3 +653,35 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14g -R
 
 Reviewed by agy before implementation; claude was asked for this capture/cursor
 slice but had not returned before implementation.
+
+## Add user32 hit testing
+
+The non-Windows user32 shim now handles default hit testing. `DefWindowProcA/W`
+return `HTCLIENT` for points inside the full window rectangle and `HTNOWHERE`
+for misses, and `WindowFromPoint` walks the current window list from front to
+back, asking candidates for `WM_NCHITTEST` while skipping hidden, disabled,
+`HTNOWHERE`, and `HTTRANSPARENT` windows. `HTNOWHERE` is now declared in the shim
+header, and the coverage baseline no longer lists `WindowFromPoint`.
+
+`opus_win32_user32_test` covers default hit tests, child hit selection,
+disabled-child fallback to the parent, top-level hits, misses, and the coverage
+entry removal. This is deliberately not full non-client frame/caption hit
+testing; the shim still returns client for any point inside the stored window
+rect.
+
+Validated with `cmake --build build-item14h --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14h -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14h --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14h -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this exact slice but
+had not returned before implementation.

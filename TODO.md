@@ -283,6 +283,12 @@ all have process-local state and coverage entries removed. This is still not the
 headless event source; it gives later mouse/scripted input somewhere to store
 capture and screen cursor coordinates.
 
+Default hit testing is now in place: `DefWindowProcA/W` handle `WM_NCHITTEST`
+with screen coordinates, and `WindowFromPoint` walks visible/enabled windows in
+reverse creation order while skipping `HTNOWHERE` and `HTTRANSPARENT`. This is
+still not a mouse pump; it supplies hit-test routing for future mouse/scripted
+input.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

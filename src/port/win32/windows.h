@@ -1895,6 +1895,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef HTREDUCE
 #define HTREDUCE 8
 #endif
+#ifndef HTNOWHERE
+#define HTNOWHERE 0
+#endif
 #ifndef HTCLIENT
 #define HTCLIENT 1
 #endif

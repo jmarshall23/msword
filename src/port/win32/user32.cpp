@@ -128,6 +128,16 @@ bool rect_empty(const RECT& rectangle) {
     return rectangle.right <= rectangle.left || rectangle.bottom <= rectangle.top;
 }
 
+POINT point_from_lparam(LPARAM lparam) {
+    return {static_cast<SHORT>(LOWORD(lparam)),
+            static_cast<SHORT>(HIWORD(lparam))};
+}
+
+bool point_in_window(HWND window, POINT point) {
+    RECT rectangle{};
+    return GetWindowRect(window, &rectangle) && PtInRect(&rectangle, point);
+}
+
 bool message_matches(const MSG& message, HWND window, UINT filter_min,
                      UINT filter_max) {
     if (window != nullptr && message.hwnd != window) return false;
@@ -542,6 +552,11 @@ LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,
             return 1;
         case WM_CLOSE:
             return DestroyWindow(window);
+        case WM_NCHITTEST:
+            return object != nullptr &&
+                           point_in_window(window, point_from_lparam(lparam))
+                       ? HTCLIENT
+                       : HTNOWHERE;
         case WM_SETTEXT:
             if (object == nullptr) return FALSE;
             object->text = lparam != 0 ? reinterpret_cast<LPCSTR>(lparam) : "";
@@ -568,6 +583,11 @@ LRESULT DefWindowProcW(HWND window, UINT message, WPARAM wparam,
             return 1;
         case WM_CLOSE:
             return DestroyWindow(window);
+        case WM_NCHITTEST:
+            return object != nullptr &&
+                           point_in_window(window, point_from_lparam(lparam))
+                       ? HTCLIENT
+                       : HTNOWHERE;
         case WM_SETTEXT:
             if (object == nullptr) return FALSE;
             object->text =
@@ -860,6 +880,20 @@ BOOL GetCursorPos(LPPOINT point) {
     if (point == nullptr) return FALSE;
     *point = g_cursor_position;
     return TRUE;
+}
+
+HWND WindowFromPoint(POINT point) {
+    for (auto it = g_windows.rbegin(); it != g_windows.rend(); ++it) {
+        HWND window = handle_from_window(*it);
+        if (!IsWindow(window) || !IsWindowVisible(window) ||
+            !IsWindowEnabled(window) || !point_in_window(window, point)) {
+            continue;
+        }
+        const LRESULT hit =
+            SendMessageA(window, WM_NCHITTEST, 0, MAKELPARAM(point.x, point.y));
+        if (hit != HTNOWHERE && hit != HTTRANSPARENT) return window;
+    }
+    return nullptr;
 }
 
 BOOL SetWindowPos(HWND window, HWND, int x, int y, int cx, int cy, UINT flags) {

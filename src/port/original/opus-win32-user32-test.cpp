@@ -176,23 +176,46 @@ int main() {
         return 15;
     }
 
+    if (EnableWindow(window, TRUE) || !IsWindowEnabled(window) ||
+        ShowWindow(window, SW_SHOW)) {
+        return 16;
+    }
+    HWND hit_child = CreateWindowExA(0, "STATIC", "hit-child",
+                                     WS_CHILD | WS_VISIBLE, 4, 5, 6, 7,
+                                     window, nullptr, nullptr, nullptr);
+    if (hit_child == nullptr) return 17;
+    if (DefWindowProcA(window, WM_NCHITTEST, 0, MAKELPARAM(15, 26)) !=
+        HTCLIENT) {
+        return 18;
+    }
+    if (DefWindowProcA(window, WM_NCHITTEST, 0, MAKELPARAM(500, 500)) !=
+        HTNOWHERE) {
+        return 19;
+    }
+    if (WindowFromPoint({15, 26}) != hit_child) return 20;
+    if (!EnableWindow(hit_child, FALSE)) return 21;
+    if (WindowFromPoint({15, 26}) != window) return 22;
+    if (EnableWindow(hit_child, TRUE) || !IsWindowEnabled(hit_child)) return 23;
+    if (WindowFromPoint({50, 50}) != window) return 24;
+    if (WindowFromPoint({500, 500}) != nullptr) return 25;
+
     RECT adjusted{0, 0, 100, 50};
     if (!AdjustWindowRectEx(&adjusted, WS_CAPTION | WS_BORDER, FALSE,
                             WS_EX_DLGMODALFRAME) ||
         adjusted.left >= 0 || adjusted.top >= 0 || adjusted.right <= 100 ||
         adjusted.bottom <= 50) {
-        return 16;
+        return 26;
     }
     RECT work_area{};
     if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &work_area, 0) ||
         work_area.right != 640 || work_area.bottom != 480) {
-        return 17;
+        return 27;
     }
 
-    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 18;
+    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 28;
     if (SendMessageA(window, WM_USER + 1, 0, 35) != 42 ||
         g_user_message_count != 1) {
-        return 19;
+        return 29;
     }
 
     MSG message{};
@@ -203,7 +226,7 @@ int main() {
         !PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2,
                       PM_REMOVE) ||
         PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2, PM_REMOVE)) {
-        return 20;
+        return 30;
     }
     HWND message_child = CreateWindowExA(0, "STATIC", "message-child", WS_CHILD,
                                          1, 2, 3, 4, window, nullptr, nullptr,
@@ -215,7 +238,7 @@ int main() {
                       PM_REMOVE) ||
         message.hwnd != message_child || message.wParam != 5 ||
         message.lParam != 6) {
-        return 21;
+        return 31;
     }
 
     BYTE key_state[256]{};
@@ -230,22 +253,22 @@ int main() {
         g_last_char != 'A' || !PostMessageA(window, WM_KEYUP, 'A', 1) ||
         !PeekMessageA(&message, window, WM_KEYUP, WM_KEYUP, PM_REMOVE) ||
         GetKeyState('A') < 0) {
-        return 22;
+        return 32;
     }
 
     PostQuitMessage(23);
     if (GetMessageA(&message, nullptr, 0, 0) != 0 ||
         message.message != WM_QUIT || message.wParam != 23) {
-        return 23;
+        return 33;
     }
 
     if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
         !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 24;
+        return 34;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 25;
+    if (second == nullptr || second == window) return 35;
     return 0;
 }
