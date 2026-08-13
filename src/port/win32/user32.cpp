@@ -118,6 +118,26 @@ char fold_property_char(char value) {
                                         : value;
 }
 
+WCHAR fold_wide_ascii(WCHAR value) {
+    return value >= 'A' && value <= 'Z'
+               ? static_cast<WCHAR>(value + ('a' - 'A'))
+               : value;
+}
+
+int compare_wide_strings(LPCWSTR first, LPCWSTR second, bool ignore_case) {
+    static const WCHAR empty[] = {0};
+    if (first == second) return 0;
+    if (first == nullptr) first = empty;
+    if (second == nullptr) second = empty;
+    for (;;) {
+        const WCHAR left = ignore_case ? fold_wide_ascii(*first) : *first;
+        const WCHAR right = ignore_case ? fold_wide_ascii(*second) : *second;
+        if (left != right || left == 0 || right == 0) return left - right;
+        ++first;
+        ++second;
+    }
+}
+
 std::string property_name_key(LPCWSTR name) {
     std::string result;
     if (name == nullptr || property_name_is_atom(name)) return result;
@@ -1094,6 +1114,14 @@ HANDLE RemovePropW(HWND window, LPCWSTR string) {
     return data;
 }
 
+int lstrcmpW(LPCWSTR first, LPCWSTR second) {
+    return compare_wide_strings(first, second, false);
+}
+
+int lstrcmpiW(LPCWSTR first, LPCWSTR second) {
+    return compare_wide_strings(first, second, true);
+}
+
 LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,
                        LPARAM lparam) {
     auto* object = window_from_handle(window);
@@ -1163,6 +1191,11 @@ LRESULT DefWindowProcW(HWND window, UINT message, WPARAM wparam,
         default:
             return 0;
     }
+}
+
+LRESULT CallWindowProcW(WNDPROC previous, HWND window, UINT message,
+                        WPARAM wparam, LPARAM lparam) {
+    return previous != nullptr ? previous(window, message, wparam, lparam) : 0;
 }
 
 HCURSOR LoadCursorA(HINSTANCE, LPCSTR cursor_name) {

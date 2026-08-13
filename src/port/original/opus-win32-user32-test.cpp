@@ -100,6 +100,11 @@ int main() {
     char text[16]{};
     WCHAR wide_text[16]{};
     const WCHAR wide_title[] = {'w', 'i', 'd', 'e', 0};
+    const WCHAR lower_word[] = {'w', 'o', 'r', 'd', 0};
+    const WCHAR mixed_word[] = {'W', 'o', 'R', 'd', 0};
+    const WCHAR later_word[] = {'w', 'o', 'r', 'e', 0};
+    const WCHAR high_upper[] = {0x00c4, 0};
+    const WCHAR high_lower[] = {0x00e4, 0};
     if (!SetWindowTextA(window, "plain") ||
         GetWindowTextLengthA(window) != 5 ||
         GetWindowTextA(window, text, sizeof(text)) != 5 ||
@@ -109,7 +114,14 @@ int main() {
         !SetWindowTextW(window, wide_title) ||
         GetWindowTextLengthW(window) != 4 ||
         GetWindowTextA(window, text, sizeof(text)) != 4 ||
-        text[0] != 'w' || text[3] != 'e') {
+        text[0] != 'w' || text[3] != 'e' ||
+        CallWindowProcW(TestWindowProc, window, WM_USER + 1, 0, 50) != 57 ||
+        CallWindowProcW(nullptr, window, WM_USER + 1, 0, 50) != 0 ||
+        lstrcmpW(lower_word, lower_word) != 0 ||
+        lstrcmpW(lower_word, later_word) >= 0 ||
+        lstrcmpW(nullptr, lower_word) >= 0 ||
+        lstrcmpiW(lower_word, mixed_word) != 0 ||
+        lstrcmpiW(high_upper, high_lower) == 0) {
         return 7;
     }
 
@@ -281,7 +293,7 @@ int main() {
 
     if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 28;
     if (SendMessageA(window, WM_USER + 1, 0, 35) != 42 ||
-        g_user_message_count != 1) {
+        g_user_message_count != 2) {
         return 29;
     }
 

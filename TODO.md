@@ -324,6 +324,11 @@ Window properties are now backed by per-window state for `SetPropW`,
 integer atom keys are accepted as raw 16-bit ids; property enumeration and a
 global atom table remain out of scope until real call sites require them.
 
+The small callback/string helpers `CallWindowProcW`, `lstrcmpW`, and
+`lstrcmpiW` are now implemented. String comparison is ordinal over 16-bit code
+units, with ASCII-only folding for the insensitive form; full NLS collation is
+not part of the shim until a non-ASCII call site proves it is needed.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

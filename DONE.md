@@ -900,3 +900,37 @@ Reviewed by agy before implementation; claude was asked for this exact slice but
 stalled without output and was stopped. agy's review called out atom keys,
 case-insensitive matching, replacement semantics, caller-owned payloads, and
 keeping property enumeration/global atom behavior out of scope.
+
+## Add user32 callback and string helpers
+
+The non-Windows user32 shim now implements `CallWindowProcW`, `lstrcmpW`, and
+`lstrcmpiW`. `CallWindowProcW` invokes a non-null previous procedure directly
+and returns zero for null. `lstrcmpW` compares 16-bit code units ordinally, and
+`lstrcmpiW` folds only ASCII letters before comparing, leaving full NLS
+collation out of scope.
+
+`opus_win32_user32_test` covers direct callback invocation, null callback
+handling, exact and ordered wide-string comparison, null-string handling,
+ASCII-insensitive comparison, and non-ASCII code-unit behavior. The Win32
+coverage baseline no longer lists those helper names.
+
+Validated with `cmake -S src -B build-item14o -DCMAKE_BUILD_TYPE=Debug`,
+`cmake --build build-item14o --target opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine --parallel 8`, and `ctest --test-dir
+build-item14o -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3.
+Also validated with `cmake --build build-item14o --target
+opus_original_strtbl_test opus_original_sttb_test opus_original_plc_test
+opus_sdm_cab_test opus_original_command_test opus_win32_memory_test
+opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14o -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this exact slice but
+stalled without output and was stopped. agy's review called out null callback
+handling, null string handling, ordinal comparison, ASCII-only case folding, and
+avoiding Unicode/NLS dependencies.

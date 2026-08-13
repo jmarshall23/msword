@@ -1,6 +1,5 @@
 BeginPaint
 CallNextHookEx
-CallWindowProcW
 CloseClipboard
 CloseMetaFile
 CreateDCA
@@ -47,5 +46,3 @@ SetWindowExtEx
 SetWindowOrgEx
 TextOutW
 WideCharToMultiByte
-lstrcmpW
-lstrcmpiW
