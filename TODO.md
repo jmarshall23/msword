@@ -221,7 +221,7 @@ base-address lookup. `opus_win95_chrome.cpp` uses `OPUSW`/`WCHAR` for its toolba
 names, pane-proc property name, and the `user32.dll`/`uxtheme.dll` dynamic-library
 lookups.
 Its repeated fixed class names, font faces, default combo text and empty window captions
-also use the same boundary.
+also use the same boundary, as do the zoom combo's fixed choice labels.
 
 Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
 or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit

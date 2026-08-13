@@ -60,6 +60,10 @@ constexpr WCHAR kArialFace[] = OPUSW("Arial");
 constexpr WCHAR kToolbarFace[] = OPUSW("MS Sans Serif");
 constexpr WCHAR kNormalStyle[] = OPUSW("Normal");
 constexpr WCHAR kDefaultSize[] = OPUSW("10");
+constexpr WCHAR kZoom100[] = OPUSW("100%");
+constexpr WCHAR kZoomPageWidth[] = OPUSW("Page Width");
+constexpr WCHAR kZoomWholePage[] = OPUSW("Whole Page");
+constexpr WCHAR kZoomPrintPreview[] = OPUSW("Print Preview");
 constexpr int kToolbarBitmap = 201;
 constexpr int kSpriteCell = 20;
 constexpr COLORREF kButtonFace = RGB(192, 192, 192);
@@ -1279,13 +1283,13 @@ HWND create_zoom_combo(HWND toolbar) {
         GetModuleHandleW(nullptr), nullptr);
     set_window_classic(combo);
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(L"100%"));
+                 reinterpret_cast<LPARAM>(kZoom100));
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(L"Page Width"));
+                 reinterpret_cast<LPARAM>(kZoomPageWidth));
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(L"Whole Page"));
+                 reinterpret_cast<LPARAM>(kZoomWholePage));
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(L"Print Preview"));
+                 reinterpret_cast<LPARAM>(kZoomPrintPreview));
     SendMessageW(combo, CB_SETCURSEL, 0, 0);
     return combo;
 }
