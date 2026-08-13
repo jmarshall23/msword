@@ -667,7 +667,7 @@ int fail(PROCESS_INFORMATION& process, const int code,
 
 }  // namespace
 
-int wmain(const int argument_count, wchar_t** arguments) {
+int run_ui_test(const int argument_count, WCHAR** arguments) {
     SetProcessDpiAwarenessContext(
         DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
     if (argument_count < 2 || argument_count > 4) {
@@ -680,11 +680,13 @@ int wmain(const int argument_count, wchar_t** arguments) {
         return 1;
     }
     const std::basic_string<WCHAR> executable_argument =
-        argument_to_wide(arguments[1]);
-    const std::basic_string<WCHAR> mode_argument = argument_count >= 3 ?
-        argument_to_wide(arguments[2]) : std::basic_string<WCHAR>{};
-    const std::basic_string<WCHAR> docx_argument = argument_count >= 4 ?
-        argument_to_wide(arguments[3]) : std::basic_string<WCHAR>{};
+        arguments[1] != nullptr ? arguments[1] : OPUSW("");
+    const std::basic_string<WCHAR> mode_argument =
+        argument_count >= 3 && arguments[2] != nullptr ?
+            arguments[2] : std::basic_string<WCHAR>{};
+    const std::basic_string<WCHAR> docx_argument =
+        argument_count >= 4 && arguments[3] != nullptr ?
+            arguments[3] : std::basic_string<WCHAR>{};
     const bool typing_mode =
         argument_count == 3 &&
         lstrcmpW(mode_argument.c_str(), OPUSW("--typing")) == 0;
@@ -2344,3 +2346,43 @@ int wmain(const int argument_count, wchar_t** arguments) {
     CloseHandle(process.hProcess);
     return 0;
 }
+
+int wmain(const int argument_count, wchar_t** arguments) {
+    std::vector<std::basic_string<WCHAR>> storage;
+    storage.reserve(static_cast<std::size_t>(argument_count));
+    for (int index = 0; index < argument_count; ++index) {
+        storage.push_back(argument_to_wide(arguments[index]));
+    }
+
+    std::vector<WCHAR*> wide_arguments;
+    wide_arguments.reserve(storage.size());
+    for (auto& argument : storage) {
+        wide_arguments.push_back(argument.data());
+    }
+    return run_ui_test(argument_count, wide_arguments.data());
+}
+
+#ifndef _WIN32
+int main(const int argument_count, char** arguments) {
+    std::vector<std::basic_string<WCHAR>> storage;
+    storage.reserve(static_cast<std::size_t>(argument_count));
+    for (int index = 0; index < argument_count; ++index) {
+        std::basic_string<WCHAR> argument;
+        if (arguments[index] != nullptr) {
+            for (const unsigned char* text =
+                     reinterpret_cast<const unsigned char*>(arguments[index]);
+                 *text != 0; ++text) {
+                argument.push_back(static_cast<WCHAR>(*text));
+            }
+        }
+        storage.push_back(std::move(argument));
+    }
+
+    std::vector<WCHAR*> wide_arguments;
+    wide_arguments.reserve(storage.size());
+    for (auto& argument : storage) {
+        wide_arguments.push_back(argument.data());
+    }
+    return run_ui_test(argument_count, wide_arguments.data());
+}
+#endif
