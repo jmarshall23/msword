@@ -190,8 +190,9 @@ that directory has the minimal `shellapi.h` surface needed by `opus_win16_platfo
 `SW_SHOWNORMAL` plus `ShellExecuteA`.
 `src/port/win32/windows.h` also declares the first non-Windows compile surfaces used by
 the Win16 adapter, startup diagnostics, RESN2 character typing, and x64 heap code. The
-current `opus_word1_ui_test` build now advances to the next gaps: `commdlg.h`,
-non-MSVC `__declspec(dllimport)` handling in `opus_asm_resn2_sttb.cpp`, and `FILE_BEGIN`.
+current `opus_word1_ui_test` build now advances past the `commdlg.h`, non-MSVC
+`__declspec(dllimport)`, and `FILE_BEGIN` gaps. The next compile blockers are
+`objbase.h` in `opus_sdm_runtime.cpp` and `msopc.h` in `opus_modern_formats.cpp`.
 
 Build the first pass mechanically:
 

@@ -26,6 +26,12 @@
 #define _TRUNCATE ((size_t)-1)
 #endif
 #if !defined(_MSC_VER)
+#ifndef __declspec
+#define __declspec(attribute)
+#endif
+#ifndef __stdcall
+#define __stdcall
+#endif
 #ifndef _snprintf_s
 #define _snprintf_s(buffer, size, count, format, ...) \
     snprintf((buffer), (size), (format), __VA_ARGS__)

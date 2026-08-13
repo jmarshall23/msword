@@ -865,6 +865,9 @@ target_compile_definitions(opus_x64_runtime PRIVATE
 )
 target_include_directories(opus_x64_runtime PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 target_link_libraries(opus_x64_runtime PUBLIC ole32 comdlg32 gdi32)
+if(NOT WIN32)
+    target_sources(opus_x64_runtime PRIVATE port/win32/commdlg.c)
+endif()
 if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string
     # and international-character assembly routines depend on that behavior.

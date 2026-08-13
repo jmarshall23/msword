@@ -231,6 +231,9 @@ typedef struct tagBITMAP {
 #ifndef FILE_ATTRIBUTE_NORMAL
 #define FILE_ATTRIBUTE_NORMAL 0x00000080
 #endif
+#ifndef FILE_BEGIN
+#define FILE_BEGIN 0
+#endif
 #ifndef INVALID_HANDLE_VALUE
 #define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
 #endif
