@@ -83,3 +83,32 @@ installed CMake 3.31.6 with apt, copied the repository to `/tmp/msword-linux-val
 because `/Users` was read-only, then ran `cmake -S src --preset linux-debug`,
 `cmake --build out/linux-debug --target opus-sdl-probe`, and
 `SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe`.
+
+## Swap `opus_windows_sdk.h`, and close the seven leaks
+
+`src/port/original/windows.h` now routes through the generated
+`opus_windows_sdk.h`: MSVC still uses the real Windows SDK, while non-Windows
+uses `src/port/win32/windows.h`. The non-Windows include path exposes
+`src/port/win32` and the `src/port/win32/case` forwarders for `Windows.h`,
+`DbgHelp.h`, and the original Opus mixed-case quoted headers.
+
+Shim-only SDK declarations moved out of `src/port/original` into
+`src/port/win32`. The live SDK header leaks were closed with local include
+routes for DbgHelp, shell, common-dialog, object-base, IME, and windowsx
+surfaces. `rtcapi` and `malloc.h` are MSVC-only, and `opus_asm_file2.cpp`
+uses direct MSVC `_chdir`/`_getdcwd` declarations rather than adding an
+unused non-Windows `direct.h` shim.
+
+On macOS, `WORD1` and `opus_word1_ui_test` compile and link with the deliberate
+Darwin dynamic-loader handoff. The smoke test reaches runtime loading and
+aborts on missing `_SymFunctionTableAccess64`, a DbgHelp shim body, not on a
+missing type, macro, prototype, header, or C++ linkage error.
+
+Validated with `commentflow` on the changed C/C++ headers and sources,
+`git diff --check`, the item 6 include grep returning only the intended
+`windows.h` routes, `cmake -S src --preset macos-debug`,
+`cmake --build out/macos-debug --target opus_word1_ui_test`, and fork CI run
+`31735543515` green on Windows, macOS and Linux.
+
+Reviewed by agy and claude: no blocking findings after correcting the stale
+`direct.h` wording.
