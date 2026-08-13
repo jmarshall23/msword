@@ -91,6 +91,48 @@ configure_file(
     @ONLY
 )
 
+set(OPUS_IMPORT_NATIVE_HOST_TOOLS FALSE)
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(OPUS_IMPORT_NATIVE_HOST_TOOLS TRUE)
+endif()
+set(OPUS_NATIVE_TOOLS_DIR "${MSWORD_BUILD_ROOT}/tools/${CMAKE_BUILD_TYPE}"
+    CACHE PATH "Directory containing native Opus build tools for cross builds")
+
+function(opus_import_native_host_tool target_name)
+    set(tool_path "${OPUS_NATIVE_TOOLS_DIR}/${target_name}")
+    if(NOT EXISTS "${tool_path}")
+        message(FATAL_ERROR
+            "Missing native host tool: ${tool_path}. "
+            "Build the macos-debug or linux-debug host tools first, or set OPUS_NATIVE_TOOLS_DIR."
+        )
+    endif()
+    add_executable(${target_name} IMPORTED GLOBAL)
+    set_target_properties(${target_name} PROPERTIES
+        IMPORTED_LOCATION "${tool_path}"
+    )
+endfunction()
+
+if(OPUS_IMPORT_NATIVE_HOST_TOOLS)
+    foreach(host_tool IN ITEMS
+        opus_mkcmd_tool
+        opus_mkdlg_tool
+        opus_mergeelx_tool
+        opus_bitapp_tool
+        opus_dibapp_tool
+    )
+        opus_import_native_host_tool(${host_tool})
+    endforeach()
+    set(OPUS_MKCMD_TOOL_DEP "${OPUS_NATIVE_TOOLS_DIR}/opus_mkcmd_tool")
+    set(OPUS_MKDLG_TOOL_DEP "${OPUS_NATIVE_TOOLS_DIR}/opus_mkdlg_tool")
+    set(OPUS_BITAPP_TOOL_DEP "${OPUS_NATIVE_TOOLS_DIR}/opus_bitapp_tool")
+    set(OPUS_DIBAPP_TOOL_DEP "${OPUS_NATIVE_TOOLS_DIR}/opus_dibapp_tool")
+else()
+    set(OPUS_MKCMD_TOOL_DEP opus_mkcmd_tool)
+    set(OPUS_MKDLG_TOOL_DEP opus_mkdlg_tool)
+    set(OPUS_BITAPP_TOOL_DEP opus_bitapp_tool)
+    set(OPUS_DIBAPP_TOOL_DEP opus_dibapp_tool)
+endif()
+
 # MERGEELX writes a fixed hidden-screen payload in addition to the dialog EL
 # tables. Preserve that original payload directly from Microsoft's generator
 # source. The archive lacks the Dialog Editor executable that converted its
@@ -117,33 +159,35 @@ set_target_properties(opus_generated_elxinfo PROPERTIES
 # Rebuild the command constants from Microsoft's checked-in command compiler
 # and resource sources. The tool runs natively on x64 but preserves MKCMD's
 # original 16-bit serialized word layout.
-add_executable(opus_mkcmd_tool EXCLUDE_FROM_ALL
-    OpusEtAl/tools/src/mkcmd.c
-)
-target_compile_definitions(opus_mkcmd_tool PRIVATE OPUS_X64_TOOL)
-target_include_directories(opus_mkcmd_tool PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
-)
-if(MSVC)
-    target_compile_options(opus_mkcmd_tool PRIVATE /J /W3 /wd4996)
-else()
-    target_compile_options(opus_mkcmd_tool PRIVATE
-        -std=gnu89 -funsigned-char
-        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
-        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
-endif()
-set_target_properties(opus_mkcmd_tool PROPERTIES
-    FOLDER "Original Opus x64/build tools"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
-    VS_GLOBAL_VcpkgApplocalDeps "false"
-)
-foreach(config Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_mkcmd_tool PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
+    add_executable(opus_mkcmd_tool EXCLUDE_FROM_ALL
+        OpusEtAl/tools/src/mkcmd.c
     )
-endforeach()
+    target_compile_definitions(opus_mkcmd_tool PRIVATE OPUS_X64_TOOL)
+    target_include_directories(opus_mkcmd_tool PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
+    )
+    if(MSVC)
+        target_compile_options(opus_mkcmd_tool PRIVATE /J /W3 /wd4996)
+    else()
+        target_compile_options(opus_mkcmd_tool PRIVATE
+            -std=gnu89 -funsigned-char
+            -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+            -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
+    endif()
+    set_target_properties(opus_mkcmd_tool PROPERTIES
+        FOLDER "Original Opus x64/build tools"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_mkcmd_tool PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+        )
+    endforeach()
+endif()
 
 add_executable(opus_cabi_tool EXCLUDE_FROM_ALL
     port/tools/opus_cabi_tool.cpp
@@ -173,37 +217,45 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
         RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
     )
 endforeach()
+set(OPUS_CABI_TOOL_COMMAND "$<TARGET_FILE:opus_cabi_tool>")
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    find_program(OPUS_NODE_EXECUTABLE node REQUIRED)
+    set(OPUS_CABI_TOOL_COMMAND
+        "${OPUS_NODE_EXECUTABLE}" "$<TARGET_FILE:opus_cabi_tool>")
+endif()
 
 # Preserve Microsoft's original BITAPP resource conversion step.  These
 # native x64 tool builds consume the checked-in Win16 .cur files and emit the
 # same byte initializers that SCREEN2.C historically included.
-add_executable(opus_bitapp_tool EXCLUDE_FROM_ALL
-    OpusEtAl/tools/src/bitapp.c
-)
-target_compile_definitions(opus_bitapp_tool PRIVATE OPUS_X64_TOOL)
-target_include_directories(opus_bitapp_tool PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
-)
-if(MSVC)
-    target_compile_options(opus_bitapp_tool PRIVATE /J /W3 /wd4996)
-else()
-    target_compile_options(opus_bitapp_tool PRIVATE
-        -std=gnu89 -funsigned-char
-        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
-        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
-endif()
-set_target_properties(opus_bitapp_tool PROPERTIES
-    FOLDER "Original Opus x64/build tools"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
-    VS_GLOBAL_VcpkgApplocalDeps "false"
-)
-foreach(config Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_bitapp_tool PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
+    add_executable(opus_bitapp_tool EXCLUDE_FROM_ALL
+        OpusEtAl/tools/src/bitapp.c
     )
-endforeach()
+    target_compile_definitions(opus_bitapp_tool PRIVATE OPUS_X64_TOOL)
+    target_include_directories(opus_bitapp_tool PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
+    )
+    if(MSVC)
+        target_compile_options(opus_bitapp_tool PRIVATE /J /W3 /wd4996)
+    else()
+        target_compile_options(opus_bitapp_tool PRIVATE
+            -std=gnu89 -funsigned-char
+            -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+            -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
+    endif()
+    set_target_properties(opus_bitapp_tool PROPERTIES
+        FOLDER "Original Opus x64/build tools"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_bitapp_tool PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+        )
+    endforeach()
+endif()
 
 set(OPUS_GENERATED_COMMAND_DIR
     "${CMAKE_CURRENT_BINARY_DIR}/generated/original")
@@ -221,10 +273,15 @@ set(OPUS_GENERATED_CURSOR_FILES)
 foreach(cursor_name IN LISTS OPUS_CURSOR_RESOURCE_NAMES)
     set(cursor_source "${CMAKE_CURRENT_SOURCE_DIR}/Opus/resource/${cursor_name}.cur")
     set(cursor_header "${OPUS_GENERATED_COMMAND_DIR}/${cursor_name}.hc")
+    file(RELATIVE_PATH cursor_source_arg
+        "${CMAKE_CURRENT_SOURCE_DIR}" "${cursor_source}")
+    file(RELATIVE_PATH cursor_header_arg
+        "${CMAKE_CURRENT_SOURCE_DIR}" "${cursor_header}")
     add_custom_command(
         OUTPUT "${cursor_header}"
-        COMMAND "$<TARGET_FILE:opus_bitapp_tool>" "${cursor_source}" "${cursor_header}"
-        DEPENDS opus_bitapp_tool "${cursor_source}"
+        COMMAND "$<TARGET_FILE:opus_bitapp_tool>" "${cursor_source_arg}" "${cursor_header_arg}"
+        DEPENDS ${OPUS_BITAPP_TOOL_DEP} "${cursor_source}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMENT "Converting original Opus cursor ${cursor_name}.cur with BITAPP"
         VERBATIM
     )
@@ -270,6 +327,10 @@ foreach(resource_header IN LISTS OPUS_BITAPP_BITMAP_HEADERS OPUS_BITAPP_FIGURE_H
         "${CMAKE_CURRENT_SOURCE_DIR}/Opus/resource/${resource_stem}${resource_source_extension}")
     set(resource_output
         "${OPUS_GENERATED_COMMAND_DIR}/${resource_header}")
+    file(RELATIVE_PATH resource_source_arg
+        "${CMAKE_CURRENT_SOURCE_DIR}" "${resource_source}")
+    file(RELATIVE_PATH resource_output_arg
+        "${CMAKE_CURRENT_SOURCE_DIR}" "${resource_output}")
     if(resource_extension STREQUAL ".hg")
         set(bitapp_gray_flag /g)
     else()
@@ -278,8 +339,9 @@ foreach(resource_header IN LISTS OPUS_BITAPP_BITMAP_HEADERS OPUS_BITAPP_FIGURE_H
     add_custom_command(
         OUTPUT "${resource_output}"
         COMMAND "$<TARGET_FILE:opus_bitapp_tool>" ${bitapp_gray_flag}
-            "${resource_source}" "${resource_output}"
-        DEPENDS opus_bitapp_tool "${resource_source}"
+            "${resource_source_arg}" "${resource_output_arg}"
+        DEPENDS ${OPUS_BITAPP_TOOL_DEP} "${resource_source}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMENT "Regenerating original Opus resource header ${resource_header}"
         VERBATIM
     )
@@ -296,24 +358,26 @@ set_target_properties(opus_generated_embedded_resources PROPERTIES
 # tool preserves its build boundary by extracting the original OS/2
 # BITMAPCOREHEADER scan lines into the BMDS3 aggregate format consumed by
 # Microsoft's rcbmp13/23/43 modules.
-add_executable(opus_dibapp_tool EXCLUDE_FROM_ALL
-    port/tools/opus_dibapp_tool.cpp
-)
-target_compile_features(opus_dibapp_tool PRIVATE cxx_std_20)
-if(MSVC)
-    target_compile_options(opus_dibapp_tool PRIVATE /W4 /permissive-)
-endif()
-set_target_properties(opus_dibapp_tool PROPERTIES
-    FOLDER "Original Opus x64/build tools"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
-    VS_GLOBAL_VcpkgApplocalDeps "false"
-)
-foreach(config Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_dibapp_tool PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
+    add_executable(opus_dibapp_tool EXCLUDE_FROM_ALL
+        port/tools/opus_dibapp_tool.cpp
     )
-endforeach()
+    target_compile_features(opus_dibapp_tool PRIVATE cxx_std_20)
+    if(MSVC)
+        target_compile_options(opus_dibapp_tool PRIVATE /W4 /permissive-)
+    endif()
+    set_target_properties(opus_dibapp_tool PROPERTIES
+        FOLDER "Original Opus x64/build tools"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_dibapp_tool PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+        )
+    endforeach()
+endif()
 
 file(GLOB OPUS_DIB_RESOURCE_INPUTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Opus/resource/*.dib")
@@ -324,7 +388,7 @@ foreach(dib_input IN LISTS OPUS_DIB_RESOURCE_INPUTS)
     add_custom_command(
         OUTPUT "${dib_output}"
         COMMAND "$<TARGET_FILE:opus_dibapp_tool>" "${dib_input}" "${dib_output}"
-        DEPENDS opus_dibapp_tool "${dib_input}"
+        DEPENDS ${OPUS_DIBAPP_TOOL_DEP} "${dib_input}"
         COMMENT "Converting original ${dib_stem}.dib resource"
         VERBATIM
     )
@@ -348,6 +412,9 @@ set(OPUS_GENERATED_COMMAND_FILES
     "${OPUS_GENERATED_COMMAND_DIR}/opuscmd.asm"
     "${OPUS_GENERATED_COMMAND_DIR}/opuscmd_native.inc"
 )
+file(RELATIVE_PATH OPUS_DLG_SOURCE_ARG
+    "${OPUS_GENERATED_COMMAND_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Opus/dlg")
 file(GLOB OPUS_RECONSTRUCTED_DIALOG_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/port/original/*.hs")
 set(OPUS_GENERATED_CABI_DIR "${OPUS_GENERATED_COMMAND_DIR}/cabi")
@@ -355,7 +422,7 @@ set(OPUS_GENERATED_CABI_OPEN "${OPUS_GENERATED_CABI_DIR}/open.hs")
 add_custom_command(
     OUTPUT "${OPUS_GENERATED_CABI_OPEN}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${OPUS_GENERATED_CABI_DIR}"
-    COMMAND "$<TARGET_FILE:opus_cabi_tool>" "${OPUS_GENERATED_CABI_DIR}"
+    COMMAND ${OPUS_CABI_TOOL_COMMAND} "${OPUS_GENERATED_CABI_DIR}"
     DEPENDS opus_cabi_tool ${OPUS_RECONSTRUCTED_DIALOG_HEADERS}
     COMMENT "Computing native SDM CAB initializers"
     VERBATIM
@@ -375,14 +442,14 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/Opus/resource/ibcm.rel"
         "${OPUS_GENERATED_COMMAND_DIR}/IBCM.H"
     COMMAND "$<TARGET_FILE:opus_mkcmd_tool>"
-        -T@13 -s../../../src/Opus/dlg/ -bcabi/
+        -T@13 -s${OPUS_DLG_SOURCE_ARG}/ -bcabi/
         opuscmd keys menus
     COMMAND "${CMAKE_COMMAND}"
         -DINPUT=${OPUS_GENERATED_COMMAND_DIR}/MENUHELP.TXT
         -DOUTPUT=${OPUS_GENERATED_COMMAND_DIR}/menuhelp.h
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateMenuHelpHeader.cmake"
     DEPENDS
-        opus_mkcmd_tool
+        ${OPUS_MKCMD_TOOL_DEP}
         Opus/resource/opuscmd.cmd
         Opus/resource/keys.cmd
         Opus/resource/menus.cmd
@@ -405,33 +472,35 @@ set_target_properties(opus_generated_commands PROPERTIES
 # Rebuild the EL dialog range/parse tables with Microsoft's original MKDLG
 # source.  dlgcheck.h was a generated build artifact and is not checked into
 # this archive.
-add_executable(opus_mkdlg_tool EXCLUDE_FROM_ALL
-    OpusEtAl/tools/src/mkdlg.c
-)
-target_compile_definitions(opus_mkdlg_tool PRIVATE OPUS_X64_TOOL)
-target_include_directories(opus_mkdlg_tool PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
-)
-if(MSVC)
-    target_compile_options(opus_mkdlg_tool PRIVATE /J /W3 /wd4996)
-else()
-    target_compile_options(opus_mkdlg_tool PRIVATE
-        -std=gnu89 -funsigned-char
-        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
-        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
-endif()
-set_target_properties(opus_mkdlg_tool PROPERTIES
-    FOLDER "Original Opus x64/build tools"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
-    VS_GLOBAL_VcpkgApplocalDeps "false"
-)
-foreach(config Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_mkdlg_tool PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
+    add_executable(opus_mkdlg_tool EXCLUDE_FROM_ALL
+        OpusEtAl/tools/src/mkdlg.c
     )
-endforeach()
+    target_compile_definitions(opus_mkdlg_tool PRIVATE OPUS_X64_TOOL)
+    target_include_directories(opus_mkdlg_tool PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
+    )
+    if(MSVC)
+        target_compile_options(opus_mkdlg_tool PRIVATE /J /W3 /wd4996)
+    else()
+        target_compile_options(opus_mkdlg_tool PRIVATE
+            -std=gnu89 -funsigned-char
+            -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+            -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
+    endif()
+    set_target_properties(opus_mkdlg_tool PROPERTIES
+        FOLDER "Original Opus x64/build tools"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_mkdlg_tool PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+        )
+    endforeach()
+endif()
 file(GLOB OPUS_DIALOG_ELX CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Opus/dlg/*.elx")
 set(OPUS_GENERATED_DLGCHECK
@@ -440,7 +509,7 @@ add_custom_command(
     OUTPUT "${OPUS_GENERATED_DLGCHECK}"
     COMMAND "$<TARGET_FILE:opus_mkdlg_tool>"
         "@elx.txt" "${OPUS_GENERATED_DLGCHECK}"
-    DEPENDS opus_mkdlg_tool ${OPUS_DIALOG_ELX} Opus/dlg/elx.txt
+    DEPENDS ${OPUS_MKDLG_TOOL_DEP} ${OPUS_DIALOG_ELX} Opus/dlg/elx.txt
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Opus/dlg"
     COMMENT "Regenerating original Opus dialog validation tables with MKDLG"
     VERBATIM
@@ -452,32 +521,34 @@ set_target_properties(opus_generated_dlgcheck PROPERTIES
     FOLDER "Original Opus x64/generated"
 )
 
-add_executable(opus_mergeelx_tool EXCLUDE_FROM_ALL
-    OpusEtAl/tools/src/mergeelx.c
-)
-target_include_directories(opus_mergeelx_tool PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
-)
-if(MSVC)
-    target_compile_options(opus_mergeelx_tool PRIVATE /J /W3 /wd4996)
-else()
-    target_compile_options(opus_mergeelx_tool PRIVATE
-        -std=gnu89 -funsigned-char
-        -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
-        -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
-endif()
-set_target_properties(opus_mergeelx_tool PROPERTIES
-    FOLDER "Original Opus x64/build tools"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
-    VS_GLOBAL_VcpkgApplocalDeps "false"
-)
-foreach(config Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_mergeelx_tool PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
+    add_executable(opus_mergeelx_tool EXCLUDE_FROM_ALL
+        OpusEtAl/tools/src/mergeelx.c
     )
-endforeach()
+    target_include_directories(opus_mergeelx_tool PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpusEtAl/tools/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/tools"
+    )
+    if(MSVC)
+        target_compile_options(opus_mergeelx_tool PRIVATE /J /W3 /wd4996)
+    else()
+        target_compile_options(opus_mergeelx_tool PRIVATE
+            -std=gnu89 -funsigned-char
+            -Wno-implicit-function-declaration -Wno-return-mismatch -Wno-return-type
+            -include "${CMAKE_CURRENT_SOURCE_DIR}/port/tools/opus-host-compat.h")
+    endif()
+    set_target_properties(opus_mergeelx_tool PROPERTIES
+        FOLDER "Original Opus x64/build tools"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tools"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_mergeelx_tool PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tools/${config}"
+        )
+    endforeach()
+endif()
 
 add_library(opus_original_engine STATIC
     Opus/command.c

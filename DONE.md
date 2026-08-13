@@ -59,4 +59,17 @@ the output to the checked-in `port/tools/references/8hdr.hb` oracle.
 Validated from `src` with the macOS tool build command, then from the repository root
 with `ctest --test-dir out/macos-debug -R opus_bitapp_8hdr_test --output-on-failure`.
 
-The WebAssembly host-tool import remains open in `TODO.md`.
+## Import native host tools for WebAssembly cross builds
+
+`wasm-debug` now imports the five build-machine tools from the native tools directory
+instead of compiling them with Emscripten. `opus_cabi_tool` remains target-built, and the
+Emscripten build runs its JavaScript output through Node so it still measures the target
+layout.
+
+BITAPP custom commands use relative input and output paths from `src`, matching the
+legacy tool's switch parser. MKCMD now computes its dialog source path relative to the
+generated command directory instead of relying on a hardcoded depth.
+
+Validated by first building the native tools with `macos-debug`, then building
+`opus_generated_commands`, `opus_generated_embedded_resources` and
+`opus_generated_dib_resources` from `wasm-debug`.
