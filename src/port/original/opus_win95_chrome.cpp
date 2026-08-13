@@ -1310,7 +1310,11 @@ void update_zoom_combo(HWND pane, int percent) {
     if (state == nullptr || state->zoom_combo == nullptr) {
         return;
     }
-    const std::wstring text = std::to_wstring(percent) + L"%";
+    std::basic_string<WCHAR> text;
+    for (const char digit : std::to_string(percent)) {
+        text.push_back(static_cast<WCHAR>(static_cast<unsigned char>(digit)));
+    }
+    text.push_back(OPUSW("%")[0]);
     SendMessageW(state->zoom_combo, CB_SETCURSEL,
                  static_cast<WPARAM>(-1), 0);
     SetWindowTextW(state->zoom_combo, text.c_str());
