@@ -2953,9 +2953,18 @@ struct PdfUnicodeFont {
         if (font == nullptr) return false;
         previous = SelectObject(dc, font);
         if (previous == nullptr || !GetTextMetricsW(dc, &metrics)) return false;
-        wchar_t actual[LF_FACESIZE]{};
-        if (GetTextFaceW(dc, static_cast<int>(std::size(actual)), actual) > 0)
-            face = actual;
+        WCHAR actual[LF_FACESIZE]{};
+        const int copied = GetTextFaceW(
+            dc, static_cast<int>(std::size(actual)), actual);
+        if (copied > 0) {
+            face.clear();
+            const std::size_t limit = (std::min)(
+                static_cast<std::size_t>(copied), std::size(actual));
+            for (std::size_t index = 0;
+                 index < limit && actual[index] != WCHAR{}; ++index) {
+                face.push_back(static_cast<wchar_t>(actual[index]));
+            }
+        }
         const DWORD size = GetFontData(dc, 0, 0, nullptr, 0);
         if (size == GDI_ERROR || size == 0 || size > kMaxGeneratedBytes)
             return false;
