@@ -63,6 +63,24 @@ void WriteCrashText(HANDLE file, const char* text) {
               nullptr);
 }
 
+void NarrowDiagnosticWide(LPCWSTR source, char* destination,
+                          size_t destination_size) {
+    if (destination_size == 0) {
+        return;
+    }
+    if (source == nullptr) {
+        source = OPUSW("");
+    }
+    size_t index = 0;
+    while (*source != 0 && index + 1 < destination_size) {
+        const WCHAR character = *source++;
+        destination[index++] =
+            character >= 0x20 && character <= 0x7e ?
+                static_cast<char>(character) : '?';
+    }
+    destination[index] = '\0';
+}
+
 void BuildDiagnosticPath(const char* file_name, char* path, size_t path_size) {
     char module_path[MAX_PATH] = {};
     GetModuleFileNameA(nullptr, module_path, MAX_PATH);
@@ -160,9 +178,8 @@ void WriteCurrentStack(HANDLE file, unsigned frames_to_skip) {
     SymCleanup(process);
 }
 
-int __cdecl WriteRtcFailure(int error_type, const wchar_t* file_name,
-                            int line, const wchar_t* module_name,
-                            const wchar_t* format, ...) {
+int __cdecl WriteRtcFailure(int error_type, LPCWSTR file_name, int line,
+                            LPCWSTR module_name, LPCWSTR format, ...) {
     char diagnostic_path[MAX_PATH] = {};
     BuildDiagnosticPath("WORD1-rtc.txt", diagnostic_path,
                         sizeof(diagnostic_path));
@@ -173,18 +190,24 @@ int __cdecl WriteRtcFailure(int error_type, const wchar_t* file_name,
         return 0;
     }
 
-    wchar_t message[2048] = {};
+    WCHAR message[2048] = {};
     va_list arguments;
     va_start(arguments, format);
     _vsnwprintf_s(message, _countof(message), _TRUNCATE, format, arguments);
     va_end(arguments);
 
+    char file_name_ansi[MAX_PATH] = {};
+    char module_name_ansi[MAX_PATH] = {};
+    char message_ansi[4096] = {};
+    NarrowDiagnosticWide(file_name, file_name_ansi, sizeof(file_name_ansi));
+    NarrowDiagnosticWide(module_name, module_name_ansi,
+                         sizeof(module_name_ansi));
+    NarrowDiagnosticWide(message, message_ansi, sizeof(message_ansi));
+
     char header[4096] = {};
     std::snprintf(header, sizeof(header),
-                  "RTC failure %d at %ls:%d (%ls)\r\n%ls\r\n", error_type,
-                  file_name != nullptr ? file_name : L"", line,
-                  module_name != nullptr ? module_name : L"",
-                  message);
+                  "RTC failure %d at %s:%d (%s)\r\n%s\r\n", error_type,
+                  file_name_ansi, line, module_name_ansi, message_ansi);
     WriteCrashText(file, header);
     WriteCurrentStack(file, 1);
     CloseHandle(file);

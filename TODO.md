@@ -217,7 +217,10 @@ defines `OPUSW("")` for C++ port code so non-Windows literals can use UTF-16 sto
 instead of host `wchar_t`. `opus_original_startup_probe.cpp` uses that boundary for
 `--self-test` detection before narrowing the command line with `WideCharToMultiByte`.
 `opus_asm_resn2_sttb.cpp` also declares `GetModuleHandleW` with `LPCWSTR` for its trace
-base-address lookup. `opus_win95_chrome.cpp` uses `OPUSW`/`WCHAR` for its toolbar class
+base-address lookup. `opus_original_startup_probe.cpp` also uses the same boundary for
+the RTC failure callback's `W` parameters and diagnostic message buffer, with lossy
+ASCII-only diagnostic narrowing before writing crash text. `opus_win95_chrome.cpp` uses
+`OPUSW`/`WCHAR` for its toolbar class
 names, pane-proc property name, and the `user32.dll`/`uxtheme.dll` dynamic-library
 lookups.
 Its repeated fixed class names, font faces, default combo text, empty window captions,
