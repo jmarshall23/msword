@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(MicrosoftWordX64Port VERSION 0.2.0 LANGUAGES C CXX RC)
+project(MicrosoftWordX64Port VERSION 0.2.0 LANGUAGES C CXX)
+
+if(WIN32)
+    enable_language(RC)
+endif()
 
 if(NOT WIN32)
     message(FATAL_ERROR "The Microsoft Word x64 port currently targets Windows only.")
@@ -857,9 +861,11 @@ target_link_libraries(opus_original_engine PUBLIC opus_x64_runtime user32)
 # Microsoft's original Opus WinMain and its original window/message loop.
 add_executable(WORD1 WIN32
     port/original/opus_original_startup_probe.cpp
-    port/word1.rc
     port/winword.manifest
 )
+if(WIN32)
+    target_sources(WORD1 PRIVATE port/word1.rc)
+endif()
 add_dependencies(WORD1 opus_original_engine)
 target_compile_features(WORD1 PRIVATE cxx_std_20)
 target_compile_definitions(WORD1 PRIVATE
