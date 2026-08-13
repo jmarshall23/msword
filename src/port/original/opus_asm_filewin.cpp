@@ -48,7 +48,7 @@ struct NativeBptbPrefix {
 
 BYTE* ofs_reserved(OFSTRUCT& ofs) noexcept {
 #ifdef _WIN32
-    return ofs.Reserved1;
+    return reinterpret_cast<BYTE*>(&ofs.Reserved1);
 #else
     return ofs.reserved;
 #endif
