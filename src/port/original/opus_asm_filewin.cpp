@@ -46,6 +46,14 @@ struct NativeBptbPrefix {
     unsigned char (*pages)[512];
 };
 
+BYTE* ofs_reserved(OFSTRUCT& ofs) noexcept {
+#ifdef _WIN32
+    return ofs.Reserved1;
+#else
+    return ofs.reserved;
+#endif
+}
+
 }  // namespace
 
 extern "C" {
@@ -72,7 +80,7 @@ int OpusOpenFile(const LPCSTR file_name, void* const legacy_ofs,
     native_ofs.cBytes = sizeof(native_ofs);
     native_ofs.fFixedDisk = legacy->fixed_disk;
     native_ofs.nErrCode = legacy->error_code;
-    std::memcpy(native_ofs.reserved, legacy->reserved,
+    std::memcpy(ofs_reserved(native_ofs), legacy->reserved,
                 sizeof(legacy->reserved));
     lstrcpynA(native_ofs.szPathName, legacy->path,
               static_cast<int>(sizeof(native_ofs.szPathName)));
@@ -81,7 +89,7 @@ int OpusOpenFile(const LPCSTR file_name, void* const legacy_ofs,
     legacy->byte_count = native_ofs.cBytes;
     legacy->fixed_disk = native_ofs.fFixedDisk;
     legacy->error_code = native_ofs.nErrCode;
-    std::memcpy(legacy->reserved, native_ofs.reserved,
+    std::memcpy(legacy->reserved, ofs_reserved(native_ofs),
                 sizeof(legacy->reserved));
     lstrcpynA(legacy->path, native_ofs.szPathName,
               static_cast<int>(sizeof(legacy->path)));
