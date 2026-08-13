@@ -64,6 +64,7 @@ constexpr WCHAR kZoom100[] = OPUSW("100%");
 constexpr WCHAR kZoomPageWidth[] = OPUSW("Page Width");
 constexpr WCHAR kZoomWholePage[] = OPUSW("Whole Page");
 constexpr WCHAR kZoomPrintPreview[] = OPUSW("Print Preview");
+constexpr WCHAR kDwmApiLibrary[] = OPUSW("dwmapi.dll");
 constexpr int kToolbarBitmap = 201;
 constexpr int kSpriteCell = 20;
 constexpr COLORREF kButtonFace = RGB(192, 192, 192);
@@ -549,7 +550,7 @@ void apply_caption_colors(HWND window) {
     using DwmSetWindowAttributeProc = HRESULT(WINAPI*)(HWND, DWORD,
                                                        LPCVOID, DWORD);
     HMODULE module = LoadLibraryExW(
-        L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        kDwmApiLibrary, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (module == nullptr) {
         return;
     }
