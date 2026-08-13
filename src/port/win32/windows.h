@@ -481,6 +481,8 @@ typedef struct tagTEXTMETRICA {
 } TEXTMETRICA, *LPTEXTMETRICA;
 typedef TEXTMETRICA TEXTMETRIC;
 typedef LPTEXTMETRICA LPTEXTMETRIC;
+
+typedef TEXTMETRICA TEXTMETRICW, *LPTEXTMETRICW;
 typedef LOGFONTA LOGFONT;
 typedef LPLOGFONTA LPLOGFONT;
 
@@ -1448,8 +1450,23 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef BLACK_BRUSH
 #define BLACK_BRUSH 4
 #endif
+#ifndef NULL_BRUSH
+#define NULL_BRUSH 5
+#endif
+#ifndef HOLLOW_BRUSH
+#define HOLLOW_BRUSH NULL_BRUSH
+#endif
 #ifndef WHITE_PEN
 #define WHITE_PEN 6
+#endif
+#ifndef NULL_PEN
+#define NULL_PEN 8
+#endif
+#ifndef ANSI_FIXED_FONT
+#define ANSI_FIXED_FONT 11
+#endif
+#ifndef ANSI_VAR_FONT
+#define ANSI_VAR_FONT 12
 #endif
 
 #ifndef IDC_IBEAM
@@ -2092,6 +2109,21 @@ typedef DWORD COLORREF;
 #define OF_READWRITE 2
 #endif
 
+#ifndef OBJ_PEN
+#define OBJ_PEN 1
+#endif
+#ifndef OBJ_BRUSH
+#define OBJ_BRUSH 2
+#endif
+#ifndef OBJ_DC
+#define OBJ_DC 3
+#endif
+#ifndef OBJ_METADC
+#define OBJ_METADC 4
+#endif
+#ifndef OBJ_BITMAP
+#define OBJ_BITMAP 5
+#endif
 #ifndef OBJ_FONT
 #define OBJ_FONT 6
 #endif
@@ -2948,6 +2980,7 @@ HGDIOBJ SelectObject(HDC device_context, HGDIOBJ object);
 HFONT CreateFontIndirectA(const LOGFONTA* logical_font);
 HFONT CreateFontIndirectW(const LOGFONTW* logical_font);
 BOOL GetTextMetricsA(HDC device_context, LPTEXTMETRICA text_metric);
+BOOL GetTextMetricsW(HDC device_context, LPTEXTMETRICW text_metric);
 HBITMAP CreateBitmapIndirect(const BITMAP* bitmap);
 HBITMAP CreateBitmap(int width, int height, UINT planes, UINT bits_per_pixel,
                      LPCVOID bits);

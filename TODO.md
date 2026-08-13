@@ -164,11 +164,9 @@ Printing (`Escape` at 26 sites, `StartDoc`/`EndDoc`/`EndPage`) is stubbed to fai
 
 Split item 13 into executable subtasks:
 
-- 13a DC/object model: `HDC`, `HBITMAP`, `HPEN`, `HBRUSH`, `HFONT`, `SelectObject`,
-  `SaveDC`, `RestoreDC`.
 - 13b Raster ops: `PatBlt`, `BitBlt`, `StretchBlt`, `SetROP2` over 32-bit buffers.
-- 13c Text metrics: `CreateFontIndirect`, `EnumFonts`, `GetTextExtent`,
-  `GetTextMetrics`, plus the font-substitution table.
+- 13c Text metrics: `EnumFonts`, `GetTextExtent`, `GetTextMetrics`, plus the
+  font-substitution table.
 - 13d Printing stubs: `Escape`, `StartDoc`, `EndDoc`, `EndPage` fail predictably with
   `TRACE`.
 

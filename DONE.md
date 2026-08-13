@@ -1,5 +1,23 @@
 # DONE
 
+## Add GDI DC and object state
+
+`src/port/win32/gdi32.cpp` now owns the first GDI layer: `HDC`, `HBITMAP`, `HPEN`,
+`HBRUSH`, and `HFONT` handles; stock objects; type-aware `SelectObject`;
+`GetCurrentObject`; `SaveDC`/`RestoreDC`; object deletion rules; bitmap creation and
+resource bitmap bridging. Resource-loaded bitmaps now enter the same GDI object table as
+created bitmaps, so later raster work has one handle model.
+
+`opus_win32_gdi_object_test` covers default DC selections, pen/brush/font/bitmap
+selection return values, save/restore state, selected-object delete rejection, bitmap
+metadata, stock-object delete rejection, and DC teardown. The small `CharUpperBuffA`,
+`GetStringTypeA`, and `MulDiv` kernel helpers were added because `opus_x64_runtime_test`
+reaches them before the later user32 work.
+
+Validated with `ctest --test-dir build-item13 -R 'strtbl|sttb|plc|sdm_cab|command|win32_memory|opus_win32_gdi_object_test|win32_coverage' --output-on-failure`.
+`opus_x64_runtime_test` now links on macOS, then stops at the next user32 scope:
+`FInitSdm_sdm21` calls `GetSystemMetrics` and `GetSysColor`, which remain item 14 work.
+
 ## Implement kernel32 shim tier
 
 `src/port/win32/kernel32.cpp` now provides the non-Windows kernel32 surface reached by

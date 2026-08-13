@@ -915,6 +915,7 @@ else()
     target_sources(opus_x64_runtime PRIVATE
         port/original/modernformatsstub.cpp
         port/win32/commdlg.c
+        port/win32/gdi32.cpp
         port/win32/kernel32.cpp
         port/win32/module.cpp
         port/win32/objbase.c
@@ -1226,6 +1227,27 @@ if(NOT WIN32)
 endif()
 
 if(NOT WIN32)
+    add_executable(opus_win32_gdi_object_test
+        port/original/opus-win32-gdi-object-test.cpp
+    )
+    target_compile_features(opus_win32_gdi_object_test PRIVATE cxx_std_20)
+    target_compile_definitions(opus_win32_gdi_object_test PRIVATE
+        WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
+    )
+    target_include_directories(opus_win32_gdi_object_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+    target_link_libraries(opus_win32_gdi_object_test PRIVATE opus_x64_runtime)
+    set_target_properties(opus_win32_gdi_object_test PROPERTIES
+        FOLDER "Original Opus x64/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_win32_gdi_object_test PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        )
+    endforeach()
+
     add_executable(opus_win32_memory_test
         port/original/opus-win32-memory-test.cpp
     )
@@ -1257,7 +1279,12 @@ target_compile_definitions(opus_x64_runtime_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
 target_include_directories(opus_x64_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime user32 gdi32)
+target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime)
+if(WIN32)
+    target_link_libraries(opus_x64_runtime_test PRIVATE user32 gdi32)
+elseif(APPLE)
+    target_link_options(opus_x64_runtime_test PRIVATE -Wl,-undefined,dynamic_lookup)
+endif()
 set_target_properties(opus_x64_runtime_test PROPERTIES
     FOLDER "Original Opus x64/tests"
     RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
@@ -1275,7 +1302,12 @@ add_executable(opus_modern_formats_test
 )
 target_compile_features(opus_modern_formats_test PRIVATE cxx_std_20)
 target_compile_definitions(opus_modern_formats_test PRIVATE NOMINMAX UNICODE _UNICODE)
-target_link_libraries(opus_modern_formats_test PRIVATE opus_x64_runtime user32 gdi32)
+target_link_libraries(opus_modern_formats_test PRIVATE opus_x64_runtime)
+if(WIN32)
+    target_link_libraries(opus_modern_formats_test PRIVATE user32 gdi32)
+elseif(APPLE)
+    target_link_options(opus_modern_formats_test PRIVATE -Wl,-undefined,dynamic_lookup)
+endif()
 if(MSVC)
     target_compile_options(opus_modern_formats_test PRIVATE /W4 /utf-8)
 endif()
@@ -1336,6 +1368,7 @@ add_test(NAME opus_x64_runtime_test COMMAND $<TARGET_FILE:opus_x64_runtime_test>
 if(NOT WIN32)
     add_test(NAME opus_win16_module_test COMMAND $<TARGET_FILE:opus_win16_module_test>)
     add_test(NAME opus_win32_resource_test COMMAND $<TARGET_FILE:opus_win32_resource_test>)
+    add_test(NAME opus_win32_gdi_object_test COMMAND $<TARGET_FILE:opus_win32_gdi_object_test>)
     add_test(NAME opus_win32_memory_test COMMAND $<TARGET_FILE:opus_win32_memory_test>)
 endif()
 if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")

@@ -10,6 +10,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cctype>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -300,6 +301,43 @@ LPSTR CharLowerA(LPSTR string) {
             std::tolower(static_cast<unsigned char>(*cursor)));
     }
     return string;
+}
+
+DWORD CharUpperBuffA(LPSTR text, DWORD length) {
+    if (text == nullptr) return 0;
+    for (DWORD index = 0; index < length; ++index) {
+        text[index] = static_cast<char>(
+            std::toupper(static_cast<unsigned char>(text[index])));
+    }
+    return length;
+}
+
+BOOL GetStringTypeA(DWORD, DWORD type, LPCSTR source, int count,
+                    WORD* char_type) {
+    if (type != CT_CTYPE1 || source == nullptr || char_type == nullptr) {
+        return FALSE;
+    }
+    for (int index = 0; index < count; ++index) {
+        const auto ch = static_cast<unsigned char>(source[index]);
+        WORD flags = 0;
+        const bool upper = std::isupper(ch) || (ch >= 0xc0 && ch <= 0xd6) ||
+                           (ch >= 0xd8 && ch <= 0xde);
+        const bool lower = std::islower(ch) || (ch >= 0xdf && ch <= 0xf6) ||
+                           (ch >= 0xf8 && ch <= 0xff);
+        if (upper) flags |= C1_UPPER | C1_ALPHA;
+        if (lower) flags |= C1_LOWER | C1_ALPHA;
+        if (std::isdigit(ch)) flags |= C1_DIGIT;
+        char_type[index] = flags;
+    }
+    return TRUE;
+}
+
+int MulDiv(int number, int numerator, int denominator) {
+    if (denominator == 0) return number >= 0 ? INT_MAX : INT_MIN;
+    const long long value = static_cast<long long>(number) * numerator;
+    const long long adjusted =
+        value >= 0 ? value + denominator / 2 : value - denominator / 2;
+    return static_cast<int>(adjusted / denominator);
 }
 
 HANDLE GetProcessHeap(void) { return reinterpret_cast<HANDLE>(static_cast<uintptr_t>(1)); }
