@@ -2982,9 +2982,16 @@ struct PdfUnicodeFont {
     WORD glyph(std::wstring_view characters) {
         WORD glyphs[2]{0xffff, 0xffff};
         const int count = (std::min)(2, static_cast<int>(characters.size()));
-        if (count <= 0 || GetGlyphIndicesW(dc, characters.data(), count,
-                                           glyphs, GGI_MARK_NONEXISTING_GLYPHS) ==
-                              GDI_ERROR) return 0;
+        if (count <= 0) return 0;
+        WCHAR glyph_characters[2]{};
+        for (int index = 0; index < count; ++index) {
+            const std::size_t offset = static_cast<std::size_t>(index);
+            glyph_characters[index] = static_cast<WCHAR>(
+                static_cast<std::uint16_t>(characters[offset]));
+        }
+        if (GetGlyphIndicesW(dc, glyph_characters, count,
+                             glyphs, GGI_MARK_NONEXISTING_GLYPHS) == GDI_ERROR)
+            return 0;
         WORD selected = glyphs[0] == 0xffff ? 0 : glyphs[0];
         if (selected == 0 && count == 2 && glyphs[1] != 0xffff)
             selected = glyphs[1];
