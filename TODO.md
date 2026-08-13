@@ -256,6 +256,8 @@ Its PDF font creation now copies the requested face name into `WCHAR` storage
 before calling `CreateFontW`.
 Its PDF glyph lookup now copies the candidate UTF-16 code units into `WCHAR`
 storage before calling `GetGlyphIndicesW`.
+Its regular-file size check now copies the probed path into `WCHAR` storage
+before calling `GetFileAttributesExW`.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 

@@ -262,8 +262,13 @@ bool safe_file_path_syntax(std::wstring_view path) {
 bool regular_file_within_limit(const std::wstring& path,
                                const std::size_t maximum_size) {
     if (!safe_file_path_syntax(path)) return false;
+    std::array<WCHAR, 32768> native_path{};
+    for (std::size_t index = 0; index < path.size(); ++index) {
+        native_path[index] =
+            static_cast<WCHAR>(static_cast<std::uint16_t>(path[index]));
+    }
     WIN32_FILE_ATTRIBUTE_DATA attributes{};
-    if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard,
+    if (!GetFileAttributesExW(native_path.data(), GetFileExInfoStandard,
                               &attributes) ||
         (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
         return false;
