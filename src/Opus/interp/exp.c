@@ -19,6 +19,7 @@
 
 
 extern WORD WParseDttm();
+LONG LWholeFromNum();
 
 EVI EviPop(), EviTop(), EviPush();
 ELD EldExecutePproc();
@@ -29,6 +30,8 @@ VOID StoreItemToRl(), FreeRek(), InitHprek();
 ELV ElvReadItemFromRl();
 ELV ElvOfRl();
 REK huge *HprekOfRl();
+ELDI **HeldiFromIeldi();
+void **PpvAllocCb();
 
 
 typedef int (* PFN)();
@@ -214,7 +217,7 @@ FInitExpTds()
 	ElGlobal(ieltStackPtr) = -1;
 	ElGlobal(ievStackPtr) = -1;
 
-	return (ElGlobal(heltStack) = PpvAllocCb(sbTds,
+	return (ElGlobal(heltStack) = (unsigned **)PpvAllocCb(sbTds,
 			sizeof(ELT) * celtExpStackMax)) != 0;
 }
 
@@ -538,7 +541,7 @@ DontApply:
 			}
 
 	case eltHash:
-		/* Just ignore this as long as it's 
+		/* Just ignore this as long as it's
 			not being used as an operator */
 		if (!Global(fExpectOpd))
 			RtError(rerrSyntaxError);
@@ -669,7 +672,7 @@ DontApply:
 				DKD huge * hpdkd;
 
 				hpdkd = HpOfSbIb(Global(sbNtab), hpsy->pdkd);
-				if (hpdkd->idktMacParam != 0 || 
+				if (hpdkd->idktMacParam != 0 ||
 						hpdkd->dktRet == dktNone)
 					break;
 				}
@@ -701,12 +704,12 @@ DontApply:
 				}
 
 			Global(fExpectOpd) = TRUE;
-			
+
 			ElGlobal(ieltStackPtr) += 1;
 			if (ElGlobal(ieltStackPtr) >= celtExpStackMax)
 				/* Error: expression too complex */
 				RtError(rerrExpressionTooComplex);
-			
+
 			/* Poor csl can't compile this line in native... */
 			{{ RgeltStack()[ElGlobal(ieltStackPtr)] = eltNew; }}
 
@@ -719,9 +722,9 @@ DontApply:
 			PopToIev(iev);
 			RestoreExp(&esb);
 			}
-		
+
 			ElGlobal(ieltStackPtr) -= 1;
-		
+
 			Global(fExpectOpd) = FALSE;
 
 			hpevNew = HpevOfEvi(EviPush());
@@ -777,7 +780,7 @@ DontApply:
 			struct EV huge *hpevNew;
 
 
-			elk = (eltNew == eltElk) ? 
+			elk = (eltNew == eltElk) ?
 					PelcrCur()->elk : /* std elk */
 			ElkUserSt(&PelcrCur()->cch); /* usr elk */
 
@@ -1038,7 +1041,7 @@ RPS *prps;
 				prps->ielfd = ielfd;
 				elv = elvInt;
 				}
-			else		/* -- normal field -- */				
+			else		/* -- normal field -- */
 				{
 				prps->ielfd = ielfdNil;
 				prps->iag = iag;
@@ -1450,7 +1453,7 @@ FDoSubscript()
 			BLTBCX(0, LpOfHp(&hpevSym->num), sizeof(NUM));
 
 			BLTBCX(0, (char far *) rghszArgs, sizeof (rghszArgs));
-			
+
 			/* Resolve arguments and store results in rgwArgs. */
 			cwArgs = 0;
 			pwArgs = rgwArgs;
@@ -1461,13 +1464,13 @@ FDoSubscript()
 
 				dkt = hpdkd->rgdkt[ielp];
 
-				ResolveEvi(eviFirstArg + EviOfIev(ielp), 
-						dkt == dktInt ? elvInt : 
-						(dkt == dktString ? elvSd : elvNum), 
+				ResolveEvi(eviFirstArg + EviOfIev(ielp),
+						dkt == dktInt ? elvInt :
+						(dkt == dktString ? elvSd : elvNum),
 						hpNil);
 				hpev = HpevOfEvi(eviFirstArg + EviOfIev(ielp));
 				elv = hpev->elv;
-				if (elv != elvInt && elv != elvNum && 
+				if (elv != elvInt && elv != elvNum &&
 						elv != elvSd)
 					{
 LTmError:
@@ -1492,16 +1495,16 @@ LTmError:
 
 				case dktLong:
 						{
-						extern long LWholeFromNum();
-						NUM numT;
+							NUM numT;
 						BLTBH(&hpev->num, &numT, cbNUM);
-						*((long *) pwArgs)++ = 
-								LWholeFromNum(&numT, TRUE);
+							*(long *)pwArgs = LWholeFromNum(&numT, TRUE);
+							pwArgs = (WORD *)((long *)pwArgs + 1);
 						}
 					break;
 
-				case dktDouble:
-					*((NUM *) pwArgs)++ = hpev->num;
+					case dktDouble:
+						*(NUM *)pwArgs = hpev->num;
+						pwArgs = (WORD *)((NUM *)pwArgs + 1);
 					break;
 
 				case dktString:
@@ -1510,14 +1513,14 @@ LTmError:
 					int cch;
 					LPSTR lpstr;
 					char ** hsz;
-					
+
 					sd = hpev->sd;
 					cch = CchFromSd(sd);
-					
+
 					if (cch > 255)
 						RtError(rerrStringTooBig);
-					
-					if ((rghszArgs[ielp] = hsz = PpvAllocCbWW(sbDds, 256)) == NULL)
+
+					if ((rghszArgs[ielp] = hsz = (char **)PpvAllocCbWW(sbDds, 256)) == NULL)
 						{
 						rerr = rerrOutOfMemory;
 						goto LRerr;
@@ -1525,7 +1528,7 @@ LTmError:
 
 					BLTBH(HpchFromSd(sd), (char huge *) *hsz, cch);
 					(*hsz)[cch] = '\0';
-					
+
 					lpstr = (LPSTR) *hsz;
 					*pwArgs++ = HIWORD(lpstr);
 					*pwArgs++ = LOWORD(lpstr);
@@ -1567,7 +1570,7 @@ LTmError:
 							goto LRerr;
 							}
 
-						if ((hsz = PpvAllocCb(sbDds, (int) cch + 1)) == NULL)
+						if ((hsz = (char **)PpvAllocCb(sbDds, (int) cch + 1)) == NULL)
 							{
 							rerr = rerrOutOfMemory;
 							goto LRerr;
@@ -1600,11 +1603,11 @@ LRerr:
 				if (hpev->elv == elvSd && rghszArgs[ielp] != 0)
 					{
 					int cch;
-					
+
 					cch = CchSz(*rghszArgs[ielp]) - 1;
 					if (FReallocSd(hpev->sd, cch))
 						{
-						BLTBH((char huge *) *rghszArgs[ielp], 
+						BLTBH((char huge *) *rghszArgs[ielp],
 							HpchFromSd(hpev->sd), cch);
 						}
 
@@ -1722,7 +1725,7 @@ EVI eviFirstArg;
 		{
 		int as;
 
-		ResolveEvi(eviFirstArg + EviOfIev(iev), 
+		ResolveEvi(eviFirstArg + EviOfIev(iev),
 				elvInt, (int huge *) &as);
 
 		if (iev != cevArgs - 1)
@@ -1785,7 +1788,7 @@ char huge *hpvalRet;
 				* the arg list was seen.
 				*/
 			/* Error: missing args to built-in function */
-			RtError(hpev->elv == elvNil ? 
+			RtError(hpev->elv == elvNil ?
 					rerrSyntaxError : rerrArgCountMismatch);
 			}
 
@@ -1839,8 +1842,8 @@ char huge *hpvalRet;
 				* is the type of the value in the record (determined
 				* when fAggregate was set).
 				*/
-			hpev->elv = ElvReadItemFromRl(hpev->rlAggr, 
-					hpev->rpsAggr, hpev->elv, &hpev->num, 
+			hpev->elv = ElvReadItemFromRl(hpev->rlAggr,
+					hpev->rpsAggr, hpev->elv, &hpev->num,
 					HeldiFromIeldi(IeldiFromElv(hpev->elvAggr)));
 
 			switch (hpev->elv)
@@ -1956,7 +1959,7 @@ LIntOrSd:
 						elv = elvInt;
 						goto LNumToInt;
 						}
-					return;
+					return 0;
 					}
 
 				switch (ElvcOfElvElv(hpev->elv, elv))
@@ -1965,7 +1968,7 @@ LIntOrSd:
 						{
 						NUM numT;
 LNumToInt:
-						BLTBX(LpOfHp(&hpev->num), 
+						BLTBX(LpOfHp(&hpev->num),
 								(char far *)&numT, cbNUM);
 
 						LdiNum(&numT);
@@ -1980,7 +1983,7 @@ LNumToInt:
 
 						CNumInt(hpev->w);
 						StiNum(&numT);
-						BLTBX((char far *)&numT, 
+						BLTBX((char far *)&numT,
 								LpOfHp(&hpev->num), cbNUM);
 #ifdef DEBUG
 						if (fToExp)
@@ -2019,7 +2022,7 @@ ELT eltStopParse;
 	ELT elt;
 	EVI evi;
 	int iNest;
-	
+
 	iNest = 0;
 	while ((elt = Global(eltCur)) != eltStopParse)
 		{
@@ -2031,10 +2034,10 @@ ELT eltStopParse;
 				break;
 			iNest -= 1;
 			}
-		
+
 		if (!FExpIn(elt))
 			break;
-		
+
 		if (elt == Global(eltCur))
 			EltGetCur();
 		}
@@ -2138,7 +2141,7 @@ BOOL fCall;
 		}
 
 #ifdef OLD
-	while ((!fStopAtComma || Global(eltCur) != eltComma) && 
+	while ((!fStopAtComma || Global(eltCur) != eltComma) &&
 			FExpIn(Global(eltCur)))
 		EltGetCur();
 #endif
@@ -2241,7 +2244,7 @@ EVI eviFirstArg;
 				InitHprek(hprek, ElvOfRl(rl));
 			hpevArg->elk = elkNil;
 
-			if (elv == elvSd && hpeldi->rgelfd[ielfd].iag >= 
+			if (elv == elvSd && hpeldi->rgelfd[ielfd].iag >=
 					((hpeldi->cabi >> 8) & 0xff))
 				elv = elvIntOrSd;
 			}
@@ -2249,14 +2252,14 @@ EVI eviFirstArg;
 		/* ielfd and elv now describe the argument to be added.  We now
 			* obtain a value of type elv, and store it into the record.
 			*/
-		ResolveEvi(eviFirstArg + EviOfIev(iev), 
+		ResolveEvi(eviFirstArg + EviOfIev(iev),
 				/*elv == elvNil ? elvInt : elv*/elvNil, hpNil);
 		rps = RpsFromIelfd(ielfd, heldi);
-		
+
 		/* Catch buttons specified positionaly */
 		if (rps.ielfd != ielfdNil && elkArg == elkNil)
 			RtError(rerrIllegalFunctionCall);
-			
+
 		hpevArg = HpevOfEvi(eviFirstArg + EviOfIev(iev));
 		StoreItemToRl(rl, rps, hpevArg->elv, &hpevArg->num, heldi);
 		}
@@ -2338,7 +2341,7 @@ NUM huge *hpval;
 		w = *(int huge *)hpval;
 		hpval = (int huge *) &w;
 
-		if ((pfnWParse = PfnTmcOptFromHidIag(hpeldi->hid, 
+		if ((pfnWParse = (PFN)PfnTmcOptFromHidIag(hpeldi->hid,
 				rps.iag, &tmc, &opt, &fPt)) == NULL)
 			RtError(rerrTypeMismatch);
 
@@ -2392,7 +2395,7 @@ NUM huge *hpval;
 		case elvInt:
 			if (fParse)
 				{
-				if ((pfnWParse = PfnTmcOptFromHidIag(
+				if ((pfnWParse = (PFN)PfnTmcOptFromHidIag(
 						hpeldi->hid, rps.iag, &tmc, &opt, &fPt))
 						== NULL)
 					RtError(rerrTypeMismatch);
@@ -2415,7 +2418,7 @@ NUM huge *hpval;
 				SD sd;
 				char szBuf [256];
 
-				(*pfnWParse)(tmmFormat, szBuf, &pv, 
+				(*pfnWParse)(tmmFormat, szBuf, &pv,
 						0, tmc, opt);
 				if ((*(SD huge *)hpval = SdCopySz(szBuf)) == sdNil)
 					RtError(rerrOutOfMemory);
@@ -2543,7 +2546,7 @@ ELDI **heldi;
 		rpsReturn.ielfd = ielfd;
 		rpsReturn.iag = -1;
 		}
-	else		/* -- non-push-button -- */		
+	else		/* -- non-push-button -- */
 		{
 		rpsReturn.ielfd = ielfdNil;
 		rpsReturn.iag = hpelfd->iag;
@@ -2594,7 +2597,7 @@ ELDI **heldi;
 			}
 		}
 	ResetSbCur();						/* \SB/ */
-	
+
 	return ieldiNil;
 }
 

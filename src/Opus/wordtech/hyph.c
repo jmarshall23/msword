@@ -47,6 +47,9 @@ Win( extern struct PAP		vpapFetch );
 /* G L O B A L S */
 
 CP CpBestHypd();
+#ifdef OPUS_X64
+extern CHAR HUGE *N_HpchFromFc();
+#endif
 struct HYPFD vhypfd;    /* hyphenation file state */
 
 struct HYPB **vhhypb;   /* heap pointer to the parameter block used by
@@ -98,7 +101,7 @@ CP cp;
 		char rgchNRH[2];
 		rgchNRH[0] = chNonReqHyphen;
 		if (!FInsertRgch(selCur.doc, cp, rgchNRH, 1, 0, 0))
-			return;
+			return 0;
 
 		InvalFli(); /* since hyphenation mode is changed */
 
@@ -534,7 +537,7 @@ failure means no hyphenation points will be returned. */
 	if (!fCaps && !FLower(*pch))
 		{
 		MeltHp();
-		return;
+		return 0;
 		}
 	*pchTo++ = chHyphBase; /* prepend boundary character */
 
@@ -554,7 +557,7 @@ failure means no hyphenation points will be returned. */
 	if (ichMac <= 4 || !FLoadHyph())
 		{
 		MeltHp();
-		return;
+		return 0;
 		}
 
 /* now find the hyphenation points */

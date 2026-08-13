@@ -53,6 +53,7 @@ extern HBRUSH vhbrGray;
 extern HBRUSH vhbrWhite;
 #endif /* WIN23 */
 HDLG HdlgHibsDlgCur(HIBS);
+extern CHAR **HszCreate();
 
 /* W R E F  F R O M  H W N D  I B */
 /* %%Function:WRefFromHwndIb %%Owner:peterj */
@@ -811,7 +812,7 @@ int val; /* many things */
 
 	case ibitText:
 		/* val is pch to text */
-		SetIibbTextHwndIb(hwnd, iibb, val);
+		SetIibbTextHwndIb(hwnd, iibb, (CHAR *)(UINT_PTR)val);
 		break;
 
 #ifdef DEBUG
@@ -867,7 +868,7 @@ struct RC *prcInside;
 	if (vsci.fWin3Visuals)
 		{
 		*prcInside = *prc;
-		return;
+		return 0;
 		}
 #endif /* WIN23 */
 	prcInside->xpLeft = prc->xpLeft + dxp;
@@ -944,7 +945,7 @@ struct RC rgrcInv[];
 		SetRgRcs(1, fTrue, rc.xpRight-dxp2, rc.ypTop, dyp, NULL, rgrcNor);
 		SetRgRcs(2, fFalse, rc.xpLeft, rc.ypTop, dxp, rgrcNor, NULL);
 		SetRgRcs(3, fFalse, rc.xpLeft, rc.ypBottom-dyp2, dxp, NULL, rgrcNor);
-		return;
+		return 0;
 		}
 
 /* left */
@@ -1022,7 +1023,7 @@ BOOL fHilite;
 	Assert(pibb->ibit == ibitToggleText || pibb->ibit == ibitToggleBmp);
 
 	if (fHilite == pibb->fHilite || (hdc = GetDC(hwnd)) == NULL)
-		return;
+		return 0;
 
 	pibb->fHilite = fHilite;
 	PaintBorders(hdc, pibb);
@@ -1045,16 +1046,16 @@ BOOL fOn;
 #else
 	if (fOn == pibb->fOn)
 #endif /* WIN23 */
-		return;
+		return 0;
 
 	pibb->fOn = fOn;
 #ifdef WIN23
 	pibb->fHilite = fFalse;
 #endif /* WIN23 */
 	if (!IsWindowVisible(hwnd))
-		return;
+		return 0;
 	if ((hdc = GetDC(hwnd)) == NULL)
-		return;
+		return 0;
 
 #ifdef WIN23
 	if (vsci.fWin3Visuals)
@@ -1093,7 +1094,7 @@ struct IBB *pibb;
 	struct RC rc;
 
 	if (!IsWindowVisible(hwnd))
-		return;
+		return 0;
 	FreezeHp();
 	GetToggleRc(&pibb->rc, &rc);
 
@@ -1292,7 +1293,7 @@ BOOL fDown;
 	Assert(pibb->ibit == ibitToggleText || pibb->ibit == ibitToggleBmp);
 
 	if (fDown == pibb->fHilite || (hdc = GetDC(hwnd)) == NULL)
-		return;
+		return 0;
 
 	pibb->fHilite = fDown;
 	FSetDcAttribs(hdc, vsci.dccIconBar);
@@ -1320,7 +1321,7 @@ struct IBB *pibb;
 	int dyp = vsci.dypBorder;
 
 	if (!IsWindowVisible(hwnd))
-		return;
+		return 0;
 	FreezeHp();
 	GetToggleRc(&pibb->rc, &rc);
 
@@ -1618,4 +1619,3 @@ BOOL fCenter, fGray;
 }
 
 #endif /* WIN23 */
-

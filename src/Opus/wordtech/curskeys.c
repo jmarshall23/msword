@@ -1,4 +1,4 @@
-#ifdef MAC	 
+#ifdef MAC
 #define WINDOWS /* SelectWindow */
 #include "toolbox.h"
 #endif
@@ -147,14 +147,14 @@ of the fRound case. Max is to protect from underflow with block selections. */
 				goto LLim; /* already just before end */
 			cpT = CpFirstSty(ww, doc, cp, sty, fFalse);
 /* also returns hpldr, idr */
-			FormatLineDr(ww, cpT, 
+			FormatLineDr(ww, cpT,
 					PdrFetchAndFree(vhpldrRetSel, vidrRetSel, &drf));
 			cpT = vfli.chBreak != chNil ? vfli.cpMac - ccpEop :
 					vfli.cpMac;
 			if (cp == cpT && vfli.cpMac < CpMacDoc(doc))
 				{
 				cpT = CpFirstSty(ww, doc, vfli.cpMac, sty, fFalse);
-				FormatLineDr(ww, cpT, 
+				FormatLineDr(ww, cpT,
 						PdrFetchAndFree(vhpldrRetSel, vidrRetSel, &drf));
 				cpT = vfli.chBreak != chNil ? vfli.cpMac - ccpEop :
 						vfli.cpMac;
@@ -182,7 +182,7 @@ LCacheTc:
 				}
 			else
 				{
-				CpFirstTap(doc, (psel->sty != styWholeTable) ? ((psel->fTableAnchor) ? psel->cpAnchor : psel->cpAnchor - 1) : 
+				CpFirstTap(doc, (psel->sty != styWholeTable) ? ((psel->fTableAnchor) ? psel->cpAnchor : psel->cpAnchor - 1) :
 				cp);
 				cp = vmpitccp[min(psel->itcLim, vtapFetch.itcMac + 1)];
 				}
@@ -257,7 +257,7 @@ LCacheTc:
 		{
 		if (cp == cp0 && (!fExtend || !psel->fWithinCell))
 			{
-LLim:                   
+LLim:
 			Beep();
 			return;
 			}
@@ -284,7 +284,7 @@ LHaveCp:
 			struct CA caTapAnchor;
 			CacheTc(wwNil, doc, psel->cpAnchor, fFalse, fFalse);
 			if (!FInCa(doc, cp, &vtcc.ca) ||
-					(!fFwdKey && 
+					(!fFwdKey &&
 					((psel->fForward && !psel->fIns) ? psel->cpLim : psel->cpFirst) == cp0))
 				{
 				CpFirstTap(doc, psel->cpAnchor);
@@ -417,13 +417,13 @@ BOOL fDrag;
 	int fTableSave;
 	int itcFirstSave;
 	int itcLimSave;
-	CP cpVisi; 
+	CP cpVisi;
 	struct CA caCell, caTapAnchor, ca;
 	struct WWD *pwwd = *hwwdCur;
 	int ywMin = pwwd->ywMin;
 	int ywMac = pwwd->ywMac;
 	int cSty = (fUp) ? -dSty : dSty;
-	int cTableNorm = 0; 
+	int cTableNorm = 0;
 	BOOL cTwice = 4;
 	BOOL fPageView = pwwd->fPageView;
 	int ywBottom, ywTop;
@@ -431,7 +431,7 @@ BOOL fDrag;
 	CP cp, cpFirst, cpLim, cpTo;
 	CP cpFirstCell;
 	int itcFirst, itcLim;
-	struct RC rcwDr; 
+	struct RC rcwDr;
 	struct CA caTable;
 	struct PT pt, ptT;
 	struct EDL edl, edlNext, edlPrev;
@@ -441,7 +441,7 @@ BOOL fDrag;
 	struct DRF drfFetch;
 
 	if ((*hwwdCur)->fOutline && FOutlineEmpty(wwCur, fTrue))
-		return;
+		return 0;
 	if ((*hwwdCur)->fDirty)
 		UpdateWw(wwCur, fFalse);
 #ifdef DCURS
@@ -517,7 +517,7 @@ BOOL fDrag;
 				DyOfRc(&(*hwwdCur)->rcwDisp) >> 2, fFalse);
 		/* make sure no one changed it out from under us */
 		Assert (psel == PselActive());
-		return;
+		return 0;
 		}
 /* in pageview, home will scroll the page and select the first cp in dr, or the
 fisrtt cp in the last line of the last dr. */
@@ -526,7 +526,7 @@ fisrtt cp in the last line of the last dr. */
 		if (sty == styHome)
 			{
 			CmdDrCurs1(fUp ? ucmDrFirst : ucmDrLast, fDrag, !fUp);
-			return;
+			return 0;
 			}
 #ifdef BOGUS
 		else  if (sty == styScreen)
@@ -551,7 +551,7 @@ fisrtt cp in the last line of the last dr. */
 			}
 LHomeOnXwYw:	/* restrict {xw,yw} to vertically visible dl's, then click */
 
-		FullDlBoundsDr(wwCur, hpldr, idr, &dlFirst, &cpFirst, 
+		FullDlBoundsDr(wwCur, hpldr, idr, &dlFirst, &cpFirst,
 				&dlLim, &cpFirst);
 		if (yw >= ywMac - 1 && dlLim > 0)
 			{
@@ -587,11 +587,11 @@ LAgain:   /* for dSty > 1 (from macro language) - should not affect Mac */
 			psel->cpLim) : psel->cpFirst;
 	if (!fUp)
 		{
-		GetCaCharBlock(wwCur, psel->doc, cp, &ca, &cpVisi); 
+		GetCaCharBlock(wwCur, psel->doc, cp, &ca, &cpVisi);
 		if (cp != cpVisi)
-			cp = (cpVisi != cpNil) ? cpVisi : ca.cpLim; 
+			cp = (cpVisi != cpNil) ? cpVisi : ca.cpLim;
 		}
-			
+
 	if (psel->fIns)
 		fEnd = psel->fInsEnd;
 	else
@@ -605,7 +605,7 @@ LAgain:   /* for dSty > 1 (from macro language) - should not affect Mac */
 		}
 	if ((*hwwdCur)->fDirty)
 		UpdateWw(wwCur, fFalse);
-	
+
 	dl = DlWhereDocCp(wwCur, psel->doc, cp, fEnd, &hpldr, &idr,
 			&cpFirst, NULL, fTrue);
 #ifdef DCURS
@@ -651,8 +651,8 @@ up/down:
 		xw = vxwCursor;
 		if (!fScrolled)
 			{
-			if (cp == (fUp ? cp0 : 
-					(fDrag ? CpMacDoc(psel->doc) : 
+			if (cp == (fUp ? cp0 :
+					(fDrag ? CpMacDoc(psel->doc) :
 					(psel->fIns ? CpMacDocEdit(psel->doc) : cp+1))))
 				{
 				Beep();
@@ -684,10 +684,10 @@ up/down:
 			pt.yw = yw;
 			pt.xw = xw;
 			if (DlWherePt(wwCur, &pt, &hpldr, &idr,
-					&spt, fTrue, fFalse) == dlNil)
-				{
-				return;
-				}
+				&spt, fTrue, fFalse) == dlNil)
+			{
+			return 0;
+			}
 			pt.xw = xw;
 			}
 		goto LHomeOnXwYw;
@@ -722,7 +722,7 @@ up/down:
 			}
 		if (!fPageView &&
 				((fUp && cpFirst == cp0 && PdrGalley(*hwwdCur)->dypAbove == 0)
-				|| 
+				||
 				(!fUp && ((fDrag && cp >= CpMacDoc(psel->doc)) ||
 				(!fDrag && cp >= CpMacDocEdit(psel->doc) && psel->fIns)))))
 			{
@@ -742,22 +742,22 @@ up/down:
 			vxwCursor = XwFromXp(hpldr, idr,
  					XpFromDcp(cp0, cp - vfli.cpMin,
 					&xpDummy, &ichDummy));
-			
+
 #ifdef BOGUS
 			XpFromDcp(cp0, cp - vfli.cpMin, &xp, &ichDummy);
-			vxwCursor = XwFromXp(hpldr, idr, xp); 
-#endif					
+			vxwCursor = XwFromXp(hpldr, idr, xp);
+#endif
 			vfEndCursor = fTrue;
 			}
 		dlMac = IMacPlc(hplcedl);
 #ifdef DCURS
 		CommSzNum( SzShared( "  dlMac = "), dlMac );
-#endif	
+#endif
 		if (!fPageView && (*hpldr)->hpldrBack != hNil &&
 			dl == dlMac - 1)
 			{
 			DrclToRcw(hpldr, &pdr->drcl, &rcwDr);
-			ywBottomNew = rcwDr.ywTop + DylMacForTableDr(pdr->cpFirst, hpldr); 
+			ywBottomNew = rcwDr.ywTop + DylMacForTableDr(pdr->cpFirst, hpldr);
 			edl.dyp = ywBottomNew - yw;
 			}
 
@@ -796,8 +796,8 @@ up/down:
 						FreePdrf(&drfFetch);
 						if (edlPrev.hpldr != hNil)
 							{
-							hpldr = edlPrev.hpldr; 
-							idr = 0; 
+							hpldr = edlPrev.hpldr;
+							idr = 0;
 							hplcedl = (PdrFetch(hpldr, idr, &drfFetch))->hplcedl;
 							dl = IMacPlc(hplcedl);
 							FreePdrf(&drfFetch);
@@ -820,14 +820,14 @@ up/down:
 						FreePdrf(&drfFetch);
 						if (edlNext.hpldr != hNil)
 							{
-							hpldr = edlNext.hpldr; 
-							idr = 0; 
-							dl = -1; 
+							hpldr = edlNext.hpldr;
+							idr = 0;
+							dl = -1;
 							}
 
 						yw = YwTopForDl(hpldr, idr, dl + 1, &ywBottom);
 						if (!edlNext.fEnd && ywBottom > ywMac &&
-								!(fDrag && xw <= 
+								!(fDrag && xw <=
 								XwFromXp(hpldr, idr, edlNext.xpLeft)
 								&& dl+1 != DlPartial( hpldr, idr, &dysT)))
 							fVisiAfter = fFalse;
@@ -862,7 +862,7 @@ LScrollAgain:
 					CommSzSz( SzShared( "  cursor would not be visible after move, scrolling "),szEmpty);
 #endif
 					if (--cTwice <= 0)
-								return; 
+								return 0;
 					if (!fDrag)
 						TurnOffSel(psel);
 					yw = YwScrollForCursor(sty, fUp, 1,&fScrolled,
@@ -898,7 +898,7 @@ LNotVisible:
 		CommSzSz( SzShared( "  Cursor NOT visible before move "),szEmpty);
 #endif
 		fAlreadyChanged = fFalse;
-		
+
 		if (psel->fTable)
 			{
 			NormCp(wwCur, psel->doc, cp,
@@ -906,33 +906,33 @@ LNotVisible:
 					(DyOfRc(&(*hwwdCur)->rcwDisp) * 3) / 4,
 					psel->fInsEnd);
 			if (++cTableNorm > 4)
-				{
-				Beep(); 
-				return; 
-				}
+			{
+			Beep();
+			return 0;
+			}
 
-			goto LAgain; 
+			goto LAgain;
 			}
 		if (dl != dlNil && fPageView)
 			goto LScrollAgain;
 		if (dl == dlNil && hpldr == hNil)
 			goto LEnd;
 		xw = vxwCursor;
-		yw = (dl == dlNil && 
+		yw = (dl == dlNil &&
 				cp > PdrFetchAndFree(hpldr, idr, &drfFetch)->cpFirst) ||
-				( dl != dlNil && 
+				( dl != dlNil &&
 				YwTopForDl(hpldr, idr, dl, &ywBottom) > ywMin) ?
 				ywMac - 1 : ywMin;
 		goto LHomeOnXwYw;
 		}
 LClick:
-	ptT.yw = yw; 
+	ptT.yw = yw;
 	ptT.xw = xw;
 	if (fPageView && hpldr != hNil)
 		{
 		DrclToRcw(hpldr, &(PdrFetchAndFree(hpldr, idr, &drfFetch)->drcl), &rcwDr);
 		if (xw > rcwDr.xwRight)
-			ptT.xw = rcwDr.xwRight - 1; 	 
+			ptT.xw = rcwDr.xwRight - 1;
 		}
 
 #ifdef DCURS
@@ -948,9 +948,9 @@ LClick:
 #ifdef DCURS
 	CommSzNum( SzShared("  Click dl = "),dl );
 #endif
-	pt.yw = ptT.yw; 
-	pt.xw = (sty != styLine || !fDrag) ? xw : ptT.xw; 
-		
+	pt.yw = ptT.yw;
+	pt.xw = (sty != styLine || !fDrag) ? xw : ptT.xw;
+
 /* click at dl, xw. We want something to change after every call of CursUpDown
 if fAlreadyChanged is set, something already has, otherwise if sel did not change,
 cause a scroll.
@@ -1007,10 +1007,10 @@ cause a scroll.
 				{
 LBeep:
 				/* make sure no one changed it out from under us */
-				Assert (psel == PselActive());
-				Beep();
-				return;
-				}
+			Assert (psel == PselActive());
+			Beep();
+			return 0;
+			}
 			if (!psel->fNil)
 				TurnOffSel(psel);
 			else
@@ -1028,8 +1028,8 @@ LBeep:
 		if (fDrag && FSelAnchoredInTable(psel, &caCell, &caTapAnchor, &itcAnchor))
 			{
 			caInTable = psel->fTable ? psel->ca : caCell;
-			if (!(!spt.fInTable && psel->fTable) && FChangeSelToStyCol(psel, &cpFirstCell, pt.xw, 
-					hpldr, &idr, dl, &caCell, &caInTable, 
+			if (!(!spt.fInTable && psel->fTable) && FChangeSelToStyCol(psel, &cpFirstCell, pt.xw,
+					hpldr, &idr, dl, &caCell, &caInTable,
 					spt.fInTable || (!psel->fTable && !spt.fInTable && (psel->fForward ? !fUp : fUp))))
 				{
 				fHandled = FDoContentHitColumn(psel, cpFirstCell, idr, &caInTable, &dl,
@@ -1060,16 +1060,16 @@ LBeep:
 			if (fUp)
 				{
 				int xpT, ichT;
-				CP cpT; 
+				CP cpT;
 				struct DR *pdr = PdrFetch(hpldr, idr, &drfFetch);
 				struct PLCEDl **hplcedl = pdr->hplcedl;
 				struct EDL edl;
 				GetPlc(hplcedl, dl, &edl);
 			 	if ((cpT =  CpPlc(hplcedl,dl)) < CpMacDocEdit(pdr->doc))
-					{ 
+					{
 					FormatLineDr(wwCur, CpPlc(hplcedl,dl),pdr);
 					pt.xp = min(pt.xp, XwFromXp(hpldr, idr, XpFromDcp(edl.dcp, edl.dcp, &xpT, &ichT)) - vfli.rgdxp[vfli.ichMac - 1]);
-					} 
+					}
 				FreePdrf(&drfFetch);
 				}
 			FSelectDlPt(psel, hpldr, idr, dl, pt, (psel->sty != styLine || !fDrag) ? styChar : styLine, fDrag,
@@ -1123,11 +1123,11 @@ LEnd:
 #ifndef JR
 	if (!psel->fIns && (*hwwdCur)->fOutline)
 		{
-		CP cpFirstT = psel->cpFirst; 
-		CP cpLimT = psel->cpLim; 
+		CP cpFirstT = psel->cpFirst;
+		CP cpLimT = psel->cpLim;
 		OutlineSelCheck(psel);
 		if (psel->cpFirst != cpFirstT || psel->cpLim != cpLimT)
-			SeeSel1(fTrue); ; 
+			SeeSel1(fTrue); ;
 		}
 #endif
 	if (--cSty > 0)
@@ -1239,7 +1239,7 @@ int	yw;
 					!fUp &&	CpMacPlc(pdr->hplcedl) >= CpMacDoc(pdr->doc) &&
 					DlPartial( hwwdCur, 0, &dysMin ) == dlNil )
 				{
-LNoScroll:                      
+LNoScroll:
 				*pfScrolled = fFalse;
 				}
 			else
@@ -1381,12 +1381,12 @@ BOOL fExtend, fLastDlCp;
 		hpldrNext = hpldr;
 		for (idrNext = idr; ; )
 			{
-			NextPrevHpldrIdr(&hpldrNext, &idrNext, 
+			NextPrevHpldrIdr(&hpldrNext, &idrNext,
 					ucm == ucmNextDr);
 
 			if (idrNext == idr && hpldr == hpldrNext)
 				{
-LBeep:				
+LBeep:
 				FreePdrf(&drfFetch);
 				Beep();
 				return cmdError;
@@ -1429,9 +1429,9 @@ LLeftRight:
 	/* we need to visit every DR on the page till we get back to the currently
 	selected DR */
 			{
-			for (hpldrT = hpldr, idrT = idr, 
+			for (hpldrT = hpldr, idrT = idr,
 					NextPrevHpldrIdr(&hpldrT, &idrT, fTrue);
-					hpldrT != hpldr || idrT != idr; 
+					hpldrT != hpldr || idrT != idr;
 					NextPrevHpldrIdr(&hpldrT, &idrT, fTrue))
 				{
 				pdrT = PdrFetchAndFree(hpldrT, idrT, &drfFetchT);
@@ -1439,7 +1439,7 @@ LLeftRight:
 					continue;
 /* get rcl of the dr we're testing */
 				DrclToRclOuter(hpldrT, &pdrT->drcl, &rcl);
-/* only candidates are drs that begin to the right/left of the dr that contains	
+/* only candidates are drs that begin to the right/left of the dr that contains
 	the selection */
 				dxl = (fRight ? (rcl.xlLeft - rclDr.xlRight) : (rclDr.xlLeft - rcl.xlRight));
 /* we look first for a DR that envelops vylDrCursor which is closest to the
@@ -1468,14 +1468,14 @@ LLeftRight:
 /* as second priority we look for a DR whose extent in yl-space intersects
 	the extent of the currently selected DR, that is closest to the current
 	DR in xl-space, whose top is closest to vylDrCursor */
-					else  if (max(rcl.ylTop, rclDr.ylTop) < 
+					else  if (max(rcl.ylTop, rclDr.ylTop) <
 							min(rcl.ylBottom, rclDr.ylBottom))
 						{
 						dyl = abs(rcl.ylTop - vylDrCursor);
 						fIntoDr = fFalse;
 /* we give precedence to the dr that is closest to the selection dr in x-space*/
 						if (dxl <= dxlNextDr ||
-								(fIntoDr = (!fRight && pdrT->fInTable && 
+								(fIntoDr = (!fRight && pdrT->fInTable &&
 								(((*hpldrT)->hpldrBack == hpldrNextDr &&
 								(*hpldrT)->idrBack == idrNextDr) ||
 								(dxlNextEdl < xlMax && (*hpldrT)->hpldrBack == hpldrNextEdl &&
@@ -1517,9 +1517,9 @@ LLeftRight:
 			}
 		dywDrCriteria = (fDown ? rcwDr.ywBottom - yw : yw - rcwDr.ywTop);
 
-		for (hpldrT = hpldr, idrT = idr, 
+		for (hpldrT = hpldr, idrT = idr,
 				NextPrevHpldrIdr(&hpldrT, &idrT, fTrue);
-				hpldrT != hpldr || idrT != idr; 
+				hpldrT != hpldr || idrT != idr;
 				NextPrevHpldrIdr(&hpldrT, &idrT, fTrue))
 			{
 			pdrT = PdrFetchAndFree(hpldrT, idrT, &drfFetchT);
@@ -1533,10 +1533,10 @@ LLeftRight:
 					rcw.ywTop--;
 				rcw.ywBottom = rcw.ywTop + DylMacForTableDr(pdrT->cpFirst, hpldrT);
 				}
-			fIntersect = (SectRect(&rcwDr, &rcw, &rcwSect) && 
+			fIntersect = (SectRect(&rcwDr, &rcw, &rcwSect) &&
 					!FNeRgch(&rcwDr, &rcwSect, sizeof(struct RC)));
 
-/* only candidates are drs that begin to the right/left of the dr that contains	
+/* only candidates are drs that begin to the right/left of the dr that contains
 	the selection */
 			dyw = fDown ? (fIntersect ? (rcw.ywBottom - yw) : (rcw.ywTop - yw)) :
 			(fIntersect ? (yw - rcw.ywTop) : (yw - rcw.ywBottom));
@@ -1669,9 +1669,9 @@ LSearchCp:
 		DrclToRclOuter(hpldr, &pdr->drcl, &rcl);
 		ylExt = rcl.ylTop;
 		xlExt = rcl.xlLeft;
-		for (hpldrT = hpldrOrg = hpldr, idrT = idrOrg = idr, 
+		for (hpldrT = hpldrOrg = hpldr, idrT = idrOrg = idr,
 				NextPrevHpldrIdr(&hpldrT, &idrT, fTrue);
-				hpldrT != hpldrOrg || idrT != idrOrg; 
+				hpldrT != hpldrOrg || idrT != idrOrg;
 				hpldrPrev = hpldrT, NextPrevHpldrIdr(&hpldrT, &idrT, fTrue))
 			{
 			pdrT = PdrFetchAndFree(hpldrT, idrT, &drfFetchT);
@@ -2055,7 +2055,7 @@ WwCouldDisp(doc)
 		return ww;
 	if (PdodDoc(doc)->dk == dkDispHdr)
 		return wwNil;
-	for (ww = WwDisp(DocMother(doc), wwNil, fTrue); ww != wwNil; 
+	for (ww = WwDisp(DocMother(doc), wwNil, fTrue); ww != wwNil;
 			ww = PwwdWw(ww)->wwDisp)
 		if (PwwdWw(ww)->fPageView)
 			break;
@@ -2075,7 +2075,7 @@ int doc;
 CP cp;
 {
 #ifndef JR
-#ifdef MAC	
+#ifdef MAC
 	if (!vpref.fSeeHidden)
 		{
 		CachePara(doc, cp);
@@ -2209,7 +2209,7 @@ CMB *pcmb;
 #endif
 
 /* D L  P A R T I A L */
-/* if dl at bottom of hpldr is clipped at the bottom, return the 
+/* if dl at bottom of hpldr is clipped at the bottom, return the
 	dl and the amount of it that's clipped off; else return dlNil */
 
 /* %%Function:DlPartial %%Owner:davidlu */
@@ -2230,8 +2230,8 @@ int *pdys;
 	else
 		{
 		GetPlc(hplcedl, dl, &edl);
-		if (edl.fEnd || 
-				(YwTopForDl(hpldr, idr, dl, &ywBottom), 
+		if (edl.fEnd ||
+				(YwTopForDl(hpldr, idr, dl, &ywBottom),
 				(dys = ywBottom - (*hwwdCur)->ywMac) <= 0))
 			dl = dlNil;
 		}
@@ -2241,5 +2241,4 @@ int *pdys;
 		*pdys = dys;
 	return dl;
 }
-
 

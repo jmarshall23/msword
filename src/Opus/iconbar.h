@@ -105,9 +105,15 @@ struct IBB /* Icon Bar item */
 			{
 			int     xpDlg;
 			int     ypDlg;
+#ifdef OPUS_X64
+			UINT_PTR hdlg;
+			UINT_PTR hdlt;
+			UINT_PTR hcab;
+#else
 			WORD    hdlg;
 			WORD    hdlt;
 			WORD    hcab;
+#endif
 			};
 		};
 	};
@@ -189,9 +195,15 @@ struct IBB /* Icon Bar item */
 			{
 			int     xpDlg;
 			int     ypDlg;
+#ifdef OPUS_X64
+			UINT_PTR hdlg;
+			UINT_PTR hdlt;
+			UINT_PTR hcab;
+#else
 			WORD    hdlg;
 			WORD    hdlt;
 			WORD    hcab;
+#endif
 			};
 		};
 	};
@@ -374,4 +386,3 @@ struct BMID /* BitMap Icon Description */
 /* number of common pixels around a button */
 #define cPixBorder	4
 #endif /* WIN23 */
-

@@ -578,7 +578,7 @@ Sort(rgw, iwMac, FGt)
 int *rgw, iwMac, (*FGt)();
 {
 	int iw;
-	if (iwMac < 2) return;
+	if (iwMac < 2) return 0;
 	for (iw = iwMac>>1; iw >= 2; --iw)
 		SortSiftUp(rgw, iw, iwMac, FGt);
 	for (iw = iwMac; iw >= 2; --iw)

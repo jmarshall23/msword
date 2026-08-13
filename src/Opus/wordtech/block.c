@@ -104,7 +104,7 @@ struct PT pt;
 	if (WinMac((*hwwdCur)->fOutline, (vpref.fVol1 || (*hwwdCur)->fOutline || vssc != sscNil)))
 		{
 		Beep(); 
-		return;
+		return 0;
 		}
 
 	if (psel->fIns && !psel->fHidden) /* added for bug fix */
@@ -112,7 +112,7 @@ struct PT pt;
 
 	caNotTable.doc = docNil;
 	if (!FSelectBlockTo(psel, pt, &caNotTable, fTrue))
-		return;
+		return 0;
 #ifdef WIN
 	SetCapture((*hwwdCur)->hwnd);
 	vcConseqScroll = 0;
@@ -205,7 +205,7 @@ DoCont2:
 		if (!FSelectBlockTo(psel, ptT, &caNotTable, fFalse))
 			{
 			Win(ReleaseCapture());
-			return;
+			return 0;
 			}
 		}
 
@@ -1304,10 +1304,10 @@ BOOL fDrag; /* ignored */
 	if (dl == dlNil)
 		{
 		Beep();	/* NormCp couldn't drag line into window */
-		return;
+		return 0;
 		}
 	if (vmerr.fMemFail)
-		return;
+		return 0;
 	Assert(dl >= 0);
 	Assert(idr != idrNil);
 	hplcedl = PdrFetch(hpldr, idr, &drfFetch)->hplcedl;
@@ -1472,7 +1472,7 @@ BOOL fDrag; /* ignored */
 	if (selCur.fIns)
 		{ /* zero width block */
 		Beep();
-		return;
+		return 0;
 		}
 
 	if (vfRecording)
@@ -1491,7 +1491,7 @@ LStart:
 		{
 /* the desired end of selCur is not on screen */
 		if (vmerr.fMemFail)
-			return;
+			return 0;
 		if (!PwwdWw(wwCur)->fPageView)
 			ThumbToCp(wwCur, cpFirstLine, fEnd, fFalse, 0);
 		else
@@ -1500,7 +1500,7 @@ LStart:
 		if (cThumb++ > 0)
 			{
 			Beep();
-			return;
+			return 0;
 			}
 		goto LStart;
 		}
@@ -1580,7 +1580,7 @@ LBeep:
 		Beep();
 LRet:
 		FreePdrf(&drfFetch);
-		return;
+		return 0;
 		}
 
 /* do the selection */

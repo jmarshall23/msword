@@ -36,6 +36,7 @@ extern SB sbTds;
 extern struct SEL selMacro;
 extern MES	**vhmes;
 extern struct MERR vmerr;
+extern PFN PfnTmcOptFromHidIag();
 
 BOOL vfElNumFormat;
 DPV DpvDttmFromTmcSz();
@@ -177,7 +178,7 @@ HID hid;
 
 
 /* The rng structure contains wLow and wHigh as the first two elements.  When
-these values are the same, it indicates that the rng is "special."  The 
+these values are the same, it indicates that the rng is "special."  The
 following macros detext these special rngs. */
 
 #define FStringRng(rng) (*((long *) &rng) == 0x00000000L)
@@ -233,7 +234,7 @@ CMB * pcmb;
 		if (FStringRng(rgrng[irng]))
 			continue;
 
-		if ((w < wLow || w > wHigh) && 
+		if ((w < wLow || w > wHigh) &&
 				(!fAllowNinch || w != fooNinch))
 			{
 			return fFalse;
@@ -331,7 +332,7 @@ ELV elv;
 
 				if (!FSetCabSz(hcab, szBuf, iag))
 					RtError(rerrOutOfMemory);
-				return;
+				return 0;
 				}
 
 
@@ -346,12 +347,12 @@ ELV elv;
 					RtError(rerrHalt);
 				*((struct DTTM *)
 						((int *) *hcab + cwCabMin + iag)) = dttm;
-				return;
+				return 0;
 				}
 			else
 				{
 			/* Parse the string to get w... */
-				if ((pfnWParse = PfnTmcOptFromHidIag(hid, iag, 
+				if ((pfnWParse = (PFN)PfnTmcOptFromHidIag(hid, iag,
 						&tmc, &opt, &fPt)) == NULL)
 					RtError(rerrTypeMismatch);
 				pv = &w;
@@ -496,7 +497,7 @@ RERR rerr;
 		if (vhwndCBT)
 			{
 			vmerr.fCBTMacroMemErr = fTrue;
-			return;
+			return 0;
 			}
 		/* else fall through */
 
@@ -558,7 +559,7 @@ LMsg:
 		imei = LOWORD(hpeli->l);
 
 
-		if (!PmeiImei(imei)->fRestartable || !fCanCont || 
+		if (!PmeiImei(imei)->fRestartable || !fCanCont ||
 				!FOnlyHeli(heli))
 			{
 			FreeEditMacro(imei);
@@ -589,7 +590,7 @@ LMsg:
 			if (selCur.doc == selMacro.doc)
 				{
 				Assert(selMacro.doc != docNil);
-				Select(&selCur, 
+				Select(&selCur,
 						selMacro.cpFirst, selMacro.cpLim);
 				selCur.fHidden = fFalse;
 				selMacro.doc = docNil;
@@ -605,7 +606,7 @@ LMsg:
 
 	if (!fCanCont)
 		CancelDyadic();
-	
+
 	return fCanCont;
 }
 

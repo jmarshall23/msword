@@ -61,7 +61,7 @@ struct RIBL **hribl;
 #ifdef BZ
 		CommSzNum(SzShared("ApplyPropChange invalid pgc = "), rrb.pgc);
 #endif /* BZ */
-		return;
+		return 0;
 		}
 	switch (rrb.rrba)
 		{
@@ -1183,12 +1183,12 @@ CP cp;
 					We will replace linked h/f's
 				*/
 
-		if ((fHdr && (**hribl).fHdr) ||  (!fHdr && (**hribl).fFtr))
-            return;
+	if ((fHdr && (**hribl).fHdr) ||  (!fHdr && (**hribl).fFtr))
+            return 0;
 		ca = caSect;
 
-		if (DocCreateScratch(docNil) == docNil)
-            return;
+	if (DocCreateScratch(docNil) == docNil)
+            return 0;
 
 		/* dxa is dist from right, not left corner */
 		/* if < 1/4 page, right justify, if > 3/4. left, else center */
@@ -1492,7 +1492,7 @@ int val;
 		{
 		(**hribl).hrcpfld = hNil;
 		/* vmerr.fMemFail already set in FEnsureFreeCw */
-		return;
+		return 0;
 		}
 
 	/* set up start cp for field, invalid val for dcpInst */
@@ -1599,5 +1599,4 @@ CHAR * szNumber;
 		}
 	return fNeg ? -w : w;
 }
-
 

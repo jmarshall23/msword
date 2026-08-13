@@ -49,6 +49,12 @@ VOID ExpectHeldi(), InitHprek();
 #define FLineElt(elt)	(eltLineNolabel <= (elt) && (elt) < eltLineInt)
 
 struct PROC *PprocFindPsy();
+struct ELCR *PelcrGet();
+ENV *PenvGetCur();
+struct SY *PsyLookupSt();
+char **HstzOfSd();
+ELDI **HeldiFromIeldi();
+struct VAR *PvarFromPsyElx();
 char *PchRefillBuf();
 ELV ElvCallElx();
 REK huge *HprekOfRl();
@@ -162,7 +168,7 @@ VAL huge *hpval;
 	fCallOutNext = FALSE;
 	fCallOut = FALSE;
 
-	*HpNtab(pprocScan) = pproc;
+	*HpNtab(pprocScan) = (int)(UINT_PTR)pproc;
 	EltGetCur(); /* pre-fetch */
 
 		/* CSNative as main statement reading loop */
@@ -1233,7 +1239,7 @@ ELT elt;
 
 /* (pj 3/23) takes 11% of macro start/run */
 /* %%Function:PelcrGet %%Owner:bradch */
-NATIVE PelcrGet(pchBufStart, pibBufCur, pchBufLim)
+NATIVE struct ELCR *PelcrGet(pchBufStart, pibBufCur, pchBufLim)
 /* This is the low-level buffer-reading routine, which may eventually be
 * hand-coded.  It produces a pelcr, pointing somewhere into the token
 * buffer, or NULL at end of file.
@@ -1355,8 +1361,8 @@ char *pchBufLim;
 		Assert((char *) pelcr + cbElcr <= pchBufLim);
 
 ReturnPelcr:
-		*pibBufCur = (char *) pelcr + cbElcr - Global(rgchBuf);
-		Global(ibElcrCur) = (char *) pelcr - Global(rgchBuf);
+		*pibBufCur = (char *) pelcr + cbElcr - (char *)Global(rgchBuf);
+		Global(ibElcrCur) = (char *) pelcr - (char *)Global(rgchBuf);
 		} 
 	while (elcc != elccEof && 
 			(fLoop || (fComment && !FLineElt(EltFromElcc(elcc)))));
@@ -1392,7 +1398,7 @@ char *PchRefillBuf(pchBufStart)
 */
 char *pchBufStart;
 {
-	int cchWanted = &Global(rgchBuf)[cchTokenBuf] - pchBufStart;
+	int cchWanted = ((char *)Global(rgchBuf) + cchTokenBuf) - pchBufStart;
 	int cchGot;
 
 #ifdef DEBUG
@@ -1419,10 +1425,10 @@ LEof:
 		}
 
 	Global(libBufStart) = Global(libBufEnd) -
-			(pchBufStart - Global(rgchBuf));
+			(pchBufStart - (char *)Global(rgchBuf));
 	Global(libBufEnd) += cchGot;
 
-	Global(ibBufLim) = pchBufStart - Global(rgchBuf) + cchGot;
+	Global(ibBufLim) = pchBufStart - (char *)Global(rgchBuf) + cchGot;
 
 #ifdef DEBUG
 	if (fToRead)
@@ -1463,10 +1469,10 @@ ELT EltGetCur()
 	if (fToExec)
 		libStart = LibCur();
 
-	pelcr = PelcrGet(Global(rgchBuf), &Global(ibBufCur),
-			Global(rgchBuf) + Global(ibBufLim));
+	pelcr = PelcrGet((char *)Global(rgchBuf), &Global(ibBufCur),
+			(char *)Global(rgchBuf) + Global(ibBufLim));
 
-	Global(ibElcrCur) = (char *)pelcr - Global(rgchBuf);
+	Global(ibElcrCur) = (char *)pelcr - (char *)Global(rgchBuf);
 
 	switch (elcc = pelcr->elcc)
 		{
@@ -1748,7 +1754,7 @@ ELT eltWanted;
 				if (eltWanted == eltCase)
 					{
 					if (celtNested-- == 0)
-						return;
+						return 0;
 					}
 				/* break; */
 				}
@@ -1794,7 +1800,7 @@ BOOL fSeekElse;
 		case eltLineIdent:
 		case eltLineNolabel:
 		case eltLineInt:
-			return;
+			return 0;
 
 		case eltIf:
 			celtNestedIfs++;
@@ -1802,7 +1808,7 @@ BOOL fSeekElse;
 
 		case eltElse:
 			if (fSeekElse && celtNestedIfs == 0)
-				return;
+				return 0;
 			celtNestedIfs--;
 			break;
 
@@ -2004,7 +2010,7 @@ LIB lib;
 {
 	struct LAB *plab, huge *hplab;
 
-	plab = PlabFromPsy(psy, ln, *HpNtab(pprocScan));
+	plab = PlabFromPsy(psy, ln, (struct PROC *)(UINT_PTR)*HpNtab(pprocScan));
 	hplab = HpOfSbIb(Global(sbNtab), plab);
 
 #ifdef DEBUG
@@ -2322,7 +2328,7 @@ BOOL fSuper;
 			/* Allocate a handle to the string on
 				* the application heap.
 				*/
-			hpev->hst = HstzOfSd(hpev->sd);
+				hpev->hst = HstzOfSd(hpev->sd);
 			fFreeHeapStrings = TRUE;
 			}
 		}
@@ -2448,7 +2454,7 @@ BOOL fSuper;
 							HcabDupeCab(hpvarT->rek.hcab)) == NULL)
 						RtError(rerrOutOfMemory);
 					}
-				rl.pvar = IbOfHp(hpvarT);
+				rl.pvar = (struct VAR *)(UINT_PTR)IbOfHp(hpvarT);
 				rl.ib = ibNil;
 				}
 			hcabArg = HprekOfRl(rl)->hcab;
@@ -3044,7 +3050,7 @@ char *sz;
 	if (cch + 2 < cch)
 		RtError(rerrStringTooBig);
 
-	if ((h = PpvAllocCbWW(sbStrings, cch + 2)) == 0)
+	if ((h = (char **)PpvAllocCbWW(sbStrings, cch + 2)) == 0)
 		return sdNil;
 
 	CchFromSd(h) = cch;
@@ -3058,7 +3064,7 @@ char *sz;
 		PrintT(" (cch = %d)\n", cch);
 		}
 #endif
-	return h;
+	return (SD)h;
 }
 
 
@@ -3074,7 +3080,7 @@ char *st;
 	if (cch == 0)
 		return 0;
 
-	if ((h = PpvAllocCbWW(sbStrings, cch + 2)) == 0)
+	if ((h = (char **)PpvAllocCbWW(sbStrings, cch + 2)) == 0)
 		return sdNil;
 
 	CchFromSd(h) = cch;
@@ -3089,7 +3095,7 @@ char *st;
 		}
 #endif
 
-	return h;
+	return (SD)h;
 }
 
 
@@ -3115,7 +3121,7 @@ unsigned cch;
 	if (cch + 2 < cch)
 		RtError(rerrStringTooBig);
 
-	if ((h = PpvAllocCbWW(sbStrings, cch + 2)) == 0)
+	if ((h = (char **)PpvAllocCbWW(sbStrings, cch + 2)) == 0)
 		return sdNil;
 
 	CchFromSd(h) = cch;
@@ -3129,7 +3135,7 @@ unsigned cch;
 		PrintT(" (cch = %d) from lpch\n", cch);
 		}
 #endif
-	return h;
+	return (SD)h;
 }
 
 
@@ -3146,7 +3152,7 @@ SD sd;
 	if (sd == 0)
 		return 0;
 
-	if ((h = PpvAllocCbWW(sbStrings, CchFromSd(sd) + 2)) == 0)
+	if ((h = (char **)PpvAllocCbWW(sbStrings, CchFromSd(sd) + 2)) == 0)
 		return sdNil;
 
 	BLTBH(Hs16FromSd(sd), Hs16FromSd(h), CchFromSd(sd) + 2);
@@ -3160,7 +3166,7 @@ SD sd;
 		}
 #endif
 
-	return h;
+	return (SD)h;
 }
 
 
@@ -3173,7 +3179,7 @@ SD sd;
 	char huge * hpch;
 
 	if ((cchSt = *st) == 0)
-		return;
+		return 0;
 
 	cchSd = CchFromSd(sd);
 
@@ -3192,7 +3198,7 @@ SD sd1, sd2;
 	unsigned cch1, cch2, cchTotal;
 
 	if ((cch1 = CchFromSd(sd1)) == 0)
-		return;
+		return 0;
 
 	cch2 = CchFromSd(sd2);
 
@@ -3210,7 +3216,7 @@ SD SdConcat(sd1, sd2)
 SD sd1, sd2;
 {
 	unsigned cch1, cch2, cchTotal;
-	char ** sdResult;
+	SD sdResult;
 
 	cch1 = (sd1 == 0) ? 0 : CchFromSd(sd1);
 	cch2 = (sd2 == 0) ? 0 : CchFromSd(sd2);
@@ -3221,7 +3227,7 @@ SD sd1, sd2;
 
 	if (cchTotal == 0)
 		return (SD) 0;
-	if ((sdResult = PpvAllocCbWW(sbStrings, cch1 + cch2 + 2)) == 0)
+	if ((sdResult = (SD)PpvAllocCbWW(sbStrings, cch1 + cch2 + 2)) == 0)
 		RtError(rerrOutOfMemory);
 
 	CchFromSd(sdResult) = cchTotal;
@@ -3261,7 +3267,7 @@ SD sd;
 
 
 /* %%Function:HstzOfSd %%Owner:bradch */
-HstzOfSd(sd)
+char **HstzOfSd(sd)
 /* Creates and returns a handle to a counted string on the application heap.
 */
 SD sd;
@@ -3272,7 +3278,7 @@ SD sd;
 	if (cch >= 256)
 		RtError(rerrStringTooBig);
 
-	if ((h = PpvAllocCbWW(sbDds, cch + 2)) == 0)
+	if ((h = (char **)PpvAllocCbWW(sbDds, cch + 2)) == 0)
 		RtError(rerrOutOfMemory);
 
 	**h = cch;
@@ -3292,7 +3298,7 @@ SD sd;
 	unsigned cch = CchFromSd(sd);
 	char **h;
 
-	if ((h = PpvAllocCbWW(sbDds, cch + 1)) == 0)
+	if ((h = (char **)PpvAllocCbWW(sbDds, cch + 1)) == 0)
 		RtError(rerrOutOfMemory);
 
 	BLTBH(HpchFromSd(sd), (char huge *) *h, cch);
@@ -3422,7 +3428,7 @@ AD ad;
 	AD huge *hrgsd;
 
 	if (ad == 0)
-		return;
+		return 0;
 
 	csd = 1;
 	for (ias = 0; ias < hpahr->cas; ias++)

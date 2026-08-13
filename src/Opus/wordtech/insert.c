@@ -163,7 +163,7 @@ TLV *ptlv;
 		vfInsertMode = fFalse;
 		cpInsert = cpNil;
 		Win( vifldInsert = ifldNil );
-		return;
+		return 0;
 		}
 	AdjustEdlDcp(selCur.doc, cpInsert, (CP)cchInsertMax, cp0);
 
@@ -229,7 +229,7 @@ TLV *ptlv;
 
 	fc = FcAppendRgchToFn(fnScratch, rgchInsert, ichInsert);
 	if (!vfInsertMode)
-		return; /* nothing to do */
+		return 0; /* nothing to do */
 
 	Win( cchInsert = ptlv->fInsertLoop ? cchInsertMax : 0; )
 #ifdef WIN
@@ -289,7 +289,7 @@ LAddRun:
 				fTrue /* alloc at fcMac */, fTrue /* hplcbtePap must expand */,
 				fFalse /* not Word 3 format */))
 			{
-			return;
+			return 0;
 			}
 		ptlv->fAddRun = fFalse;	/* AddRun completed sucessfully */
 		if (fSkipInval)
@@ -617,14 +617,14 @@ int ch;
 	if (PdodDoc(selCur.doc)->fLockForEdit)
 		{
 		Beep();
-		return;
+		return 0;
 		}
 
 
 	/* If CBT is running, and wants to abort, don't enter insert loop */
 	if (vhwndCBT)
 		if (!SendMessage(vhwndCBT, WM_CBTSEMEV, smvBeginTyping, 0L))
-			return;
+			return 0;
 #endif	/* WIN */
 
 #ifdef INEFFICIENT
@@ -1000,7 +1000,7 @@ LNextMsg:
 		if (!FNextMsgForInsert(&tlv))
 			{
 			if (fReturn)
-				return;
+				return 0;
 			break;
 			}
 		ch = tlv.ch;
@@ -1184,7 +1184,7 @@ CP *pcpRet, cp;
 	if (CpPlc(hplcbkf, 0) > cp ||
 			CpPlc( hplcbkl, iMac-1) <= *pcpRet)
 		{
-		return;
+		return 0;
 		}
 
 	i = IInPlcMult (hplcbkf, cp);
@@ -1193,7 +1193,7 @@ CP *pcpRet, cp;
 		*pcpRet = CpPlc( hplcbkf, i);
 
 	if (CpPlc( hplcbkl,0 ) > cp)
-		return;
+		return 0;
 
 	i = IInPlcMult (hplcbkl, cp);
 	Assert (CpPlc( hplcbkl, i) <= cp);
@@ -1301,7 +1301,7 @@ LGetDl:
 		/* probably page view: hplcedl's not allocated due
 			to page recalc */
 		FreePdrf(&drfFetch);
-		if (++cMemErr >= 2) return; /* out of memory */
+		if (++cMemErr >= 2) return 0; /* out of memory */
 		if ((*hwwdCur)->fDrDirty)
 			{
 			EndInsert(fTrue, ptlv);
@@ -1425,7 +1425,7 @@ LNoHyphen:
 		InvalCp(PcaSet(&caT, selCur.doc, cpMinInval, cpMinInval + 1));
 		UpdateWw(wwCur, fFalse);
 		InsertPostUpdate();
-		return;
+		return 0;
 		}
 	FreePdrf(&drfFetch);
 LDrfFree:
@@ -1447,7 +1447,7 @@ LDrfFree:
 #endif /* MAC */
 
 	if (FMsgPresent( mtyTyping ))	/* HEAP MOVES */
-		return; /* goto LNextMsg; */
+		return 0; /* goto LNextMsg; */
 
 	if (idrInner == idrNil)
 		goto LNormCp;
@@ -1556,7 +1556,7 @@ LUpdateWw:
 				FreePdrf(&drfFetch);
 				UpdateWw(wwCur, fFalse);
 				InsertPostUpdate();
-				return; /* goto LNextMsg; */
+				return 0; /* goto LNextMsg; */
 				}
 
 			if (selCur.fInsEnd != ptlv->fInsEnd)
@@ -1830,14 +1830,14 @@ TLV * ptlv;
 	if (ptlv->fAddRun) /* add run failed? */
 		{
 		ptlv->fAddRun = fFalse; /* nevermind */
-		return;
+		return 0;
 		}
 
 	if (fResetChpIns)
 		GetSelCurChp(fTrue /* fGetInsPtProps*/);
 
 	if (!FNewChpIns(selCur.doc, selCur.cpFirst, &selCur.chp, stcNil))
-		return;
+		return 0;
 
 	if ((*hwwdCur)->fOutline)
 		UpdateHplcpadSingle(selCur.doc, selCur.cpFirst);
@@ -2167,7 +2167,7 @@ DirtyPageInsert()
 	CP cp, CpRefFromCpSub();
 
 	if (cpInsert == cpNil)
-		return;
+		return 0;
 	pdod = PdodDoc(selCur.doc);
 	Assert(!pdod->fHdr); /* docHdr is never displayed */
 /* have to force header dirty to get it saved back to real header doc */
@@ -2177,7 +2177,7 @@ DirtyPageInsert()
 	if (pdod->fShort)
 		hplcpgd = PdodMother(selCur.doc)->hplcpgd;
 	if (hplcpgd == hNil || pdod->fAtn) /* annotation text does not affect page layout */
-		return;
+		return 0;
 
 /* identify earliest possible cp that is affected */
 	if (!pdod->fShort)
@@ -2282,5 +2282,4 @@ int edcDrp;
 		}
 	return fFalse;
 }
-
 

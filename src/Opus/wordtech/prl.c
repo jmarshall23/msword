@@ -250,7 +250,7 @@ the istcMac byte cuurently in val. Note base 1 addressing throughout. */
 		ctc = *(hpprl + 2);
 /* if we are trying to add columns beginning at or beyond itcMax, return */
 		if ((ctc = min(ctc, itcMax - itcFirst)) <= 0)
-			return;
+			return 0;
 		bltbh(hpprl + 3, &dxaCol, sizeof(int));
 /* if we're adding beyond the current itcMac, we will also add new cells
 	up to itcFirst. */
@@ -285,7 +285,7 @@ the istcMac byte cuurently in val. Note base 1 addressing throughout. */
 		ptap = (struct TAP *)prgbProps;
 		itcFirst = val;
 		if (itcFirst >= (itcMac = ptap->itcMac))
-			return;
+			return 0;
 		itcLim = *(hpprl + 2);
 		itcLim = min(itcLim, itcMac);
 		rgdxaCenter = ptap->rgdxaCenter;
@@ -315,7 +315,7 @@ the istcMac byte cuurently in val. Note base 1 addressing throughout. */
 			break;
 		case sprmTMerge:
 			if (itcFirst + 1 >= itcLim)
-				return;
+				return 0;
 			rgtc[itcFirst].fFirstMerged = fTrue;
 			for (itc = itcFirst + 1, ptc = &rgtc[itc]; itc < itcLim; itc++, ptc++)
 				ptc->fMerged = fTrue;

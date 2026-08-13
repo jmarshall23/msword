@@ -195,9 +195,9 @@ struct PICDIM *ppicdim;
 	/* apply the user's "ideal multiple" of the computed size */
 	/* in Write,  we only applied mx, my to bitmaps. Here we do it
 	for metafiles too, so do it at this point  bz
-	
+
 	UMultDiv used because mx, my are unsigned and can be > 32k
-	but the result should be < 32k. 
+	but the result should be < 32k.
 	*/
 
 	ppicdim->picScl = ppicdim->picUnscl;
@@ -253,11 +253,11 @@ struct PICDIM *ppicdim;
 		width.) If you don't play this game, you can crop more screen picture
 		than there is real picture - 2 screen inches converted directly to
 		twips will blow away the goal picture.
-		
+
 		So, we take the dza's and make them the same proportion of the
 		screen rect as they were of the goal rect.
 		(dza/dzaGoal = dzp/dzpUnscl). Solve for dzp.
-		
+
 		*/
 
 		dzpCrop = NMultDiv( vpicFetch.dxaCropLeft + vpicFetch.dxaCropRight,
@@ -403,7 +403,7 @@ int fScaleForScreen;
 				scale the vsci values as setflm does.
 			}
 
-	
+
 */
 	if (vfli.fFormatAsPrint && !fScaleForScreen)
 		{
@@ -469,7 +469,7 @@ int cDim;
 	if (!vftiDxt.dxpInch || !vftiDxt.dypInch)
 		{
 		Assert (fFalse); /* shouldn't be called in this case */
-		return;
+		return 0;
 		}
 	for (i = 0; i < cDim; i++)
 		{
@@ -559,7 +559,7 @@ DYY *pdyyAscent, *pdyyDescent;
 	CommSzNum(SzShared("GetPictureInfo dyyAscent.dyp: "), pdyyAscent->dyp);
 	CommSzNum(SzShared("GetPictureInfo dyyAscent.dyt: "), pdyyAscent->dyt);
 #endif
-	return;
+	return 0;
 }
 
 
@@ -567,7 +567,7 @@ DYY *pdyyAscent, *pdyyDescent;
 /* FF e t c h  S e l P i c R c */
 /*  Get various rectangles relevant to pictures.
 
-		
+
 	Fill a PICRC structure, which is a bunch of RC's including:
 		frOut - the outside frame rectangle. This is the normal picture
 				rect that format uses. It includes cropping and the
@@ -957,14 +957,14 @@ CP cpSrc;
 
 
 
-			return;
+			return 0;
 
 FetchFail:
 			Assert (fFalse);
 			/* Do we need to disable more? */
 	vfcFetchPic = fcNil;
 			SetBytes(&vpicFetch, 0, cbPIC);
-			return; 
+			return 0;
 }
 
 
@@ -1029,7 +1029,7 @@ int ico;
 			Assert (ico < icoMax);
 			if ((hbr = hbrNew = CreateSolidBrush(GetRgbIco(ico))) == NULL)
 				hbr = vfli.fPrint ? vpri.hbrText : vsci.hbrText;
-			Debug(else  
+			Debug(else
 				LogGdiHandle(hbrNew, 1031));
 			}
 
@@ -1136,7 +1136,7 @@ int ico;
 					/* bottom */
 				/* xp unchanged */
 
-							yp = prcFrame->ypBottom - ypT - pbrdr->dypLineSpacing; 
+							yp = prcFrame->ypBottom - ypT - pbrdr->dypLineSpacing;
 
 				/* dxp unchanged */
 				/* dyp unchanged */
@@ -1476,13 +1476,13 @@ struct CHP *pchpIn;
 				eid = eidBadPicFormat;
 			break;
 		case MM_BITMAP:
-			  // replaces FDrawBitmap 
+			  // replaces FDrawBitmap
             fDrawn = FDrawPicCacheable(hdc, &picrc, NULL  /* pilevel */, ww,
 				          &eid, ftClipboard, MM_BITMAP);
 			break;
 		case MM_TIFF:
 			{
-			  // replaces FDrawBitmap 
+			  // replaces FDrawBitmap
             fDrawn = FDrawPicCacheable(hdc, &picrc, NULL  /* pilevel */, ww,
 				          &eid, ftNil, MM_TIFF);
 			break;
@@ -1569,7 +1569,11 @@ struct PICRC *ppicrc;
 int *piLevel;
 int ww;
 int *peid;
-WORD wUser;	 // ft for bitmaps, phBits for metafiles
+#ifdef OPUS_X64
+	UINT_PTR wUser;	 // ft for bitmaps, phBits for metafiles
+#else
+	WORD wUser;	 // ft for bitmaps, phBits for metafiles
+#endif
 int mm;
 {
 	HDC hMDC;
@@ -1618,14 +1622,14 @@ int mm;
 		Assert(bmc.hbm != NULL);
 		StartLongOp();
 		wDrawn =
-			fBitmap ?
-				WLoadBm(hMDC, ppicrc, ww, peid, wUser, fTrue)	/* try to load bitmap into memory dc for cache */
-				: WLoadMF(hMDC, ppicrc, ww, peid, wUser, mm, fTrue);	/* try to play metafile into memory dc for cache */
+				fBitmap ?
+					WLoadBm(hMDC, ppicrc, ww, peid, (WORD)wUser, fTrue)	/* try to load bitmap into memory dc for cache */
+					: WLoadMF(hMDC, ppicrc, ww, peid, (HANDLE *)(UINT_PTR)wUser, mm, fTrue);	/* try to play metafile into memory dc for cache */
 		EndLongOp(fFalse /* fAll */);
 		Assert(wDrawn == fFalse || wDrawn == fTrue || wDrawn == GRINTERRUPT);
 		if (wDrawn == GRINTERRUPT)
 			goto LRet;
-		if (!wDrawn) /* failed for real. Free some space and try again. */ 
+		if (!wDrawn) /* failed for real. Free some space and try again. */
 			{
 			/* Don't retry if the tiff file was invalid */
 			if (*peid != eidPicNoOpenDataFile)
@@ -1636,12 +1640,12 @@ LNoCache:
 				/* try to display without caching  */
 				StartLongOp();
 				wDrawn =
-					fBitmap ?
-						WLoadBm(hdc, ppicrc, ww, peid, wUser, fFalse)
-						: WLoadMF(hdc, ppicrc, ww, peid, wUser, mm, fFalse); 
+						fBitmap ?
+							WLoadBm(hdc, ppicrc, ww, peid, (WORD)wUser, fFalse)
+							: WLoadMF(hdc, ppicrc, ww, peid, (HANDLE *)(UINT_PTR)wUser, mm, fFalse);
 				EndLongOp(fFalse /* fAll */);
 				}
-			goto LRet;				
+			goto LRet;
 			}
 		Assert(bmc.hbm != NULL);
 		InsertPbmc(&bmc);
@@ -1759,7 +1763,7 @@ BOOL fMono;
 LHplbmcNil:
 
 	if ((hbm = (fMono ?
-		CreateBitmap( dxp, dyp, 1, 1, (LPSTR) NULL ) : 
+		CreateBitmap( dxp, dyp, 1, 1, (LPSTR) NULL ) :
 		CreateCompatibleBitmap(hdc, dxp, dyp)
 		)) == NULL)
 		{

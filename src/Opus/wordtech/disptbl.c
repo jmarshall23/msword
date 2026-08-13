@@ -1847,13 +1847,13 @@ int fReverse;   /* Reverse the bits? */
 			mpbldx[0] = pbrk->dxWidth = dxpBorderFti;
 			mpbldy[0] = pbrk->dyHeight = dypBorderFti;
 			mpblblp[0] = blpGrey;
-			return;
+			return 0;
 			}
 		/* else - fall through to brcNil case */
 	case brcNil:
 		pbrk->dyHeight = pbrk->dxWidth = 0;
 		pbrk->blMac = 0;
-		return;
+		return 0;
 	default:
 		blMac = 0;
 		if (brc & brcDxpSpace)
@@ -2570,7 +2570,7 @@ struct RC rcl, *prcwClip;
 		SectRc(prcwClip, &rcw, &rcw);
 
 	if (FEmptyRc(&rcw))
-		return;
+		return 0;
 
 #ifdef WIN
 	if ((pwwd = PwwdWw(ww))->fPageView)

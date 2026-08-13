@@ -586,7 +586,7 @@ BOOL fForceFirst, fForceLast;
 	if ((fRowCached = FInCa(doc,cp,&vtcc.caTap)) && FInCa(doc,cp,&vtcc.ca))
 		{
 		if (ww == wwNil)
-			return;
+			return 0;
 		pwwd = PwwdWw(ww);
 		if (vtcc.fXpValid && pwwd->fOutline == vtcc.fOutline
 #ifdef WIN
@@ -594,7 +594,7 @@ BOOL fForceFirst, fForceLast;
 #endif
 				&& (!fForceFirst || vtcc.fFirstRow)
 				&& (!fForceLast || vtcc.fLastRow))
-			return;
+			return 0;
 		}
 
 	if (ww == wwNil)
@@ -659,7 +659,7 @@ LComputeTcc:
 	if (ww == wwNil)
 		{
 		vtcc.fXpValid = fFalse;
-		return;
+		return 0;
 		}
 
 	if (vtcc.fDylValid)

@@ -44,6 +44,7 @@ NATIVE BsyElOfSt(); /* DECLARATION ONLY */
 NATIVE BcmOrBsyOfSt(); /* DECLARATION ONLY */
 NATIVE IbcmFromBcm(); /* DECLARATION ONLY */
 NATIVE ELX ElkLookupSt(); /* DECLARATION ONLY */
+CHAR *PchSkipSpacesPch();
 
 static BYTE mpelcccb[] =
 	{
@@ -1725,4 +1726,3 @@ char ** hst;
 
 
 #endif /* DEBUG */
-

@@ -1,6 +1,14 @@
 #include "opus_x64_compat.h"
 
+#if defined(_MSC_VER)
 #include <direct.h>
+#else
+#include <unistd.h>
+#define _chdir chdir
+static char* _getdcwd(int, char* buffer, int maxlen) {
+    return getcwd(buffer, maxlen);
+}
+#endif
 
 #include <algorithm>
 #include <cstdint>
@@ -143,8 +151,10 @@ int CchCurSzPathNat(char* path, const int drive) {
     if (path == nullptr) {
         return 0;
     }
-    /* The original ABI requires callers to provide exactly 67 bytes.  Do not
-       copy a modern MAX_PATH-sized current directory into that legacy buffer. */
+
+    /* The original ABI requires callers to provide exactly 67 bytes. Do not
+     * copy a modern MAX_PATH-sized current directory into that legacy buffer.
+     */
     constexpr int kLegacyPathCapacity = 67;
     char current[MAX_PATH]{};
     if (_getdcwd(drive, current, static_cast<int>(sizeof(current))) ==

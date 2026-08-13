@@ -44,6 +44,8 @@ extern struct SCC	vsccAbove;
 extern int     		vssc;
 extern struct MERR      vmerr;
 extern BOOL             vfSeeSel;
+extern HWND HwndCreateWindowRc();
+extern HWND HwndCreateScrollBar();
 
 
 /* %%Function:CmdSplit %%Owner:rosiep */
@@ -123,7 +125,7 @@ int wk;
 	int wwNew, wwUpper = wwCur;
 	struct WWD **hwwdUpper = hwwdCur;
 	struct WWD **hwwdNew;
-	int hwndVScroll = NULL;
+	HWND hwndVScroll = NULL;
 	int fPageView = (*hwwdUpper)->fPageView;
 	struct PT ptParentClientOrg;   /* origin of client rect of parent */
 	int ypSplit, dlSplit;
@@ -361,7 +363,7 @@ BOOL fAdjustWidth; /* true if we are adjusting the window width as well */
 	BOOL fRecordingSav;
 
 	if (!(*hmwd)->fSplit)
-		return;
+		return 0;
 
 	/* Don't record anything during this command */
 	InhibitRecorder(&fRecordingSav, fTrue);
@@ -720,5 +722,3 @@ long lParam;
 
 	return fFalse;
 }
-
-

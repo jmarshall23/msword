@@ -1552,7 +1552,7 @@ struct CA *pca;
 #endif
 
 	if (brc == brcNil)
-		return;
+		return 0;
 
 	grpprl[0] = sprmTSetBrc;
 	grpprl[1] = itcFirst;

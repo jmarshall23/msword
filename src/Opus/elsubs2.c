@@ -229,11 +229,11 @@ int cmm;
 		pele->fStmt = fFalse;
 		pele->elr = elrNum;
 		pele->ieldi = ieldiNil;
-		pele->pfn = ElUtilCalculate;
+		pele->pfn = (VOID (*)())ElUtilCalculate;
 		pele->celpMin = 0;
 		pele->celpMac = 1;
 		pele->rgelp[0] = elpHst;
-		return;
+		return 0;
 		}
 
 	FetchSy(bcm);
@@ -243,11 +243,11 @@ int cmm;
 		void ModeError();
 
 		pele->elr = elrVoid;
-		pele->pfn = ModeError;
+		pele->pfn = (VOID (*)())ModeError;
 		pele->celpMin = 0;
 		pele->celpMac = 0;
 
-		return;
+		return 0;
 		}
 
 	PrepExecBcm(bcm);
@@ -258,7 +258,7 @@ int cmm;
 	if ((mct = psy->mct) == mctCmd || mct == mctSdm)
 		{
 		pele->elr = mct == mctCmd ? elrVoid : elrDialog;
-		pele->pfn = psy->pfnCmd;
+		pele->pfn = (VOID (*)())psy->pfnCmd;
 		pele->celpMin = 0;
 		pele->celpMac = 0;
 		if (mct == mctSdm)
@@ -282,12 +282,12 @@ int cmm;
 			pele->elr = elrVoid;
 			}
 
-		pele->pfn = psy->pfnEl;
+		pele->pfn = (VOID (*)())psy->pfnEl;
 		pele->celpMin = psy->cagdMin;
 		pele->celpMac = psy->cagdMax;
 		pelpSrc = (ARD *) (&psy->stName[psy->stName[0] + 1]);
 		if (psy->stName[0] == 0)
-			(WORD *) pelpSrc += 1;
+			pelpSrc = (char *)((WORD *)pelpSrc + 1);
 		bltb(pelpSrc, pele->rgelp, psy->cagdMax);
 		}
 #ifdef DEBUG
@@ -457,7 +457,7 @@ CP cp;
 	Assert((*vhmes)->fAnimate);
 
 	if (FWindowHidden(ww))
-		return;
+		return 0;
 
 	if (ww==wwCur)
 		{
@@ -484,7 +484,7 @@ CP cp;
 		{
 		Assert(ww==wwCur);
 		Assert(selMacro.doc==doc);
-		return;
+		return 0;
 		}
 
 	CacheSavePara(doc, cp, &caT);
@@ -566,7 +566,6 @@ int docDot;
 WORD imcr;
 {
 	extern int GetInfoElx();
-	extern ELI ** HeliNew();
 	extern int vcElParams;
 	extern BOOL vfMcrRunning;
 
@@ -640,7 +639,8 @@ WORD imcr;
 	Assert(PdodDoc(docDot)->docMcr != docNil);
 
 	heli = HeliNew((WORD)docDot, imcr, CchReadSource,
-			ElaDebug, GetInfoElx, imcr, (long) PdodDoc(docDot)->docMcr);
+			(VOID (*)())ElaDebug, (VOID (*)())GetInfoElx,
+			imcr, (long) PdodDoc(docDot)->docMcr);
 	if (heli == (ELI **) 0)
 		{
 		cmdReturn = cmdNoMemory;

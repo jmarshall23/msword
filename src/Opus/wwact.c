@@ -287,11 +287,11 @@ InitGalleyDr(ww)
 	if (pwwd->idrMac == 0)
 		{
 		SetWords(&dr, 0, cwDR);
-		if (!FInsertInPl(HwwdWw(ww), 0, &dr))
-			{
-			Assert(fFalse);
-			return;	/* we're gonna die */
-			}
+			if (!FInsertInPl(HwwdWw(ww), 0, &dr))
+				{
+				Assert(fFalse);
+				return 0;	/* we're gonna die */
+				}
 		pwwd = PwwdWw(ww);
 		pdr = PdrGalley(pwwd);
 		}
@@ -617,7 +617,7 @@ int doc;
 	struct PLC **hplcpad;
 
 	if (pdod->fShort || (hplcpad = pdod->hplcpad) == hNil)
-		return;
+		return 0;
 
 	AssertH(hplcpad);
 	for (ww = WwDisp(doc, wwNil, fFalse); ww != wwNil; 
@@ -1010,7 +1010,7 @@ HWND hwndPrevFocus;
 	if (vhwndAppModalFocus != hNil)
 		{
 		SetFocus (vhwndAppModalFocus);
-		return;
+		return 0;
 		}
 
 	vhwndMsgBoxParent = hwnd;
@@ -1059,7 +1059,7 @@ int mw;
 
 	Assert( cRecurse == 0 );
 	if (cRecurse > 0 || vidf.fDead || mw == mwCur)
-		return;
+		return 0;
 
 	Assert( mw == mwNil || mw == mwNone || mpmwhmwd[mw] != hNil );
 	cRecurse++;
@@ -1223,7 +1223,7 @@ HWND hwnd;
 int fBlank;
 {
 	if (hwnd == NULL)
-		return;
+		return 0;
 	if ( fBlank != GetWindowWord( hwnd, offset(RSBS,fBlank)) )
 		{
 		SetWindowWord( hwnd, offset(RSBS,fBlank), fBlank );
@@ -1293,7 +1293,7 @@ LinkHkmp(hkmp, kmf)
 KMP ** hkmp;
 {
 	if (hkmp == hNil)
-		return;
+		return 0;
 
 	(*hkmp)->hkmpNext = hkmpCur;
 	hkmpCur = hkmp;
@@ -1397,7 +1397,7 @@ int kc;
 AddKeyPfn(hkmp, kc, pfn)
 KMP ** hkmp;
 int kc;
-void (* pfn)();
+PFN pfn;
 {
 	KME * pkme;
 
@@ -1522,5 +1522,4 @@ int bcmSrch, bcmAdd;
 		AddKeyToKmp(hkmpAdd, kc, bcmAdd);
 		}
 }
-
 

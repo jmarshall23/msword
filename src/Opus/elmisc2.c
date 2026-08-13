@@ -413,7 +413,7 @@ NUM numps;
 		if ((int)hps < 8 || (int)hps > 254) /* as in TmcLooks */
 			{
 			RtError(rerrBadParam);
-			return;
+			return numps;
 			}
 
 		cch = CchPrlFromSprmVal(rgb, sprmCHps, (int)hps);
@@ -444,7 +444,7 @@ NUM numps;
 	if (**hstName > LF_FACESIZE)
 		{
 		RtError(rerrBadParam);
-		return;
+		return 0;
 		}
 
 	pffn = rgchFfn;
@@ -1642,7 +1642,7 @@ int x, y;
 	if (hmwdCur == hNil)
 		{
 		RtError(rerrModeError);
-		return;
+		return 0;
 		}
 
 	hwnd = (*hmwdCur)->hwnd;
@@ -1671,7 +1671,7 @@ int dx, dy;
 	if (hmwdCur == hNil)
 		{
 		RtError(rerrModeError);
-		return;
+		return 0;
 		}
 
 	hwnd = (*hmwdCur)->hwnd;
@@ -1732,13 +1732,14 @@ int ddl;
 {
 	extern void ScrollUp();
 	extern void ScrollDown();
-	PFN pfn;
+	typedef void (*PFNSCROLLLINE)();
+	PFNSCROLLLINE pfn;
 	int dysMinScroll=1; /* min ht of a line in points */
 
 	if (wwCur == wwNil)
 		{
 		RtError(rerrModeError);
-		return;
+		return 0;
 		}
 
 	if (vcElParams == 0)
@@ -1751,7 +1752,7 @@ int ddl;
 		dye = vsci.dysMinAveLine;
 		FScrollPageDyeHome(wwCur, ddl * dye, fTrue, 0, fFalse);
 		UpdateWindowWw(wwCur);
-		return;
+		return 0;
 		}
 
 	if (ddl < 0)
@@ -1781,12 +1782,13 @@ int d;
 	extern void ScrollLeft();
 	struct WWD * pwwd;
 	int dxpScroll;
-	PFN pfn;
+	typedef void (*PFNSCROLLPAGE)();
+	PFNSCROLLPAGE pfn;
 
 	if (wwCur == wwNil)
 		{
 		RtError(rerrModeError);
-		return;
+		return 0;
 		}
 
 	if (vcElParams == 0)
@@ -1797,7 +1799,7 @@ int d;
 			(dxpMinScrollSci / 2) * (dxpMinScrollSci / 2));
 
 	if (dxpScroll == 0)
-		return;
+		return 0;
 
 	if (d < 0)
 		{
@@ -1807,7 +1809,7 @@ int d;
 				!FAnyDlNotInXw(wwCur, fTrue))
 			{
 			/* Can't do scroll... */
-			return;
+			return 0;
 			}
 		}
 	else
@@ -1825,7 +1827,8 @@ int d;
 	extern void ScrollUp();
 	extern void ScrollDown();
 	extern struct WWD ** hwwdCur;
-	PFN pfn;
+	typedef void (*PFNSCROLLPAGE)();
+	PFNSCROLLPAGE pfn;
 	int dyp;
 	struct WWD * pwwd;
 	WORD wParam;
@@ -1851,11 +1854,11 @@ int d;
 			dye = -dye;
 			}
 		while (--d >= 0) 
-			{
-			FScrollPageDyeHome(wwCur, dye, fTrue, 0, fFalse);
-			UpdateWindowWw(wwCur);
-			}
-		return;
+		{
+		FScrollPageDyeHome(wwCur, dye, fTrue, 0, fFalse);
+		UpdateWindowWw(wwCur);
+		}
+		return 0;
 		}
 
 	if (d < 0)
@@ -1897,7 +1900,8 @@ int d;
 	extern void ScrollLeft();
 	struct WWD * pwwd;
 	int dxpScroll;
-	PFN pfn;
+	typedef void (*PFNSCROLLPAGE)();
+	PFNSCROLLPAGE pfn;
 
 	if (wwCur == wwNil)
 		{
@@ -1911,7 +1915,7 @@ int d;
 	dxpScroll = d * vsci.dxpMinScroll;
 
 	if (dxpScroll == 0)
-		return;
+		return 0;
 
 	if (d < 0)
 		{
@@ -1921,7 +1925,7 @@ int d;
 				!FAnyDlNotInXw(wwCur, fTrue))
 			{
 			/* Can't do scroll... */
-			return;
+			return 0;
 			}
 		}
 	else
@@ -2049,7 +2053,7 @@ int i;
 	if (i < 0 || i > (*vhsttbWnd)->ibstMac)
 		{
 		RtError(rerrBadParam);
-		return;
+		return 0;
 		}
 
 	if (i == 0)
@@ -2158,7 +2162,7 @@ LOutOfRange:
 				if (ww != wwCur)
 					NewCurWw(ww, fFalse /*fDoNotSelect*/);
 
-				return;
+				return 0;
 				}
 			}
 

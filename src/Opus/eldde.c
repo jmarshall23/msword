@@ -1,5 +1,5 @@
 /* E L D D E . C */
-/*  Macro statements for DDE  
+/*  Macro statements for DDE
 	and Key driving code (ported from Excel's DRIVE.C)
 
 	Macro statements:
@@ -253,7 +253,7 @@ SD HUGE *hpsdData;
 		/* never returns */
 		}
 
-	atomItem = AtomAddSt (*pstItem); 
+	atomItem = AtomAddSt (*pstItem);
 	if (vmerr.fMemFail)
 		{
 		rerr = rerrOutOfMemory;
@@ -406,14 +406,14 @@ CHAR **pstApp, **pstTopic, **pstItem;
 {
 	/* Set up a DDE advise.
 		Send Advise message
-		
+
 		When new data is available invoke AutoDde macro.
 		Advise is maintained until session end or Unadvise statement
 		executed for that app topic item.
-	
+
 		Errors:
 		cannot advise
-	
+
 	*/
 
 	return 0; /* to keep the stack happy */
@@ -427,7 +427,7 @@ CHAR **pstApp, **pstTopic, **pstItem;
 {
 	/* Remove previously set up DDE advise.
 		Unadvise item.
-		
+
 		Errors:
 		advise not active on item
 	*/
@@ -491,7 +491,7 @@ int dcl;
 						dqm.wLow, dqm.wHigh));
 			}
 		while ((fWaiting = !(pdcld = PdcldDcl(dcl))->fResponse)
-				&& !pdcld->fTermReceived && 
+				&& !pdcld->fTermReceived &&
 				FWaitDdeMessage (usecTimeOut, usecHourGlass, &fHourGlass));
 
 		}
@@ -555,7 +555,7 @@ int wLow, wHigh;
 #endif /* DEBUG */
 				goto LDataNack;
 				}
-			if ((lpch = lpdms = GlobalLockClip (wLow)) == NULL)
+			if ((lpch = lpdms = GlobalLockClip ((HANDLE)(UINT_PTR)wLow)) == NULL)
 				{
 				ReportDdeError ("Cannot lock handle, dropping message",
 						dcl, message, 0);
@@ -571,7 +571,7 @@ int wLow, wHigh;
 				{
 				ReportDdeError ("Unexpected Data (not response) or wrong format to macro.",
 						dcl, message, 0);
-				GlobalUnlock (wLow);
+				GlobalUnlock ((HANDLE)(UINT_PTR)wLow);
 				goto LDataNack;
 				}
 
@@ -593,7 +593,7 @@ int wLow, wHigh;
 					}
 				}
 
-			GlobalUnlock (wLow);
+			GlobalUnlock ((HANDLE)(UINT_PTR)wLow);
 
 
 			if (vddes.sdResult != sdNil)
@@ -601,7 +601,7 @@ int wLow, wHigh;
 				DdeDbgCommSz ("Macro data received OK");
 				PdcldDcl (dcl)->fAck = fTrue;
 				fSuccess = fTrue;
-				if (!dms.fAck || (fMustFree = !FPostDdeDcl (dcl, 
+				if (!dms.fAck || (fMustFree = !FPostDdeDcl (dcl,
 						WM_DDE_ACK, dasACK, wHigh)))
 					DeleteAtom (wHigh);
 				}
@@ -615,7 +615,7 @@ LDataNack:
 
 			if (wLow != NULL &&
 					(fMustFree || (dms.fRelease && (!dms.fAck || fSuccess))))
-				GlobalFree (wLow);
+				GlobalFree ((HANDLE)(UINT_PTR)wLow);
 
 			return fTrue;
 			}
@@ -717,6 +717,7 @@ HWND hwnd;
 
 /* %%Function:FBadWindow %%Owner:peterj */
 FBadWindow(hwnd)
+HWND hwnd;
 {
 	Assert(IsWindow(hwnd));
 	return(!IsWindowEnabled(hwnd) || !IsWindowVisible(hwnd));
@@ -740,7 +741,7 @@ BOOL fWait;
 
 	if (!**pstKeys)
 		/* no keys */
-		return;
+		return 0;
 
 	penvSav = penvMem;
 	if (SetJmp (penvMem = &env))
@@ -843,7 +844,7 @@ HEVT *phevt;
 |	We build the virtual keys into the hevt structure.
 |	If pichOp is non null we stuff in the ich of the begining and end of
 |	each opcode into the rgichOp, otherwise opcodes are illegal.
-|	
+|
 |	Returns:	a virtual key or 0 if there is an error.
 ----------------------------------------------------------------------------*/
 /* %%Function:FParseKeys %%Owner:peterj */
@@ -891,7 +892,7 @@ ParseErr:
 			{
 		case ichExOpEnd:
 		case ichExKeyEnd:
-			/* if these appear at this point they are out of 
+			/* if these appear at this point they are out of
 				context, so return an error */
 			goto ParseErr;
 		case ichExOpStart:
@@ -1205,7 +1206,7 @@ HEVT *phevt;
 
 	AssertPenv (penvMem);
 	if (!*phevt)
-		return;
+		return 0;
 	penvMemSav = penvMem;
 	if (SetJmp(penvMem = &env))
 		{
@@ -1256,7 +1257,7 @@ OOM:
 		/* install playback hook */
 		if (hPlaybackHook == NULL)
 			{
-			hCode = GetCodeHandle(PlaybackHook);
+			hCode = (HANDLE)GetCodeHandle((FARPROC)PlaybackHook);
 			Assert(hCode);
 			if ((hData=OurGlobalAlloc(GMEM_FIXED|GMEM_LOWER, (long)sizeof(struct DRVDATA)))==NULL)
 				goto OOM;
@@ -1277,26 +1278,31 @@ OOM:
 				   segment containing PlaybackHook to code. */
 				{
 				HANDLE hKernel=GetModuleHandle(SzShared("KERNEL"));
-				FARPROC lpfn;
+				typedef HANDLE (*PFNALLOCSELECTOR)(HANDLE);
+				typedef VOID (*PFNPRESTOCHANGOSELECTOR)(HANDLE, HANDLE);
+				typedef VOID (*PFNFREESELECTOR)(HANDLE);
+				PFNALLOCSELECTOR lpfnAllocSelector;
+				PFNPRESTOCHANGOSELECTOR lpfnPrestoChangoSelector;
+				PFNFREESELECTOR lpfnFreeSelector;
 				HANDLE hTemp;
 
 				Assert(hKernel != NULL);
 				if (hKernel == NULL)
 					goto OOM;
-				lpfn = GetProcAddress(hKernel,
+				lpfnAllocSelector = (PFNALLOCSELECTOR)GetProcAddress(hKernel,
 						MAKEINTRESOURCE(idoAllocSelector));
-				Assert(lpfn != NULL);
-				hTemp = (*lpfn)(hPlaybackHook);
+				Assert(lpfnAllocSelector != NULL);
+				hTemp = (*lpfnAllocSelector)(hPlaybackHook);
 				if (hTemp == NULL)
 					goto OOM;
-				lpfn = GetProcAddress(hKernel,
+				lpfnPrestoChangoSelector = (PFNPRESTOCHANGOSELECTOR)GetProcAddress(hKernel,
 						MAKEINTRESOURCE(idoPrestoChangoSelector));
-				Assert(lpfn != NULL);
-				(*lpfn)(hTemp, hPlaybackHook);
-				lpfn = GetProcAddress(hKernel,
+				Assert(lpfnPrestoChangoSelector != NULL);
+				(*lpfnPrestoChangoSelector)(hTemp, hPlaybackHook);
+				lpfnFreeSelector = (PFNFREESELECTOR)GetProcAddress(hKernel,
 						MAKEINTRESOURCE(idoFreeSelector));
-				Assert(lpfn != NULL);
-				(*lpfn)(hTemp);
+				Assert(lpfnFreeSelector != NULL);
+				(*lpfnFreeSelector)(hTemp);
 				}
 			lpfnPlaybackHook=&lpdrvhd->fnPlaybackHook;
 			/* don't need to unlock hPlaybackHook, it's fixed */
@@ -1322,8 +1328,8 @@ OOM:
 				SetKeyboardState((BYTE FAR *)rgb);
 				}
 			}
-		*lplpfnPlaybackHookSave=
-				SetWindowsHook(WH_JOURNALPLAYBACK, lpfnPlaybackHook);
+		*lplpfnPlaybackHookSave =
+				(FARPROC)SetWindowsHook(WH_JOURNALPLAYBACK, lpfnPlaybackHook);
 		}
 	penvMem = penvMemSav;
 }
@@ -1429,7 +1435,6 @@ LUnlockDone:
 		extern WORD CchReadDDESource();
 		extern int ElaDebug();
 		extern int GetInfoElx();
-		extern ELI ** HeliNew();
 		extern BOOL vfElDisableInput;
 		extern BOOL vfElFunc;
 		extern BOOL vcElParams;
@@ -1452,7 +1457,8 @@ LUnlockDone:
 
 		StartLongOp();
 
-		if ((heli = HeliNew(0, 0, CchReadDDESource, ElaDebug, GetInfoElx, 
+		if ((heli = HeliNew(0, 0, CchReadDDESource,
+				(VOID (*)())ElaDebug, (VOID (*)())GetInfoElx,
 				0, 0L)) == hNil)
 			{
 			FreeMacroSbs();

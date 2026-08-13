@@ -1372,10 +1372,10 @@ int doc;
 		AssureLegalSel(&ca);
 		GetPchpDocCpFIns (&chp, ca.doc, ca.cpFirst, fFalse, wwNil);
 		if (!FNewChpIns (ca.doc, ca.cpFirst, &chp, stcNil))
-			return;
+			return 0;
 		fcIns = FcAppendRgchToFn (fnScratch, szKwd, cchNew);
 		if (vmerr.fDiskFail || !FReplace( &ca, fnScratch, fcIns, (FC)cchNew))
-			return;
+			return 0;
 
 		fltT = flcd.flt;
 		GetIfldFlcd (doc, ifld, &flcd);
@@ -1427,5 +1427,4 @@ CHAR *sz;
 
 	Assert (cch);
 }
-
 

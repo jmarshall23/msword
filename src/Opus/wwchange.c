@@ -281,7 +281,7 @@ LONG lParam;
 
 /* H w n d  C r e a t e  W i n d o w  R c */
 /* %%Function:HwndCreateWindowRc %%Owner:chic */
-HwndCreateWindowRc( szCls, ws, rc, hwndParent )
+HWND HwndCreateWindowRc( szCls, ws, rc, hwndParent )
 CHAR szCls[];
 long ws;
 struct RC rc;
@@ -540,7 +540,7 @@ int ddyp; /* change in y direction. < 0 means shrink */
 			{
 			KillSplit(hmwd, pmwd->wwActive != pmwd->wwLower /*fLower*/,
 					ddxp != 0 /*fAdjustWidth*/);
-			return;
+			return 0;
 			}
 
 		if ((dypT = rcBottomPane.ypBottom - rcBottomPane.ypTop - rgdyp[1]) <
@@ -763,7 +763,7 @@ int mw;
 		GetWindowRect( vhwndDeskTop, (LPRECT)prc );
 		ScreenToClient( vhwndDeskTop, (LPPOINT)&(prc->ptTopLeft) );
 		ScreenToClient( vhwndDeskTop, (LPPOINT)&(prc->ptBottomRight) );
-		return;
+		return 0;
 		}
 
 	if (mwMac == mwDocMin+1)
@@ -1431,7 +1431,7 @@ struct FNS *pfns;
 	pfns->stPath [0] = pfns->stShortName [0] = pfns->stExtension [0] = 0;
 
 	if (ichLast == 0)
-		return;
+		return 0;
 
 /* Map extension --> pfns->stExtension; adjust ichLast  */
 
@@ -1709,7 +1709,7 @@ char * st;
 
 	/* look for existing entry */
 	if ((ibstDel = IbstFindSt(vhsttbOpen, st)) == 0)
-		return; /* already at head of list */
+		return 0; /* already at head of list */
 
 	/* don't let the cache exceed max entries */
 	if (ibstDel == iNil && (*vhsttbOpen)->ibstMac == ibstMaxFileCache)
@@ -1721,7 +1721,7 @@ char * st;
 
 	/* add new entry */
 	if (!FInsStInSttb(vhsttbOpen, 0, st))
-		return;
+		return 0;
 
 	vfFileCacheDirty = fTrue; /* so menu gets updated */
 	Assert ((*vhsttbOpen)->ibstMac <= ibstMaxFileCache);
@@ -1769,7 +1769,7 @@ int gdso;
 
 	/* Only dkDoc's and dkDot's have names */
 	if ((hdod = mpdochdod [doc]) == hNil || !((*hdod)->dk & (dkDoc | dkDot)))
-		return;
+		return 0;
 
 	Assert(doc >= docMinNormal);
 
@@ -1785,9 +1785,9 @@ int gdso;
 	else  
 		switch ((*hdod)->udt)
 			{
-		case udtMacroEdit:
-			AssertDo(FGetStMacro(doc, st));
-			return;
+			case udtMacroEdit:
+				AssertDo(FGetStMacro(doc, st));
+				return 0;
 
 		case udtGlobalDot:
 			AssertDo(FNormalizeStFile(stNormalDot, st, nfoDot));
@@ -1808,7 +1808,7 @@ LAddInstance:
 			if (gdso & gdsoNoUntitled)
 				{
 				*st = 0;
-				return;
+				return 0;
 				}
 			else
 				{
@@ -1816,14 +1816,14 @@ LAddInstance:
 				Assert(*st);
 				/* punt >= 100 case */
 				if (i >= 10)
-					st[++(*st)] = '0'+ ((i/10)%10);
-				st[++(*st)] = '0' + (i%10);
-				return;
-				}
+				st[++(*st)] = '0'+ ((i/10)%10);
+			st[++(*st)] = '0' + (i%10);
+			return 0;
+			}
 
-		default:
-			/* doc has no name */
-			return;
+			default:
+				/* doc has no name */
+				return 0;
 			}
 
 	if (gdso & gdsoRelative)
@@ -1938,7 +1938,7 @@ int doc;
 	CHAR st [ichMaxFile+5];
 
 	if (doc < docMinNormal || PdodDoc(doc)->fShort)
-		return;
+		return 0;
 
 	AssertH(vhsttbWnd);
 	BuildRgmwForDoc (doc, rgmw, &imwMac);
@@ -2081,13 +2081,13 @@ int ac;
 	if (vlm == lmPreview)
 		{
 		FExecCmd(bcmPrintPreview);
-		return;
+		return 0;
 		}
 
 	/* don't close window if there is msg box up, else focus of msg box
 	is returned to destroyed window */
 	if (vcInMessageBox > 0) 
-		return;
+		return 0;
 
 	EnsureFocusInPane();
 
@@ -2536,7 +2536,7 @@ HWND hwnd;
 	The app's caption is also set up in ZoomWnd for the same
 	reason above. */
 	if (hwnd == vhwndZoom)
-		return;
+		return 0;
 
 	vhwndZoom = hwnd;
 /* save away the rc info before it is zoomed */
@@ -2569,7 +2569,7 @@ HWND hwndMw;
 				vsci.dypScrlBar + 1)
 			{
 			CmdRestoreWnd(0);
-			return;
+			return 0;
 			}
 		}
 /* take away the size box style for zoomed window */
@@ -2841,4 +2841,3 @@ int ch;
 }
 
 #endif /* WIN */
-

@@ -864,7 +864,9 @@ target_compile_definitions(opus_x64_runtime PRIVATE
     $<$<CONFIG:Debug>:OPUS_TEST_HOOKS>
 )
 target_include_directories(opus_x64_runtime PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_x64_runtime PUBLIC ole32 comdlg32 gdi32)
+if(WIN32)
+    target_link_libraries(opus_x64_runtime PUBLIC ole32 comdlg32 gdi32)
+endif()
 if(WIN32)
     target_sources(opus_x64_runtime PRIVATE port/original/opus_modern_formats.cpp)
 else()
@@ -995,7 +997,10 @@ endforeach()
 
 # Future product executables link this original-source archive and inherit the
 # translated assembly/native-handle runtime at the library boundary.
-target_link_libraries(opus_original_engine PUBLIC opus_x64_runtime user32)
+target_link_libraries(opus_original_engine PUBLIC opus_x64_runtime)
+if(WIN32)
+    target_link_libraries(opus_original_engine PUBLIC user32)
+endif()
 
 # Product executable for Visual Studio's Startup Item list. The Unicode entry
 # adapter converts the modern process command line, then transfers control to
@@ -1012,7 +1017,13 @@ target_compile_features(WORD1 PRIVATE cxx_std_20)
 target_compile_definitions(WORD1 PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
 )
-target_link_libraries(WORD1 PRIVATE opus_original_engine opus_x64_runtime user32 imm32 dbghelp)
+target_include_directories(WORD1 PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+target_link_libraries(WORD1 PRIVATE opus_original_engine opus_x64_runtime)
+if(WIN32)
+    target_link_libraries(WORD1 PRIVATE user32 imm32 dbghelp)
+elseif(APPLE)
+    target_link_options(WORD1 PRIVATE -Wl,-undefined,dynamic_lookup)
+endif()
 if(MSVC)
     target_compile_options(WORD1 PRIVATE /J /W3 /wd4005 /utf-8 /guard:cf /sdl)
     target_link_options(WORD1 PRIVATE /DYNAMICBASE /HIGHENTROPYVA /NXCOMPAT /guard:cf /CETCOMPAT /MANIFEST:NO)
@@ -1120,7 +1131,12 @@ add_executable(opus_word1_ui_test
 add_dependencies(opus_word1_ui_test WORD1)
 target_compile_features(opus_word1_ui_test PRIVATE cxx_std_20)
 target_compile_definitions(opus_word1_ui_test PRIVATE NOMINMAX UNICODE _UNICODE)
-target_link_libraries(opus_word1_ui_test PRIVATE user32 gdi32)
+target_include_directories(opus_word1_ui_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+if(WIN32)
+    target_link_libraries(opus_word1_ui_test PRIVATE user32 gdi32)
+elseif(APPLE)
+    target_link_options(opus_word1_ui_test PRIVATE -Wl,-undefined,dynamic_lookup)
+endif()
 if(MSVC)
     target_compile_options(opus_word1_ui_test PRIVATE /W4 /utf-8)
 endif()

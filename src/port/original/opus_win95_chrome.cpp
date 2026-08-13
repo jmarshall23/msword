@@ -7,6 +7,7 @@
 #include <array>
 #include <cstdint>
 #include <deque>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -326,7 +327,7 @@ void style_menu_tree(HMENU menu) {
 BOOL CALLBACK repaint_menu_popup(HWND window, LPARAM) {
     WCHAR class_name[32]{};
     GetClassNameW(window, class_name,
-                  static_cast<int>(std::size(class_name)));
+                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpW(class_name, kMenuPopupClass) == 0 && IsWindowVisible(window)) {
         RedrawWindow(window, nullptr, nullptr,
                      RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW |
@@ -2445,7 +2446,7 @@ void show_document_context_menu(HWND pane, POINT screen_point) {
 void update_language_menu_check() {
     if (g_language_menu == nullptr) return;
     char selected[32]{};
-    OpusUnicodeGetInputLanguage(selected, static_cast<int>(std::size(selected)));
+    OpusUnicodeGetInputLanguage(selected, static_cast<int>(sizeof(selected)));
     UINT command = kCmdLanguageBase;
     for (const LanguageChoice& choice : kLanguageChoices) {
         if (_stricmp(selected, choice.tag) == 0) {

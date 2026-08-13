@@ -144,7 +144,7 @@ int dypLow, dypHigh;
 	if (pwwd->fPageView)
 		{
 		ScrollPageDye(ww, dypLow);
-		return;
+		return 0;
 		}
 
 #ifdef WIN
@@ -155,7 +155,7 @@ int dypLow, dypHigh;
 	Debug(vfCheckPlc = fFalse);
 	hplcedl = PdrGalley(pwwd)->hplcedl;
 	if (hplcedl == hNil)
-		return; /* can happen coming out of pageview from low in memory */
+		return 0; /* can happen coming out of pageview from low in memory */
 	FreezeHp();
 
 	ClearInsertLine(&selCur);
@@ -166,7 +166,7 @@ int dypLow, dypHigh;
 		{
 		MeltHp();
 		Beep();
-		return;
+		return 0;
 		}
 		{{ /* NATIVE - ScrollUp */
 		for (dl = 0; cdlT-- > 0; dl++)
@@ -307,7 +307,7 @@ int ww, dypLow, dypHigh;
 	if (pwwd->fPageView)
 		{
 		ScrollPageDye(ww, -dypHigh);
-		return;
+		return 0;
 		}
 
 	ScrollDown2(ww, 0, dypLow, dypHigh, WinMac( fFalse, vpsccBelow && !pwwd->fOutline));
@@ -334,12 +334,12 @@ int ww, idr, dypLow, dypHigh, fUseScc;
 
 			Win( Assert( fUseScc == fFalse ) );
 	if (idr >= pwwd->idrMac)
-		return;	/* failsafe for page view problems; 0 may not exist */
+		return 0;	/* failsafe for page view problems; 0 may not exist */
 	Debug(vfCheckPlc = fFalse);
 	fDirty = pwwd->fDirty;
 	hplcedl = PdrWw(ww, idr)->hplcedl;
 	if (hplcedl == hNil)
-		return;  /* can happen coming out of pageview from low in memory */
+		return 0;  /* can happen coming out of pageview from low in memory */
 
 	dlFirst = 0;
 	dypVisi = 0;
@@ -742,12 +742,12 @@ int fEnd;
 	vfSeeSel = fFalse;
 	pwwd = PwwdWw(ww);
 	if (pwwd->idrMac <= 0)
-		return;
+		return 0;
 
 	Assert(!pwwd->fPageView);
 	hplcedl = PdrGalley(pwwd)->hplcedl;
 	if (hplcedl == hNil)
-		return; /* can happen coming out of pageview from low in memory */
+		return 0; /* can happen coming out of pageview from low in memory */
 
 	dypBound = ncp & ncpForceYPos ? 0 : PdrGalley(pwwd)->dyl / 2;
 	if (!fNoOpt && (dl = DlFromCpCheck(HwwdWw(ww), 0, cp, fEnd)) >= 0)
@@ -926,7 +926,7 @@ BOOL fCkVisibility;
 		else  if (pwwd->wk == wkAtn || pwwdOther->wk == wkAtn)
 			SynchRef(ww, fCkVisibility);
 		else  if (pwwd->wk == wkHdr || pwwdOther->wk == wkHdr)
-			return;
+			return 0;
 #endif
 		else  if (pwwd->fOutline != pwwdOther->fOutline)
 			SynchOutline(ww);
@@ -1032,15 +1032,15 @@ BOOL fCkVisibility;
 		cpFirst = PdrGalley(pwwd)->cpFirst;
 		}
 
-	if (cpFirst >= CpMacDoc(PdrGalley(pwwd)->doc)) return;
+	if (cpFirst >= CpMacDoc(PdrGalley(pwwd)->doc)) return 0;
 
 	if ((docSync = DocCpRefFromWw(ww, &cpFirst, &cpRefMom)) == docNil)
-		return;
+		return 0;
 
 	if (PmwdWw(ww)->wwUpper == ww && fCkVisibility &&
 			!FCpVisible(ww, psel->doc, cpRefMom, fFalse, fFalse, fFalse))
 /* cpRef in mother doc is not yet in window, don't have to scroll ref text in yet */
-		return;
+		return 0;
 
 	if (PwwdOther(ww)->fDirty || !FCpVisible(WwOther(ww), docSync, cpFirst, fFalse, fFalse, fFalse))
 		SetWwCpFirst(WwOther(ww), cpFirst);
@@ -1599,14 +1599,14 @@ BOOL fSetNorm, fNorm;
 			the dirty bit to let UpdateWw later have a chance to examine
 			and update if any bad cps in the DR */
 			PwwdWw(ww)->fDirty = fTrue;
-			return;
+			return 0;
 			}
 		}
 
 	if (PwwdWw(ww)->ipgd == ipgdNil)
 		{
 		/* Not enough memory to create drs */
-		return;
+		return 0;
 		}
 
 	/* scroll page rect vertically as requested. */

@@ -71,6 +71,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #define WPROC
 #include "core.h"
 
+extern HANDLE GetCodeHandle();
 
 /* globals */
 #ifdef DEBUG
@@ -636,7 +637,7 @@ TopOfMainLoop()
 	Debug(vpdrfHeadUnused = NULL);
 
 	if (vidf.fDead)
-        return;
+        return 0;
 
 	if (vmerr.fKillRulRib)  /* take down before messages appear */
 		EndIbdlg();
@@ -2452,7 +2453,7 @@ int pdc;
 	if (pdc & pdcmRestore)
 		{
 		RestorePrompt();
-		return;
+		return 0;
 		}
 	if (pdc & pdcmRestOnInput)
 		/*  restore on input */
@@ -2790,7 +2791,7 @@ int sas;
 	if (vfNoCoreLoad Debug(|| vdbs.fNoCoreLoad))
 		{
 		vsasCur = sasMin;
-		return;
+		return 0;
 		}
 
 	if (vcShrinkSwapArea != 0)
@@ -2844,7 +2845,7 @@ BOOL fLoad;
 	extern int vsasCur;
 
 	if (hmwdCur == hNil || vfDeactByOtherApp)
-		return;
+		return 0;
 
 #ifdef DCORELOAD
 	if (fLoad)

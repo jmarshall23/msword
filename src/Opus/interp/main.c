@@ -36,6 +36,7 @@ VOID ExpectHeldi(), InitHprek();
 #define FLineElt(elt)	(eltLineNolabel <= (elt) && (elt) < eltLineInt)
 
 struct PROC *PprocFindPsy();
+char **HstzOfSd();
 char *PchRefillBuf();
 ELV ElvCallElx();
 REK huge *HprekOfRl();
@@ -194,7 +195,7 @@ DefProcedure()
 	hpproc->elv = (eltProc == eltFunction ? HpsyOfPsy(psyProc)->elv
 							: elvNil);
 
-	*HpNtab(pprocScan) = pproc;	/* remember what PROC we're in */
+	*HpNtab(pprocScan) = (int)(UINT_PTR)pproc;	/* remember what PROC we're in */
 	*(LIB huge *)HpNtab(libScan) = libProc;
 
 	EltGetCur();	/* pre-fetch (defining any labels in new proc) */

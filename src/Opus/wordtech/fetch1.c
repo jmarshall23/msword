@@ -75,6 +75,10 @@ extern struct TCC       vtcc;
 extern CP               vmpitccp[];
 extern int              vitcMic;
 
+#ifdef OPUS_X64
+extern CHAR HUGE *N_HpchFromFc();
+#endif
+
 extern char             (**vhgrpchr)[];
 extern int              vbchrMax;
 extern int              vbchrMac;
@@ -279,7 +283,7 @@ LReturnCa:
 		caSect = ca;
 		caSect.doc = doc;
 		MeltHp();
-		return;
+		return 0;
 		}
 /* for temp file during page layout, use mother doc's props */
 	if (doc == vdocTemp && vcpFirstLayout != cpNil)
@@ -411,7 +415,7 @@ struct PAP *ppap;
 LStcMin:
 			StandardPap(ppap);
 			StandardChp(pchp);
-			return;
+			return 0;
 #ifdef WIN
 		case stcNormIndent:
 			{
@@ -421,7 +425,7 @@ LStcMin:
 			if ((ppap->dxaLeft = PdopDoc(docGlobalDot)->dxaTab) == 0)
 				ppap->dxaLeft = fMetric ? 709 : dxaInch/2;
 			}
-			return;
+			return 0;
 #endif
 		case stcLev1:
 			ppap->dyaBefore = 12 * dyaPoint;
@@ -429,13 +433,13 @@ LStcMin:
 			pchp->fBold = ~pchp->fBold;
 			pchp->hps = 24;
 			pchp->ftc = ftcHelv;
-			return;
+			return 0;
 		case stcLev2:
 			ppap->dyaBefore = 6 * dyaPoint;
 			pchp->fBold = ~pchp->fBold;
 			pchp->hps = 24;
 			pchp->ftc = ftcHelv;
-			return;
+			return 0;
 		case stcLev3:
 			{
 			struct DOP *pdop;
@@ -450,7 +454,7 @@ LStcMin:
 			}
 			pchp->fBold = ~pchp->fBold;
 			pchp->hps = 24;
-			return;
+			return 0;
 		case stcLev4:
 			{
 			struct DOP *pdop;
@@ -466,7 +470,7 @@ LStcMin:
 			}
 			pchp->kul = kulSingle;
 			pchp->hps = 24;
-			return;
+			return 0;
 		case stcLev5:
 			{
 			if (docGlobalDot == docNil)
@@ -477,7 +481,7 @@ LStcMin:
 			}
 			pchp->fBold = ~pchp->fBold;
 			pchp->hps = 20;
-			return;
+			return 0;
 		case stcLev6:
 			{
 			if (docGlobalDot == docNil)
@@ -488,7 +492,7 @@ LStcMin:
 			}
 			pchp->kul = kulSingle;
 			pchp->hps = 20;
-			return;
+			return 0;
 		case stcLev7:
 		case stcLev8:
 		case stcLev9:
@@ -501,7 +505,7 @@ LStcMin:
 			}
 			pchp->fItalic = ~pchp->fItalic;
 			pchp->hps = 20;
-			return;
+			return 0;
 		case stcIndex1:
 		case stcIndex2:
 		case stcIndex3:
@@ -513,22 +517,22 @@ LStcMin:
 /* (level - 1) * 1/4" indent */
 			ppap->dxaLeft = fMetric ? (stcIndexLast-stc)*dxaCm/2
 					        : (stcIndexLast-stc)*dxaInch/4;
-			return;
+			return 0;
 		case stcFtnText:
 #ifdef WIN
 		case stcAtnText:
 #endif /* WIN */
 			pchp->hps = 10 * 2;
-			return;
+			return 0;
 		case stcFtnRef:
 			pchp->hps = WinMac ( 8 * 2, 9 * 2 );
 			pchp->hpsPos = 3 * 2;
-			return;
+			return 0;
 #ifdef WIN
 		case stcAtnRef:
 			pchp->hps = 8 * 2;
 /*			pchp->hpsPos = 256 - (3 * 2); */
-			return;
+			return 0;
 #endif /* WIN */
 		case stcHeader:
 		case stcFooter:
@@ -546,7 +550,7 @@ LStcMin:
 			ppap->itbdMac = 2;
 			ppap->rgtbd[0] = Tbd(jcCenter, tlcNone);
 			ppap->rgtbd[1] = Tbd(jcRight, tlcNone);
-			return;
+			return 0;
 #ifdef MAC
 		case stcPostScript:
 			pchp->fVanish = pchp->fBold = fTrue;
@@ -587,7 +591,7 @@ LStcMin:
 					ppap->rgtbd[1] = Tbd(jcRight,tlcNone);
 					}
 				}
-			return;
+			return 0;
 		/* else normal properties are returned */
 			}
 }
@@ -615,7 +619,7 @@ CP cp;
 
 	Assert(cHpFreeze == 0);
 	if (FInCa(doc, cp, &caPage))
-		return;
+		return 0;
 	hplcpgd = PdodDoc(doc)->hplcpgd;
 
 	if (hplcpgd == hNil || (ipgdMac = IMacPlc(hplcpgd)) == 0)
@@ -906,7 +910,7 @@ struct SELS *pselsPush;
 		{
 		/* if already cached, don't cache it again */
 		if (!FNeRgw(&((pselsT++)->ca), &(selsT.ca), cwCA))
-			return;
+			return 0;
 		}
 
 	/* if not, add it to the end of the cache, pushing everything else up */
@@ -1379,7 +1383,7 @@ CP cpLim;
 				PdodDoc(doc)->fOutlineDirty = fTrue;
 				FUpdateHplcpad(doc);
 				}
-			return;
+			return 0;
 			}
 		FOpenPlc(hplcpad, ipad + 1, 1);
 

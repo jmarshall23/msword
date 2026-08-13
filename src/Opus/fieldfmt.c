@@ -382,7 +382,7 @@ struct FLCD *pflcd;
 					pflcd->dcpResult = CpPlc( hplcfld, ifld ) - cpSeparate;
 				else
 					pflcd->dcpInst = CpPlc( hplcfld, ifld ) - pflcd->cpFirst + 1;
-				return;
+				return 0;
 				}
 			break;
 #ifdef DEBUG

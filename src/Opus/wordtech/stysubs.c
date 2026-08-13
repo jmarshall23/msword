@@ -87,6 +87,8 @@ csconst CHAR stNormal[] = { 6, 'N', 'o', 'r', 'm', 'a', 'l' };
 csconst CHAR stNormal[] = StKey("Normal",StyleNormal);
 #endif
 
+struct STTB **HsttbPropeFromStsh();
+
 #ifdef MAC /* Not used by WIN */
 /* %%Function:FChkNamesMatchOneStyle %%Owner:NOTUSED */
 NATIVE FChkNamesMatchOneStyle(stNew, pstsh, pstcMatch, fDoAlert, mt, pcnk) /* WINIGNORE - MAC only */
@@ -850,7 +852,7 @@ int fChp;
 		stc = (stcp - pdod->stsh.cstcStd) & 255;
 		Assert(stcStdMin < stc && stc <= 255);
 		MapStcStandard(stc, pchp, ppap);
-		return;
+		return 0;
 		}
 	bltbx(LpFromHp(hpprope), (char far *)ppropeResult, cch);
 	cb = fChp ? cbCHP : cbPAP;
@@ -1443,14 +1445,14 @@ int foo, vote;
 			{
 			Assert(*pvoteFoo + vote < 256);
 			*pvoteFoo += vote;
-			return;
+			return 0;
 			}
 		/* foo's not in the list but there's room, so put it in */
 		else  if (*pvoteFoo == 0)
 			{
 			*pfoo = foo;
 			*pvoteFoo = vote;
-			return;
+			return 0;
 			}
 		/* no match */
 		else  if (*pvoteFoo < voteMin)
@@ -1821,7 +1823,7 @@ extern struct SAB vsab;
 CheckScrapStsh(doc)
 {
 	Win(Assert(vsab.docStsh == doc)); /* avoid swapping in */
-	if (vsab.docStsh != doc) return;
+	if (vsab.docStsh != doc) return 0;
 	ResetDocStsh(docScrap, fTrue /* allocate minimal STSH */);
 	Win( ResetDocFonts(docScrap) );
 	CopyStylesFonts(doc, docScrap, cp0, CpMacDoc(docScrap));
@@ -1841,13 +1843,13 @@ RestoreStcFromBackup()
 	char stName[WinMac(cchMaxStyle, 256)];
 
 	if (vstcStyle == -1 || vstcBackup == -1)
-		return;
+		return 0;
 	RecordStshForDoc(vdocStsh, &stsh, &hsttbChpe, &hsttbPape);
 
 #ifdef WIN
 	/* if no change, don't bother with the rest of this gunk! */
 	if (FStylesEqual(vstcBackup, &stsh, hsttbChpe, hsttbPape))
-		return;
+		return 0;
 #endif
 
 	MapStc(PdodDoc(vdocStsh), vstcStyle, &chpBefore, &papBefore);
@@ -2426,5 +2428,4 @@ char *stName;
 
 	return fTrue;
 }
-
 

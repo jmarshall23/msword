@@ -9,12 +9,12 @@
 #define spcUserDict    6    /* - word is in user dictionary                   */
 
 
-/*----------------------------------------------------------------------
-	These added to define what happens with chCase array.
-	This is used to indicate what properties different characters
-	have (numeric, alpha, special-word-reserved, etc) and is done
-	by having each bit indicate something special.
---------------------------------------------------------------pault---*/
+/* These added to define what happens with chCase array. This is used to
+ * indicate what properties different characters have (numeric, alpha,
+ * special-word-reserved, etc) and is done by having each bit indicate something
+ * special.
+ * --------------------------------------------------------------pault---
+ */
 
 #define CASE_NONE           0  /* not a legal letter in chCase array */
 #define CASE_LOWER        0x1  /* bit 0 indicates LOWERCASE in chCase array */
@@ -62,7 +62,11 @@
 					includes terminator */
 					
 struct GHD {
+#ifdef OPUS_X64
+	HANDLE ghsz;
+#else
 	unsigned ghsz;
+#endif
 	int ichMac;
 	int ichMax;
 	};

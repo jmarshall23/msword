@@ -31,9 +31,11 @@ BOOL fElActive = FALSE;
 #define LibCur()	(Global(libBufStart) + Global(ibBufCur))
 
 
-VOID RtError();
 VOID StopHeli();
 VOID CleanupEl();
+void **PpvAllocCb();
+ENV *PenvGetCur();
+struct SY *PsyLookupSt();
 
 unsigned CbOfSsbPenv(ENV *);
 int DpbExitCoroutine();
@@ -99,7 +101,7 @@ LONG l;
 
 	/* Create the new ELI.
 		*/
-	if ((heli = PpvAllocCb(sbTds, sizeof(ELI))) == 0)
+	if ((heli = (ELI **)PpvAllocCb(sbTds, sizeof(ELI))) == 0)
 		goto LFailRet;
 
 	/* Initialize the new ELI.
@@ -241,7 +243,7 @@ LDefault:
 			envT = ElGlobal(env);
 			cbSsb = CbOfSsbPenv(&envT);
 
-			if ((ElGlobal(hssb) = hssb = PpvAllocCb(sbTds, cbSsb)) == 0)
+			if ((ElGlobal(hssb) = hssb = (struct SSB **)PpvAllocCb(sbTds, cbSsb)) == 0)
 				{
 				rerr = rerrOutOfMemory;
 				goto LDefault;
@@ -299,7 +301,7 @@ ELI **heli;
 
 	/* Save where we are on the stack, so we can set an upper limit on
 		stack usage. */
-	Global(wStackStart) = &heli;
+	Global(wStackStart) = (WORD)(UINT_PTR)&heli;
 
 	/* Save some global state information. */
 	icsrStackPtrSav = ElGlobal(icsrStackPtr);
@@ -356,7 +358,7 @@ ELI **heli;
 
 	fElActive -= 1;
 	return rerrNil;
-	
+
 LFailRet:
 	return rerrOutOfMemory;
 }
@@ -464,7 +466,7 @@ RERR rerr;
 #ifdef BATCH
 		/* "report" runtime errors when in batchmode */
 		if (vfBatchMode)
-			BatchModeError(SzCode("Macro runtime error encountered."), 
+			BatchModeError(SzCode("Macro runtime error encountered."),
 					NULL, rerr, 0);
 #endif /* BATCH */
 		StopHeli(ElGlobal(heliFirst), rerr);
@@ -487,14 +489,14 @@ VOID CleanupEl()
 		}
 
 	FreeEmmSb(sbTds);
-	
+
 	if (sbFrame != 0)
 		FreeEmmSb(sbFrame);
 	if (sbStrings != 0)
 		FreeEmmSb(sbStrings);
 	if (sbArrays != 0)
 		FreeEmmSb(sbArrays);
-	
+
 	sbTds = sbFrame = sbStrings = sbArrays = 0;
 
 	FreeSymbolTables();
@@ -605,7 +607,7 @@ WORD ieldi;
 	ResetSbCur();
 
 	cbEldi = CbGetInfoIeldi(ieldi, hpNil);
-	if ((heldiNew = PpvAllocCb(sbTds, cbEldi)) == 0)
+	if ((heldiNew = (ELDI **)PpvAllocCb(sbTds, cbEldi)) == 0)
 		RtError(rerrOutOfMemory);
 	CbGetInfoIeldi(ieldi, HpeldiFromHeldi(heldiNew));
 
@@ -700,7 +702,7 @@ FInitExecTds()
 {
 	ElGlobal(icsrStackPtr) = -1;
 
-	return (ElGlobal(hcsrStack) = PpvAllocCb(sbTds, 
+	return (ElGlobal(hcsrStack) = (struct CSR *)PpvAllocCb(sbTds,
 			ccsrStackMax * sizeof (struct CSR))) != 0;
 }
 
@@ -744,13 +746,13 @@ ReadGlobalDims()
 				DefProcedure();
 				FSkipToLine(eltEnd, 0);	/* skip procedure body */
 				if (LibCur() >= *(LIB huge *)HpNtab(libScan))
-					*HpNtab(pprocScan) = (struct PROC *)0;
+				*HpNtab(pprocScan) = 0;
 				EltGetCur();
 				break;
 
 			case eltEof:
 				*(LIB huge *)HpNtab(libScan) = 0;
-				return;
+				return 0;
 
 			case eltDeclare:
 				DoElDeclare();
@@ -884,9 +886,9 @@ ENV *penv;
 		* (i.e. don't save that frame).
 		*/
 	/* NOTE: penv->fEnv is really an (int *), this poor hungarian comes
-		to you from the standard qsetjmp.h file.  I believe fEnv is a 
+		to you from the standard qsetjmp.h file.  I believe fEnv is a
 		pointer to the current frame at SetJmp time. */
-	pchHigh = (unsigned)penv->fEnv;
+	pchHigh = (char *)(UINT_PTR)penv->fEnv;
 
 	return CbOfSsb(pchHigh - pchLow);
 }
@@ -914,7 +916,7 @@ struct SSB huge *hpssb;
 		* the above procedure for the explanation of this.
 		*/
 	pchLow = (char *)&penv + sizeof(ENV *);
-	pchHigh = (unsigned)penv->fEnv;
+	pchHigh = (char *)(UINT_PTR)penv->fEnv;
 
 	/* Copy the saved stack into the destination huge pointer.
 		*/
@@ -997,7 +999,7 @@ struct SSB huge *hpssb;		/* stack block saved by DpbExitCoroutine() */
 		*/
 	if (SetJmp(&envGlobal) == 0)
 		{
-		envGlobal.fEnv = (WORD)envGlobal.fEnv - hpssbGlobal->dcbFrame;
+		envGlobal.fEnv = (int *)((char *)envGlobal.fEnv - hpssbGlobal->dcbFrame);
 		envGlobal.cbEnv -= hpssbGlobal->dcbFrame;
 		DoJmp(&envGlobal, 1);
 		}
@@ -1008,8 +1010,8 @@ struct SSB huge *hpssb;		/* stack block saved by DpbExitCoroutine() */
 		*/
 	if ((dcbStack = pchRestoreMin - hpssb->pchOrig) != 0)
 		{
-		struct QF *pqfT = IbOfHp(hpssb->rgbStack);
-		struct QF *pqfLim = (char *)pqfCur + hpssb->cbStack;
+		struct QF *pqfT = (struct QF *)IbOfHp(hpssb->rgbStack);
+		struct QF *pqfLim = (struct QF *)((char *)pqfCur + hpssb->cbStack);
 
 		do
 			{
@@ -1017,8 +1019,8 @@ struct SSB huge *hpssb;		/* stack block saved by DpbExitCoroutine() */
 
 			hpqfT = HpOfSbIb(SbOfHp(hpssb), pqfT);
 
-			pqfNext = IbOfHp(hpssb->rgbStack) +
-					(hpqfT->fPrev - (WORD)hpssb->pchOrig);
+			pqfNext = (struct QF *)((char *)IbOfHp(hpssb->rgbStack) +
+					(hpqfT->fPrev - (WORD)hpssb->pchOrig));
 
 			hpqfT->fPrev += dcbStack;
 
@@ -1051,8 +1053,6 @@ struct SSB huge *hpssb;		/* stack block saved by DpbExitCoroutine() */
 FOnlyHeli(heli)
 ELI ** heli;
 {
-	return HpeliOfHeli(heli)->heliNext == NULL && 
+	return HpeliOfHeli(heli)->heliNext == NULL &&
 			heli == ElGlobal(heliFirst);
 }
-
-

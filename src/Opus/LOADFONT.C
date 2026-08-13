@@ -218,7 +218,7 @@ int fWidthsOnly;
 				fcid.wExtra == pfce->fcidRequest.wExtra)
 			{
 			vfli.fGraphics |= pfce->fGraphics;
-			return;
+			return 0;
 			}
 
 		pfce = pfce->pfceNext;  /* start following search with 2nd font in chain */
@@ -780,7 +780,7 @@ BOOL fPrinterFont;
 	HFONT hfont;
 
 	if ((pfti = (fPrinterFont) ? vpri.pfti : vsci.pfti) == NULL)
-		return; /* device does not exist */
+		return 0; /* device does not exist */
 
 	if (fPrinterFont && vpri.pfti->fTossedPrinterDC)
 		{   /* printer DC was tossed away */

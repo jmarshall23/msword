@@ -77,6 +77,7 @@ extern BOOL vfRecording;
 extern int docRecord;
 extern CP cpRecord;
 extern char rgchEop [];
+extern SY *PsyGetSyOfBsy();
 extern struct MWD ** hmwdCur;
 extern char rgchInsert[];
 extern int ichInsert;
@@ -438,10 +439,10 @@ int bcm;
 #ifdef DRECORDER
 	CommSzNum(SzShared("Genstatement: bcm="), bcm);
 #endif
-	/* If bcm is not recordable, or is recorded elsewhere, just return */
-	if (!FRecordableBcm(bcm) || bcm == bcmColor || bcm == bcmFont ||
-		 bcm == bcmFontSize || bcm == bcmSizeWnd || bcm == bcmMoveWnd)
-		return;
+		/* If bcm is not recordable, or is recorded elsewhere, just return */
+		if (!FRecordableBcm(bcm) || bcm == bcmColor || bcm == bcmFont ||
+			 bcm == bcmFontSize || bcm == bcmSizeWnd || bcm == bcmMoveWnd)
+			return 0;
 
 	psy = PsyGetSyOfBsy(rgchSy, bcm);
 
@@ -543,7 +544,7 @@ int cch;
 	if (cch == 0)
 		{
 		InsertRgchRec(stQuote + 1, 2);
-		return;
+		return 0;
 		}
 
 	ichStart = 0;
@@ -664,7 +665,7 @@ TLV * ptlv;
 		cchInsert -= (int) ccpEop;
 
 	if (cchInsert <= 0)
-		return;
+		return 0;
 
 	FRecInsRgch(rgchInsert + ptlv->ichFill, cchInsert);
 }
@@ -741,7 +742,7 @@ FlushRecIns()
 	char rgchBuf [ichMaxInsStmt + 1];
 
 	if (ichMacRecIns == 0)
-		return;
+		return 0;
 
 	AssertH(hrgchRecIns);
 
@@ -864,11 +865,11 @@ FlushVrac()
 	switch (racop)
 		{
 	case racopNil:
-		return;
+		return 0;
 
 	case racopInsert:
 		FlushRecIns();
-		return;
+		return 0;
 
 	case racopDelete:
 		if (vrac.dSty != 0)
@@ -880,7 +881,7 @@ FlushVrac()
 			CommSzNum(SzShared("$ Delete "), vrac.dSty);
 #endif
 			}
-		return;
+		return 0;
 
 	case racopMove:
 	case racopSelect:
@@ -888,8 +889,8 @@ FlushVrac()
 			int styM1;
 			char stStmt [40];
 
-			if (vrac.dSty == 0)
-				return;
+		if (vrac.dSty == 0)
+			return 0;
 
 		/* HACK: to keep our array small, convert styScreenEnd
 			to the unused (thus far) styWordNoSpace */
@@ -927,19 +928,19 @@ FlushVrac()
 					RecordSt(StSharedKey(", 1",CommaOne));
 				}
 
-			RecordEop();
-			return;
-			}
+		RecordEop();
+		return 0;
+		}
 
 	case racopHScroll:
 	case racopVScroll:
 		DoRecScroll(racop, vrac.sty, vrac.dSty);
-		return;
+		return 0;
 
 #ifdef DEBUG
 	default:
 		Assert(fFalse);
-		return;
+		return 0;
 #endif /* DEBUG */
 		}
 
@@ -991,7 +992,7 @@ int sty;
 int dSty;
 {
 	if (dSty == 0)
-		return;
+		return 0;
 
 	AddToVrac(racopDelete, sty, dSty);
 
@@ -1007,7 +1008,7 @@ int sty;
 int dSty;
 {
 	if (dSty == 0)
-		return;
+		return 0;
 
 	AddToVrac(fSelect ? racopSelect : racopMove, sty, dSty);
 
@@ -1095,7 +1096,7 @@ int racop, sb, c;
 	if (sb != SB_LINEUP && sb != SB_LINEDOWN &&
 			sb != SB_PAGEUP && sb != SB_PAGEDOWN)
 		{
-		return;
+		return 0;
 		}
 
 	icsst = (racop == racopHScroll ? 0 : icsstVert) +
@@ -1130,7 +1131,7 @@ int racop, sb, c;
 	switch (sb)
 		{
 	default:
-		return;
+		return 0;
 
 	case SB_LINEUP:
 		fUp = fTrue;
@@ -1188,7 +1189,7 @@ int cch;
 	extern struct CA caPara;
 
 	if (vfRecorderOOM)
-		return;
+		return 0;
 
 	Assert(!vfInsertMode);
 
@@ -1299,7 +1300,7 @@ struct TBD tbd;
 	char szPos [ichMaxNum + 1];
 
 	if ((hcab = HcabAlloc(cabiCABTABS)) == hNil)
-		return;
+		return 0;
 
 	pcab = *hcab;
 	pcab->iAlignment = tbd.jc;

@@ -55,6 +55,9 @@ extern struct PREF      vpref;
 #endif /* MAC */
 
 struct CHP              *PchpSetChrDyp();
+#if defined(MAC) || defined(OPUS_X64)
+NATIVE CP CpFirstNonBlank();
+#endif
 
 
 #define DxpFromHps(hps)	NMultDiv( (hps), vfti.dxpInch, 2 * 72 )
@@ -1420,7 +1423,7 @@ LRestoreFont:
 		LoadFont(&pchr->chp, fTrue);
 		}
 
-	return; /* normal return */
+	return 0; /* normal return */
 
 /* Error condition return:
         1. Set error flag
@@ -1430,7 +1433,7 @@ LRestoreFont:
 LError:
 	pfmal->fError = fTrue;
 	vifmaMac = 0;
-	return;
+	return 0;
 }
 
 
@@ -1925,7 +1928,7 @@ Takes care of color mapping.
 				+ 8 /* fCreate */
 				+ 4 /* fMove */
 		+ 2 /* fDestroy */);
-		return;
+		return 0;
 
 	case chRoot:
 
@@ -1954,13 +1957,13 @@ printing on the laserjet.
 				pt.yp - dyp,
 				NULL, NULL,
 				2 /* fDestroy */);
-		return;
+		return 0;
 
 	default:
 		/* not a composite symbol */
 		rgch[0] = ch;
 		TextOut(hdc, pt.xp, pt.yp - dypAscent, rgch, 1);
-		return;
+		return 0;
 
 	case '[':
 		chTop = 233;
@@ -2088,7 +2091,7 @@ int fFormatting;
 		*pdytAscent = DytFromHps(hps);
 		*pdytDescent = 0;
 		Mac( fWidthOK = fFalse );
-		return;
+		return 0;
 		}
 	if (ch == '{' || ch == '}')
 		chpT.hps = hps > 72 * 2 ? 24 * 2 :

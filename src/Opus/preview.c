@@ -411,10 +411,10 @@ LONG lParam;
 		*/
 			HANDLE hOld;
 
-			hOld = SelectObject(wParam, vsci.hbrDesktop);
-			PatBlt(wParam, 0, 0, vpvs.dxpCli, vpvs.dypCli, PATCOPY);
+			hOld = SelectObject((HDC)wParam, vsci.hbrDesktop);
+			PatBlt((HDC)wParam, 0, 0, vpvs.dxpCli, vpvs.dypCli, PATCOPY);
 			if (hOld != NULL)
-				SelectObject(wParam, hOld);
+				SelectObject((HDC)wParam, hOld);
 			return(fTrue);
 			}
 
@@ -803,7 +803,7 @@ int fUp;
 	if (hdc == NULL)
 		{
 		ErrorNoMemory(eidNoMemDisplay);
-		return;
+		return 0;
 		}
 	fFail = !FPrvwPageScroll(hdc, fUp);
 	ReleaseDC(vhwndPgPrvw, hdc);
@@ -1255,7 +1255,7 @@ int fCanAbort;
 
 	Assert(vlm == lmPreview);
 	if (plbsText->hpllr == hNil)
-		return;
+		return 0;
 	hdc = PwwdWw(wwLayout)->hdc;
 	if (plbsText->fOutline)
 		hplcpad = PdodDoc(plbsText->doc)->hplcpad;
@@ -1906,7 +1906,7 @@ int fTurningOn;
 
 	Assert(hdc);
 	if (vpvs.tShowAreas == tAreasOff)
-		return;
+		return 0;
 	Assert(vpvs.tShowAreas == tAreasLeft || vpvs.tShowAreas == tAreasRight);
 
 /* special case: when margins adjustment leaves an empty page where areas were
@@ -2081,7 +2081,7 @@ int fOnePage;
 	char szPgn[ichMaxIDSTR];
 
 	if (hplcpgd == hNil)
-		return;
+		return 0;
 
 	ipgdMac = IMacPlc(hplcpgd);
 	if (ipgd >= ipgdMac)
@@ -2089,7 +2089,7 @@ int fOnePage;
 		vpvs.cchIbLast = 0;
 		szPgn[0] = 0;
 		SetIibbTextHwndIb(vhwndPrvwIconBar, iibbPrvwStats, szPgn);
-		return;
+		return 0;
 		}
 
 	if (!vpref.fPrvwTwo || ipgd == ipgdMac - 1)

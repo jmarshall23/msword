@@ -539,7 +539,7 @@ character appears */
 	if (!vrf.fInFormatLine)
 		{
 		vrf.fInFormatLine = !vrf.fInFormatLine;
-		return;
+		return 0;
 		}
 #endif /* WIN */
 
@@ -570,7 +570,7 @@ character appears */
 #ifdef WIN
 		vrf.fInFormatLine = !vrf.fInFormatLine;
 #endif /* WIN */
-		return; /* Just did this one */
+		return 0; /* Just did this one */
 		}
 
 /* obtain any format modes from ww */
@@ -2605,7 +2605,7 @@ that do not set the line height. */
 #ifdef WIN
 		vrf.fInFormatLine = !vrf.fInFormatLine;
 #endif /* WIN */
-		return;
+		return 0;
 		}
 #endif /* DEBUGORNOTWIN */
 
@@ -3009,8 +3009,8 @@ else  if (chrm == chrmFormula)
 
 
 #endif
-if (chrm == chrmEnd) break;
-(char *)pchr += CbFromChrm(chrm);
+	if (chrm == chrmEnd) break;
+	pchr = (char *)pchr + CbFromChrm(chrm);
 				}
 			if ((CP) ich >= dcp)
 				{
@@ -3078,7 +3078,7 @@ if (chrm == chrmEnd) break;
 		struct CHR *pchr;
 
 		if (vbchrMac == 0)
-			return;
+			return 0;
 
 		pchr = &(**vhgrpchr)[bchrPrev];
 

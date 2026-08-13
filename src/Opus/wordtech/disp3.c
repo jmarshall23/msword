@@ -129,7 +129,7 @@ int fAbortOK;
 
 		UpdateWw(wwCur, fAbortOK);
 		if (PwwdWw(wwCur)->fDirty)
-			return; /* update has been interrupted */
+			return 0; /* update has been interrupted */
 		}
 
 /* Update all document windows */
@@ -160,7 +160,7 @@ int fAbortOK;
 					CmdPageViewOff(ww);
 				UpdateWw(ww, fAbortOK);
 				if (PwwdWw(ww)->fDirty)
-					return; /* update has been interrupted */
+					return 0; /* update has been interrupted */
 				}
 			}
 }
@@ -278,12 +278,12 @@ UpdateWw(ww, fAbortOK)
 /* vfInFormatPage ON means we are recursing in background repagination --
 	page 1 was recalculated and DRs were dirty, page 2 is being laid out */
 	if (!(*hwwd)->fDirty || vfInFormatPage /*|| vfInFileAlert NEVER SET TRUE */)
-		return;
+		return 0;
 
 	if (FWindowHidden(ww))
 		{
 		(*hwwd)->fDirty = fFalse;
-		return;
+		return 0;
 		}
 #ifdef MAC
 	/* See if we have the right number of colors in the cache */
@@ -381,7 +381,7 @@ LDrBad:
 				FreeDrs(hwwd, 1);
 				(*hwwd)->fDirty = fFalse;
 				(*hwwd)->ipgd = ipgdNil;	/* get out of page view */
-				return;	/* out of memory */
+				return 0;	/* out of memory */
 				}
 			}
 		else  if (pwwd->fBackgroundDirty)
@@ -968,7 +968,7 @@ struct RC *prcwInval;  /* invalid rect in window relative units */
 			}
 		else
 #endif
-			return;  /* rcwInval does not intersect with rcwDisp */
+			return 0;  /* rcwInval does not intersect with rcwDisp */
 		}
 
 	pwwd->fDirty = fTrue;
@@ -1513,18 +1513,18 @@ LRepeat:
 		Assert(iRepeat == 0 || !(*hwwd)->fDrDirty);
 		if (iRepeat > 0 && (*hwwd)->fDrDirty)
 /* let idle pick up, prevent infinite loop within here */
-			return;
+			return 0;
 		}
 	if (iRepeat > 3)
-		return;
+		return 0;
 	if ((*hwwd)->fOutline && FOutlineEmpty(ww, fFalse))
-		return;
+		return 0;
 
 	dl = DlWhereDocCp(ww, doc, cp, fEnd, &hpldr, &idr, &cpFirst,
 			&fChangedPage, fTrue);
 
 	if (vmerr.fMemFail)
-		return;
+		return 0;
 
 
 	ywWanted = (*hwwd)->ywMin + dyw;
@@ -1635,7 +1635,7 @@ it visible */
 for example) creates a situation where the selection is in a dr which is
 not visible on the page because the page has not been layed out yet. */
 		if (fPageView)
-			return;
+			return 0;
 		if (dyw == 0)
 			ThumbToCp(ww, cp, fEnd, fFalse, ncp);
 		else
@@ -2014,7 +2014,7 @@ int idr;
 	fInnerDr = (*hpldr)->hpldrBack != hNil;
 
 	if (idrMac <= idr)
-		return;
+		return 0;
 	Assert((*hpldr)->idrMax > 0);
 	while (idrT < idrMac)
 		{
@@ -3023,7 +3023,7 @@ SyncSbHor(ww)
 	if (pwwd->fPageView)
 		{
 		if (pwwd->ipgd == ipgdNil)
-			return;
+			return 0;
 		dxsNum = max(0, -pwwd->xeScroll + dxpGrayOutsideSci);
 		dxsDenom = max(XeLeftPage(ww), 
 				DxOfRc(&pwwd->rcePage) - DxOfRc(&pwwd->rcwDisp)

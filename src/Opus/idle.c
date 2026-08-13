@@ -770,7 +770,7 @@ LPrvw2:
 		if (vsci.pfti != NULL && (hfont = vsci.pfti->hfont) != NULL && 
 				hwwdCur != hNil && (hdc = (*hwwdCur)->hdc) != NULL)
 			{
-			hfontPhy = GetPhysicalFontHandle(hdc);
+			hfontPhy = (HANDLE)(UINT_PTR)GetPhysicalFontHandle(hdc);
 
 			ResetFont(fFalse);
 
@@ -902,7 +902,7 @@ BOOL fAbortOK;
 	Debug(vdbs.fCkTlbx ? CkTlbx(fFalse) : 0 );
 
 	if (fAbortOK && FMsgPresent(mtyIdle))
-		return;
+		return 0;
 
 /* following Asserts try to catch storing into NULL pointers */
 	Assert( *((char *) 0) == 0 );
@@ -913,7 +913,7 @@ BOOL fAbortOK;
 		CkFarHeaps();
 
 	if (fAbortOK && FMsgPresent(mtyIdle))
-		return;
+		return 0;
 
 	if (selCur.doc != docNil)
 		Debug(vdbs.fCkDoc ? CkHplcHdd(DocMother(selCur.doc)) : 0);
@@ -925,7 +925,7 @@ BOOL fAbortOK;
 		{
 		Debug(vdbs.fCkDoc ? CkDocs(fAbortOK) : 0);
 		if (fAbortOK && FMsgPresent(mtyIdle))
-			return;
+			return 0;
 		Debug(vdbs.fCkFn ? CkFns(fAbortOK) : 0);
 		}
 
@@ -1141,7 +1141,7 @@ Blink()
 	Debug( vdbs.fShakeHeap ? ShakeHeap() : 0 );
 
 	if (psel->tickOld + dtickCaret >= (tick = GetTickCount()))
-		return;
+		return 0;
 
 	if (!(*hwwdCur)->fDirty && psel->sk == skIns && vfFocus && !psel->fHidden)
 		{
@@ -1403,12 +1403,12 @@ BringMenusUpToDate()
 	for (imnu = 0; imnu < imnuMac; imnu++)
 		{
 		if (FMsgPresent(mtyIdle))
-			return;
+			return 0;
 		if ((hMenu = GetSubMenu(vhMenu, imnu+dimnu)) == NULL)
 			continue;
 		if (vgrfMenuCmdsAreDirty & (1 << imnu) && viMenu == iMenuLongFull)
 			if (!FChangeAppMenu(hMenu, imnu))
-				return;
+				return 0;
 		if (vgrfMenuKeysAreDirty & (1 << imnu))
 			{
 			int iItem, iItemMac = GetMenuItemCount(hMenu);
@@ -1416,7 +1416,7 @@ BringMenusUpToDate()
 			for (iItem = 0; iItem < iItemMac; iItem++)
 				{
 				if (FMsgPresent(mtyIdle))
-					return;
+					return 0;
 				bcm = GetMenuItemId(hMenu, iItem);
 				if ((int)bcm >= 0)
 					SetBcmMenuKeys(hMenu, bcm, bcm);
@@ -1432,7 +1432,7 @@ BringMenusUpToDate()
 		for (iItem = 0; iItem < iItemMac; iItem++)
 			{
 			if (FMsgPresent(mtyIdle))
-				return;
+				return 0;
 			bcm = GetMenuItemId(hMenu, iItem);
 			if ((int)bcm >= 0)
 				SetBcmMenuKeys(hMenu, bcm, bcm);

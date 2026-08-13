@@ -1,5 +1,8 @@
 #include "crmgr.h"
 
+struct PPR;
+struct RIBL;
+
 #define cchszExtMax         6
 #define cchRTFBuffMax       512
 #define cchRTFPassMax       (4*1024)
@@ -17,7 +20,7 @@ struct RARF    /* RftAppendRgchtoFn parm */
 struct EXCR      /* EXternal Converter Record */
 	{
 	BOOL fInUse;  /* LoadConvtr has been called */
-	int hribl;              /* hribl for foreign files */
+	struct RIBL **hribl;    /* hribl for foreign files */
 	HANDLE hLib;
 	HSTACK hStack; 
 	HANDLE ghszFn;
@@ -30,7 +33,7 @@ struct EXCR      /* EXternal Converter Record */
 	FARPROC lpfnGetIniEntry;
 	struct CA ca;
 	int fnTempRTF;
-	WORD hppr;
+	struct PPR **hppr;
 	};
 
 

@@ -315,7 +315,7 @@ int dypSect, ilnbcSectStart, ilnbcSectMac;
 	Assert(ilnbcSectMac <= ilnbcMac);
 
 	if (ilnbcMac == 0 || ilnbcSectStart == ilnbcSectMac)
-		return;
+		return 0;
 	plnbc = PInPl(hpllnbc, ilnbcSectStart);
 	for (ilnbc = ilnbcSectStart; ilnbc < ilnbcSectMac; ilnbc++, plnbc++)
 		plnbc->dyl = dypSect;
@@ -511,9 +511,9 @@ int ialgMac, clrAdjust;
 		CommSz("Centering\n\r");
 		CommSzNum("\tdyp = ", dypAdjust);
 #endif
-		ilrMac = (*hpllr)->ilrMac;
-		if (ilrMac == 0)
-			return;
+			ilrMac = (*hpllr)->ilrMac;
+			if (ilrMac == 0)
+				return 0;
 		lrp = LrpInPl(hpllr, 0);
 		for (ilr = 0; ilr < ilrMac; ilr++, lrp++)
 			{
@@ -526,7 +526,7 @@ int ialgMac, clrAdjust;
 			{
 			ilnbcMac = (*hpllnbc)->ilnbcMac;
 			if (ilnbcMac == 0)
-				return;
+				return 0;
 			plnbc = PInPl(hpllnbc, 0);
 			for (ilnbc = 0; ilnbc < ilnbcMac; ilnbc++, plnbc++)
 				plnbc->yl += dypAdjust;
@@ -594,10 +594,10 @@ struct LBS *plbs;
 	struct LR lr;
 
 	if (plbs->hpllnbc == hNil || plbs->hpllr == hNil)
-		return;
+		return 0;
 	ilnbcMac = (*plbs->hpllnbc)->ilnbcMac;
 	if (ilnbcMac == 0)
-		return;
+		return 0;
 	ilrMac = IMacPllr(plbs);
 	lrp = LrpInPl(plbs->hpllr, 0);
 	fRegenLrp = fFalse;
@@ -717,5 +717,4 @@ int grpf;
 		DeleteObject(hpen);
 		}
 }
-
 

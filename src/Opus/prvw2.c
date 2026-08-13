@@ -177,7 +177,7 @@ int ircs;
 		ptT.xp -= vpvs.dxpGutter;
 		}
 	if (!FPtInRc(&rc, pt))
-		return;
+		return 0;
 	AssertDo(FXaYaFromPt(ptT, &xa, &ya, (ircs==ircsLeft || ircs==ircsBottom) ?
 			bitBottomLeft : bitTopRight));
 	FreezeHp();
@@ -220,7 +220,7 @@ int ircs;
 	if (!FNeRgw(&dopT.dyaTop, &pdop->dyaTop, 4))
 		{
 		MeltHp();
-		return; /* no change */
+		return 0; /* no change */
 		}
 	MeltHp();
 	ShowAreas(hdc, fFalse);  /* erase */
@@ -497,13 +497,13 @@ int fFree;      /* true if free-floating header/footer */
 	if (fHdr)
 		{
 		if (vsepFetch.dyaHdrTop == ya)
-			return;  /* no change */
+			return 0;  /* no change */
 		rgb[0] = sprmSDyaHdrTop;
 		}
 	else
 		{
 		if (vsepFetch.dyaHdrBottom == ya)
-			return;  /* no change */
+			return 0;  /* no change */
 		rgb[0] = sprmSDyaHdrBottom;
 		}
 
@@ -566,7 +566,7 @@ struct RC *prcNew, *prcPage;
 	dxp = abs(prcNew->xpLeft - aor.rc.xpLeft);
 	dyp = abs(prcNew->ypTop - aor.rc.ypTop);
 	if (dxp < 3 && dyp < 3)
-		return;
+		return 0;
 
 	dxa = dya = tmvalNinch;
 	if (dxp > xpClose)
@@ -710,10 +710,10 @@ BOOL fTellCBT;
 	cch = 0;
 	fBoth = ((grpfDrag & (bitDragXa + bitDragYa)) == bitDragXa + bitDragYa);
 	if (!grpfDrag)
-		return; /* nothing to do */
+		return 0; /* nothing to do */
 
 	if (!FXaYaFromPt(pt, &xa, &ya, grpfDrag))
-		return; /* mouse not in page */
+		return 0; /* mouse not in page */
 
 	if (grpfDrag & bitDragXa)
 		{
@@ -821,6 +821,13 @@ int *pza;
 
 
 /* %%Function:FEqualPt %%Owner:davidbo */
+#ifdef OPUS_X64
+FEqualPt(pt1, pt2)
+struct PT pt1, pt2;
+{
+	return pt1.xp == pt2.xp && pt1.yp == pt2.yp;
+}
+#else
 FEqualPt(lpt1,lpt2)
 long lpt1,lpt2;
 {
@@ -832,6 +839,7 @@ long lpt1,lpt2;
 	Assert(sizeof(long) == sizeof(struct PT));
 	return(lpt1 == lpt2);
 }
+#endif
 
 
 /*
@@ -1860,5 +1868,3 @@ FLeftLbs()
 {
 	return (vpref.fPrvwTwo && (vpvs.tShowAreas == tAreasLeft));
 }
-
-

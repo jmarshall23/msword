@@ -886,7 +886,7 @@ HWND hwndIconBar;
 	Assert(vfIconBarMode);
 
 	if (hwwdCur == hNil || !vfIconBarMode)
-		return;
+		return 0;
 
 	Assert(hwndIconBar);
 	RemoveKmp(hkmpCur); /* hkmpCur is set to the next keymap */
@@ -908,7 +908,7 @@ BOOL fOn;
 	struct IBB *pibb = PibbFromHibsIibb(hibs, iibb);
 
 	if (pibb->fHilite == fOn)
-		return;
+		return 0;
 
 	/* no others supported at the moment */
 	Assert(mpibitgrpf[pibb->ibit].fToggle);
@@ -1052,7 +1052,7 @@ BOOL fOK;
 	HDLG hdlgFocus, hdlgOld;
 
 	if (!vidf.fIBDlgMode)
-		return;
+		return 0;
 
 	/* want to use the dialog that has the focus, which should always
 			be the current dialog. If not we will have to force it to
@@ -1062,7 +1062,7 @@ BOOL fOK;
 		{
 		ReportSz("Warning - no dialog has focus at term");
 		Assert (fFalse);
-		return;
+		return 0;
 		}
 	hdlgOld = HdlgSetCurDlg(hdlgFocus);
 
@@ -1076,7 +1076,7 @@ BOOL fOK;
 #endif /* BZ */
 
 
-	TerminateIBDlgMode(WRefDlgCur(), fOK);
+	TerminateIBDlgMode((HIBS)(UINT_PTR)WRefDlgCur(), fOK);
 
 	if (hdlgFocus != hdlgOld)
 		HdlgSetCurDlg(hdlgOld); /* restore current dialog */
@@ -1147,7 +1147,7 @@ IBDlgLoop()
 					{
 					HDLG hdlgFocus = HdlgGetFocus();
 					HDLG hdlgOld = HdlgSetCurDlg(hdlgFocus);
-					HIBS hibs = WRefDlgCur();
+					HIBS hibs = (HIBS)(UINT_PTR)WRefDlgCur();
 					if ((*hibs)->ibc == ibcRuler && pkme->bcm == bcmApplyStyleDlg)
 						{
 						TermCurIBDlg(fFalse); /* takes care of resetting current dialog */
@@ -1235,13 +1235,13 @@ int	kc;
 			{
 			kc = KcModified(kc);
 			if ((pkme = PkmeFromKc(kc, &fTranslated)) == 0)
-				return;
+				return 0;
 			}
 
 		if (pkme->kt != ktMacro)
 			{
 			FExecKc(kc);
-			return;
+			return 0;
 			}
 
 		bcm = pkme->bcm;
@@ -1251,7 +1251,7 @@ int	kc;
 	/* Give CBT veto power over keys... */
 	if (kc != kcNil && vhwndCBT && !SendMessage(vhwndCBT, WM_CBTSEMEV, 
 			smvCommand, MAKELONG(CxtFromBcm(bcm), 0)))
-		return;
+			return 0;
 
 
 	/* Due to major badness in el, the interpreter cannot be
@@ -1280,5 +1280,4 @@ int	kc;
 		break;
 		}
 }
-
 

@@ -1315,7 +1315,7 @@ struct PPR ***phppr;
 		}
 	else
 		{
-		rgw[1] = pch;
+		rgw[1] = (int)(UINT_PTR)pch;
 		switch (ist)
 			{
 		case istDocument:
@@ -1446,7 +1446,7 @@ LEnd:
 LCancel:
 	SetUndoNil();
 	EndLongOp(fFalse);
-	return;
+	return 0;
 
 LErrorMsg:
 	ErrorEid(eidPRFAIL, "");
@@ -2597,7 +2597,7 @@ int xpFirst, yp, xpLim;
 	int fOldMethod = fTrue;
 
 	if (xpLim <= xpFirst)
-		return;
+		return 0;
 
 	Assert( vfti.hfont != NULL );
 	dxpSpace = vfti.rgdxp[(int) ' '];
@@ -2681,7 +2681,7 @@ int far *lpdxp;
 	Assert(vulm != ulmNil);
 
 	if (vulm == ulmNeverSpace)
-		return;
+		return 0;
 
 	if (vulm == ulmNormal)
 		{
@@ -2691,7 +2691,7 @@ int far *lpdxp;
 		Assert( ibst < (*vhsttbFont)->ibstMac );
 		pffn = PstFromSttb( vhsttbFont, ibst );
 		if (pffn->fRaster || !pffn->fGraphics)
-			return;
+			return 0;
 		}
 
 	/* Add up all the space in the array of character widths */
@@ -2753,14 +2753,14 @@ EnableHotSpots(fEnable)
 BOOL fEnable;
 {
 	if (selCur.doc == docNil) /* no doc opened, no work to do */
-		return;
+		return 0;
 
 	if (vhwndPgPrvw) /* in preview mode */
 		{
 		/* this is easy since the preview window covers the app window */
 		EnableWindow(vhwndPrvwIconBar, fEnable);
 		EnableWindow(vhwndPgPrvwScrl, fEnable);
-		return;
+		return 0;
 		}
 
 	if (vhwndRibbon)
@@ -2838,6 +2838,4 @@ BOOL fEnable;
 		EnableWindow(pwwd->hwndPgvDown, fEnable);
 		}
 }
-
-
 

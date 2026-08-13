@@ -58,7 +58,7 @@ EXPORT CreatePatternBrushFP();
 
 #undef CreatePen
 #define CreatePen(P1,P2,P3) CreatePenFP((short) (P1), (short) (P2), (DWORD) (P3))
-EXPORT CreatePenFP();
+EXPORT HPEN CreatePenFP();
 
 #undef CreatePenIndirect
 #define CreatePenIndirect(P1) CreatePenIndirectFP((LPLOGPEN) (P1))
@@ -74,7 +74,7 @@ EXPORT CreateRRgnIndirectFP();
 
 #undef CreateSolidBrush
 #define CreateSolidBrush(P1) CreateSolidBrushFP((DWORD) (P1))
-EXPORT CreateSolidBrushFP();
+EXPORT HBRUSH CreateSolidBrushFP();
 
 #undef CreateWindow
 #define CreateWindow(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) CreateWindowFP((LPSTR)(P1),\
@@ -126,7 +126,7 @@ EXPORT IntersectClipRectFP();
 
 #undef LoadBitmap
 #define LoadBitmap(P1,P2) LoadBitmapFP((HANDLE) (P1), (LPSTR) (P2))
-EXPORT LoadBitmapFP();
+EXPORT HBITMAP LoadBitmapFP();
 
 #undef LoadCursor
 #define LoadCursor(P1,P2) LoadCursorFP((HANDLE) (P1), (LPSTR) (P2))

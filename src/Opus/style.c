@@ -126,6 +126,11 @@ extern BOOL vfRecording;
 extern RRF  rrf;
 extern BOOL             vfRecorderOOM;
 
+int FChangeBasedOn(int, int *, struct STSH *, struct ESTCP *, struct STTB **,
+		struct STTB **, CHAR *, CHAR *);
+int FChangeBN(CHAR *, CHAR *, struct STSH *, struct STTB **, struct STTB **,
+		CESTY *, int, int, int);
+
 /* G L O B A L S */
 /* when vstcStyle == stcNil, this means that the Define Styles dialog is
 	inactive. When it contains a value from 0 to 255, it is the stc for the
@@ -1257,6 +1262,7 @@ int cb, fChp;
 FChangeBN(stStyle, stName, pstsh, hsttbChpe, hsttbPape, pcesty, fBasedOn, fClick, fDlg)
 char stStyle[], stName[];
 struct STSH *pstsh;
+struct STTB **hsttbChpe, **hsttbPape;
 CESTY *pcesty;
 int fBasedOn, fClick, fDlg;
 {
@@ -2064,7 +2070,7 @@ int stc;
 	pdod = PdodDoc(vdocStsh);
 	MapStc(pdod, stc, &chp, &pap);
 	if (ibstFontDS == IbstFontFromFtcDoc(chp.ftc, vdocStsh))
-		return;
+		return 0;
 	ftc = FtcFromDocIbst(vdocStsh, ibstFontDS);
 	grpprl[0] = sprmCFtc;
 	bltbyte(&ftc, &grpprl[1], sizeof(int));
@@ -2384,24 +2390,30 @@ CMB * pcmb;
 		pb += 1; /* space for cbPrl */
 
 		if (pcmb->tmc == tmcTabsReset)
-			{
-			*pb++ = 1;
-			*((int *) pb)++ = 0;
-			*((int *) pb)++ = czaMax;
-			}
-		else  if (*pb++ = (pcmb->tmc == tmcTabsClear))
-			{
-			*((int *) pb)++ = dxaTabPos;
-			*((int *) pb)++ = dxaCloseMin;
-			}
+		{
+		*pb++ = 1;
+		*((int *) pb) = 0;
+		pb += sizeof(int);
+		*((int *) pb) = czaMax;
+		pb += sizeof(int);
+		}
+	else  if (*pb++ = (pcmb->tmc == tmcTabsClear))
+		{
+		*((int *) pb) = dxaTabPos;
+		pb += sizeof(int);
+		*((int *) pb) = dxaCloseMin;
+		pb += sizeof(int);
+		}
 
-		if (*pb++ = (pcmb->tmc == tmcTabsSet))
-			{
-			*((int *) pb)++ = dxaTabPos;
-			tbd.jc = JcFromI(pcab->iAlignment);
-			tbd.tlc = TlcFromI(pcab->iLeader);
-			*((struct TBD *) pb)++ = tbd;
-			}
+	if (*pb++ = (pcmb->tmc == tmcTabsSet))
+		{
+		*((int *) pb) = dxaTabPos;
+		pb += sizeof(int);
+		tbd.jc = JcFromI(pcab->iAlignment);
+		tbd.tlc = TlcFromI(pcab->iLeader);
+		*((struct TBD *) pb) = tbd;
+		pb += sizeof(struct TBD);
+		}
 
 		cbGrpprl = pb - grpprl;
 		grpprl[1] = cbGrpprl - 2;
@@ -2794,7 +2806,7 @@ RecordStyTmc(tmc)
 
 	if ((hcab = HcabFromDlg(fFalse)) == hcabNotFilled ||
 			hcab == hcabNull)
-		return;
+		return 0;
 
 	Assert (hcab == PcmbDlgCur()->hcab);
 

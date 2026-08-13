@@ -460,11 +460,11 @@ defproc:
            */
 	    if (vrf.fInDisplayFli)
 		    {
-            InvalidateRect(wParam, (LPRECT) NULL, fTrue);
+            InvalidateRect((HWND)(UINT_PTR)wParam, (LPRECT) NULL, fTrue);
             break;
             }
 #ifdef OPUS_X64
-		PaintClipboard((HWND) wParam, (HANDLE) lParam);
+		PaintClipboard((HWND)(UINT_PTR)wParam, (HANDLE)(UINT_PTR)lParam);
 #else
 		PaintClipboard( wParam, LOWORD(lParam) );
 #endif
@@ -503,7 +503,7 @@ defproc:
 		    break;
 
 #ifdef OPUS_X64
-		SizeClipboard((HWND) wParam, (HANDLE) lParam);
+		SizeClipboard((HWND)(UINT_PTR)wParam, (HANDLE)(UINT_PTR)lParam);
 #else
 		SizeClipboard( wParam, LOWORD(lParam) );
 #endif
@@ -628,7 +628,7 @@ BOOL WaitActivation()
 	Assert(vfDeactByOtherApp);
 
 	if (vidf.fDead || InSendMessage ())
-		return;
+		return 0;
 
 	Beep();
 
@@ -671,7 +671,7 @@ LoadPreviewFont()
 		StToSz(stPrev, stFull);
 		/* Avoid "Cannot find PREV.FON" message box if they're not around */
 		if (OpenFile((LPSTR)stFull, (LPOFSTRUCT)szBuffer, OF_EXIST) == -1)
-			return;
+			return 0;
 		}
 	AddFontResource((LPSTR)stFull);
 }
@@ -774,7 +774,7 @@ WORD cretry;
 
 /* %%Function:FRetrySdmError %%Owner:chic */
 BOOL FRetrySdmError(w, hdlg, sev)
-int w;
+WORD w;
 HDLG hdlg;
 SEV sev;
 {
@@ -862,7 +862,7 @@ EndKeyMode()
 
 	/* The following can happen during initialization... */
 	if (hkmpCur == hNil || !(*hkmpCur)->fModal)
-		return;
+		return 0;
 
 	if (FSearchKmp(hkmpCur, kcModal, &ikme))
 		{
@@ -1196,7 +1196,7 @@ ResizeMwds()
 	int ypBottom;
 
 	if (hmwdCur == hNil) /* fairly bogus test to see if any windows are open */
-		return; /* nothing to do! */
+		return 0; /* nothing to do! */
 
 	/* get top to bottom list of windows */
 

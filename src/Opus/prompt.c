@@ -3,9 +3,7 @@
 
 #ifdef DEBUG
 #ifdef PCJ
-/* #define SHOWDISPATCH */
-/* #define SHOWDROP */
-/* #define SHOWWNDPROC */
+/* #define SHOWDISPATCH #define SHOWDROP #define SHOWWNDPROC */
 #endif /* PCJ */
 #endif
 
@@ -53,8 +51,8 @@ extern int          vdbmgDevice;
 extern int		vdxpDigit;
 #endif /* WIN23 */
 
-/* if non-nil, return the focus to this window when returning
-					to the application */
+/* if non-nil, return the focus to this window when returning to the application
+ */
 HWND            vhwndAppModalFocus = NULL;
 
 
@@ -100,10 +98,9 @@ extern HFONT	   hfontStatLine;
 #endif /* WIN23 */
 
 
-/* S E T  P R O M P T  S T */
-/*  Sets the prompt to read st with pdc.
-*/
-/* %%Function:SetPromptSt %%Owner:PETERJ */
+/* S E T P R O M P T S T Sets the prompt to read st with pdc.
+ * %%Function:SetPromptSt %%Owner:PETERJ
+ */
 SetPromptSt (st, pdc)
 CHAR *st;
 int pdc;
@@ -118,10 +115,9 @@ int pdc;
 
 
 
-/* S E T  P R O M P T  M S T */
-/*  Set the prompt text to be mst (mst is not built).
-*/
-/* %%Function:SetPromptMst %%Owner:PETERJ */
+/* S E T P R O M P T M S T Set the prompt text to be mst (mst is not built).
+ * %%Function:SetPromptMst %%Owner:PETERJ
+ */
 SetPromptMst (mst, pdc)
 MST mst;
 int pdc;
@@ -133,10 +129,9 @@ int pdc;
 
 
 
-/* S E T  P R O M P T  B U I L T  M S T  W */
-/*  Builds prompt string based on mst and w.  Displays in prompt according to
-	pdc.
-*/
+/* S E T P R O M P T B U I L T M S T W Builds prompt string based on mst and w.
+ * Displays in prompt according to pdc.
+ */
 
 /* %%Function:SetPromptWMst %%Owner:PETERJ */
 SetPromptWMst (mst, w, pdc)
@@ -151,10 +146,10 @@ int pdc;
 
 
 
-/* S E T  P R O M P T  B U I L T  M S T  R G W */
-/*  Builds prompt based on mst and rgw.  Displays in prompt according to pdc.
-*/
-/* %%Function:SetPromptRgwMst %%Owner:PETERJ */
+/* S E T P R O M P T B U I L T M S T R G W Builds prompt based on mst and rgw.
+ * Displays in prompt according to pdc. %%Function:SetPromptRgwMst
+ * %%Owner:PETERJ
+ */
 SetPromptRgwMst (mst, rgw, pdc)
 MST mst;
 unsigned *rgw;
@@ -167,12 +162,10 @@ int pdc;
 
 
 
-/* B U I L D  S T  M S T  R G W */
-/*  Builds an st based on mst and data in rgw.  See comment and usage in
-	message.h.  If a "marker" flag is in mst and hppr is not hNil it will
-	be set up for reporting.
-*/
-/* %%Function:BuildStMstRgw %%Owner:PETERJ */
+/* B U I L D S T M S T R G W Builds an st based on mst and data in rgw. See
+ * comment and usage in message.h. If a "marker" flag is in mst and hppr is not
+ * hNil it will be set up for reporting. %%Function:BuildStMstRgw %%Owner:PETERJ
+ */
 BuildStMstRgw (mst, rgw, st, cchMax, hppr)
 MST mst;
 unsigned *rgw;
@@ -221,10 +214,9 @@ struct PPR **hppr;
 					(*hppr)->cch = chWidth;
 					Assert(chWidth > 0 && chWidth <= 6);
 #ifdef WIN23
-					/*
-					 * To get the correct position for placing update
-					 * numbers, we have to get the pixel offset for the
-					 * field + the dead space at the beginning of line.
+					/* To get the correct position for placing update numbers,
+					 * we have to get the pixel offset for the field + the dead
+					 * space at the beginning of line.
 					 */
 					if (vsci.fWin3)
 						{
@@ -246,7 +238,7 @@ struct PPR **hppr;
 
 		case '\001':     /* *rgw is psz.  Truncate to chWidth */
 				{
-				CHAR *psz = *rgw++;
+				CHAR *psz = (CHAR *)(UINT_PTR)*rgw++;
 				if (psz)
 					{
 					cch = CchSz (psz) - 1;
@@ -326,7 +318,7 @@ InsertDocName:
 
 		case '\007':   /* *rgw is pst.  Truncate to chWidth */
 				{
-				CHAR *pst = *rgw++;
+				CHAR *pst = (CHAR *)(UINT_PTR)*rgw++;
 				if (pst)
 					{
 					cch = *pst;
@@ -363,13 +355,11 @@ void AbortPmt ()
 }
 
 
-/* I N I T  A B O R T  C H E C K */
-/*  Initializes a modeless abort check mechanism.
-	Call SetPromptMst or SetPromptSt before or after this call to set the
-	prompt text.  WARNING:  do not RestorePrompt() or destroy the prompt
-	before calling TerminateAbortCheck().
-*/
-/* %%Function:InitAbortCheck %%Owner:PETERJ */
+/* I N I T A B O R T C H E C K Initializes a modeless abort check mechanism.
+ * Call SetPromptMst or SetPromptSt before or after this call to set the prompt
+ * text. WARNING: do not RestorePrompt() or destroy the prompt before calling
+ * TerminateAbortCheck(). %%Function:InitAbortCheck %%Owner:PETERJ
+ */
 InitAbortCheck ()
 {
 	if (vpisPrompt != pisNormal)
@@ -377,7 +367,7 @@ InitAbortCheck ()
 		{
 		Assert (vpisPrompt >= pisAbortCheckMin);
 		vpisPrompt += 2;
-		return;
+		return 0;
 		}
 
 	vpisPrompt = pisAbortCheckMin;
@@ -385,23 +375,22 @@ InitAbortCheck ()
 
 
 
-/* T E R M I N A T E  A B O R T  C H E C K */
-/*  Terminates the AbortCheck mode & sets prompt to go away according
-	to pdc.  If pdc & pdcmRestore, restores the prompt.
-*/
-/* %%Function:TerminateAbortCheck %%Owner:PETERJ */
+/* T E R M I N A T E A B O R T C H E C K Terminates the AbortCheck mode & sets
+ * prompt to go away according to pdc. If pdc & pdcmRestore, restores the
+ * prompt. %%Function:TerminateAbortCheck %%Owner:PETERJ
+ */
 TerminateAbortCheck (pdc)
 int pdc;
 {
 	if (vpisPrompt < pisAbortCheckMin)
 		/*  can't terminate mode we are not in */
-		return;
+		return 0;
 
 	if (vpisPrompt >= pisAbortCheckMin + 2)
 		/*  we are in nested abortchecks */
 		{
 		vpisPrompt -= 2;
-		return;
+		return 0;
 		}
 
 	vpisPrompt = pisNormal;
@@ -411,11 +400,11 @@ int pdc;
 
 
 
-/* F  Q U E R Y  A B O R T  C H E C K */
-/*  Check to see if there are any messages that should abort processing.
-	Return TRUE if the caller SHOULD abort.
-*/
-/* %%Function:FQueryAbortCheckProc %%Owner:PETERJ */
+/* F Q U E R Y A B O R T C H E C K Check to see if there are any messages that
+ * should abort processing.
+ * Return TRUE if the caller SHOULD abort. %%Function:FQueryAbortCheckProc
+ * %%Owner:PETERJ
+ */
 NATIVE FQueryAbortCheckProc ()
 {
 	int w;
@@ -441,15 +430,12 @@ FCheckAbortKey()
 	MSG msg;
 	int fCtrlKey, fAltKey;
 
-	/* OurYield is called first and will flush out other
-			keys in the buffer. It will flush syskeydowns other
-			than alt, tab, escape and shift 
-		*/
-	/* note bz. This checks if the keys were pressed since the last
-			time we called this routine.  We must call GetAsyncKeyState
-		everytime in order to get "correct" results, hence the use
-		of the seemingly unnecessary variables.
-		*/
+	/* OurYield is called first and will flush out other keys in the buffer. It
+	 * will flush syskeydowns other than alt, tab, escape and shift note bz.
+	 * This checks if the keys were pressed since the last time we called this
+	 * routine. We must call GetAsyncKeyState everytime in order to get
+	 * "correct" results, hence the use of the seemingly unnecessary variables.
+	 */
 
 	fAltKey = GetAsyncKeyState(VK_MENU);
 	fCtrlKey = GetAsyncKeyState(VK_CONTROL);
@@ -472,11 +458,10 @@ FCheckAbortKey()
 }}
 
 
-/* F O R C E  A B O R T  C H E C K */
-/*  Cause future calls to FQueryAbortCheck to return true.  Simulates the
-	user typing ESCAPE.
-*/
-/* %%Function:ForceAbortCheck %%Owner:PETERJ */
+/* F O R C E A B O R T C H E C K Cause future calls to FQueryAbortCheck to
+ * return true. Simulates the user typing ESCAPE. %%Function:ForceAbortCheck
+ * %%Owner:PETERJ
+ */
 ForceAbortCheck ()
 {
 	if (vpisPrompt >= pisAbortCheckMin && (vpisPrompt&1))
@@ -502,11 +487,10 @@ CHAR st[];
 /* P R O G R E S S  R E P O R T I N G */
 
 
-/* H P P R  S T A R T  P R O G R E S S  R E P O R T */
-/*  Sets up hppr and prompt for subsequent calls to ProgressReportPercent or
-	ChangeProgressReport.
-*/
-/* %%Function:HpprStartProgressReport %%Owner:PETERJ */
+/* H P P R S T A R T P R O G R E S S R E P O R T Sets up hppr and prompt for
+ * subsequent calls to ProgressReportPercent or ChangeProgressReport.
+ * %%Function:HpprStartProgressReport %%Owner:PETERJ
+ */
 struct PPR **HpprStartProgressReport (mst, rgw, nIncr, fAbortCheck)
 MST mst;
 unsigned *rgw;
@@ -567,8 +551,9 @@ long l, lNumer, lDenom;
 }
 
 
-/* P R O G R E S S  R E P O R T  P E R C E N T */
-/* %%Function:ProgressReportPercent %%Owner:PETERJ */
+/* P R O G R E S S R E P O R T P E R C E N T %%Function:ProgressReportPercent
+ * %%Owner:PETERJ
+ */
 ProgressReportPercent (hppr, lLow, lHigh, l, plNext)
 struct PPR **hppr;
 long lLow, lHigh, l, *plNext;
@@ -580,8 +565,9 @@ long lLow, lHigh, l, *plNext;
 }
 
 
-/* C H A N G E  P R O G R E S S  R E P O R T */
-/* %%Function:ChangeProgressReport %%Owner:PETERJ */
+/* C H A N G E P R O G R E S S R E P O R T %%Function:ChangeProgressReport
+ * %%Owner:PETERJ
+ */
 ChangeProgressReport (hppr, nNew)
 struct PPR **hppr;
 unsigned nNew;
@@ -632,8 +618,9 @@ unsigned nNew;
 
 
 
-/* S T O P  P R O G R E S S  R E P O R T */
-/* %%Function:StopProgressReport %%Owner:PETERJ */
+/* S T O P P R O G R E S S R E P O R T %%Function:StopProgressReport
+ * %%Owner:PETERJ
+ */
 StopProgressReport (hppr, pdc)
 struct PPR **hppr;
 {
@@ -643,8 +630,7 @@ struct PPR **hppr;
 }
 
 
-/* P O P  T O  H P P R */
-/* %%Function:PopToHppr %%Owner:PETERJ */
+/* P O P T O H P P R %%Function:PopToHppr %%Owner:PETERJ */
 EXPORT PopToHppr (hppr)
 struct PPR **hppr;
 {
@@ -681,11 +667,9 @@ struct PPR **hppr;
 
 
 
-/* A D J U S T  P R O M P T */
-/*  Changes cch characters starting at ich in the current prompt to text
-	in pch.
-*/
-/* %%Function:AdjustPrompt %%Owner:PETERJ */
+/* A D J U S T P R O M P T Changes cch characters starting at ich in the current
+ * prompt to text in pch. %%Function:AdjustPrompt %%Owner:PETERJ
+ */
 #ifdef WIN23
 AdjustPrompt2 (ich, cch, pch)
 #else
@@ -717,9 +701,7 @@ CHAR *pch;
 		ReleaseDC (vhwndPrompt, hdc);
 }
 #ifdef WIN23
-/**************************************************************************
-Switch routine for Win2/Win3 versions.
-**************************************************************************/
+/* Switch routine for Win2/Win3 versions. */
 
 EXPORT AdjustPrompt (ich, cch, xp, pch)
 int ich, cch;
@@ -732,15 +714,13 @@ CHAR *pch;
 		AdjustPrompt2 (ich, cch, pch);
 }
 
-/*-----------------------------------------------------------------------
- * A D J U S T  P R O M P T 
- * %%Function:AdjustPrompt %%Owner:RICKS
+/* A D J U S T P R O M P T %%Function:AdjustPrompt %%Owner:RICKS
  *
  * Changes cch characters starting at ich in the current prompt to text
  *	in pch.  Position of field in window begins at xpStart.
- * Since WIN3uses proportional spacing, the xp position of the update
- * field is also passed in.  
- *-----------------------------------------------------------------------*/
+ * Since WIN3uses proportional spacing, the xp position of the update field is
+ * also passed in.
+ */
 AdjustPrompt3 (ich, cch, xp, pch)
 int ich, cch;
 short xp;
@@ -785,12 +765,13 @@ CHAR *pch;
 
 
 #endif /* WIN23 */
-/* D I S P L A Y  P R O M P T */
-/*  Displays the current prompt (vstPrompt) in mode pdc.
-*/
-/* %%Function:DisplayPrompt %%Owner:PETERJ */
+
+/* D I S P L A Y P R O M P T Displays the current prompt (vstPrompt) in mode
+ * pdc. %%Function:DisplayPrompt %%Owner:PETERJ
+ */
 DisplayPrompt (pdc, hppr)
 int pdc;
+struct PPR **hppr;
 {
 	BOOL fExisted = vhwndPrompt != NULL;
 
@@ -805,14 +786,14 @@ int pdc;
 		/* use the status line prompt */
 		{
 		DisplayStatLinePrompt(pdc);
-		return;
+		return 0;
 		}
 
 	if (!(pdc & pdcmPmt) || (!fExisted && !(pdc & pdcmCreate)))
 		/*  no place to display */
 		{
 		RestorePrompt ();
-		return;
+		return 0;
 		}
 
 	/* else: display on prompt, create if necessary */
@@ -860,7 +841,7 @@ int pdc;
 					SWP_NOMOVE|SWP_NOSIZE|SWP_SHOWWINDOW|SWP_NOACTIVATE);
 			}
 		if (vhwndPrompt == NULL)
-			return;
+			return 0;
 
 		vpisPrompt = pisNormal;
 		}
@@ -882,9 +863,7 @@ int pdc;
 }
 
 
-/* I N V A L  P R O M P T */
-/*  Invalidates the text of the prompt.
-*/
+/* I N V A L P R O M P T Invalidates the text of the prompt. */
 InvalPrompt()
 {
 	struct RC rc;
@@ -895,11 +874,10 @@ InvalPrompt()
 
 
 
-/* P R O M P T  W N D  P R O C */
-/*  This is the WndProc for the prompt window.  It receives and handles all
-	messages bound for the prompt window.
-*/
-/*  NOTE: Messages bound for this WndProc are filtered in wprocn.asm */
+/* P R O M P T W N D P R O C This is the WndProc for the prompt window. It
+ * receives and handles all messages bound for the prompt window. NOTE: Messages
+ * bound for this WndProc are filtered in wprocn.asm
+ */
 
 /* %%Function:PromptWndProc %%Owner:PETERJ */
 #ifdef OPUS_X64
@@ -972,13 +950,12 @@ LONG lParam;
 								(LPRECT)&rc, (LPSTR)&vstPrompt[ich], cch, NULL );
 
 					if (fProgRep) {
-						/* 
-					 	* display progress field -- don't worry about erasing
-					 	* to the end of the line: there's nothing there.
-					 	* Start erase rect just past previous field.
-					 	* For each space in the progress field, increment xp
-					 	* by the size of a digit.  Only print the numbers.
-					 	*/
+						/* display progress field -- don't worry about erasing
+						 * to the end of the line: there's nothing there. Start
+						 * erase rect just past previous field. For each space
+						 * in the progress field, increment xp by the size of a
+						 * digit. Only print the numbers.
+						 */
 						ich = cch + 1;			/* cch is the index from above */
 						rc.xpLeft = xp = (*vhpprPRPrompt)->xp;
 
@@ -1103,18 +1080,18 @@ LUpdate:
 			}
 		break;
 
-	case WM_SETFOCUS:
-		if (vpisPrompt == pisInput)
-			SetTimer (hwnd, hwnd, GetCaretBlinkTime (), (LPSTR) NULL);
+		case WM_SETFOCUS:
+			if (vpisPrompt == pisInput)
+				SetTimer (hwnd, (UINT_PTR)hwnd, GetCaretBlinkTime (), (LPSTR) NULL);
 		/* FALL THROUGH */
 
 	case WM_SIZE:
 		BringWindowToTop (hwnd);
 		break;
 
-	case WM_KILLFOCUS:
-		if (vpisPrompt == pisInput)
-			KillTimer (vhwndPrompt, vhwndPrompt);
+		case WM_KILLFOCUS:
+			if (vpisPrompt == pisInput)
+				KillTimer (vhwndPrompt, (UINT_PTR)vhwndPrompt);
 		break;
 
 #ifdef DEBUG
@@ -1129,11 +1106,10 @@ LUpdate:
 
 
 
-/* B L I N K  P R O M P T  C A R E T */
-/*  Toggles the state of the prompt caret, if fToggle.  Otherwise
-	draws the caret if it is on.
-*/
-/* %%Function:BlinkPromptCaret %%Owner:PETERJ */
+/* B L I N K P R O M P T C A R E T Toggles the state of the prompt caret, if
+ * fToggle. Otherwise draws the caret if it is on. %%Function:BlinkPromptCaret
+ * %%Owner:PETERJ
+ */
 BlinkPromptCaret (hdc, fToggle)
 HDC hdc;
 BOOL fToggle;
@@ -1144,7 +1120,7 @@ BOOL fToggle;
 
 	/*  if no caret or caret is off and not toggling it, done */
 	if (vppirPrompt == NULL || (!vppirPrompt->fOn && !fToggle))
-		return;
+		return 0;
 
 	if (fLocalHdc)
 		if (!FSetDcAttribs ((hdc = GetDC (vhwndPrompt)), dccPrompt))
@@ -1193,33 +1169,30 @@ LDone:
 /* A P P L I C A T I O N   M O D A L   F U N C T I O N S */
 
 
-/*  SOMEWHAT HISTORICAL:
-	This function contains the equilivant of a WinMain loop for the WInputPrompt
-	window when that window takes the focus.  It causes messages to be
-	processed until fEnd becomes true. GetMessage will return false if it has
-	received a WM_QUIT message.  This will cause WInputPrompt to return fFalse,
-	which is supposed to cause the caller to do nothing.  When mmw.c's WinMain
-	finally gets around to calling GetMessage, it too will return false and our
-	application will quit.  (We have been assured that once GetMessage returns
-	false, all subsequent calls will cause it to return false).
-*/
+/* SOMEWHAT HISTORICAL: This function contains the equilivant of a WinMain loop
+ * for the WInputPrompt window when that window takes the focus. It causes
+ * messages to be processed until fEnd becomes true. GetMessage will return
+ * false if it has received a WM_QUIT message. This will cause WInputPrompt to
+ * return fFalse, which is supposed to cause the caller to do nothing. When
+ * mmw.c's WinMain finally gets around to calling GetMessage, it too will return
+ * false and our application will quit. (We have been assured that once
+ * GetMessage returns false, all subsequent calls will cause it to return
+ * false).
+ */
 
 
 
 
-/*  WAppModalHwnd
-	this function makes hwnd appear application modal.  It will trap all
-	future inputs to other windows so as to restrict the user from changing
-	the focus to another window.  the calling window had better be prepared 
-	to get paint messages.
-
-	mmo specifies Modal Mode Options:
-	mmoFalseOnMouse - WAppModalHwnd returns false on any mouse actions
-			outside of hwnd,
-	mmoTrueOnMouse - like above but returns true
-	mmoBeepOnMouse - Beep on any mouse actions in hwnd,
-	mmoUpdateWws - will update windows if there's nothing else going on
-*/
+/* WAppModalHwnd this function makes hwnd appear application modal. It will trap
+ * all future inputs to other windows so as to restrict the user from changing
+ * the focus to another window. the calling window had better be prepared to get
+ * paint messages.
+ *
+ * mmo specifies Modal Mode Options: mmoFalseOnMouse - WAppModalHwnd returns
+ * false on any mouse actions outside of hwnd, mmoTrueOnMouse - like above but
+ * returns true mmoBeepOnMouse - Beep on any mouse actions in hwnd, mmoUpdateWws
+ * - will update windows if there's nothing else going on
+ */
 
 /* %%Function:WAppModalHwnd %%Owner:PETERJ */
 WAppModalHwnd (hwnd, mmo)
@@ -1249,10 +1222,9 @@ int mmo;
 
 
 #ifdef COMMENT
-/*   If you call WAppModalHwnd, the window becoming modal must have the
-		following in its WndProc.
-*/
-/*  this keeps the ALT key from going into MENU mode */
+/* If you call WAppModalHwnd, the window becoming modal must have the following
+ * in its WndProc. this keeps the ALT key from going into MENU mode
+ */
 case WM_SYSCOMMAND:
 if ((wParam & 0xfff0) != SC_KEYMENU)
 return DefWindowProc(hwnd, message, wParam, lParam);
@@ -1262,14 +1234,12 @@ break;
 
 
 
-/*  SetModalFocusHwnd
-	Sets an application modal focus to window hwnd.
-
-	vhwndAppModalFocus is refered to in wproc.c in the WndProc's for
-	the pane and doc windows and for the app.  These points assure that
-	the focus never wanders away and that it comes back here when returning
-	from another app.
-*/
+/* SetModalFocusHwnd Sets an application modal focus to window hwnd.
+ *
+ * vhwndAppModalFocus is refered to in wproc.c in the WndProc's for the pane and
+ * doc windows and for the app. These points assure that the focus never wanders
+ * away and that it comes back here when returning from another app.
+ */
 
 /* %%Function:SetModalFocusHwnd %%Owner:PETERJ */
 SetModalFocusHwnd (hwnd)
@@ -1281,10 +1251,9 @@ HWND hwnd;
 
 
 
-/*  RestoreInputFocus
-	Restore the input focus to the current window and disable the modal
-	focus window.    
-*/
+/* RestoreInputFocus Restore the input focus to the current window and disable
+ * the modal focus window.
+ */
 
 /* %%Function:RestoreInputFocus %%Owner:PETERJ */
 RestoreInputFocus ()
@@ -1297,12 +1266,12 @@ RestoreInputFocus ()
 }
 
 
-/*  FProcessMessageQueue
-	Processes all messages on the message queue.  Returns False on
-	a terminate condition, else returns true.
-	If fAppModal then terminates on an AMM_TERMINATE.  In any case
-	terminates on a WM_QUIT (but won't return!).
-*/
+/* FProcessMessageQueue Processes all messages on the message queue.
+ *
+ * Returns False on a terminate condition, else returns true. If fAppModal then
+ * terminates on an AMM_TERMINATE. In any case terminates on a WM_QUIT (but
+ * won't return!).
+ */
 
 /* %%Function:FProcessMessageQueue %%Owner:PETERJ */
 FProcessMessageQueue (hwnd, pw, fAppModal, mmo)
@@ -1313,8 +1282,9 @@ int mmo;
 
 {
 
-	/* trap messages for windows other than the document window
-		so status window, etc will get cleared */
+	/* trap messages for windows other than the document window so status
+	 * window, etc will get cleared
+	 */
 	while (PeekMessage( (LPMSG)&vmsgLast, NULL, NULL, NULL, PM_REMOVE ) &&
 			!vmerr.fMemFail)
 		{
@@ -1325,10 +1295,10 @@ int mmo;
 			Assert (fFalse);
 			}
 
-		/*  check for app modal terminate */
-		/* Warning: I'm not looking at the handle.  I'm assuming the only
-			AMM_TERMINATE message will be the one we want.  That assumes that
-			AMM_TERMINATE is unique */
+		/* check for app modal terminate Warning: I'm not looking at the handle.
+		 * I'm assuming the only AMM_TERMINATE message will be the one we want.
+		 * That assumes that AMM_TERMINATE is unique
+		 */
 		if (fAppModal && vmsgLast.message == AMM_TERMINATE)
 			{
 			*pw = vmsgLast.wParam;
@@ -1342,11 +1312,11 @@ int mmo;
 			ShowMsg ("mp", vmsgLast.hwnd, vmsgLast.message, vmsgLast.wParam,
 					vmsgLast.lParam);
 #endif
-			/* ensure keyboard state is up to date */
-			/* FUTURE SetOurKeyState in FCheck is valid even for win3 since
-			   msg has been removed. If we remove the call in FCheckToggle,
-			   add it here bz
-			*/
+
+			/* ensure keyboard state is up to date FUTURE SetOurKeyState in
+			 * FCheck is valid even for win3 since msg has been removed. If we
+			 * remove the call in FCheckToggle, add it here bz
+			 */
 			FCheckToggleKeyMessage ((LPMSG) &vmsgLast);
 			TranslateMessage ((LPMSG) &vmsgLast);
 			DispatchMessage ((LPMSG) &vmsgLast);
@@ -1368,17 +1338,16 @@ int mmo;
 
 
 
-/*  FAppModalFilter
-	this is the general message filter for application-modal mode.  It will
-	return fTrue if a message should be translated and dispatched.  it will
-	return fFalse if a message should be dropped.
-
-	In general most messages for the window with the focus, and all non-input
-	messages will be allowed to pass.  If the application has been deactivated
-	then all messages will be processed.  An alt-tab will also be let through.
-
-	Some input messages that we don't allow will cause a Beep().
-*/
+/* FAppModalFilter this is the general message filter for application-modal
+ * mode. It will return fTrue if a message should be translated and dispatched.
+ * it will return fFalse if a message should be dropped.
+ *
+ * In general most messages for the window with the focus, and all non-input
+ * messages will be allowed to pass. If the application has been deactivated
+ * then all messages will be processed. An alt-tab will also be let through.
+ *
+ * Some input messages that we don't allow will cause a Beep().
+ */
 
 /* %%Function:FAppModalFilter %%Owner:PETERJ */
 FAppModalFilter (hwnd, pmsg, mmo)
@@ -1397,18 +1366,16 @@ int mmo;
 		switch (pmsg->message)
 			{
 #ifdef INTL
-		/* REVIEW FUTURE tonykr: Special fix to allow number pad
-			keys while in modal window.  This fix will be put in INTL
-			versions first, then added to US for version 2.0.
-			See bug # 4360 in Opus10.bug.
-		*/
+		/* REVIEW FUTURE tonykr: Special fix to allow number pad keys while in
+		 * modal window. This fix will be put in INTL versions first, then added
+		 * to US for version 2.0. See bug # 4360 in Opus10.bug.
+		 */
 		case WM_SYSKEYDOWN:
 
 			if (pmsg->wParam == VK_TAB || pmsg->wParam == VK_MENU ||
 					pmsg->wParam == VK_ESCAPE || pmsg->wParam == VK_F10 ||
 					(pmsg->wParam >= VK_NUMPAD0 && pmsg->wParam <= VK_NUMPAD9))
-				/* switch focus to other app */
-				/* or register the alt key */
+				/* switch focus to other app or register the alt key */
 				return fTrue;
 
 			Beep ();
@@ -1431,8 +1398,7 @@ int mmo;
 
 			if (pmsg->wParam == VK_TAB || pmsg->wParam == VK_MENU ||
 					pmsg->wParam == VK_ESCAPE || pmsg->wParam == VK_F10)
-				/* switch focus to other app */
-				/* or register the alt key */
+				/* switch focus to other app or register the alt key */
 				return fTrue;
 
 			Beep ();
@@ -1483,8 +1449,7 @@ int mmo;
 
 			if (pmsg->wParam == VK_TAB || pmsg->wParam == VK_MENU ||
 					pmsg->wParam == VK_ESCAPE || pmsg->wParam == VK_F10)
-				/* switch focus to other app */
-				/* or register the alt key */
+				/* switch focus to other app or register the alt key */
 				return fTrue;
 
 			/* else:  FALL THROUGH */
@@ -1497,12 +1462,11 @@ int mmo;
 		case WM_NCRBUTTONDOWN:
 		case WM_NCMBUTTONDOWN:
 
-			/* these messages we ignore but we also beep so
-					that the user knows that we received the message
-					and that it is not allowed.
-					EXCEPT with mmoFalseOnMouse in which case we cause an
-					eventual terminate with False.
-				*/
+			/* these messages we ignore but we also beep so that the user knows
+			 * that we received the message and that it is not allowed. EXCEPT
+			 * with mmoFalseOnMouse in which case we cause an eventual terminate
+			 * with False.
+			 */
 			if (mmo & mmoFalseOnMouse)
 				PostMessage (hwnd, AMM_TERMINATE, fFalse, 0L);
 			else  if (mmo & mmoTrueOnMouse)
@@ -1526,8 +1490,9 @@ int mmo;
 
 
 
-	/* check to see if the message is an input message: if so, it is allowed
-		to pass iff it is going to the modal window */
+	/* check to see if the message is an input message: if so, it is allowed to
+	 * pass iff it is going to the modal window
+	 */
 
 	if (
 
@@ -1555,9 +1520,10 @@ int mmo;
 }
 
 
-/* G E T M S T S T N O A B O R T */
-/* It clips the tail of the message string to remove "Press Esc to cancel." */
-/* from the message string when the user disables input with a macro.	    */
+/* G E T M S T S T N O A B O R T It clips the tail of the message string to
+ * remove "Press Esc to cancel." from the message string when the user disables
+ * input with a macro.
+ */
 
 /* %%Function:GetMstStNoAbort %%Owner:PETERJ */
 GetMstStNoAbort(pmst)
@@ -1585,17 +1551,16 @@ MST  * pmst;
 
 		pmst->st[0] -= 20; /* clip the tail */
 	default :
-		return;
+		return 0;
 		}
 }
 
 
 
-/*----------------------------------------------------------------------------
-|   OurYield
+/* | OurYield
 |
-|    fNotDde means do not pass dde messages
-----------------------------------------------------------------------------*/
+ * | fNotDde means do not pass dde messages
+ */
 /* %%Function:OurYield %%Owner:PETERJ */
 OurYield(fNotDde)
 BOOL fNotDde;
@@ -1607,7 +1572,7 @@ BOOL fNotDde;
 	long tick = GetTickCount();
 
 	if (!vfDeactByOtherApp && tick <= tickNextYield)
-		return;
+		return 0;
 
 	tickNextYield = tick + ((vfFocus && fElActive) ? 50 * dtickYield : dtickYield);
 
@@ -1619,47 +1584,48 @@ BOOL fNotDde;
 					msg.lParam);
 #endif /* SHOWYIELDWAITMSG */
 			switch (msg.message)
-				{
-			default:
-				return;
+			{
+		default:
+			return 0;
 
-			case WM_PAINT:
-				if (vpri.fInPrintDisplay || vfInFormatPage)
-					return;
+		case WM_PAINT:
+			if (vpri.fInPrintDisplay || vfInFormatPage)
+				return 0;
 			case WM_NCPAINT:
-			case WM_PAINTICON:
-				UpdateWindow(vhwndApp);
-				return;
+		case WM_PAINTICON:
+			UpdateWindow(vhwndApp);
+			return 0;
 
 			case WM_SYSKEYUP:
 				if (msg.wParam == VK_MENU)
 					goto LEatIt;
 				goto Dispatch;
 
-			case WM_KEYDOWN:
-				if (msg.wParam == VK_TAB || msg.wParam == VK_ESCAPE)
-					return;
+		case WM_KEYDOWN:
+			if (msg.wParam == VK_TAB || msg.wParam == VK_ESCAPE)
+				return 0;
 				/* fall through to handle Alt and Shift keys */
 			case WM_SYSKEYDOWN:
 				switch (msg.wParam)
-					{
-				default:
-					return;
+				{
+			default:
+				return 0;
 
 				case VK_MENU:
 				case VK_TAB:
 				case VK_SHIFT:
 				case VK_ESCAPE:
 
-					/* If the following (F5-F10) cause ANY
-					problems, nuke 'em   -- bac */
+					/* If the following (F5-F10) cause ANY problems, nuke 'em --
+					 * bac
+					 */
 				case VK_F5:
 				case VK_F7:
 				case VK_F8:
 				case VK_F9:
-				case VK_F10:
-					if (msg.message != WM_SYSKEYDOWN)
-						return;
+			case VK_F10:
+				if (msg.message != WM_SYSKEYDOWN)
+					return 0;
 					break;
 					}
 				/* fall through to dispatch Alt, Tab, Shift and Escape keys */
@@ -1676,10 +1642,10 @@ BOOL fNotDde;
 			case WM_SYSTEMERROR:
 				goto Dispatch;
 
-				/* Here we attempt to let the user do standard app 
-				window things during long ops without causing the 
-				appearance of a hang.  If this causes the slightest
-				problem, remove it! -- bac */
+				/* Here we attempt to let the user do standard app window things
+				 * during long ops without causing the appearance of a hang. If
+				 * this causes the slightest problem, remove it! -- bac
+				 */
 #define USESYSSTUFF
 #ifdef USESYSSTUFF
 			case WM_NCLBUTTONDBLCLK:
@@ -1695,12 +1661,13 @@ BOOL fNotDde;
 			case WM_MOUSEACTIVATE:
 LEatIt:
 /* We disable the window here because silly windows will send an activate
-message directly to the window during removal of WM_LBUTTONDOWN messages. */
+ * message directly to the window during removal of WM_LBUTTONDOWN messages.
+ */
 				EnableWindow(msg.hwnd, fFalse);
 				PeekMessage((MSG far *) &msg, msg.hwnd, 
 						msg.message, msg.message, PM_REMOVE);
 				EnableWindow(msg.hwnd, fTrue);
-				return;
+				return 0;
 
 			case WM_SYSCOMMAND:
 				switch (msg.wParam)
@@ -1738,7 +1705,7 @@ Dispatch:
 			case WM_DDE_EXECUTE:
 				if (!fNotDde)
 					goto Dispatch;
-				return;
+				return 0;
 				}
 			}
 	else
@@ -1746,15 +1713,18 @@ Dispatch:
 				PeekMessage((MSG far *)&msg, NULL, 0, 0, PM_NOREMOVE))
 			{
 			GetMessage((MSG far *)&msg, NULL, 0, 0);
-			/* Activated by clicking on our non-client area; don't allow
-				menus to drop down. */ /* Don't accept command messages
-				unless we're active either... */
+
+			/* Activated by clicking on our non-client area; don't allow menus
+			 * to drop down.
+			 */ /* Don't accept command messages
+				unless we're active either...
+				*/
 			if ((msg.message != WM_COMMAND && msg.message != WM_NCLBUTTONDOWN)
 					|| msg.hwnd != vhwndApp)
 				{
 				if (msg.message == WM_PAINT &&
 						(vpri.fInPrintDisplay || vfInFormatPage))
-					return;
+					return 0;
 #ifdef SHOWYIELDWAITMSG
 				ShowMsg ("na", msg.hwnd, msg.message, msg.wParam,
 						msg.lParam);
@@ -1782,11 +1752,11 @@ int cCompressions = 0;
 int nCompressionStop = 0;
 #endif /* DEBUG */
 
-/* C H E C K  C O M P R E S S  D O C */
-/* If piece table compression is advised for doc, do a full save of doc to
-   a temp file.  patch things up so that the resulting doc still points to 
-   the previous fn (keeps the old name). */
-/* %%Function: CheckCompressDoc  %%Owner: peterj */
+/* C H E C K C O M P R E S S D O C If piece table compression is advised for
+ * doc, do a full save of doc to a temp file. patch things up so that the
+ * resulting doc still points to the previous fn (keeps the old name).
+ * %%Function: CheckCompressDoc %%Owner: peterj
+ */
 CheckCompressDoc(doc)
 int doc;
 {
@@ -1811,7 +1781,7 @@ int doc;
 	/* if the piece table is getting big, do a full save */
 	if ((ipcdMac = IMacPlc(hplcpcd = PdodDoc(doc)->hplcpcd)) < ipcdLimit
 			|| vmerr.fCompressFailed || !FCreateStFile(stTemp))
-		return; /* don't need to save */
+				return 0; /* don't need to save */
 
 #ifdef SHOWCOMPRESS
 	CommSzNum(SzShared("Full saving doc to reduce piece table with iMac: "), 
@@ -1834,12 +1804,11 @@ int doc;
 		int ipcd;
 		struct PCD pcd;
 
-		/* plan: take a sampling of the fns in doc.  if any are not
-			fnScratch and not pdod->fn, use it (assumed to be result
-			of previous save), else if any of them are pdod->fn use
-			it, else use fnScratch if any pieces are from it, finally
-			leave it as it was if none of the above.
-		*/
+		/* plan: take a sampling of the fns in doc. if any are not fnScratch and
+		 * not pdod->fn, use it (assumed to be result of previous save), else if
+		 * any of them are pdod->fn use it, else use fnScratch if any pieces are
+		 * from it, finally leave it as it was if none of the above.
+		 */
 
 		for (ipcd = 0; ipcd < ipcdMac; ipcd+=8)
 			{
@@ -1896,8 +1865,9 @@ int doc;
 }
 
 #ifdef PROFILE
-/*  this is here so that appended native code does not appear in previous
-	function in pcode profiles. */
+/* this is here so that appended native code does not appear in previous
+ * function in pcode profiles.
+ */
 Prompt_Last(){}
 #endif /* PROFILE */
 

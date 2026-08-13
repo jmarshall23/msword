@@ -23,6 +23,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #define cMaxArgs 50 /* Max no of arguments in a single field */ 
 extern struct	MERR	vmerr;
 extern struct ITR	vitr;
+extern CHAR **HszCreate();
 
 /* The following structure holds information for a single field as it is
 	localized. It is repeatedly filled up as fields are scanned in a doc.
@@ -1051,7 +1052,7 @@ int *rgw;
 	int iw, iwMac;
 
 	iwMac = ptrfl->iMax;
-	if (iwMac < 2) return;
+	if (iwMac < 2) return 0;
 	for (iw = iwMac>>1; iw >= 2; --iw)
 		SortSiftUpIcp(ptrfl, rgw, iw, iwMac);
 	for (iw = iwMac; iw >= 2; --iw)
@@ -1159,5 +1160,4 @@ char ch;
 	return (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '%' ||
 			ch == '^' || ch == '=' || ch == '<' || ch == '>');
 }
-
 

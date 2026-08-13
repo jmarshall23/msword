@@ -182,7 +182,7 @@ int doc;
 CP cp;
 {
 	if (FInCa(doc, cp, &caTable))
-		return;
+		return 0;
 	CachePara(doc, cp);
 	AssertDo(FInTableDocCp(doc, cp));
 	caTable.doc = doc;
@@ -840,7 +840,7 @@ LSelNotCommon:
 				 itcAnchorReal, cpFirstCell);
 		psel->sk = skColumn;
 		psel->sty = styCol;
-		return;
+		return 0;
 		}
 /* initialize the rgclpt's which represent the rectangles of the source and
 	destination selections. */

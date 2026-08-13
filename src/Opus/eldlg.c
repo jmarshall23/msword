@@ -68,6 +68,9 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 
 extern SB sbStrings;
 extern char szEmpty [];
+extern void **PpvAllocCb();
+extern void *PbOfHq();
+AOB *PaobNew();
 
 
 #define ctmMax		32	/* Max number of items in dialog (all items,
@@ -172,7 +175,7 @@ FreeDialogs()
 	if (vhudlg == hNil)
 		{
 		Assert(vheldi == hNil);
-		return;
+		return 0;
 		}
 
 	if (vheldi != hNil)
@@ -888,18 +891,18 @@ CheckRgksp(kc)
 	int ich;
 
 	if (kc != rgksp[0] || vrf.fRibbonCBT)
-		return;
+		return 0;
 	for (iksp = 1; iksp < sizeof (rgksp) - 1; iksp++)
 		if (GetKeyState(rgksp[iksp]) >= 0)
-			return;
+			return 0;
 	for (ich = 0; ich < 3; ich++)
 		if (GetKeyState(rgchNear[ich]) < 0)
-			return;
+			return 0;
 	if ((hrgaob = HAllocateCw(iaobMax * sizeof (AOB) / 2)) == hNil)
-		return;
+		return 0;
 	if ((hrgst = HAllocateCb(sizeof(mpstiderc))) == hNil)
 		goto LRet2;
-	if ((hdc = GetDC(hwnd = GetFocus())) == NULL)
+	if ((hdc = GetDC(hwnd = (HWND)GetFocus())) == NULL)
 		goto LRet;
 
 	SetWords(*hrgaob, 0, iaobMax * sizeof (AOB) / 2);
@@ -948,16 +951,16 @@ int * pistid;
 	
 LNew:
 	if (*pistid == sizeof(rgstid)/sizeof(int))
-		return;
+		return 0;
 
 	y += vsci.dypTmHeight + 1;
 	st = &((*hrgst)[rgstid[*pistid]]);
 	ch = *(st+1);
 	if (fLoop && ch < 'A' && ch != ' ')
-		return;
+		return 0;
 
 	if ((paob = PaobNew(4 - (ch == '-') + (ch == '*'))) == NULL)
-		return;
+		return 0;
 
 	paob->st = st;
 	paob->x = (dxWidth - vsci.dxpTmWidth * *st) / 2;
@@ -1126,9 +1129,9 @@ LErase:
 			}
 		else
 			{
-			HANDLE h;
+			HGDIOBJ h;
 
-			if (h = SelectObject(hdc, CreateSolidBrush(vsci.fMonochrome ?
+			if (h = SelectObject(hdc, (HGDIOBJ)CreateSolidBrush(vsci.fMonochrome ?
 				0x00FFFFFFL : rgrgb[paob->irgb])))
 				{
 				PatBlt(hdc, paob->x, paob->y, paob->dx, paob->dy, PATCOPY);
@@ -1166,4 +1169,3 @@ AOB * paob;
 		0x00FFFFFFL : rgrgb[irgb]);
 	TextOut(hdc, paob->x, paob->y, paob->st+1, *paob->st);
 }
-

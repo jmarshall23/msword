@@ -369,7 +369,7 @@ int stcp;
 
 	st[0] = 0;
 	if (stc == stcStdMin)
-		return;
+		return 0;
 	fDefined = (stcp >= 0 && stcp <  (ibstMac = (*hsttbName)->ibstMac));
 	/* map bogus styles to Normal...just like MapStc */
 	if (stcp >= ibstMac && stc < stcStdMin)
@@ -386,7 +386,7 @@ int stcp;
 			!(stc >= stcLev3 && stc <= stcLev1) &&
 #endif
 			!(vfShowAllStd && stcp <= cstcStd) && fNullName)
-		return;
+		return 0;
 	if (stcp <= cstcStd || stcp >= ibstMac)
 		{
 		/* convert stcp to stc, stc to ist */
@@ -1120,7 +1120,7 @@ char *rgb;
 int ibMac, (*FGt)();
 {
 	int ib;
-	if (ibMac < 2) return;
+	if (ibMac < 2) return 0;
 	for (ib = ibMac>>1; ib >= 2; --ib)
 		SortSiftUpB(rgb, ib, ibMac, FGt);
 	for (ib = ibMac; ib >= 2; --ib)

@@ -56,4 +56,3 @@ struct KEY
 	};
 
 #define cbKeyDataMax	2048	/* just matters for initialization */
-

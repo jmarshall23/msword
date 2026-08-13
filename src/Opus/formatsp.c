@@ -108,7 +108,7 @@ DYY *pdyyAscent, *pdyyDescent;
 		if (vpicFetch.mfp.mm < MM_META_MAX)
 			vfli.fMetafile = TRUE;
 #endif /* WIN */
-		return;
+		return 0;
 		}
 #ifdef MAC
 	if (ch > ' ')
@@ -116,7 +116,7 @@ DYY *pdyyAscent, *pdyyDescent;
 		if (FFormatChSpecSymbol(&vchpFetch, ch, pdxp, pdxt, pdyyAscent, pdyyDescent))
 			((struct CHR *)&(**vhgrpchr)[bchr])->chp.fSpec = fTrue;
 /* vchpFetch.fSpec was set in proc */
-		return;
+		return 0;
 		}
 	LoadFont(&vchpFetch, fTrue);
 #endif /* MAC */
@@ -167,8 +167,8 @@ LDxa:
 		*pdxp = NMultDiv(dxa, vfti.dxpInch, dxaInch);
 		vfli.fVolatile = fTrue;
 	case chPicture:
-		return;
-		}
+		return 0;
+	}
 	cch = CchChSpec(ch, rgch);
 /* sum up the width of cch characters */
 	dxp = dxt = 0;
@@ -696,7 +696,7 @@ struct ULS *puls;
 	if (ch > ' ')
 		{
 		ShowSpecSymbol(ich, pchp, puls, hdc, pptPen);
-		return;
+		return 0;
 		}
 
 	Assert(ch <= chLnn || (ch < chFieldMax && ch >= chFieldMin));
@@ -707,10 +707,10 @@ struct ULS *puls;
 		/* if printing but not in a graphics band, don't! */
 		/* except print metafiles anyway since they might have text */
 		if (vfli.fPrint && !vpri.fGraphics && !vfli.fMetafile)
-			return;
+			return 0;
 		/* Warning DrawChPic may move heap. pchp is heap pointer */
 		DrawChPic(ww, ich, pptPen, yp, pchp);
-		return;
+		return 0;
 	case chTFtn:
 	case chTFtnCont:
 /* show footnote separators as strikethru spaces */
@@ -722,7 +722,7 @@ struct ULS *puls;
 		if (vfPrvwDisp)
 			{
 			DrawPrvwLine(hdc, xp, yp+vfli.dypLine/2,dxpChSpec,1,colFetch);
-			return;
+			return 0;
 			}
 		while (cchSpaces > 0)
 			{
@@ -731,7 +731,7 @@ struct ULS *puls;
 			xp += cchOut * dxpSpace;
 			cchSpaces -= cchOut;
 			}
-		return;
+		return 0;
 		}
 
 	Assert(ch == chLnn || ch == chFootnote || ch == chAtn
@@ -758,5 +758,3 @@ struct RC rcBox;
 	DrawPatternLine(hdc, rcBox.xpLeft, rcBox.ypTop, dzp, ipatHorzGray, plt+pltHorz);
 	DrawPatternLine(hdc, rcBox.xpLeft, rcBox.ypBottom, dzp, ipatHorzGray, plt+pltHorz);
 }
-
-

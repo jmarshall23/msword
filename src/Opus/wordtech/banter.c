@@ -361,7 +361,7 @@ void WriteIbstToBanter(int, int, int, struct TAD *);
 void WriteFtcToBanter(int, int, int, struct TAD *);
 #endif /* MAC */
 
-csconst void (*rgpfnBanter[])() =
+void (*csconst rgpfnBanter[])(int, int, int, struct TAD *) =
 {
 	WriteFlagToBanter, WriteRadioButtonToBanter, WritePosSpacingToBanter,
 			WriteZaToBanter,

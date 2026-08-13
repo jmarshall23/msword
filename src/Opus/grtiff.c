@@ -274,13 +274,13 @@ unsigned	rgco[];
 	/* bytes to read from file per row. byte aligned which tiff wants */
 	ppc->tiff.cbRowFile = (ppc->vtExt.h + cbitByte - 1) / cbitByte;
 
-	return;
+	return 0;
 Error:
 	OutSz(SzShared("Error with tag:")); 
 	OutInt(den.wTag,5); 
 	OutCh('\n');
 	GraphicsError(hpc, IDMSGBadGrFile);
-	return;
+	return 0;
 }
 
 
@@ -324,7 +324,7 @@ BOOL fSwitchBytes;
 	RgbFromStm(HpOfSbIb(sbDds, pl), sizeof(long));
 	if (fSwitchBytes)
 		SwitchLong((char *)pl);
-	return;
+	return 0;
 }
 
 
@@ -499,7 +499,7 @@ PICT		**hpc;
 	ppc->tiff.fcPrev = fcSave;
 
 	MeltHp();
-	return;
+	return 0;
 }
 
 

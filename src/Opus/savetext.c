@@ -333,7 +333,7 @@ int fn, doc;
 
 	/* assure proposed length CAN be represented */
 	if (!FCheckFcLegal(cpTotal))
-		return;
+		return 0;
 
 	/* write the doc */
 	cpSoFar = (*CcpWrite)(fn, doc, cpSoFar, cpTotal, fTranslate);

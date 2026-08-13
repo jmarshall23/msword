@@ -37,16 +37,17 @@ int N_WCompSzSrt(char* first, char* second, int case_sensitive);
 extern HANDLE* lphevtHead;
 extern HANDLE* lphrgbKeyState;
 
-char* index(char* text, const int character) {
+char* index(const char* text, const int character) {
     if (text == nullptr) {
         return nullptr;
     }
+    const char* cursor = text;
     const unsigned char wanted = static_cast<unsigned char>(character);
     for (;;) {
-        if (static_cast<unsigned char>(*text) == wanted) {
-            return text;
+        if (static_cast<unsigned char>(*cursor) == wanted) {
+            return const_cast<char*>(cursor);
         }
-        if (*text++ == '\0') {
+        if (*cursor++ == '\0') {
             return nullptr;
         }
     }

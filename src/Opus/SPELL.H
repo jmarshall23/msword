@@ -20,17 +20,17 @@ struct SPL	/* Spell library structure */
 	struct GHD ghdReplaceWord;
 	struct GHD ghdT;
 	HSTACK hstack;
-	BOOL (FAR PASCAL *lpfnHStackSpell)();
-	BOOL (FAR PASCAL *lpfnFSpellInit)();
-	BOOL (FAR PASCAL *lpfnFSpellCleanUp)();
-	unsigned long (FAR PASCAL *lpfnLLookUpWord)();
-	void (FAR PASCAL *lpfnGetAlternates)();
-	BOOL (FAR PASCAL *lpfnFSetDictAux)();
-	BOOL (FAR PASCAL *lpfnFAddWordToDictAux)();
-	BOOL (FAR PASCAL *lpfnFDeleteWordFromDictAux)();
-	BOOL (FAR PASCAL *lpfnFAddWordToCacheAux)();
-	BOOL (FAR PASCAL *lpfnGhSpellGetrgchCase)();
-	BOOL (FAR PASCAL *lpfnResetRepeatWord)();
+	HSTACK (FAR PASCAL *lpfnHStackSpell)();
+	PFN_CRMGR lpfnFSpellInit;
+	PFN_CRMGR lpfnFSpellCleanUp;
+	PFN_CRMGR lpfnLLookUpWord;
+	PFN_CRMGR lpfnGetAlternates;
+	PFN_CRMGR lpfnFSetDictAux;
+	PFN_CRMGR lpfnFAddWordToDictAux;
+	PFN_CRMGR lpfnFDeleteWordFromDictAux;
+	PFN_CRMGR lpfnFAddWordToCacheAux;
+	PFN_CRMGR lpfnGhSpellGetrgchCase;
+	PFN_CRMGR lpfnResetRepeatWord;
 	};
 
 #define szUpdateDictDef	"STDUSER.DIC"

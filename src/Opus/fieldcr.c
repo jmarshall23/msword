@@ -80,11 +80,11 @@ extern struct CHP	vchpStc;
 extern struct MERR	vmerr;
 extern struct CA        caPara;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(OPUS_X64)
 int docLastFetchVisi = docNil;
 CP cpFirstNextFetchVisi = cpNil;
-CP CpNextVisiInOutline();
-#endif /* DEBUG */
+HANDNATIVE CP CpNextVisiInOutline();
+#endif /* DEBUG || OPUS_X64 */
 
 #if defined(DEBUG) || defined(OPUS_X64)
 /* I F L D  F R O M  D O C  C P */
@@ -190,7 +190,7 @@ int doc;
 
 	PdodDoc(doc)->fFldNestedValid = fTrue;
 	if (hplcfld == hNil)
-		return;
+		return 0;
 
 	ifldMac = IMacPlc(hplcfld);
 
@@ -232,7 +232,7 @@ int doc;
 
 	if (hplcfld == hNil || !PdodDoc(doc)->fFldNestedValid || (!vdbs.fCkDoc
 			&& !vdbs.fCkFldIdle))
-		return;
+		return 0;
 
 	ifldMac = IMacPlc(hplcfld);
 
@@ -600,7 +600,7 @@ LSetCache:
 			vcpFetchFirstVisi = *pccp ? vcpFetch : cpMac;
 			}
 
-		return;
+			return 0;
 
 		}  /* for (;;) */
 }
@@ -1368,7 +1368,7 @@ struct CA *pca;
 	Assert (ifld >= 0 && ifld <= IMacPlc( hplcfld ));
 
 	if (ifld >= IMacPlc( hplcfld ))
-		return;
+		return 0;
 
 	while (CpPlc(hplcfld, ifld) < pca->cpLim)
 		{

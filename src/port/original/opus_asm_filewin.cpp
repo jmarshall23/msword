@@ -9,9 +9,10 @@
 #include <cstring>
 #include <limits>
 
-/* AMD64 translation of FILEWINN.ASM.  Word continues to open files through
- * its original OpenFile-based C code; these routines provide the native
- * read/write/seek/close and clock boundary that DOS interrupt 21h supplied. */
+/* AMD64 translation of FILEWINN.ASM. Word continues to open files through its
+ * original OpenFile-based C code; these routines provide the native
+ * read/write/seek/close and clock boundary that DOS interrupt 21h supplied.
+ */
 
 namespace {
 
@@ -71,19 +72,19 @@ int OpusOpenFile(const LPCSTR file_name, void* const legacy_ofs,
     native_ofs.cBytes = sizeof(native_ofs);
     native_ofs.fFixedDisk = legacy->fixed_disk;
     native_ofs.nErrCode = legacy->error_code;
-    std::memcpy(&native_ofs.Reserved1, legacy->reserved,
+    std::memcpy(native_ofs.reserved, legacy->reserved,
                 sizeof(legacy->reserved));
     lstrcpynA(native_ofs.szPathName, legacy->path,
-              static_cast<int>(std::size(native_ofs.szPathName)));
+              static_cast<int>(sizeof(native_ofs.szPathName)));
 
     const HFILE result = OpenFile(file_name, &native_ofs, style);
     legacy->byte_count = native_ofs.cBytes;
     legacy->fixed_disk = native_ofs.fFixedDisk;
     legacy->error_code = native_ofs.nErrCode;
-    std::memcpy(legacy->reserved, &native_ofs.Reserved1,
+    std::memcpy(legacy->reserved, native_ofs.reserved,
                 sizeof(legacy->reserved));
     lstrcpynA(legacy->path, native_ofs.szPathName,
-              static_cast<int>(std::size(legacy->path)));
+              static_cast<int>(sizeof(legacy->path)));
     return result;
 }
 

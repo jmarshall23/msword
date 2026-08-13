@@ -421,7 +421,7 @@ int isi;
 		SelectObject( hdc, vsci.hbrBorder );
 		PatBlt( hdc, xpMid, 0, vsci.dxpBorder, vsci.dypStatLine, PATCOPY );
 		SelectObject( hdc, vsci.hbrBkgrnd );
-		return;
+		return 0;
 	case ficStaticQ: /* Conditional static text */
 		if (siv == sivNil)
 			{  
@@ -573,7 +573,7 @@ Win2Sep:
 			PatBlt( hdc, xpMid, 0, vsci.dxpBorder, vsci.dypStatLine, PATCOPY );
 			SelectObject( hdc, vsci.hbrBkgrnd );
 			}
-		return;
+		return 0;
 
 	case ficSepToggle:
 		if (vsci.fWin3Visuals)
@@ -597,7 +597,7 @@ Win2Sep:
 		else
 			PatBltRc( hdc, prc, PATCOPY );	
 
-		return;
+		return 0;
 
 	case ficStaticQ: /* Conditional static text and blank spaces */
 		if (siv == sivNil)
@@ -670,7 +670,7 @@ int uso; /* controls what gets updated */
 	Assert( vhwndStatLine );
 
 	if (vlm == lmPreview)
-		return;
+		return 0;
 
 	/* Fill sls with what SHOULD be displayed on the status line */
 	if (uso == usoToggles)
@@ -862,7 +862,7 @@ BOOL fOn;
 	Assert(vhwndStatLine);
 
 	if (fOn == vfHelpPromptOn || vrf.fInQueryEndSession)
-		return;
+		return 0;
 
 	vfHelpPromptOn = fOn;
 
@@ -908,7 +908,7 @@ int pdc;
 		}
 
 	if (!vhwndStatLine)
-		return;
+		return 0;
 
 	PrcSet( &rc, 0, 0, vcchStatLinePrompt * vsci.dxpTmWidth, vsci.dypStatLine);
 	/* reset from existing status line prompt if any */
@@ -1326,7 +1326,7 @@ int pdc;
 		}
 
 	if (!vhwndStatLine)
-		return;
+		return 0;
 
 	/* reset from existing status line prompt if any */
 	if (vcchStatLinePrompt != 0)
@@ -1517,4 +1517,3 @@ HDC hdc;
 }
 
 #endif /* WIN23 */
-

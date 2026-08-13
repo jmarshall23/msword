@@ -147,7 +147,7 @@ LRetry:
 				pchApnd = pchApndSv;
 				CchIntToPpch(i + 1, &pchApnd);
 				*pchApnd = '\0';
-				cch = GetProfileString((CHAR FAR *) szApp, 
+				cch = GetProfileString((CHAR FAR *) szApp,
 						(CHAR FAR *) szKey,
 						(CHAR FAR *) szEmpty,
 						(CHAR FAR *) szBuf, ichMaxCvt);
@@ -271,7 +271,7 @@ int  ichMax;
 
 	itCur = 0;
 	pch = szCvt;
-	do 
+	do
 		{
 		pchTkn = PchSkipStrictlySpacesPch(pch);
 		if (*pchTkn == '\0')
@@ -311,7 +311,7 @@ int  ichMax;
 				goto lblRetEmpty;
 				}
 			}
-		} 
+		}
 	while (itCur++ < it);
 
 	cchCopy = min(pchMac - pchTkn, ichMax-1);
@@ -416,7 +416,9 @@ char *pszFnLib;
 	extern struct MERR vmerr;
 	int eid = eidConvtrNoLoad;
 	HANDLE hLib;
-	FARPROC lpfnInitConvtr;
+	typedef HSTACK (FAR PASCAL *PFNINITCONVTR)(HSTACK, HWND);
+	PFNINITCONVTR lpfnInitConvtr;
+	int wLib;
 
 	Assert(vpexcr != NULL);
 
@@ -436,7 +438,7 @@ char *pszFnLib;
 		ShrinkSwapArea();
 		}
 #ifdef DEBUG
-	else 		
+	else
 		{
 		extern int vsasCur;
 		Assert(vsasCur >= sasMin);
@@ -444,28 +446,29 @@ char *pszFnLib;
 #endif /* DEBUG */
 	vpexcr->fInUse = fTrue;
 
-	vpexcr->hLib = hLib = RunApp(pszFnLib, SW_SHOW);
+	wLib = RunApp(pszFnLib, SW_SHOW);
+	vpexcr->hLib = hLib = (HANDLE)(UINT_PTR)wLib;
 
-	if (hLib < 32)
+	if (wLib < 32)
 		{
 		vpexcr->hLib = NULL;
-		if (hLib == 8)
+		if (wLib == 8)
 			goto NoMem;
 		else
 			goto NoLoad;
 		}
 
-	vpexcr->lpfnFIsFormatCorrect = 
+	vpexcr->lpfnFIsFormatCorrect =
 			GetProcAddress(hLib, (LPSTR)SzShared("ISFORMATCORRECT"));
 	if (vpexcr->lpfnFIsFormatCorrect == 0)
 		goto NoLoad;
 
-	vpexcr->lpfnForeignToRtf = 
+	vpexcr->lpfnForeignToRtf =
 			GetProcAddress(hLib, (LPSTR)SzShared("FOREIGNTORTF"));
 	if (vpexcr->lpfnForeignToRtf == 0)
 		goto NoLoad;
 
-	vpexcr->lpfnRtfToForeign = 
+	vpexcr->lpfnRtfToForeign =
 			GetProcAddress(hLib, (LPSTR)SzShared("RTFTOFOREIGN"));
 	if (vpexcr->lpfnRtfToForeign == 0)
 		goto NoLoad;
@@ -473,7 +476,7 @@ char *pszFnLib;
 	vpexcr->lpfnGetIniEntry = (vwWinVersion < 0x0210) ? NULL :
 			GetProcAddress(hLib, (LPSTR)SzShared("GETINIENTRY"));
 
-	if (vpexcr->ghszFn == NULL && 
+	if (vpexcr->ghszFn == NULL &&
 			!(vpexcr->ghszFn = GlobalAlloc(gmemLibShare, 1L)))
 		goto NoMem;
 
@@ -485,16 +488,16 @@ char *pszFnLib;
 			!(vpexcr->ghBuff = GlobalAlloc(gmemLibShare, 1L)))
 		goto NoMem;
 
-	if (vpexcr->ghszVersion == NULL && 
+	if (vpexcr->ghszVersion == NULL &&
 			!(vpexcr->ghszVersion = GlobalAlloc(gmemLibShare, 1L)))
 		goto NoMem;
 
 	/* call converter init routine */
 	/* NOTE: "INITCONVTR" is an entry point in converters pre 8/29/89
 	   they expect only one word of argument.  "INITCONVERTER"
-	   is the new entry point which expects two words of arguments. 
+	   is the new entry point which expects two words of arguments.
 	*/
-	if ((lpfnInitConvtr = 
+	if ((lpfnInitConvtr = (PFNINITCONVTR)
 			GetProcAddress(hLib, (LPSTR)SzShared("INITCONVERTER"))) == NULL)
 		/* can't use converter */
 		{
@@ -800,11 +803,11 @@ HANDLE ghszVersion;
 	UnhookWindowsHook(WH_MSGFILTER, lppFWHKey);
 
     vrf.fInExternalCall = fTrue;
-	wRet = WCallOtherStack(vpexcr->lpfnFIsFormatCorrect, vpexcr->hStack, 
+	wRet = WCallOtherStack((PFN_CRMGR)vpexcr->lpfnFIsFormatCorrect, vpexcr->hStack,
 			&ghszVersion, 2);
     vrf.fInExternalCall = fFalse;
 
-	vlppFWHChain = SetWindowsHook(WH_MSGFILTER, lppFWHKey);
+	vlppFWHChain = (FARPROC)SetWindowsHook(WH_MSGFILTER, lppFWHKey);
 	return wRet;
 }
 
@@ -899,12 +902,12 @@ HANDLE ghIniName, ghIniExt;
 	if (vpexcr->lpfnGetIniEntry != NULL)
         {
         vrf.fInExternalCall = fTrue;
-		CallOtherStack(vpexcr->lpfnGetIniEntry, vpexcr->hStack, 
+		CallOtherStack((PFN_CRMGR)vpexcr->lpfnGetIniEntry, vpexcr->hStack,
 				(WORD *)&ghIniExt, 2);
         vrf.fInExternalCall = fFalse;
         }
 
-	vlppFWHChain = SetWindowsHook(WH_MSGFILTER, lppFWHKey);
+	vlppFWHChain = (FARPROC)SetWindowsHook(WH_MSGFILTER, lppFWHKey);
 }
 
 
@@ -1037,6 +1040,7 @@ CHAR *sz;
 /* I N */
 
 EXPORT FAR PASCAL ForeignToRtfIn(); /* DECLARATION ONLY */
+struct RIBL **HriblCreateDoc();
 
 /* D O C  C R E A T E  F N  D F F */
 /* %%Function:DocCreateFnDff %%Owner:peterj */
@@ -1068,7 +1072,7 @@ CHAR *stSubset;
 	pdod->fFormatted = fTrue;
 	Assert (pdod->dk == dkDoc);
 
-	excr.hppr = HpprStartProgressReport(mstConverting, NULL, 
+	excr.hppr = HpprStartProgressReport(mstConverting, NULL,
 			2*NIncrFromL(PfcbFn(fn)->cbMac), fTrue);
 
 	if (!FCopyStToGhsz(stSubset, vpexcr->ghszSubset))
@@ -1132,11 +1136,11 @@ FARPROC lpfnIn;
 	UnhookWindowsHook(WH_MSGFILTER, lppFWHKey);
 
     vrf.fInExternalCall = fTrue;
-	wRet = WCallOtherStack(vpexcr->lpfnForeignToRtf, vpexcr->hStack, 
+	wRet = WCallOtherStack((PFN_CRMGR)vpexcr->lpfnForeignToRtf, vpexcr->hStack,
 			(WORD *) &lpfnIn, 6);
     vrf.fInExternalCall = fFalse;
 
-	vlppFWHChain = SetWindowsHook(WH_MSGFILTER, lppFWHKey);
+	vlppFWHChain = (FARPROC)SetWindowsHook(WH_MSGFILTER, lppFWHKey);
 	return wRet;
 }
 
@@ -1231,8 +1235,8 @@ int doc;
 	if (vhpprPRPrompt != hNil)
 		(*vhpprPRPrompt)->nIncr *= 2;
 
-	if (fSuccess = ((wRet = CallRtfToForeign(vpexcr->ghszFn, vpexcr->ghBuff, 
-			vpexcr->ghszVersion, (FARPROC)GetRTFForConvtr)) == 0 
+	if (fSuccess = ((wRet = CallRtfToForeign(vpexcr->ghszFn, vpexcr->ghBuff,
+			vpexcr->ghszVersion, (FARPROC)GetRTFForConvtr)) == 0
 			&& !vmerr.fDiskFail && !vmerr.fMemFail))
 		ReportSavePercent(cp0, (CP)1, (CP)1, fFalse);
 
@@ -1265,11 +1269,11 @@ FARPROC lpfnIn;
 	UnhookWindowsHook(WH_MSGFILTER, lppFWHKey);
 
     vrf.fInExternalCall = fTrue;
-	wRet =  WCallOtherStack(vpexcr->lpfnRtfToForeign, vpexcr->hStack, 
+	wRet =  WCallOtherStack((PFN_CRMGR)vpexcr->lpfnRtfToForeign, vpexcr->hStack,
 			(WORD *)&lpfnIn, 5);
     vrf.fInExternalCall = fFalse;
 
-	vlppFWHChain = SetWindowsHook(WH_MSGFILTER, lppFWHKey);
+	vlppFWHChain = (FARPROC)SetWindowsHook(WH_MSGFILTER, lppFWHKey);
 	return wRet;
 }
 
@@ -1291,7 +1295,7 @@ int nUnused;
 	CP cpEffective;
 	int roo;
 
-	if (OurGlobalReAlloc(vpexcr->ghBuff, (DWORD)cchRTFPassMax, 
+	if (OurGlobalReAlloc(vpexcr->ghBuff, (DWORD)cchRTFPassMax,
 			GMEM_MOVEABLE) == NULL)
 		return fceNoMemory;
 
@@ -1324,13 +1328,13 @@ int nUnused;
 			Assert(vpexcr->ca.cpFirst == cpT);
 			}
 
-		roo = 
+		roo =
 #ifdef SHOWCVT
-				0 | 
+				0 |
 #else
-				rooInternal | 
+				rooInternal |
 #endif /* SHOWCVT */
-				(fPicture ? 0 : rooNoPict) | 
+				(fPicture ? 0 : rooNoPict) |
 				(vpexcr->ca.cpFirst == cp0 ? rooBegin|rooDoc : 0) |
 				(vpexcr->ca.cpLim == cpMac ? rooEnd : 0);
 
@@ -1454,5 +1458,3 @@ HANDLE ghsz;
 	GlobalUnlock(ghsz);
 	return fTrue;
 }
-
-

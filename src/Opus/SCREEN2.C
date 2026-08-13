@@ -199,13 +199,13 @@ AllocHdcPrinter( fIC )
 int fIC;
 {
 	if (vpri.hdc != NULL && fIC == vpri.fIC)
-		return;
+		return 0;
 
 	Assert( vpri.hdc == NULL );	/* better be true or we'll be forgetting to free the old */
 
 /* no printer is specified in the user's WIN.INI */
 	if (vpri.hszPrDriver == NULL)
-		return;
+		return 0;
 
 /* create the DC (or IC) */
 	ShrinkSwapArea();
@@ -215,7 +215,7 @@ int fIC;
 		/*  HACK:  Pscript on None rips on 2nd CreateIC call in Win 2.xx */
 		if (vwWinVersion < 0x0300 && FEqNcSz(*vpri.hszPrPort, szNone) &&
 				FEqNcSz(*vpri.hszPrDriver, SzSharedKey("PSCRIPT",pscript)))
-			return;
+			return 0;
 		vpri.hdc = CreateIC ( (LPSTR) **vpri.hszPrDriver, (LPSTR) **vpri.hszPrinter,
 				(LPSTR) **vpri.hszPrPort, (LPSTR) NULL );
 		}
@@ -223,7 +223,7 @@ int fIC;
 		{
 /* can't print if printer is connected to "None" */
 		if (FEqNcSz(*vpri.hszPrPort, szNone))
-			return;
+			return 0;
 		vpri.hdc = CreateDC ( (LPSTR) **vpri.hszPrDriver, (LPSTR) **vpri.hszPrinter,
 				(LPSTR) **vpri.hszPrPort, (LPSTR) NULL );
 		}
@@ -237,7 +237,7 @@ int fIC;
 #ifdef BRYANL
 		CommSzSz(SzFrame("Printer DC Allocation Failed!!"),SzFrame(""));
 #endif	/* BRYANL */
-		return;
+		return 0;
 		}
 	LogGdiHandle(vpri.hdc, 1085);
 
@@ -319,7 +319,7 @@ struct FTI *pfti;
 	else  if (vpri.pfti == pfti)
 		ppfti = &vpri.pfti;
 	else
-		return;     /* nothing is connected to FTI */
+		return 0;     /* nothing is connected to FTI */
 
 	if (pfti->pfce != NULL)
 		FreeFontsPfti( pfti );
@@ -415,7 +415,7 @@ HANDLE HFromIbmds43(); /* in rcbmp4.c */
 csconst struct EDBMG
 {
 	int     dIdrbIbms;
-	PFN     pfnLoad;
+	HANDLE (*pfnLoad)();
 }
 
 
@@ -774,7 +774,7 @@ PrinterMetrics()
 	struct PT ptPage;
 
 	if (vpri.pfti == NULL || vpri.hdc == NULL)
-		return;
+		return 0;
 
 	/* Get default text color for printer */
 	vpri.rgbText = GetTextColor(vpri.hdc);
@@ -913,10 +913,10 @@ NATIVE GetPrintEnv()
 		/* REVIEW cslbug : native bug */
 		{{	/* !NATIVE - GetPrintEnv */
 		if (vpri.hprenv == hNil)
-			{
-			if ((vpri.hprenv = HAllocateCw(cwEnv)) == hNil)
-				return;
-			}
+				{
+				if ((vpri.hprenv = HAllocateCw(cwEnv)) == hNil)
+					return 0;
+				}
 		else  if (!FChngSizeHCw(vpri.hprenv, cwEnv, TRUE /* fShrink */))
 			{{
 			goto LFreePrenv;
@@ -931,7 +931,7 @@ NATIVE GetPrintEnv()
 		char *pch = *vpri.hprenv + cchEnv;
 		*pch = 0;
 		}
-	return;
+	return 0;
 
 	LFreePrenv:
 			FreePh(&vpri.hprenv);
@@ -946,7 +946,7 @@ struct FTI *pfti;
 	struct FCE *pfce;
 
 	if (pfti == NULL)
-		return;
+		return 0;
 	ResetFont( pfti->fPrinter );
 	for ( pfce = pfti->pfce;  pfce != NULL;  pfce = pfce->pfceNext )
 		{
@@ -967,7 +967,7 @@ struct FCE *pfce;
 	Assert(pfce >= &rgfce[0] && pfce <= &rgfce[ifceMax-1]);
 
 	if (pfce->hfont == NULL)
-		return;
+		return 0;
 
 #ifdef DFONT
 	CommSzNum(SzFrame("Deleting font: "), pfce->hfont);
@@ -1138,14 +1138,14 @@ int doc;
 	pdod = PdodMother(doc);
 
 	if (pdod->ftcMac == ftcMinUser)
-		return;
+		return 0;
 
 	Assert (pdod->hmpftcibstFont != hNil);
 
 	if (!FChngSizeHCw( pdod->hmpftcibstFont, CwFromCch(ftcMinUser), fTrue /*fShrink*/))
 		{
 		Assert (fFalse);   /* bryan says shrinking will never fail */
-		return;
+		return 0;
 		}
 
 	pdod = PdodMother(doc);   /* reset after heap movement */
@@ -1302,5 +1302,3 @@ FreeIrcds(ircds)
 		*mpircdsphc[i] = NULL;
 		}
 }
-
-

@@ -81,7 +81,7 @@ unsigned char *st;
 ElkFromIstElk(istElk)
 int istElk;
 {
-	int far * pist;
+	const unsigned int far * pist;
 
 	for (pist = mpelkistName; *pist != istElk; pist += 1)
 		/*Assert(pist < (char *) mpelkistName + sizeof (mpelkistName))*/;
@@ -181,5 +181,4 @@ WORD hid;
 
 	return iNil;
 }
-
 

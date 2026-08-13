@@ -6,6 +6,7 @@
 DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "debug.h"
 #include "el.h"
+#include "ourmath.h"
 #include "doc.h"
 #include "rerr.h"
 #include "heap.h"
@@ -328,7 +329,8 @@ int type;
 			long (FAR PASCAL *lpfn)();
 			Assert(vwWinVersion >= 0x0300);
 
-			lpfn = GetProcAddress(GetModuleHandle(SzFrame("KERNEL")),MAKEINTRESOURCE(idoGetFreeSpace));
+			lpfn = (long (FAR PASCAL *)())GetProcAddress(
+					GetModuleHandle(SzFrame("KERNEL")), MAKEINTRESOURCE(idoGetFreeSpace));
 			Assert(lpfn != NULL);
 
 			rgch[CchLongToPpch((*lpfn)(0), &pch)] = 0;
@@ -716,7 +718,7 @@ int fom;
 int stm;
 SD sd;
 {
-	HANDLE hFile;
+	HFILE hFile;
 	struct OFS ofsT;
 	struct ELOF ** hELOF;
 	int of;
@@ -790,7 +792,8 @@ SD sd;
 	hFile = OpenFile((LPSTR) szAbsFilename, (LPOFSTRUCT) &ofsT, of);
 	if (hFile==-1 && fom==fomAppend)
 		hFile = OpenFile((LPSTR) szAbsFilename, (LPOFSTRUCT) &ofsT, OF_CREATE);
-	if (((*hELOF)->hFile=hFile)==-1)
+	(*hELOF)->hFile = (HANDLE)(UINT_PTR)hFile;
+	if (hFile == -1)
 		{
 		/* DOS error code contained in ofsT.nErrCode */
 		switch (ofsT.nErrCode)
@@ -919,12 +922,14 @@ int stm;
 	if (!(*hELOF)->ofs.fFixedDisk)
 		{
 		ofsT = (*hELOF)->ofs;
-		if (((*hELOF)->hFile = OpenFile((LPSTR) ofsT.szFile,
-				(LPOFSTRUCT) &ofsT,
-				(*hELOF)->wMode | OF_REOPEN | OF_PROMPT | OF_CANCEL))
-				== -1)
+			{
+			HFILE hFile = OpenFile((LPSTR) ofsT.szFile, (LPOFSTRUCT) &ofsT,
+					(*hELOF)->wMode | OF_REOPEN | OF_PROMPT | OF_CANCEL);
+			(*hELOF)->hFile = (HANDLE)(UINT_PTR)hFile;
+			if (hFile == -1)
 			{
 			RtError(rerrFileNotFound);
+			}
 			}
 		(*hELOF)->ofs = ofsT;
 		lcch = DwSeekDw((*hELOF)->hFile, (*hELOF)->lcch, 0);
@@ -1050,7 +1055,6 @@ NUM numPos;
 	NUM numRet;
 	extern int vcElParams;
 	extern BOOL vfElFunc;
-	extern long LWholeFromNum();
 	long lPos = LWholeFromNum (&numPos, fFalse);
 	HANDLE hFile;
 
@@ -1441,6 +1445,7 @@ SD huge * hpsdInput;
 {
 	int cch;
 	char ** hstPrompt;
+	extern char ** HstzOfSd();
 	char szInput [256];
 
 	if (stm == 0)

@@ -724,7 +724,7 @@ int fpi;
 	Assert(fpi < fpiStoreMax);
 
 	if (pefpi->fInit)
-		return;
+		return 0;
 
 	pefpi->fInit = fTrue;
 
@@ -767,7 +767,7 @@ int fpi;
 			SzToSt(rgchNormal, *hPath);
 			pefpi->hcPath = HcCompactH(hPath);
 			Assert(hPath == HExpandHc(pefpi->hcPath));
-			return;
+			return 0;
 			}
 
 		/* failure: string too long, bogus directory, no heap */
@@ -1100,7 +1100,7 @@ SortIbp(rgw, iwMac)
 int *rgw, iwMac;
 {
 	int iw;
-	if (iwMac < 2) return;
+	if (iwMac < 2) return 0;
 	for (iw = iwMac>>1; iw >= 2; --iw)
 		SortSiftUpIbp(rgw, iw, iwMac);
 	for (iw = iwMac; iw >= 2; --iw)

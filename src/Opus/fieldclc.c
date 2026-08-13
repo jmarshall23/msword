@@ -551,7 +551,7 @@ BOOL fInTable;
 
 	PcaField( &caField, doc, ifld );
 	if (DcpCa(PcaFieldResult( &caResult, doc, ifld )) == cp0)
-		return;
+		return 0;
 
 	FetchCpAndParaCa(&caField, fcmProps);
 
@@ -706,7 +706,7 @@ CP dcp;
 		dcpDelete = dcp;
 
 	if (dcpDelete <= 0)
-		return;
+		return 0;
 
 	if (dcpDelete == flcd.dcpResult)
 		/* must remove the separator from the plc */
@@ -1291,6 +1291,5 @@ int doc, ifld;
 	GetIfldFlcd (doc, ifld, &flcd);
 	return flcd.cpFirst + flcd.dcpInst + flcd.dcpResult;
 }
-
 
 

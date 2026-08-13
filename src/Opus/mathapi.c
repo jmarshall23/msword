@@ -397,7 +397,7 @@ CHAR	rgch[];
 		rgch[1] = '0';
 		rgch[0] = 1;
 		fInRegister=fFalse;
-		return;
+		return 0;
 		}
 	Unpack(&ustr);
 	fInRegister = fFalse;
@@ -896,7 +896,7 @@ int cd;
 #ifdef YYDEBUG
 			CommSzPnum(SzShared("From MakeNum:"), pnum);
 #endif
-			return;
+			return 0;
 			}
 		LdiNum(&num);
 		}

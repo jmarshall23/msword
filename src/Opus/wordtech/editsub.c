@@ -765,7 +765,7 @@ struct CA *pca;
 	Assert(doc != docNil);
 	if (doc == docNil || hplchdd == hNil || ihddFirst == ihddNil ||
 			ihddLim == ihddNil)
-		return;
+		return 0;
 	Assert(ihddFirst < IMacPlc(hplchdd) && ihddLim <= IMacPlc(hplchdd));
 	if (ihddFirst < IMacPlc(hplchdd) && ihddLim <= IMacPlc(hplchdd))
 		{

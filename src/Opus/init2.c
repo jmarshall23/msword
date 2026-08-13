@@ -807,7 +807,7 @@ DisplayRibbonInit()
 		{
 		OpusSyncWin95Toolbar();
 		ShowWindow(vhwndRibbon, SW_HIDE);
-		return;
+		return 0;
 		}
 	}
 #endif
@@ -824,7 +824,8 @@ FAddToSystemMenu()
 	BOOL f;
 	int w;
 
-	 f = (hSysMenu = GetSystemMenu(vhwndApp, FALSE)) != NULL &&
+	hSysMenu = GetSystemMenu(vhwndApp, FALSE);
+	 f = hSysMenu != NULL &&
 			ChangeMenu(hSysMenu, 0, NULL, -1,
 			MF_APPEND | MF_SEPARATOR) != NULL &&
 			ChangeMenu(hSysMenu, 0, (LPSTR) SzSharedKey("R&un...",Run),
@@ -1321,7 +1322,7 @@ FCreateSysMenu()
 		return fFalse;
 		}
 
-	hbmpOld = SelectObject(hdcBitmap, hbmpSystem);
+	hbmpOld = (HBITMAP)SelectObject(hdcBitmap, (HGDIOBJ)hbmpSystem);
 	PatBlt(hdcBitmap, 0, 0, dxMenu, dyMenu, WHITENESS);
 	dyIcon = min(dxMenu, dyMenu);
 	hiconDocument = (HICON)LoadImage(vhInstance, MAKEINTRESOURCE(302),
@@ -1336,14 +1337,14 @@ FCreateSysMenu()
 	else
 		{
 		/* Keep a recognizable fallback if the product resource is missing. */
-		hpenOld = SelectObject(hdcBitmap, GetStockObject(BLACK_PEN));
+		hpenOld = (HPEN)SelectObject(hdcBitmap, GetStockObject(BLACK_PEN));
 		MoveToEx(hdcBitmap, 3, 3, NULL);
 		LineTo(hdcBitmap, dxMenu - 3, dyMenu - 3);
 		MoveToEx(hdcBitmap, dxMenu - 4, 3, NULL);
 		LineTo(hdcBitmap, 2, dyMenu - 3);
-		SelectObject(hdcBitmap, hpenOld);
+		SelectObject(hdcBitmap, (HGDIOBJ)hpenOld);
 		}
-	SelectObject(hdcBitmap, hbmpOld);
+	SelectObject(hdcBitmap, (HGDIOBJ)hbmpOld);
 	DeleteDC(hdcBitmap);
 	vsci.dxpBmpSystem = dxMenu;
 	LogGdiHandle(hbmpSystem, 1008);

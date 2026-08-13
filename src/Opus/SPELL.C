@@ -23,16 +23,13 @@
 #define NOFONT
 /* #define NOGDI */
 #define NOHDC
-/* #define NOMB */
-/* #define NOMEMMGR */
+/* #define NOMB #define NOMEMMGR */
 #define NOMENUS
 #define NOMETAFILE
 #define NOMINMAX
-/* #define NOMSG */
-/* #define NOOPENFILE */
+/* #define NOMSG #define NOOPENFILE */
 #define NOPEN
-/* #define NOPOINT */
-/* #define NORECT */
+/* #define NOPOINT #define NORECT */
 #define NOREGION
 #define NOSCROLL
 #define NOSOUND
@@ -88,6 +85,7 @@ extern HWND             vhwndApp;
 extern struct PREF	vpref;
 extern struct CA 	caPara;
 extern struct SCD 	*vpscd;
+extern CHAR **HszCreate();
 
 BOOL FMySpellInit(HANDLE);
 BOOL FMySpellCleanUp(void);
@@ -179,27 +177,20 @@ struct SPL 	*vpspl;
 CHAR 		**hszUserDict = hNil;
 LGC		lgcCur = { 
 	0 };	/* dict to try first, to avoid slow 
-	scan; assume american dict to start off */
+	scan; assume american dict to start off
+	*/
 
 EXPORT WORD WDDLBoxSpellMDict();
 
 
-/* ****
-*
-*  Spelling dialog functions
-*
-** ***/
+/* Spelling dialog functions */
 
-/* ****
-*
-	Function: CmdSpelling
-*  Author:
-*  Copyright: Microsoft 1986
-*  Date: 8/31/87
-*
-*  Description: Menu level command function for "Spelling" dialog
-*
-** ***/
+/* Function: CmdSpelling Author:
+ *  Copyright: Microsoft 1986
+ *  Date: 8/31/87
+ *
+ * Description: Menu level command function for "Spelling" dialog
+ */
 
 /* %%Function:CmdSpelling %%Owner:bryanl */
 CMD CmdSpelling(pcmb)
@@ -289,14 +280,17 @@ LError:
 			goto LDiscardAndRet;
 
 		if (!FNeNcSz(szFileT, vpspv->szUpdateDict))
-/* have specified user dict on previous spell run, but have restored
-	STDUSER.DIC as the default */
+
+/* have specified user dict on previous spell run, but have restored STDUSER.DIC
+ * as the default
+ */
 			vrf.udcDefault = udcUpdate;
 
 		/* change to alternate speller DLL/Main dictionary if specified */
 
-		/* call list box fill proc to fill in structures for
-		   main dictionary so IlbLngFromSz will work */
+		/* call list box fill proc to fill in structures for main dictionary so
+		 * IlbLngFromSz will work
+		 */
 		for ( isz = 0 ; 
 			  WDDLBoxSpellMDict( tmmText, szFileT, isz, 0, 0, 0 );
 			  isz++ )
@@ -368,16 +362,13 @@ LRet:
 }
 
 
-/* ****
-*
-	Function: CmdSpellDoc
+/* Function: CmdSpellDoc
 *  Author: Greg Cox
-*  Copyright: Microsoft 1988
-*  Date: 3/1/88
-*
-*  Description: Function Key level command function for "Spelling" dialog
-*
-** ***/
+ *  Copyright: Microsoft 1988
+ *  Date: 3/1/88
+ *
+ * Description: Function Key level command function for "Spelling" dialog
+ */
 
 /* %%Function:CmdSpellDoc %%Owner:bryanl */
 CMD CmdSpellDoc(pcmb)
@@ -488,22 +479,22 @@ LNoWord:
 
 
 /* Macro function UtilGetSpelling(FillArray$(), Word$, MainDictCode$, UserDict$)
-*
-* If Word$ is specified, looks up that word, otherwise searches forward in
+ *
+ * If Word$ is specified, looks up that word, otherwise searches forward in
 *   the document for a possible misspelling.   Fills string array with as
 *   many of the spelling suggestions as will fit.
-* MainDictCode$ is an optional parameter, two letters specifying which
+ * MainDictCode$ is an optional parameter, two letters specifying which
 *   LEX-xy.DLL dictionary to use as the main dictionary.
-* UserDict$ is an optional parameter, the filename of a user dictionary.
+ * UserDict$ is an optional parameter, the filename of a user dictionary.
 *   If it is not found, it will be created.
-* fIgnoreAllCaps is an optional parameter used if Word$ not specified;
+ * fIgnoreAllCaps is an optional parameter used if Word$ not specified;
 *   Ignores all caps words when scanning doc.
-* fContinueAtBeginning is an optional parameter used if Word$ not specified;
+ * fContinueAtBeginning is an optional parameter used if Word$ not specified;
 *   Continues scan at beginning of document if end of doc reached.
-*
-* Note that no dialogs should pop up during the Macro call, and errors
-* should be reported via RtError.
-*/
+ *
+ * Note that no dialogs should pop up during the Macro call, and errors should
+ * be reported via RtError.
+ */
 /* %%Function:ElWUtilGetSpelling %%Owner:bryanl */
 EL int ElWUtilGetSpelling(ad, hstWord, hstMainDictCode, hstSuppDict, fIgnoreAllCaps, fContinueAtBeginning)
 AD ad;
@@ -635,8 +626,9 @@ LError:
 
 		InitScanDoc( fFalse );
 
-		/* Set fSplIgnoreCaps to fIgnoreAllCaps for document scan.
-			* Restore previous value upon termination of scan. */
+		/* Set fSplIgnoreCaps to fIgnoreAllCaps for document scan. Restore
+		 * previous value upon termination of scan.
+		 */
 		fSplIgnoreCapsPrev = vrf.fSplIgnoreCaps;
 		vrf.fSplIgnoreCaps = fIgnoreAllCaps;
 
@@ -662,8 +654,9 @@ LError:
 			}
 		}
 
-	/* No alternates are looked for when the document was scanned
-		(i.e. !fWordSpecified) and no misspellings were found. */
+	/* No alternates are looked for when the document was scanned (i.e.
+	 * !fWordSpecified) and no misspellings were found.
+	 */
 
 	if (fWordSpecified || fMisspellFound)
 		if (!FFillArrayWithSugg(ad))
@@ -692,9 +685,9 @@ ElUGSRetErr:    /* An error occurred, call RtError to return rerr. */
 }
 
 
-/* F  I n i t  S p e l l */
-/* initialize spell frame vars (except vpscd, which requires the DLL, which
-	is not yet loaded), and improve the global memory environment */
+/* F I n i t S p e l l initialize spell frame vars (except vpscd, which requires
+ * the DLL, which is not yet loaded), and improve the global memory environment
+ */
 
 /* %%Function:FInitSpell %%Owner:bryanl */
 FInitSpell()
@@ -722,8 +715,9 @@ FInitSpell()
 	ResetFont(fFalse /* fPrinterFont */);
 	ShrinkSwapArea();
 
-/* make sure there are non-NULL handles in the GHDs, so we don't pass a 
-	null one to LMyLookUpWord */
+/* make sure there are non-NULL handles in the GHDs, so we don't pass a null one
+ * to LMyLookUpWord
+ */
 	if (!FCopySzToGhd( szEmpty, &vpspl->ghdWord )
 			|| !FCopySzToGhd( szEmpty, &vpspl->ghdReplaceWord )
 			|| !FCopySzToGhd( szEmpty, &vpspl->ghdT ))
@@ -734,9 +728,9 @@ FInitSpell()
 
 
 
-/* F  I n i t  V p s c d */
-/* Initialize SCD structure */
-/* set to all 0's except rgchCase, which is fetched from speller */
+/* F I n i t V p s c d Initialize SCD structure set to all 0's except rgchCase,
+ * which is fetched from speller
+ */
 
 /* %%Function:FInitVpscd %%Owner:bryanl */
 FInitVpscd()
@@ -760,9 +754,9 @@ FInitVpscd()
 }
 
 
-/* F  D l g  S p e l l e r */
-/* SDM Dialog callback function for speller dialog (the one you see when
-	Utilities Spell is invoked from the menu) */
+/* F D l g S p e l l e r SDM Dialog callback function for speller dialog (the
+ * one you see when Utilities Spell is invoked from the menu)
+ */
 
 /* %%Function:FDlgSpeller %%Owner:bryanl */
 int FDlgSpeller(dlm, tmc, wNew, wOld, wParam)
@@ -781,7 +775,8 @@ WORD wOld, wNew, wParam;
 		vpspv->hDlgSpeller = HdlgGetCur();
 
 		SetTmcVal(tmcSplMDictBox, 0); /* HACK: cause the list box to 
-			be created so the next call will work! */
+			be created so the next call will work!
+			*/
 		if (fElActive)
 			{
 			int ilb;
@@ -878,10 +873,12 @@ LCancel1:
 				if (vpscd->fDirtyDoc)
 					{
 					SetUndoAfter(PcaSetWholeDoc( &caT, selCur.doc ));
+
 					/* HACK: to get the spelling call recorded - only case where
-					   we "cancel" the operation (after "change" we go straight
-						back to the document) but we still want to record the
-						spelling call. */
+					 * we "cancel" the operation (after "change" we go straight
+					 * back to the document) but we still want to record the
+					 * spelling call.
+					 */
 					if (vfRecording)
 						FRecordCab(HcabFromDlg(fFalse), IDDSpeller, tmcOK, fFalse);
 					goto LCancel1;
@@ -983,10 +980,11 @@ FValidateWord()
 {
 	int ich, ichMac;
 	char *pch;
-/* check word for validity.
-	This is more than just a user convenience, speller code
-	will crash if asked for alternates for a word consisting of
-	punctuation (e.g. ".,.") */
+
+/* check word for validity. This is more than just a user convenience, speller
+ * code will crash if asked for alternates for a word consisting of punctuation
+ * (e.g. ".,.")
+ */
 
 	if ((ichMac = CchSz(vpscd->szTestWord)-1) < cbWordMin ||
 					ichMac > cbWordMax)
@@ -1030,8 +1028,10 @@ LCancel:
 		}
 
 	if (!FNeNcSz(szDict, vpspv->szUpdateDict))
-/* have specified user dict on previous spell run, but have restored
-	STDUSER.DIC as the default */
+
+/* have specified user dict on previous spell run, but have restored STDUSER.DIC
+ * as the default
+ */
 			vrf.udcDefault = udcUpdate;
 
 	if ((ilb = ValGetTmc( tmcSplMDictBox )) == uNinchList)
@@ -1153,47 +1153,47 @@ LGC lgc;
 			goto NoLoad;
 		}
 
-	vpspl->lpfnHStackSpell = GetProcAddress(hLib, MAKEINTRESOURCE( idoHStackSpell));
+	vpspl->lpfnHStackSpell = (HSTACK (FAR PASCAL *)())GetProcAddress(hLib, MAKEINTRESOURCE( idoHStackSpell));
 	if (vpspl->lpfnHStackSpell == 0)
 		goto NoLoad;
 
-	vpspl->lpfnFSpellInit = GetProcAddress(hLib, MAKEINTRESOURCE( idoFSpellInit));
+	vpspl->lpfnFSpellInit = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoFSpellInit));
 	if (vpspl->lpfnFSpellInit == 0)
 		goto NoLoad;
 
-	vpspl->lpfnFSpellCleanUp = GetProcAddress(hLib, MAKEINTRESOURCE( idoFSpellCleanup));
+	vpspl->lpfnFSpellCleanUp = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoFSpellCleanup));
 	if (vpspl->lpfnFSpellCleanUp == 0)
 		goto NoLoad;
 
-	vpspl->lpfnLLookUpWord = GetProcAddress(hLib, MAKEINTRESOURCE( idoLLookUpWord));
+	vpspl->lpfnLLookUpWord = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoLLookUpWord));
 	if (vpspl->lpfnLLookUpWord == 0)
 		goto NoLoad;
 
-	vpspl->lpfnGetAlternates = GetProcAddress(hLib, MAKEINTRESOURCE( idoGetAlternates));
+	vpspl->lpfnGetAlternates = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoGetAlternates));
 	if (vpspl->lpfnGetAlternates == 0)
 		goto NoLoad;
 
-	vpspl->lpfnFSetDictAux = GetProcAddress(hLib, MAKEINTRESOURCE( idoFSetDictAux));
+	vpspl->lpfnFSetDictAux = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoFSetDictAux));
 	if (vpspl->lpfnFSetDictAux == 0)
 		goto NoLoad;
 
-	vpspl->lpfnFAddWordToDictAux = GetProcAddress(hLib, MAKEINTRESOURCE( idoFAddWordToDictAux));
+	vpspl->lpfnFAddWordToDictAux = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoFAddWordToDictAux));
 	if (vpspl->lpfnFAddWordToDictAux == 0)
 		goto NoLoad;
 
-	vpspl->lpfnFDeleteWordFromDictAux = GetProcAddress(hLib, MAKEINTRESOURCE( idoFDeleteWordFromDictAux));
+	vpspl->lpfnFDeleteWordFromDictAux = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoFDeleteWordFromDictAux));
 	if (vpspl->lpfnFDeleteWordFromDictAux == 0)
 		goto NoLoad;
 
-	vpspl->lpfnFAddWordToCacheAux = GetProcAddress(hLib, MAKEINTRESOURCE( idoFAddWordToCacheAux));
+	vpspl->lpfnFAddWordToCacheAux = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoFAddWordToCacheAux));
 	if (vpspl->lpfnFAddWordToCacheAux == 0)
 		goto NoLoad;
 
-	vpspl->lpfnGhSpellGetrgchCase = GetProcAddress(hLib, MAKEINTRESOURCE( idoGhSpellGetrgchCase));
+	vpspl->lpfnGhSpellGetrgchCase = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoGhSpellGetrgchCase));
 	if (vpspl->lpfnGhSpellGetrgchCase == 0)
 		goto NoLoad;
 
-	vpspl->lpfnResetRepeatWord = GetProcAddress(hLib, MAKEINTRESOURCE( idoResetRepeatWord));
+	vpspl->lpfnResetRepeatWord = (PFN_CRMGR)GetProcAddress(hLib, MAKEINTRESOURCE( idoResetRepeatWord));
 	if (vpspl->lpfnResetRepeatWord == 0)
 		goto NoLoad;
 
@@ -1367,7 +1367,8 @@ BOOL fDialogs;
 	OFSTRUCT ofs;
 	int osfn;
 
-/* Check whether user-specified dictionary exists, prompt for creation if not. */
+/* Check whether user-specified dictionary exists, prompt for creation if not.
+ */
 
 	if (hszUserDict == hNil)
 		return fTrue;
@@ -1378,8 +1379,7 @@ BOOL fDialogs;
 
 	if (!FTryDict( szFileName, szFileName, &vpspv->mpudcfRO [udcUser] ))
 		{
-	/* ask: "User dictionary not found. Create?" */
-	/* If !fDialogs, assume Yes */
+	/* ask: "User dictionary not found. Create?" If !fDialogs, assume Yes */
 		if (!fDialogs || IdMessageBoxMstRgwMb(mstSpellCreateDict, NULL, 
 				MB_DEFYESQUESTION) == IDYES)
 			{
@@ -1441,8 +1441,9 @@ char *szFile;
 }
 
 
-/* W  C o m b o  S p e l l  A D i c t */
-/* list box enumeration callback function for user dictionary list */
+/* W C o m b o S p e l l A D i c t list box enumeration callback function for
+ * user dictionary list
+ */
 
 /* %%Function:WComboSpellADict %%Owner:bryanl */
 EXPORT WORD WComboSpellADict(tmm, sz, isz, filler, tmc, wParam)
@@ -1521,8 +1522,9 @@ TryThis:
 }
 
 
-/* Fill combo box in Util Spelling Dialog with language names for
-	all DLL's found on the disk that match szLexDefault or szLexAll */
+/* Fill combo box in Util Spelling Dialog with language names for all DLL's
+ * found on the disk that match szLexDefault or szLexAll
+ */
 
 
 /* %%Function:WDDLBoxSpellMDict %%Owner:bryanl */
@@ -1607,15 +1609,15 @@ CheckFile:
 
 /* F  S c a n  F o r  P l g c */
 /* given a language code, hunt for an appropriate DLL .DLL to match.
-
+ *
 	Inputs:		plgc->ilng	language designator, may be ilngNil
 			plgc->fDee	whether it's a "default" dict 
-
+ *
 	Outputs:	plgc->ilng	if dict found, ilng for it, else undef
 			plgc->fDee	if Dict found, fDee for it, else undef
-
+ *
 	Return Value:	true if dict found, false if not
-*/
+ */
 
 /* %%Function:FScanForPlgc %%Owner:bryanl */
 FScanForPlgc(plgc)
@@ -1757,8 +1759,9 @@ char * sz;
 		char * pch;
 		char far * lpch;
 
-		/* We allow the string to match the first (default) entry
-			in the list box or be empty... */
+		/* We allow the string to match the first (default) entry in the list
+		 * box or be empty...
+		 */
 		if (cch > 1)
 			{
 			pch = sz;
@@ -1789,15 +1792,12 @@ LFnError:
 	return vpspv->mpilngiLB[ilng];
 }
 
-/* F S Z  L N G  F R O M  S Z */
-/*
- * This routine take the sz of the form from rglng, "English (US)" for
- * example, and converts it into a two-character sz (three characters with
- * NULL) of the two-letter code, ch1, ch2, "AM".  Unmatched sz map to the
- * default.  Note: input sz is modified and must be at least three characters
- * long.
+/* F S Z L N G F R O M S Z This routine take the sz of the form from rglng,
+ * "English (US)" for example, and converts it into a two-character sz (three
+ * characters with NULL) of the two-letter code, ch1, ch2, "AM". Unmatched sz
+ * map to the default. Note: input sz is modified and must be at least three
+ * characters long. %%Function:FSzLngFromSz %%Owner:edt
  */
-/* %%Function:FSzLngFromSz %%Owner:edt */
 BOOL
 FSzLngFromSz(sz, cchBuffer)
 CHAR *sz;

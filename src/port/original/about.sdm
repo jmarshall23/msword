@@ -2,8 +2,7 @@
 
 /* Regenerated from Opus/dlg/about.des.  The x64 SDM compatibility layer
    materializes the archived controls as native Win32 controls. */
-extern BOOL FDlgAbout(DLM, TMC, WORD, WORD, WORD);
 DLG_CONST DLT dltAbout = {
-    { 85, 55, 205, 115 }, IDDAbout, tmcOK, FDlgAbout,
+    { 85, 55, 205, 115 }, IDDAbout, tmcOK, (PFN_DIALOG)FDlgAbout,
     13, bdrSysMenu, { 0 }
 };

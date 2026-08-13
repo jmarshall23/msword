@@ -29,7 +29,6 @@ typedef struct
 
 long CmpNum();
 long CmpINum();
-long LWholeFromNum();
 long Cmp2Num();
 
 #define FApxGT(w)	((w) > 0)

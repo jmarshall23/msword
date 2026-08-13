@@ -286,7 +286,7 @@ LEmpty:
 				&rcBasisPic, 4);
 #endif
 		Beep();
-		return;
+		return 0;
 		}
 
 #ifdef BZ
@@ -1456,5 +1456,4 @@ struct RC *prc;
 			prc->ypBottom - vsci.dypBorder,
 			dxp, vsci.dypBorder, PATINVERT);
 }
-
 

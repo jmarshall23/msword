@@ -64,7 +64,7 @@ extern int cHpFreeze;
 
 extern LPCH LpchIncr();
 
-struct PL **vhplgrib = -1;
+struct PL **vhplgrib = (struct PL **)-1;
 HANDLE HReadStPict();
 HANDLE HReadPgribSt();
 HANDLE HOurLoadLibrary();
@@ -160,7 +160,7 @@ LError:
 		SetWords(&rc, 0, cwRC);
 		if ((h1 = HReadStPict(stFileNorm, &rc, &h2)) != NULL)
 			{
-			BOOL f = FReadPict(PcaPoint(&ca, doc, cpResult), 
+			BOOL f = FReadPict(PcaPoint(&ca, doc, cpResult),
 					CF_METAFILEPICT, h1, 0, fFalse /* fEmptyPic */,
 					&chp, &rc /* prcWinMF */);
 			GlobalFree(h1);
@@ -267,7 +267,7 @@ struct CHP *pchp;
 		lcb = stmGlobal.fcMac - sizeof(BITMAPFILEHEADER);
 
 		/* allocate space for DIB, can be > 64K, use GlobalAlloc2 */
-		if ( ((hData=GlobalAlloc2(GMEM_MOVEABLE, lcb ))==NULL) ||
+		if ( ((hData=(HANDLE)GlobalAlloc2(GMEM_MOVEABLE, lcb ))==NULL) ||
 			  ((lpch=GlobalLock( hData ))==NULL))
 			{
 #ifdef DEBUG
@@ -285,7 +285,7 @@ struct CHP *pchp;
 				// since we are always moving 256 bytes or the remaining
 				// data which we have allocated room for, we will never cross
 				// a 64k boundary during a blt.
-				// assert there is room in current segment so we can use 
+				// assert there is room in current segment so we can use
 		    	// bltbx instead of bltbxHuge
 				// cbReadMax must be at least a power of 2 for this to work
 				Assert (cbReadMax == 256);
@@ -489,7 +489,7 @@ BOOL fDcCache;
 			{
 
 LErrorTiff:
-			*peid = eidPicNoOpenDataFile; 
+			*peid = eidPicNoOpenDataFile;
 			goto LError;
 			}
 
@@ -612,7 +612,7 @@ PICT  **hpc;
 	SB sb = sbNil;
 
 	/* if we can't get a whole segment worth, ask for half as much
-	until we get some. 
+	until we get some.
 	*/
 	cbSwathMin = (*hpc)->cbSwathMin;
 	csw =  UMultDiv((unsigned) (cbLmemHeap - (*hpc)->cbExtra), 1, cbSwathMin);
@@ -682,7 +682,7 @@ PICT  **hpc;
 		is left after the pic struct where FetchPe put it.
 	*/
 
-	fcFetch = vfcFetchPic + 
+	fcFetch = vfcFetchPic +
 			(long)(ppc->cbRowIn * ppc->irwInMic);
 
 	Assert ((LONG)((long)cb + fcFetch - vchpFetch.fcPic & 0x00FFFFFF)  <= vpicFetch.lcb);
@@ -760,7 +760,7 @@ BOOL  fDcCache;
 	BitBlt( hdc, fDcCache ? 0 : ppicrc->picScl.xpLeft,
 			(fDcCache ? 0 : ppicrc->picScl.ypTop) + (*hpc)->irwOutMic,
 			dxpPic, dypPic,
-			(*hpc)->hMDC, 0, 0, 
+			(*hpc)->hMDC, 0, 0,
 			vsci.fMonochrome ?
 			ropMonoBm : SRCCOPY );
 
@@ -1045,7 +1045,7 @@ int     rgco[];
 	if (rgco[icoMaxM1] == (int) co) return icoMaxM1;
 	#endif
 	/* for all colors in pallette, ...                              */
-	for (pco = rgco,icoCur = 0; icoCur < icoMaxM1; ++icoCur,++pco) 
+	for (pco = rgco,icoCur = 0; icoCur < icoMaxM1; ++icoCur,++pco)
 		{
 		#ifdef OPUS_X64
 		if ((int)(*pco) == (int) OpusCoValue(co)) return (icoCur);
@@ -1055,13 +1055,21 @@ int     rgco[];
 		}
 
 	/* initialize nearest color to first color                      */
+#ifdef OPUS_X64
+	wdistNear = DistFromCoCo(co, OpusCoFromValue(*rgco));
+#else
 	wdistNear = DistFromCoCo(co, *rgco);
+#endif
 	icoNear = 0;
 
-	for (pco=&rgco[icoMaxM1],icoCur=icoMaxM1; icoCur > 0; --icoCur,--pco) 
+	for (pco=&rgco[icoMaxM1],icoCur=icoMaxM1; icoCur > 0; --icoCur,--pco)
 		{
 		/* find nearest color                                   */
-		if (wdistNear > (wdistCur = DistFromCoCo(co, *pco))) 
+#ifdef OPUS_X64
+	if (wdistNear > (wdistCur = DistFromCoCo(co, OpusCoFromValue(*pco))))
+#else
+	if (wdistNear > (wdistCur = DistFromCoCo(co, *pco)))
+#endif
 			{
 			wdistNear = wdistCur;
 			icoNear = icoCur;
@@ -1165,7 +1173,7 @@ int		*pdya,	/* fill in with size or aspect ratio of picture */
 				case XResolution:
 				case YResolution:
 					fc = StmGlobalFc();
-					StmSetTIFF(den.lpValue);
+					StmSetTIFF((FC)den.lpValue);
 
 					if (den.wTag == XResolution)
 						{
@@ -1192,7 +1200,7 @@ int		*pdya,	/* fill in with size or aspect ratio of picture */
 					ly0 = (long)vfti.dypInch;  /* default to pixels on current device */
 					ly1 = 1L;
 				    ctwp = czaInch;
-		            } 
+		            }
 			/* catch missing or invalid required fields */
 			/* longs must be > 0 && < 65535; no high bits set */
 
@@ -1290,7 +1298,7 @@ struct GRPI
 
 
 /* I N I T  G R I B */
-/*  Read the win.ini entries for Graphics Readers creating a PLEX of 
+/*  Read the win.ini entries for Graphics Readers creating a PLEX of
 information about them.
 */
 /*  %%Function:  InitGrib  %%Owner:  bobz       */
@@ -1304,14 +1312,14 @@ InitGrib()
 	struct GRIB grib;
 	CHAR rgchProfile[cchMaxGrDesc*cgrMax];
 
-	if (vhplgrib != -1 || (vhplgrib = HplInit2(sizeof(struct GRIB), cbPLBase, 
+	if (vhplgrib != (struct PL **)-1 || (vhplgrib = HplInit2(sizeof(struct GRIB), cbPLBase,
 			2, fFalse)) == hNil)
 		{
 #ifdef DREADPIC
 	    if (vhplgrib == hNil)
 	        CommSz(SzShared("InitGrib null vhplgrib\n"));
 #endif /* DREADPIC */
-        return;
+        return 0;
         }
 #ifdef DREADPIC
 	CommSz(SzShared("InitGrib: initializing\r\n"));
@@ -1322,8 +1330,8 @@ InitGrib()
 
 	for (szKey = rgchProfile; (cch = CchSz(szKey)) > 1; szKey += cch)
 		if (FGribFromProfile(pchSection, szKey, &grib))
-			if (!FInsertInPl(vhplgrib, igrib++, &grib))
-				return;
+				if (!FInsertInPl(vhplgrib, igrib++, &grib))
+					return 0;
 
 	if ((*vhplgrib)->iMac == 0)
 		FreePhpl(&vhplgrib);
@@ -1383,7 +1391,8 @@ struct GRIB *pgrib;
 	HANDLE hLib;
 	HANDLE hT;
 	BOOL fReturn = fFalse;
-	FARPROC lpfnGetInfo;
+	typedef int (*PFNGETINFO)(int, LPSTR, LPSTR, LPSTR);
+	PFNGETINFO lpfnGetInfo;
 	CHAR *pch;
 	CHAR szProfile[cchMaxGrProf];
 	CHAR szOption[cchMaxGrOption];
@@ -1415,9 +1424,9 @@ struct GRIB *pgrib;
 	ShrinkSwapArea();
 
 	if (pgrib->szName[0] != 0 && (hLib = HOurLoadLibrary(pgrib->szName, NULL))
-			>= 32)
+			!= NULL && (UINT_PTR)hLib >= 32)
 		{
-		if ((lpfnGetInfo = GetProcAddress(hLib, MAKEINTRESOURCE(wProcInfo)))
+		if ((lpfnGetInfo = (PFNGETINFO)GetProcAddress(hLib, MAKEINTRESOURCE(wProcInfo)))
 				!= NULL)
 			{
             vrf.fInExternalCall = fTrue;
@@ -1518,7 +1527,8 @@ HANDLE *ph; /* to return hMF */
 	HANDLE hLib;
 	HANDLE hPict = NULL;
 	HDC hdc = NULL;
-	FARPROC lpfnReadPict;
+	typedef int (*PFNREADPICT)(HDC, LPSTR, LPSTR, HANDLE);
+	PFNREADPICT lpfnReadPict;
 	struct GRFS grfs;
 	struct GRPI grpi;
     int wRet;
@@ -1536,7 +1546,7 @@ HANDLE *ph; /* to return hMF */
 		}
 	ShrinkSwapArea();
 
-	if ((hLib = HOurLoadLibrary(pgrib->szName, NULL)) >= 32)
+	if ((hLib = HOurLoadLibrary(pgrib->szName, NULL)) != NULL && (UINT_PTR)hLib >= 32)
     	{
 #ifdef DEBUG
 	if (vdbs.fDumpPicInfo)
@@ -1573,9 +1583,9 @@ HANDLE *ph; /* to return hMF */
 		}
 #endif /* DEBUG */
 
-	if (hLib >= 32 && hdc != NULL &&
-        (lpfnReadPict = GetProcAddress(hLib, MAKEINTRESOURCE(wProcPict)))
-            != (FARPROC)NULL)
+	if (hLib != NULL && (UINT_PTR)hLib >= 32 && hdc != NULL &&
+        (lpfnReadPict = (PFNREADPICT)GetProcAddress(hLib, MAKEINTRESOURCE(wProcPict)))
+            != NULL)
 		{
 
 		SetBytes(&grfs, 0, sizeof(grfs));
@@ -1602,9 +1612,9 @@ HANDLE *ph; /* to return hMF */
 				mfp.mm = MM_ANISOTROPIC;
 				uMul =  UMultDiv(czaInch, 1000, czaCm);
 
-				mfp.xExt = UMultDiv(abs(grpi.rc.xpRight - grpi.rc.xpLeft), 
+				mfp.xExt = UMultDiv(abs(grpi.rc.xpRight - grpi.rc.xpLeft),
 						uMul, grpi.cInch);
-				mfp.yExt = UMultDiv(abs(grpi.rc.ypBottom - grpi.rc.ypTop), 
+				mfp.yExt = UMultDiv(abs(grpi.rc.ypBottom - grpi.rc.ypTop),
 						uMul, grpi.cInch);
 				/* overflow check set to 3" */
 				if (mfp.xExt == 0xFFFF || mfp.yExt == 0xFFFF)
@@ -1746,5 +1756,3 @@ CHAR *sz, *st;
 	stzOpen[stzOpen[0]+1] = 0;
 	return LoadLibrary(stzOpen+1);
 }
-
-

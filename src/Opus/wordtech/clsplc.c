@@ -232,7 +232,7 @@ int     foo;
 	int     fooT;
 
 	if (foo == 0)
-		return;
+		return 0;
 
 	Assert(cls < clsMax);
 	pclse = &dncls[cls];
@@ -368,7 +368,7 @@ FreeHplc(hplc)
 struct PLC **hplc;
 {
 	if (hplc == hNil)
-		return;
+		return 0;
 	if (((*hplc)->fExternal) && (*hplc)->hqplce != 0L)
 		FreeHq((*hplc)->hqplce);
 	if (!(*hplc)->fExtBase)
@@ -460,7 +460,7 @@ struct PL **hpl;
 	struct PL *ppl;
 
 	if (hpl == hNil)
-		return;
+		return 0;
 	ppl = *hpl;
 	if ((ppl)->fExternal)
 		{

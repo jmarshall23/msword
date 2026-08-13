@@ -200,7 +200,7 @@ CP cp;
 	if (!vrf.fInFetchCp)
 		{
 		vrf.fInFetchCp = !vrf.fInFetchCp;
-		return;
+		return 0;
 		}
 #endif /* WIN */
 	Debug(vcFetchCp++);
@@ -235,7 +235,7 @@ LSequential:
 #ifdef WIN
 		vrf.fInFetchCp = !vrf.fInFetchCp;
 #endif /* WIN */
-		return;
+		return 0;
 		}
 	vfEndFetch = fFalse;
 
@@ -624,7 +624,7 @@ CP cp;
 	struct PCD pcd;
 
 	Debug(vcCachePara++);
-	if (FInCa(doc, cp, &caPara)) return;
+	if (FInCa(doc, cp, &caPara)) return 0;
 
 	FreezeHp();
 	pdod = *mpdochdod[doc];
@@ -1308,7 +1308,7 @@ struct PAP *ppap;
 		bltbh(hpchpe, (char HUGE *)pchp, cch);
 		SetBytes(((CHAR *)pchp) + cch, 0, cwCHP*sizeof(int)-cch);
 		}
-	return;
+	return 0;
 LStcStandard:
 	stcpT = vstcpMapStc;
 	MapStc(pdod, 0, pchp, ppap);

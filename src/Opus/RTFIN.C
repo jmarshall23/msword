@@ -278,7 +278,7 @@ int cch;
 #endif
 	if ((ris = pribl->ris) == risExit)
 		{
-		return;
+		return 0;
 		}
 	FreezeHp();  /* for pribl */
 	doc = pribl->doc;
@@ -1547,7 +1547,7 @@ struct RIBL **hribl;
 		{
 		(**hribl).ris = risExit;
 		Assert (fFalse);  /* temp - warn of probable future problems */
-		return;
+		return 0;
 		}
 
 	if ((**hribl).bStackLim > 1)

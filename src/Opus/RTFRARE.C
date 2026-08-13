@@ -68,6 +68,7 @@ extern int		fnFetch;
 extern struct CA	caPara;
 extern struct CA	caSect;
 extern struct MERR	vmerr;
+extern struct RIBL **HriblCreateDoc();
 extern CP		vcpFetch;
 extern int		vccpFetch;
 extern char HUGE        *vhpchFetch;
@@ -137,10 +138,10 @@ struct RIBL **hribl;
 
 	/* none? */
 	if ( (pgnStart < 1) && lineStart == iNil)
-		return;
+		return 0;
 
 	if (!PdodDoc(doc)->fMother)  /* should not be a subdoc  */
-		return;
+		return 0;
 
 	/* get 1st section props */
 	ExpandCaCache(PcaSet(&ca, doc, cp0, cp0),
@@ -427,7 +428,7 @@ int val;
 		(**hribl).ris = risScanByDest;
 		/* just warn the user so they don't wonder why stuff is missing */
 		ErrorEid(eidFormatTooComplex,"PopRtfState");
-	    return;
+	    return 0;
 		}
 
 	(*hribl)->fInXeTc = fTrue; /* so we can tell if we nest */
@@ -453,7 +454,7 @@ int val;
 
 	if (!FInsertRgch((**hribl).doc, (**hribl).cpRdsFirst, szKwd,
 			cch + 1, &(**hribl).chp, 0))
-		return;
+		return 0;
 
 	/* allocate area to hold start cps. If this fails, we can still
 			do everything except put nonvanished text into doc
@@ -467,13 +468,13 @@ int val;
 			(*hrcpxetc)->docTemp = docNil;
 			}
 		else
-			{
-			/* vmerr.fMemFail set in FEnsureFreeCw */
-			Assert (vmerr.fMemFail);
-			ErrorNoMemory(eidNoMemOperation);
-			vmerr.mat = matNil;
-			return;
-			}
+		{
+		/* vmerr.fMemFail set in FEnsureFreeCw */
+		Assert (vmerr.fMemFail);
+		ErrorNoMemory(eidNoMemOperation);
+		vmerr.mat = matNil;
+		return 0;
+		}
 		}
 
 	/* set up start cp for field, invalid val for dcpInst */
@@ -517,7 +518,7 @@ int val;
 		(**hribl).ris = risScanByDest;
 		/* just warn the user so they don't wonder why stuff is missing */
 		ErrorEid(eidFormatTooComplex,"PopRtfState");
-	    return;
+	    return 0;
 		}
 
 	(*hribl)->fInXeRT = fTrue; /* so we can tell if we nest */
@@ -592,7 +593,7 @@ int val;
 	if (vmerr.fMemFail || 
 			!FPutCpsInField (fltUnknownKwd, doc, cpFirst, &dcpT, (CP)0, 
 			&(**hribl).chp))
-		return;
+		return 0;
 
 	FltParseDocCp (doc, cpFirst,
 			(ifld = IfldFromDocCp (doc, cpFirst, fTrue)),
@@ -716,7 +717,7 @@ CP * pcpInsert; /* where text will do after this routine */
 			*/
 			(*pcpInsert)--;
 			MeltHp();
-			return;
+			return 0;
 			}
 
 		/* if terminating entry or text, store cp */
@@ -982,7 +983,7 @@ struct RIBL **hribl;
 	dcp = CpMacDocEdit(doc) - cp;
 	if (!FPutCpsInField (fltUnknownKwd, doc,
 			cp, &dcp, (CP)0 /* dcpRslt - none for dead fields */, NULL))
-		return;
+		return 0;
 
 	FltParseDocCp (doc, cp,
 			IfldFromDocCp (doc, cp, fTrue),

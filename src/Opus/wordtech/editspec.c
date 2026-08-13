@@ -201,7 +201,7 @@ struct CA *pca;
 
 	if (vddes.hplddli == hNil || !PdodDoc(pca->doc)->fMother ||
 			PdodDoc (pca->doc)->hplcbkf == hNil)
-		return;
+		return 0;
 
 	iddliMac = IMacPl(vddes.hplddli);
 
@@ -263,7 +263,7 @@ BOOL fEdit;
 			}
 		}
 	else  if (!FFieldsInPca(pca))
-		return;
+		return 0;
 
 		{{ /* NATIVE - InvalFld */
 		while ((ifld = IfldAfterFlcd (pca->doc, ifld, &flcd)) != ifldNil)
@@ -328,7 +328,7 @@ AdjustIpgds(doc, ipgdFirst, cpgd, fDel)
 {
 	int ww;
 	if (cpgd == 0 || PdodDoc(doc)->fShort/* to avoid dbl adjust */)
-		return;
+		return 0;
 	for (ww = WwDisp(doc, wwNil, fFalse); ww != wwNil; ww = WwDisp(doc, ww, fFalse))
 		{
 		struct WWD *pwwd = PwwdWw(ww);
@@ -404,7 +404,7 @@ CP dcpIns;
 	Scribble(ispAdjustCp,'A');
 
 	if (dcpAdj == 0)
-		return;
+		return 0;
 
 	Assert(cHpFreeze==0);
 	FreezeHp();
@@ -834,7 +834,7 @@ BOOL fFierce;
 			if (cpLim >= vmpitccp[itc])
 				break;
 		if (cpFirst >= vmpitccp[itc])
-			return;
+			return 0;
 		}
 
 	/* table properties implicitly depend on the character before and
@@ -1180,7 +1180,7 @@ struct CA *pcaDest, *pcaSrc;
 display invalidation since the undo document is never displayed.
 So return. */
 	if (docDest == docUndo)
-		return;
+		return 0;
 
 	if (!PdodDoc(pcaSrc->doc)->fShort && !PdodDoc(docDest)->fShort)
 		{
@@ -1209,7 +1209,7 @@ So return. */
 			pap.phe = vpapFetch.phe;
 			Assert (pcaDest->cpLim <= caPara.cpLim);
 			if (!FNeRgw(&vpapFetch, &pap, cwPAP))
-				return;
+				return 0;
 			}
 		CacheParaCa(pcaDest);
 /* invalidate at least from cpFirst to cpDest (+-1 for "box" borders) */
@@ -1312,7 +1312,7 @@ CP cpFirst, cpLim;
 
 	Assert(cbPGD != cbPAD && cbPGD != cbPHE && cbPGD != cbSED);/* has to be unique */
 	if (ifooMac == 0)
-		return;
+		return 0;
 	ifoo = IInPlcMult(hplcfoo, CpMax(cpFirst, CpPlc(hplcfoo, 0)));
 	if (ifoo > 0 && (*hplcfoo)->cb == cbPGD)
 		{
@@ -1595,7 +1595,7 @@ struct CA *pca;
 	if (vuab.fNoUndo || vmerr.fMemFail)
 		{
 		vuab.ucm = ucmNil;
-		return;
+		return 0;
 		}
 
 	vuab.selsAfter = *((struct SELS *)&selCur);
@@ -1636,7 +1636,7 @@ LUndoOrNil:
 	default:
 		vuab.fNoUndo = fTrue;
 		vuab.ucm = ucmNil;
-		return; /* no arming for unknown ucm */
+		return 0; /* no arming for unknown ucm */
 		}
 	vuab.uac = uac;
 }
@@ -2380,7 +2380,7 @@ struct PLCEDL **hplcedl;
 int dl;
 {
 	struct EDL edl;
-	if (dl < 0) return;
+	if (dl < 0) return 0;
 	GetPlc(hplcedl, dl, &edl);
 	edl.fDirty = fTrue;
 	PutPlcLast(hplcedl, dl, &edl);
@@ -2472,7 +2472,7 @@ BOOL fTable;
 	CP cpFirst, cpLim, cpCur;
 
 	if (pca->doc == docNil)
-		return;
+		return 0;
 
 	/* Check for the weirdo case of a dead field that got split, and fix it */
 	cpCur = pca->cpFirst;
@@ -2489,7 +2489,7 @@ BOOL fTable;
 #endif
 
 	if (pca->cpFirst >= pca->cpLim)
-		return;
+		return 0;
 
 	/*  check fFldVanish */
 	if (FFldVanishDocCp (pca->doc, pca->cpFirst-1, fTrue/*fFetch*/) &&

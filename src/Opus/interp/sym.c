@@ -56,8 +56,8 @@ BOOL FInitSym()
 			return FALSE;
 		
 		*HpFrame(ibMax) = cb;
-		*HpFrame(ibMac) = &FrameVar(rgb);
-		*HpFrame(pfhLast) = pfhNil;	/* no frames defined yet */
+		*HpFrame(ibMac) = (int)(UINT_PTR)&FrameVar(rgb);
+		*HpFrame(pfhLast) = (int)(UINT_PTR)pfhNil;	/* no frames defined yet */
 		}
 	Global(pfhCurFrame) = pfhNil;
 	
@@ -258,7 +258,7 @@ BOOL fLabel;
 
 	/* The symbol isn't in the symbol table, so we will create it.
 		*/
-	psyNew = (struct SY *)NtabVar(ibMac);
+	psyNew = (struct SY *)(UINT_PTR)NtabVar(ibMac);
 
 	if ((NtabVar(ibMac) = (unsigned)psyNew + CbOfSy(cch + 1)) >
 		NtabVar(ibMax))
@@ -306,7 +306,7 @@ BOOL fArray;
 	if (psy == psyNil)
 		return FALSE;
 	
-	pvar = *HpOfSbIb(Global(sbNtab),
+	pvar = (struct VAR *)(UINT_PTR)*HpOfSbIb(Global(sbNtab),
 		fArray ? &psy->pvarArray : &psy->pvarScalar);
 
 	return (pvar != 0 &&
@@ -502,7 +502,7 @@ int carg;
 		/* Create a new PROC record.
 			*/
 		hpsy->syt = sytProc;
-		hpsy->pproc = pproc = *HpNtab(ibMac);
+	hpsy->pproc = pproc = (struct PROC *)(UINT_PTR)*HpNtab(ibMac);
 
 		if ((*HpNtab(ibMac) = (unsigned)pproc + CbOfProcCarg(carg)) >
 			*HpNtab(ibMax))
@@ -554,7 +554,7 @@ BOOL fFree;
 		/* Create a new DKD record.
 			*/
 		hpsy->syt = sytDkd;
-		hpsy->pdkd = pdkd = *HpNtab(ibMac);
+	hpsy->pdkd = pdkd = (DKD *)(UINT_PTR)*HpNtab(ibMac);
 
 		if ((*HpNtab(ibMac) = (unsigned)pdkd + 
 			CbOfDkdIdktMac(idktMacParam)) > *HpNtab(ibMax))
@@ -576,7 +576,7 @@ BOOL fFree;
 		pdkd->fFreeLib = fFree;
 		pdkd->dktRet = dktRet;
 		pdkd->idktMacParam = idktMacParam;
-		pdkd->lppasproc = lpproc;
+		pdkd->lppasproc = (long (*)())lpproc;
 		ResetSbCur();
 		hpdkd = HpOfSbIb(Global(sbNtab), pdkd);
 		for (idkt = 0; idkt < idktMacParam; idkt += 1)
@@ -627,7 +627,7 @@ struct PROC *pproc;	/* what procedure the label is associated with */
 
 	/* Create a new LAB record.
 		*/
-	plab = NtabVar(ibMac);
+	plab = (struct LAB *)(UINT_PTR)NtabVar(ibMac);
 	if ((NtabVar(ibMac) = (unsigned)plab + sizeof(struct LAB)) >
 		NtabVar(ibMax))
 		{
@@ -679,7 +679,7 @@ struct PROC *pproc;
 
 	SetSbCur(sbFrame);
 
-	pfhNew = FrameVar(ibMac);
+	pfhNew = (struct FH *)(UINT_PTR)FrameVar(ibMac);
 	pfhNew->pfhPrev = pfhPrev;
 	pfhNew->pproc = pproc;
 	pfhNew->penv = (ENV *)0;
@@ -698,7 +698,8 @@ struct PROC *pproc;
 
 	ResetSbCur();
 
-	Global(pfhCurFrame) = *HpFrame(pfhLast) = pfhNew;
+	Global(pfhCurFrame) = pfhNew;
+	*HpFrame(pfhLast) = (int)(UINT_PTR)pfhNew;
 	if (Global(pprocCur) == 0)
 		{
 		Global(pfhGlobalFrame) = pfhNew;
@@ -777,7 +778,7 @@ VOID EndProcedure()
 
 	/* Update the "last frame" pointer.
 		*/
-	*HpFrame(pfhLast) = Global(pfhCurFrame);
+	*HpFrame(pfhLast) = (int)(UINT_PTR)Global(pfhCurFrame);
 
 #ifdef DEBUG
 	if (fToSym && Global(pfhCurFrame) != pfhNil)
@@ -799,7 +800,7 @@ VOID EndAllProcedures()
 /* %%Function:PvarBeginTemps %%Owner:bradch */
 struct VAR *PvarBeginTemps()
 {
-	return (struct VAR *)*HpFrame(ibMac);
+	return (struct VAR *)(UINT_PTR)*HpFrame(ibMac);
 }
 
 
@@ -807,7 +808,7 @@ struct VAR *PvarBeginTemps()
 VOID EndTemps(pvarSaved)
 struct VAR *pvarSaved;
 {
-	struct VAR *pvarT, huge *hpvarT, *pvarMac = *HpFrame(ibMac);
+	struct VAR *pvarT, huge *hpvarT, *pvarMac = (struct VAR *)(UINT_PTR)*HpFrame(ibMac);
 
 	/* Free array and string data associated with temporary variables.
 		*/
@@ -826,7 +827,7 @@ struct VAR *pvarSaved;
 
 	/* Free the space the temps were stored in.
 		*/
-	*HpFrame(ibMac) = pvarSaved;
+	*HpFrame(ibMac) = (int)(UINT_PTR)pvarSaved;
 }
 
 
@@ -851,7 +852,7 @@ VOID huge **phpval;
 		return elvEndStack;
 
 	SetSbCur(sbFrame);					/* /SB\ */
-	pfhCur = *HpFrame(pfhLast);
+	pfhCur = (struct FH *)(UINT_PTR)*HpFrame(pfhLast);
 	pfhNext = pfhNil;
 	while (pfhCur != pfhNil && iFrame > 0)
 		{
@@ -870,7 +871,7 @@ VOID huge **phpval;
 	*pelm = elm;
 
 	if (pfhNext == pfhNil)
-		pfhNext = *HpFrame(ibMac);
+		pfhNext = (struct FH *)(UINT_PTR)*HpFrame(ibMac);
 	pvar = &pfhCur->rgvar;
 	while (pvar < (struct VAR *)pfhNext && iLocal > 0)
 		{
@@ -1009,9 +1010,9 @@ BOOL fOkCreate;
 		NtabVar(elm) = elm;
 		NtabVar(sbNext) = 0;
 		NtabVar(ibMax) = cbHash + cbSymQuantum;
-		NtabVar(ibMac) = &NtabVar(rgb);
+		NtabVar(ibMac) = (unsigned)(UINT_PTR)&NtabVar(rgb);
 		NtabVar(libScan) = 0L;
-		NtabVar(pprocScan) = (struct PROC *)0;
+		NtabVar(pprocScan) = 0;
 		for (iwHash = 0; iwHash < cwHash; iwHash++)
 			NtabVar(rgpsyHash)[iwHash] = (struct SY *)0;
 
@@ -1032,7 +1033,7 @@ ClearUsrDlgVars()
 	
 	Assert(sbFrame != 0);
 
-	pvarLim = *HpFrame(ibMac);
+	pvarLim = (struct VAR *)(UINT_PTR)*HpFrame(ibMac);
 	for (hpfhCur = HpOfSbIb(sbFrame, Global(pfhCurFrame)); 
 		IbOfHp(hpfhCur) != pfhNil; 
 		hpfhCur = HpOfSbIb(sbFrame, hpfhCur->pfhPrev))
@@ -1048,8 +1049,6 @@ ClearUsrDlgVars()
 				}
 			}
 		
-		pvarLim = IbOfHp(hpfhCur);
+		pvarLim = (struct VAR *)(UINT_PTR)IbOfHp(hpfhCur);
 		}
 }
-
-

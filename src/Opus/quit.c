@@ -678,7 +678,7 @@ LHaveOsfn:
 		}
 
 	FCloseDoshnd(osfn);
-	return;
+	return 0;
 
 lblWimp:
 /* file access failure if here */

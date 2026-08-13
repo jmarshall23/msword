@@ -105,6 +105,7 @@ extern struct REB * PrebInitPrebHrsd ();
 extern int ParseStyle();
 InvalStyle();
 HDLG HdlgHibsDlgCur(HIBS);
+extern CHAR **HszCreate();
 
 /* ribbon/ruler globals */
 
@@ -327,7 +328,7 @@ LDialogFail:
 				dli.dx = prc->xpLeft + xpDlg;
 				dli.dy = prc->ypTop + ypDlg;
 				dli.fdlg = fdlgInvisible | fdlgFedt;
-				dli.wRef = hibs;
+				dli.wRef = (UINT_PTR)hibs;
 				Assert (ptmw != NULL);
 				dli.rgb = ptmw;
 
@@ -372,8 +373,8 @@ LDialogFail:
 				pibb->ypDlg = ypDlg;
 #endif /* WIN23 */
 				pibb->hdlg = hdlg;
-				pibb->hdlt = hdlt;
-				pibb->hcab = hcab;
+				pibb->hdlt = (UINT_PTR)hdlt;
+				pibb->hcab = (UINT_PTR)hcab;
 
 				SetWindowPos(hwnd, HwndFromDlg(hdlg), 0, 0, 0, 0, 
 						SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE);
@@ -385,7 +386,7 @@ LDialogFail:
 				if (vsci.fWin3Visuals)
 					{
 #ifdef OPUS_X64
-					lpfnSdmWndProc = (FARPROC) GetWindowLongPtr(HwndFromDlg(hdlg), GWLP_WNDPROC);
+					lpfnSdmWndProc = (WNDPROC) GetWindowLongPtr(HwndFromDlg(hdlg), GWLP_WNDPROC);
 					SetWindowLongPtr(HwndFromDlg(hdlg), GWLP_WNDPROC, (LONG_PTR) lpfnIconDlgWndProc);
 #else
 					lpfnSdmWndProc = (FARPROC) GetWindowLong(HwndFromDlg(hdlg), GWL_WNDPROC);
@@ -515,12 +516,12 @@ HIBS hibs;
 	int iibb, iibbMac;
 
 	if (hibs == hNil)
-		return;
+		return 0;
 
 	if ((hwnd = (*hibs)->hwnd) != NULL)
 		{
 		DestroyWindow(hwnd); /* recursively calls DestroyHibs() */
-		return;
+		return 0;
 		}
 
 	pibb = &(*hibs)->rgibb[0];
@@ -538,8 +539,8 @@ HIBS hibs;
 		case ibitDialog:
 				{
 				HDLG hdlg = pibb->hdlg;
-				HCAB hcab = pibb->hcab;
-				HDLT hdlt = pibb->hdlt;
+				HCAB hcab = (HCAB)(UINT_PTR)pibb->hcab;
+				HDLT hdlt = (HDLT)(UINT_PTR)pibb->hdlt;
 
 				if (hdlg != hNil)
 					{
@@ -695,7 +696,7 @@ HDLG hdlg;
 		if (hdlg == HdlgHibs(hibs))
 			{
 			vmerr.fKillRibbon = fTrue;
-			return;
+			return 0;
 			}
 		}
 
@@ -713,7 +714,7 @@ HDLG hdlg;
 		if (hdlg == HdlgHibs(hibs))
 			{
 			vmerr.fKillRuler = fTrue;
-			return;
+			return 0;
 			}
 		}
 
@@ -867,14 +868,14 @@ int fCreate, fCmd;
 	if (fCreate && (*hmwdCur)->hwndRuler == NULL)
 		{
 		if (!FCreateRuler (wwCur, fCmd))
-			return;
+			return 0;
 		wwRuler = (*hmwdCur)->wwRuler; /* get it after it is set */
 		}
 	else  if (!fCreate && (*hmwdCur)->hwndRuler != NULL)
 	/* try to destroy the ruler */
 		AssertDo(FDestroyRuler(hmwdCur));
 	else
-		return;
+		return 0;
 
 	Assert(wwRuler >= wwDocMin && wwRuler < wwMac);
 	dyp = vsci.dypRuler - vsci.dypBorder;
@@ -900,7 +901,7 @@ DisplayRuler ()
 	HWND hwndRuler;
 
 	if (hmwdCur == hNil || (hwndRuler = (*hmwdCur)->hwndRuler) == NULL)
-		return;
+		return 0;
 
 	/*  initialize the settings of the ruler based on selCur */
 	UpdateRuler (hmwdCur, fTrue /*fInit*/, rkNormal, fFalse /*fAbortOK*/);
@@ -998,7 +999,7 @@ int ww, fCmd;
 	/* initialize */
 	SetBytes (*hrsd, 0, sizeof (struct RSD));
 
-	SetWRefHwndIb(hwndRuler, hrsd);
+	SetWRefHwndIb(hwndRuler, (UINT_PTR)hrsd);
 
 	/* set the ruler handle */
 	(*hmwd)->hwndRuler = hwndRuler;
@@ -1371,5 +1372,3 @@ BOOL fOn, fAdjust, fUpdate;
 
 	return fTrue;
 }
-
-

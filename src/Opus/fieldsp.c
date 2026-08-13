@@ -272,10 +272,10 @@ struct PT pt;
 
 	/* printer literals are sent only during print */
 	if (!vfli.fPrint)
-		return;
+		return 0;
 
 	if (DocCreateTemp(doc) == docNil)
-		return;
+		return 0;
 
 	Assert (hdc == vpri.hdc);
 	InitFvb(&ffb.fvb);
@@ -1029,7 +1029,7 @@ BOOL fChgView;
 	if (!FInsertFltDcps (flt, doc, cp, dcpInst, cp0, NULL))
 		{
 		/* not enough memory */
-		return;
+		return fFalse;
 		}
 	ifld = IfldFromDocCp (doc, cp, fTrue);
 	Assert (ifld != ifldNil);
@@ -1327,7 +1327,7 @@ BOOL fVanish;
 	CHAR grpprl [2];
 
 	if (DcpCa(pca) < 0)
-		return;
+		return 0;
 
 	grpprl [0] = sprmCFFldVanish;
 	grpprl [1] = fVanish;
@@ -1406,7 +1406,7 @@ CP *pcpFirst, *pcpLim;
 		/*  FUTURE:  Can we recover from this in a nice way? Doc must be in
 			an invalid state, report an error (i.e. non-debug)?? */
 		Assert (fFalse);
-		return;
+		return 0;
 		}
 
 	*pcpLim = cpCur;

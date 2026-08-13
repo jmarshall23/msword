@@ -222,12 +222,16 @@ engine/automation/document-manager, DDE, and print frontier, including `etcmd.c`
 callback and handle typing, `docman1.c`/`docman2.c` heap-string declarations and
 legacy returns, DDE word-handle casts and modal constants, `print2.c` printer string
 handles, driver-dialog callback typing, `WM_WININICHANGE`, and PostScript
-pointer-sized argument handling. The next blockers are now in the EL runtime frontier:
-`elsubs2.c`/`elsubs3.c` callback typing, `HeliNew` declaration cleanup, and legacy
-returns; `eldlg.c` dialog handle/object allocation typing plus `BLACKNESS`; `eldde.c`
-DDE handle casts plus `GMEM_LOWER` and `WM_SYSKEYUP`; `elfile.c` file-handle and
-heap-string typing; `elmisc.c` and `elmisc2.c` message-box constants, window state
-constants, callback casts, and legacy returns.
+pointer-sized argument handling. The next filtered `opus_word1_ui_test` build now
+advances through the EL runtime, field/file/filter/graphics/formatting/iconbar,
+interpreter, menu/open/picture/preview/print/prompt/ruler/style/window, spell,
+native-file, startup-probe, Win95 chrome, and UI-harness declaration frontiers.
+On macOS, `WORD1` and `opus_word1_ui_test` now compile and link with a deliberate
+Darwin-only dynamic-loader handoff for unresolved Win32 shim bodies. The smoke test
+now reaches runtime loading and aborts on missing `_SymFunctionTableAccess64`, a
+DbgHelp shim body, not on a missing type, macro, prototype, or C++ linkage error.
+Reviewers agreed this is only a declaration-frontier handoff; it is not real
+all-symbol link closure, and the include-cleanup done check below remains open.
 
 Build the first pass mechanically:
 

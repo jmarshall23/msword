@@ -194,7 +194,17 @@ int __cdecl WriteRtcFailure(int error_type, LPCWSTR file_name, int line,
     WCHAR message[2048] = {};
     va_list arguments;
     va_start(arguments, format);
+#if defined(_MSC_VER)
     _vsnwprintf_s(message, _countof(message), _TRUNCATE, format, arguments);
+#else
+    size_t message_index = 0;
+    while (format != nullptr && format[message_index] != 0 &&
+           message_index + 1 < _countof(message)) {
+        message[message_index] = format[message_index];
+        ++message_index;
+    }
+    message[message_index] = 0;
+#endif
     va_end(arguments);
 
     char file_name_ansi[MAX_PATH] = {};

@@ -230,6 +230,7 @@ extern struct DBS	vdbs;
 #ifdef WIN
 extern struct PRI       vpri;
 extern HPSYT		vhpsyt;
+extern SY *PsyGetSyOfBsy();
 #else
 extern struct PREF	vpref;
 #endif
@@ -1203,7 +1204,7 @@ int     *pfPieceTableItem;
 					*pcfc = cpMac;
 					*pfPieceTableItem = fTrue;
 					MeltHp();
-					return;
+					return 0;
 					}
 				}
 			else
@@ -1228,7 +1229,7 @@ int     *pfPieceTableItem;
 						*pfPieceTableItem = fTrue;
 						vpqsib->ipcd = ipcd + 1;
 						MeltHp();
-						return;
+						return 0;
 						}
 					}
 				}
@@ -1243,7 +1244,7 @@ int     *pfPieceTableItem;
 					*pfPieceTableItem = fTrue;
 					vpqsib->fExtraPiece = fTrue;
 					MeltHp();
-					return;
+					return 0;
 					}
 			case witPieceTextFtn:
 				*pwit = witPieceTextHdr;
@@ -1255,7 +1256,7 @@ int     *pfPieceTableItem;
 					*pfPieceTableItem = fTrue;
 					vpqsib->fExtraPiece = fTrue;
 					MeltHp();
-					return;
+					return 0;
 					}
 			case witPieceTextHdr:
 #ifdef WIN
@@ -1268,7 +1269,7 @@ int     *pfPieceTableItem;
 					*pfPieceTableItem = fTrue;
 					vpqsib->fExtraPiece = fTrue;
 					MeltHp();
-					return;
+					return 0;
 					}
 			case witPieceTextMcr:
 				*pwit = witPieceTextAtn;
@@ -1280,7 +1281,7 @@ int     *pfPieceTableItem;
 					*pfPieceTableItem = fTrue;
 					vpqsib->fExtraPiece = fTrue;
 					MeltHp();
-					return;
+					return 0;
 					}
 			case witPieceTextAtn:
 #endif /* WIN */
@@ -1291,7 +1292,7 @@ int     *pfPieceTableItem;
 					*pcfc = ccpEop;
 					*pfPieceTableItem = fTrue;
 					MeltHp();
-					return;
+					return 0;
 					}
 				}
 		case witExtraPiece:
@@ -1326,7 +1327,7 @@ int     *pfPieceTableItem;
 						*pfPieceTableItem = fFalse;
 						vpqsib->ised = ised + 1;
 						MeltHp();
-						return;
+						return 0;
 						}
 					}
 				}
@@ -1506,7 +1507,7 @@ LHavePic:
 						*pcpMinPiece = cp;
 						*pcfc = vpicFetch.lcb;
 						*pfPieceTableItem = fFalse;
-						return;
+						return 0;
 						}
 					docFetch = docScan;  /* not sequential */
 					}
@@ -1540,7 +1541,7 @@ LEndIt:
 				PdodDoc(docSave)->fMayHavePic = fFalse;
 			*pwit = witFinished;
 			MeltHp();
-			return;
+			return 0;
 			}
 		}
 }  /* end RetrieveNextNonDestCp  */
@@ -1600,7 +1601,7 @@ int     *pfSkip;
 		}
 
 	if (FFileWriteError())
-		return;
+		return 0;
 
 	if (!vpqsib->fAlreadyWritten)
 		{
@@ -1658,7 +1659,7 @@ LRefetch:
 								goto LRefetch;
 								}
 							if (FFileWriteError())
-								return;
+								return 0;
 							cpSrc += ccpPcd;
 							fcDest += ccpPcd;
 							cfcWrite -= ccpPcd;
@@ -1750,7 +1751,7 @@ LRefetch:
 			AppendHpchToFbb(hpchSrcText, cch);
 
 			if (FFileWriteError())
-				return;
+				return 0;
 
 			cfcWrite -= (FC) cch;
 			fcDest += (FC) cch;
@@ -3298,7 +3299,7 @@ struct FKP *pfkpChpDummy;
 					vpqsib->fWord3))
 				{
 				SetErrorMat( matLow );
-				return;
+				return 0;
 				}
 			bltb(&chpT, &chpLast, cchChp);
 			cchChpLast = cchChp;
@@ -3478,7 +3479,7 @@ struct FKP *pfkpPapDummy;
 				fWord3))
 			{
 			SetErrorMat( matLow );
-			return;
+			return 0;
 			}
 		if (cpFirstNext < cpLim)
 			{
@@ -3852,7 +3853,7 @@ FC * pfcDestLim;
 	FC fc;
 
 	fc = *pfc = *pfcDestLim;
-	*pcb = CbSttbf(*hsttb);
+	*pcb = CbSttbf(hsttb);
 	WriteSttbToFile(hsttb, vpqsib->fnDest, &fc);
 	Assert(fc == *pfc + *pcb);
 
@@ -3875,7 +3876,7 @@ QuicksaveMacros()
 	fnDest = vpqsib->fnDest;
 
 	if ((docMcr = PdodDoc(docSave)->docMcr) == docNil)
-		return;
+		return 0;
 
 	hplcmcr = PdodDoc(docMcr)->hplcmcr;
 
@@ -3885,7 +3886,7 @@ QuicksaveMacros()
 	vpqsib->fcSttbfmcr = vfcDestLim;
 
 	if ((imcrMacT2 = (IMacPlc(hplcmcr) - 1) * 2) <= 0)
-		return;
+		return 0;
 
 	/* write out total length of size and strings */
 	if (imcrMacT2 > 0)
@@ -4137,7 +4138,7 @@ uns cfc;
 	if (vfbb.hqBuf == 0)
 		{
 		WriteHprgchToFn(vfbb.fnDest, hpch, cfc);
-		return;
+		return 0;
 		}
 
 	/* write into fbb buffer; flushing as needed */
@@ -4259,5 +4260,4 @@ PN pn;
 		SetDirty(vibp);
 		}
 }
-
 

@@ -287,7 +287,7 @@ int doc, dk;
 	struct DOD *pdod, **hdod = mpdochdod [doc];
 
 	if (hdod == hNil || (pdod = *hdod)->dk == dk)
-		return;
+		return 0;
 
 	if (pdod->dk == dkDoc && dk == dkDot)
 		/*  convert a doc into a dot */
@@ -391,7 +391,7 @@ int doc;
 	struct FNS fns1, fns2;
 	GetDocSt(doc, stFile2, gdsoFullPath);
 	if (!*stFile2)
-		return;
+		return 0;
 	StFileToPfns(stFile2, &fns1);
 	StFileToPfns(stFile1, &fns2);
 	CopySt(fns1.stPath, fns2.stPath);
@@ -430,7 +430,7 @@ int doc, docDotNew;
 
 	if (docDotNew == docDotOld)
 		/*  nothing to do! */
-		return;
+		return 0;
 
 	if (docDotNew != docNil)
 		PdodDoc(docDotNew)->crefLock++;
@@ -551,7 +551,7 @@ int doc;
 
 	if (IdMessageBoxMstRgwMb (mstStartDdeHot, &doc,
 			(MB_ICONQUESTION|MB_YESNO)) != IDYES)
-		return;
+		return 0;
 
 	StartLongOp (); /* probably rendundant */
 	AcquireCaAdjust ();
@@ -1021,5 +1021,4 @@ int fnSrc;
 	else
 		return fnDest;
 }
-
 

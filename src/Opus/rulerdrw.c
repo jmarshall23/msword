@@ -840,7 +840,7 @@ HWND hwndRuler;
 	int xpLeft, xpRight;
 
 	if (ypScaleBottom == 0)
-		return;
+		return 0;
 
 	GetClientRect(hwndRuler, &rcParent);
 	GetHwndParentRc(hwndMark, &rcMark);
@@ -900,7 +900,7 @@ BOOL fAbortOK;
 	if (hmwd == hNil)
 		{  /* no child => no ruler !! shouldn't have gotten here */
 		Assert (fFalse);
-		return;
+		return 0;
 		}
 
 	/*  what to do if hmwd != hmwdCur ?? */
@@ -922,12 +922,12 @@ BOOL fAbortOK;
 		still be on.
 	*/
 	if (vssc != sscNil)
-		return;
+		return 0;
 
 	if ((hwndRuler = (*hmwd)->hwndRuler) == NULL)
 		{  /* no ruler to update -- shouldn't have gotten here */
 		Assert (fFalse);
-		return;
+		return 0;
 		}
 
 	hrsd = HrsdFromHwndRuler(hwndRuler);
@@ -964,7 +964,7 @@ BOOL fAbortOK;
 			{
 			/* we don't allow interuptions during initialization */
 			Assert (!fInit);
-			return;
+			return 0;
 			}
 	FreezeHp();
 	prsd = *hrsd;
@@ -1286,11 +1286,11 @@ LGrayTc:
 		/* style */
 		if (  papDiffProp.stc | papDiffGray.stc )
 			{
-			UpdateRulerStyle (hrsd, (*hrsd)->pap.stc,
-					(*hrsd)->papGray.stc);
-			if ((*hmwd)->hwndRuler == NULL)
-				return;
-			}
+				UpdateRulerStyle (hrsd, (*hrsd)->pap.stc,
+						(*hrsd)->papGray.stc);
+				if ((*hmwd)->hwndRuler == NULL)
+					return 0;
+				}
 
 
 		FreezeHp();
@@ -1471,7 +1471,7 @@ ScrollRuler ()
 
 	if ((hwndRuler = (*hmwdCur)->hwndRuler) == NULL)
 		/* no ruler to scroll */
-		return;
+		return 0;
 	if (selCur.fUpdateRuler)
 		UpdateRuler(hmwdCur, fFalse /*fInit*/, -1, fFalse /*fAbortOK*/);
 
@@ -2061,7 +2061,7 @@ int xp, imk, ms;
 
 	if (xp + ddxp < preb->xpLeft || xp - ddxp > preb->xpRight)
 		/* none of the mark is visible, don't bother */
-		return;
+		return 0;
 
 #ifdef WIN23
 	if ((pmdcd = PmdcdCacheIdrb( idrbRulerMarks2, hdc )) != NULL)
@@ -2143,7 +2143,7 @@ struct REB * preb;
 		GetClientRect((*preb->hrsd)->hwndMark, &rc);
 		preb->xpLeft = 0;
 		preb->xpRight = rc.xpRight;
-		return;
+		return 0;
 		}
 
 	/* just in case */
@@ -2418,7 +2418,7 @@ BOOL fInit;
 	*/
 
 	if (PselActive() != &selCur)   /* only valid for selCur */
-		return;
+		return 0;
 
 	if (hwwdCur != hNil)
 		grpfShowAllNew = (*hwwdCur)->grpfvisi.fvisiShowAll;
@@ -2433,7 +2433,7 @@ BOOL fInit;
 				/* at init, interrupt causes all gray in LH */
 				SetWords(&vchpGraySelCur, 0xFFFF, cwCHP);
 			else
-				return;
+				return 0;
 			}
 
 	selCur.fUpdateRibbon = fFalse;  /* prevent unneeded updates later */
@@ -2524,7 +2524,7 @@ BOOL fInit;
 				IDLKSFONT);
 
 	if (vmerr.fKillRibbon)
-		return;
+		return 0;
 
 	/* font point size */
 
@@ -2533,7 +2533,7 @@ BOOL fInit;
 				IDLKSPOINT);
 
 	if (vmerr.fKillRibbon)
-		return;
+		return 0;
 
 	/* toggle style character properties */
 
@@ -2628,7 +2628,7 @@ int idDisplay;
 		break;
 
 	case idNil:
-		return;
+		return 0;
 
 	case IDLKSBOLD:
 	case IDLKSITALIC:
@@ -2984,7 +2984,7 @@ int fErase;	/* are we removing the mark? For color we have different ROPs */
 	RECT rc;
 
 	if (xp + 8 < preb->xpLeft || xp - 8 > preb->xpRight)
-		return;
+		return 0;
 	if (fErase)
 		{
 		int xpWriteLeft = XpMarkFromXaMark(0, preb->hrsd);
@@ -2997,7 +2997,7 @@ int fErase;	/* are we removing the mark? For color we have different ROPs */
 		FillRect(hdc, &rc, GetSysColorBrush(
 				xp >= xpWriteLeft && xp <= xpWriteRight ?
 				COLOR_WINDOW : COLOR_BTNFACE));
-		return;
+		return 0;
 		}
 
 	hpen = CreatePen(PS_SOLID, 1, color);
@@ -3071,7 +3071,7 @@ int fErase;	/* are we removing the mark? For color we have different ROPs */
 	SelectObject(hdc, hbrOld);
 	DeleteObject(hpen);
 	DeleteObject(hbr);
-	return;
+	return 0;
 #else
 	struct BMI *pbmi = &mpidrbbmi [idrbRulerMarks3];
 	int dxp = pbmi->dxpEach;

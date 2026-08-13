@@ -19,10 +19,10 @@ unsigned cch;
 
 	lT = (long)LOWORD(lpch) + (long)cch;
 	MYHIWORD(lT) = (MYHIWORD(lT) << vcbitSegmentShift) + MYHIWORD(lpch);
-	return(lT);
+	return((LPCH)(UINT_PTR)lT);
 }
 
-	
+
 /*  %%Function:  PictError   %%Owner:  bobz       */
 
 PictError (eid)
@@ -160,7 +160,7 @@ LGetOrigSize:
 				( Debug0 (iDrawFailed = 13),
 				SelectObject( hMDC, hbm ) ) &&
 				( Debug0 (iDrawFailed = 14),
-				FSelHdcForMf( hMDC ) ) ) 
+				FSelHdcForMf( hMDC ) ) )
 			{
 			struct RC rc;
 			rc.xpLeft = rc.ypTop = 0;
@@ -248,7 +248,7 @@ LGetOrigSize:
 		else
 			{
 			Assert(mm == MM_ANISOTROPIC);
-            if (!FSetWindowOrgExt(hdc, mm) || 
+            if (!FSetWindowOrgExt(hdc, mm) ||
 			    !FScaleViewportForPrvw(hdc, &ppicrc->picScl, &rcViewport))
 				{
 				Debug0 (iDrawFailed = 29);
@@ -260,8 +260,8 @@ LGetOrigSize:
 		Debug0 (iDrawFailed = 27);
 		  // play unscaled or scaleable metafile into bm cache if possible
         if ((vflm == flmDisplayAsPrint || vflm == flmDisplay) && vlm != lmPreview)
-			fDrawn = FDrawPicCacheable(hdc, ppicrc, &iLevel, ww,
-	   			          peid, &hBits, mm);
+				fDrawn = FDrawPicCacheable(hdc, ppicrc, &iLevel, ww,
+						peid, (UINT_PTR)&hBits, mm);
 		else
 			fDrawn = FOurPlayMetaFile(hdc, &hBits, ww);
 		}
@@ -609,9 +609,9 @@ int ww;
 	/* Display enhancement routine for pictures. If window was
 		dirtied and there are lines with pictures whose display
 		was postponed, do the full display now.
-	
+
 		Can use this routine for gray-scale fonts too.
-	
+
 		Returns true if entire ww enhanced, else false if interrupted
 	*/
 
@@ -727,11 +727,11 @@ struct RC *prcwClip;
 	/* see if pic is an import field; if so, set up sel to point to
 		pic char in import field, otherwise leave sel as is. We
 		can get here and fail FCaIsGraphics if an import field char
-		is not visible, so just return in that case. 
+		is not visible, so just return in that case.
 	*/
 
 	if (!(FCaIsGraphics(&psel->ca, psel->ww, &cpImport)))
-		return;
+		return 0;
 
 	selT = *psel;
 	if (cpImport != cpNil)  /* import field - change ca in selT */
@@ -749,7 +749,7 @@ struct RC *prcwClip;
 				picgFrOut | picgFrIn /* frame rects only */,
 				fFalse /* fInterrupt */))
 			{
-			return;
+			return 0;
 			}
 		}
 	else
@@ -775,21 +775,21 @@ struct RC *prcwClip;
 				prcwPic->xwLeft, prcwPic->ywBottom,  &selT,
 				picgFrOut | picgFrIn /* frame rects only */))
 			{
-			return;
+			return 0;
 			}
 		}
 
 	Assert(vchpFetch.fSpec);
 		  /* don't bother if invisible */
 	if (vchpFetch.fVanish)
-		return;
+		return 0;
 
 	if (cpImport == cpNil && !FVisibleCp (selT.ww, selT.doc, selT.cpFirst))
-		return;
+		return 0;
 
 	if (prcwClip == NULL)
 		if (!FClipRcPic(&selT, &picrc.frOut, &rcwClip))
-			return;	/* not visible */
+			return 0;	/* not visible */
 
 	HilitePicSel2(&selT, prcwPic, &picrc,
 			prcwClip == NULL ? &rcwClip : prcwClip);
@@ -822,7 +822,7 @@ struct RC *prcwClip;
 	/* save DC since clipping */
 	if ((iLevel = SaveDC (hdc)) == 0)
 		{
-		return;
+		return 0;
 		}
 #ifdef XBZ
 		{
@@ -844,7 +844,7 @@ struct RC *prcwClip;
 		/* No border, so draw one using the outside frame rect.
 			Then adjust the inside frame rect to allow for a
 			single border. Use the
-			DrawPatternLine methods so we can invert 
+			DrawPatternLine methods so we can invert
 		*/
 
 		DrawXorFrame (hdc, &ppicrc->frOut, ipatHorzBlack, ipatVertBlack);
@@ -1173,7 +1173,7 @@ unsigned *pmx, *pmy;
 
 		}
 	else  /* for screen */
-		
+
 		{
 		dxmmDevice = vsci.dxmmScreen * 10;  /* want in .1mm units */
 		dymmDevice = vsci.dymmScreen * 10;
@@ -1259,7 +1259,7 @@ unsigned *pmx, *pmy;
 
 	*pmx = cxBest;
 	*pmy = cyBest;
-	return;
+	return 0;
 
 MxMyFail:
 	*pmx = dcx;
@@ -1326,7 +1326,7 @@ int *pdya;
 	unsigned wDivY;
 
 
-	switch ( mm ) 
+	switch ( mm )
 		{
 	case MM_HIMETRIC:
 		wMult = czaCm;
@@ -1474,7 +1474,7 @@ int milDeviceRes;
 		return 0;
 		}
 
-	switch ( mm ) 
+	switch ( mm )
 		{
 	case MM_LOMETRIC:
 		wDiv = 10;
@@ -1845,6 +1845,7 @@ int ww;
 	if (*phMF == NULL)
 		{
 		long  cfcPic;
+		extern HANDLE GlobalAlloc2();
 		LPCH    lpch;
 		FC fc, fcMacPic;
 		long lcbCur;
@@ -1883,7 +1884,7 @@ int ww;
 			// since we are always moving 256 bytes or the remaining
 			// data which we have allocated room for, we will never cross
 			// a 64k boundary during a blt.
-			// assert there is room in current segment so we can use 
+			// assert there is room in current segment so we can use
 		    // bltbx instead of bltbxHuge
 			Assert ((unsigned)(-LOWORD(lpch)) >= (unsigned)lcbCur
 				|| (unsigned)(-LOWORD(lpch)) == 0);
@@ -1894,12 +1895,12 @@ int ww;
 		// win2 can't handle win3 metafile. abandon them.
 		mtVersion = lpMH->mtVersion;
 #ifdef DEBUG
-		iT = 
+		iT =
 #endif
 		 	GlobalUnlock (*phMF);
 		Assert(!iT);
 
-		if (vwWinVersion < 0x0300 && mtVersion != 0x100) 
+		if (vwWinVersion < 0x0300 && mtVersion != 0x100)
 			{
 			/* we got win 3 metafile that we can not display in Win 2 */
 			Assert (*phMF != NULL);
@@ -1958,7 +1959,7 @@ int FAR *lpClientData;
 		PeekMessage((MSG far *)&msg, NULL, 0, 0, PM_NOREMOVE);
     else if (FMsgPresent (mtyLongDisp)) /* won't blink & cause formatline call */
 		{
-             
+
 	    if (vfDeactByOtherApp)
 			{
 			 /* we may get deactivated in mid draw; if so stop checking
@@ -2005,14 +2006,14 @@ unsigned MxRoundMx( mx )
 unsigned mx;
 	{   /* If mx is near an "interesting" multiple, round it to be exactly that
 		multiple.  Interesting multiples are:
-	
+
 					1 (m=mx100Pct), 2 (m=2 * mx100Pct), 3 , ...
 					0.5 (m = .5 * mx100Pct)
-	
+
 		Need to keep unobtrusive so that dragging won't seem to round
 		to easily, but this is useful if we are close to an integer
 		multiply.
-	
+
 		This routine works for my, too, as long as mx100Pct == my100Pct
 */
 	/* This means close enough to round (2 decimal place accuracy) */
@@ -2040,6 +2041,3 @@ unsigned mx;
 
 	return (mx);
 }
-
-
-

@@ -46,7 +46,7 @@ extern CHAR szEmpty[];
 extern int docGlsy;
 extern int docGlobalDot;
 extern struct PREF vpref;
-extern int mpdochdod [];
+extern struct DOD **mpdochdod[];
 extern struct UAB vuab;
 extern struct MERR vmerr;
 extern BOOL vfSeeSel;
@@ -428,7 +428,7 @@ int doc, iglsy;
 	struct CA ca;
 
 	if (doc == docNil)
-		return;
+		return 0;
 
 	CaFromIhdd (doc, iglsy, &ca);
 	DeleteGlsy (doc, iglsy, &ca);
@@ -628,7 +628,7 @@ BOOL fDot;
 		 PdodDoc(doc)->fLockForEdit)
 		{
 		RtError(rerrModeError);
-		return;
+		return 0;
 		}
 
 	iglsy = IglsyCreate(doc, stName);
@@ -636,7 +636,7 @@ BOOL fDot;
 		{
 LNoMem:
 		ErrorNoMemory(eidNoMemGlsy);
-		return;
+		return 0;
 		}
 
 	DefineGlsy(doc, iglsy, &caTmp);
@@ -882,7 +882,7 @@ struct STTB **hsttb, **hsttbExclude;
 	extern int WCompSt();
 
 	if (hsttb == hNil)
-		return;
+		return 0;
 
 	ibstMac = (*hsttb)->ibstMac;
 
@@ -1055,5 +1055,3 @@ CMB * pcmb;
 
 	return cmdOK;
 }
-
-

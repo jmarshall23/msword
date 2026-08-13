@@ -336,7 +336,7 @@ BOOL fInTableCell;
 		{
 		/*  termination conditions: out of src, out of dest */
 		if (cpSrc >= cpLimSrc && cpDest < cpLimDest || cpDest >= cpLimDest)
-			return;
+			return 0;
 
 		/*  get paragraph limits */
 		if (cpSrc >= cpLimPSrc || cpDest >= cpLimPDest)
@@ -366,7 +366,7 @@ BOOL fInTableCell;
 				fInTableDest = FInTableVPapFetch(docDest, cpLimPDest-1);
 				}
 			if (!fInTableDest)
-				return;
+				return 0;
 			cpDest = caPara.cpFirst;
 			}
 		else  if (fInTableDest && !fInTableSrc)
@@ -378,7 +378,7 @@ BOOL fInTableCell;
 				fInTableSrc = FInTableDocCp(docSrc, cpLimPSrc-1);
 				}
 			if (!fInTableSrc)
-				return;
+				return 0;
 			cpSrc = caPara.cpFirst;
 			}
 
@@ -452,7 +452,7 @@ struct PIC *ppic;
 
 	FetchCpAndPara(doc, cpFirst, fcmProps+fcmChars);
    if (!(vchpFetch.fSpec && *vhpchFetch == chPicture))
-		return;
+		return 0;
 
 	FetchPe(&vchpFetch, doc, cpFirst);
 
@@ -1564,7 +1564,7 @@ struct PPB *pppb;
 	if (!fNumeric)
 		{
 		pppb->pchNext = pppb->rgch;
-		return;
+		return 0;
 		}
 
 	if ((pchExpSep1 = PchInPppb (chFldPicExpSeparate, pppb->rgch))
@@ -1649,7 +1649,7 @@ struct PPB *pppb;
 		if (ch == chFldPicNegSign || ch == chFldPicSign)
 			pppb->fImpSign = fFalse;
 		}
-	return;
+	return 0;
 }
 
 

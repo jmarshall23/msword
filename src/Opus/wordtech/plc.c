@@ -472,7 +472,7 @@ int icpCertain; /* when not = -1, new adjustment index is known. */
 			CP far *lprgcp;
 
 			if ((int)hplc == 0 || dcpNew == 0)
-			return;
+			return 0;
 
 			pplc = *hplc;
 			iMac = pplc->iMac;
@@ -496,7 +496,7 @@ int icpCertain; /* when not = -1, new adjustment index is known. */
 	if (icpCertain != -1)
 			icpAdjustNew = icpCertain;
 			else  if ((icpAdjustNew = IInPlcRef(hplc, cp)) == -1)
-			return; /* nothing needs to be done */
+			return 0; /* nothing needs to be done */
 	lprgcp = LprgcpForPlc(pplc);
 
 			dcpAdjustAfter = dcpOld;
@@ -634,7 +634,7 @@ CP dcp;
 			struct DRF drfFetch;
 
 			if ((int)hplcedl == 0 || dcp == 0)
-			return;
+			return 0;
 			cpAdjust = CpMacPlc(hplcedl); 
 			dl = IMacPlc(hplcedl); 
 			goto LTest; 

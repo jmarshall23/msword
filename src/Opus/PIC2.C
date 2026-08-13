@@ -73,6 +73,9 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "sdmtmpl.h"
 #include "sdmparse.h"
 
+extern HDC CreateMetaFile();
+extern HANDLE CloseMetaFile();
+
 #include "pict.hs"
 #include "pict.sdm"
 #include "inspic.hs"

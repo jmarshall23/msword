@@ -122,7 +122,7 @@ CP cp;
 	if (doc != DocMother(doc))
 		{
 		Beep();
-		return;
+		return 0;
 		}
 
 	InitFvb (&ffb.fvb);
@@ -661,7 +661,7 @@ int w;
 		hsttbSequenceCalc = HsttbInit(0, fFalse/*fExt*/);
 
 	if (hsttbSequenceCalc == hNil)
-		return;
+		return 0;
 
 	if (!FSearchSttb (hsttbSequenceCalc, sz, &isfc, WCompSfc))
 		{
@@ -1894,5 +1894,4 @@ struct FFB *pffb;
 		return fcrError;
 		}
 }
-
 

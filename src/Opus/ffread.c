@@ -1103,13 +1103,14 @@ LGotRecord:
 		/* get area from rgce. if we can handle it, return name */
 		pce = prtname->rgce+cch;
 		switch (*pce++)
-			{
-		default:
-			/* don't know this ptg */
-			break;
-		case ptgRefN:
-			/* cell reference */
-			rw = *((int *)pce)++;
+		{
+	default:
+		/* don't know this ptg */
+		break;
+	case ptgRefN:
+		/* cell reference */
+		rw = *(int *)pce;
+		pce = (CHAR *)((int *)pce + 1);
 			if (rw & grbitFRel)
 			/* ignore relative references */
 				break;
@@ -1119,13 +1120,15 @@ LGotRecord:
 			peref->col0 =
 					peref->col1 = *pce++;
 			goto LGetName;
-		case ptgAreaN:
-			rw = *((int *)pce)++;
+	case ptgAreaN:
+		rw = *(int *)pce;
+		pce = (CHAR *)((int *)pce + 1);
 			if (rw & grbitFRel)
 				/* ignore relative references */
-				break;
-			peref->row0 = rw & grbitRw;
-			rw = *((int *)pce)++;
+		break;
+	peref->row0 = rw & grbitRw;
+	rw = *(int *)pce;
+	pce = (CHAR *)((int *)pce + 1);
 			if (rw & grbitFRel)
 				/* ignore relative references */
 				break;
@@ -1165,7 +1168,7 @@ int cb;
 	if (stmGlobal.fc - cb <= ((4+4) + (4))) /* wrtBOF record + next wrt and cb */
 		{
 		vpff->ibEncrypt = 0;
-		return;
+		return 0;
 		}
 
 	if (vpff->dff == dffOpenBiff)
@@ -1379,7 +1382,7 @@ struct CHP *pchp;
 struct PAP *ppap;
 {
 	if (!FInsertRgch(vpff->doc, vpff->cpCur, rgchIns, cchIns, pchp, ppap))
-		return;
+		return 0;
 	vpff->cpCur += cchIns;
 }
 

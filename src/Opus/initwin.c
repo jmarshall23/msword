@@ -827,7 +827,7 @@ LBogus:
 
 	/* Set up the windows hook so that we can intercept key message
 		going to dialogs. */
-	vlppFWHChain = SetWindowsHook(WH_MSGFILTER, lppFWHKey);
+	vlppFWHChain = (FARPROC)SetWindowsHook(WH_MSGFILTER, lppFWHKey);
 
 		{
 #ifndef OPUS_X64
@@ -971,7 +971,7 @@ STATIC BOOL NEAR FRegisterWnd()
 		wndclass.style = rgwc [iwc].style;
 		wndclass.cbWndExtra = rgwc [iwc].cbWndExtra;
 		wndclass.hInstance = vhInstance;
-		wndclass.lpfnWndProc = rgwc [iwc].lpfnWndProc;
+		wndclass.lpfnWndProc = (WNDPROC)rgwc [iwc].lpfnWndProc;
 #ifdef WIN23
 		/* On a VGA or greater, use a LtGray brush. On EGA use a gray brush */
 		/* On a CGA we shouldn't have Win3Visuals set */
@@ -1034,7 +1034,7 @@ csconst TID rgtid [] =
 	
 		{ &lpFMFContinue,               FMFContinue },
 #ifdef WIN23
-		{ &lpfnIconDlgWndProc, IconDlgWndProc	},
+		{ &lpfnIconDlgWndProc, (FARPROC)IconDlgWndProc	},
 #endif /* WIN23 */
 	
 	{ &lpFBltOutlineSplat,		FBltOutlineSplat }
@@ -2032,11 +2032,11 @@ FCreatePatternBitmaps()
 		HBITMAP hbmTmp;
 		bltbx(rgchPatDither, (LPSTR)*hrgbBits, cbPatDither);
 		if (
-			((hbmTmp = CreateBitmap( 8, 8, 1, 1, (LPSTR)*hrgbBits)) == NULL) ||
-			((vsci.hbrLitButton = CreatePatternBrush(hbmTmp)) == NULL)
+			((hbmTmp = (HBITMAP)CreateBitmap( 8, 8, 1, 1, (LPSTR)*hrgbBits)) == NULL) ||
+			((vsci.hbrLitButton = (HBRUSH)CreatePatternBrush(hbmTmp)) == NULL)
 			)
 			{
-			vsci.hbrLitButton = GetStockObject(WHITE_BRUSH);
+			vsci.hbrLitButton = (HBRUSH)GetStockObject(WHITE_BRUSH);
 			}
 		if (hbmTmp)
 			DeleteObject(hbmTmp);
@@ -2055,10 +2055,10 @@ LRet:
 typedef struct
 {
 	HANDLE *ph;
-	int id;
+	UINT_PTR id;
 } LRD;
 
-csconst LRD rglrdStockObj[] =
+const LRD rglrdStockObj[] =
 {
 			{ &vhbrLtGray,      LTGRAY_BRUSH    },
 	
@@ -2075,22 +2075,22 @@ csconst LRD rglrdStockObj[] =
 
 #define ilrdStockObjMax (sizeof(rglrdStockObj)/sizeof(LRD))
 
-csconst LRD rglrdSysCur[] =
+const LRD rglrdSysCur[] =
 {
-			{ &vhcHourGlass,        IDC_WAIT    },
+			{ &vhcHourGlass,        (UINT_PTR)IDC_WAIT    },
 	
-		{ &vhcIBeam,            IDC_IBEAM   },
+			{ &vhcIBeam,            (UINT_PTR)IDC_IBEAM   },
 	
-		{ &vhcArrow,            IDC_ARROW   },
+			{ &vhcArrow,            (UINT_PTR)IDC_ARROW   },
 	
-		{ &vhcArrow,            IDC_ARROW   },
+			{ &vhcArrow,            (UINT_PTR)IDC_ARROW   },
 
 };
 
 
 #define ilrdSysCurMax (sizeof(rglrdSysCur)/sizeof(LRD))
 
-csconst LRD rglrdRcdsCur[] =
+const LRD rglrdRcdsCur[] =
 {
 			{ &vhcSplit,        ircdsSplit     },
 	
@@ -2103,7 +2103,7 @@ csconst LRD rglrdRcdsCur[] =
 
 #define ilrdRcdsCurMax (sizeof(rglrdRcdsCur)/sizeof(LRD))
 
-csconst LRD rglrdRcdsIco[] =
+const LRD rglrdRcdsIco[] =
 {
 			{ &vhiWord,             ircdsWordIcon  },
 
@@ -2122,12 +2122,12 @@ FInitHandles()
 	BOOL fRes;
 
 	for (ilrd = 0; ilrd < ilrdStockObjMax; ilrd++)
-		if ((*rglrdStockObj[ilrd].ph = GetStockObject(rglrdStockObj[ilrd].id))
+		if ((*rglrdStockObj[ilrd].ph = (HANDLE)GetStockObject((int)rglrdStockObj[ilrd].id))
 				== NULL)
 			return fFalse;
 
 	for (ilrd = 0; ilrd < ilrdSysCurMax; ilrd++)
-		if ((*rglrdSysCur[ilrd].ph = LoadCursor(NULL, rglrdSysCur[ilrd].id))
+		if ((*rglrdSysCur[ilrd].ph = (HANDLE)LoadCursor(NULL, (LPSTR)rglrdSysCur[ilrd].id))
 				== NULL)
 			return fFalse;
 
@@ -2143,8 +2143,8 @@ FInitHandles()
 	vsci.fUseResCursors = fRes;
 	for (ilrd = 0; ilrd < ilrdRcdsCurMax; ilrd++)
 		if ((*rglrdRcdsCur[ilrd].ph = fRes ?
-				LoadCursor(vhInstance, rglrdRcdsCur[ilrd].id+1) :
-				HLoadRes0(rglrdRcdsCur[ilrd].id))
+				(HANDLE)LoadCursor(vhInstance, (LPSTR)(UINT_PTR)(rglrdRcdsCur[ilrd].id+1)) :
+					HLoadRes0(rglrdRcdsCur[ilrd].id))
 				== NULL)
 			return fFalse;
 
@@ -2162,9 +2162,9 @@ FInitHandles()
 		if ((*rglrdRcdsIco[ilrd].ph =
 #ifdef OPUS_X64
 				/* Native executable resource requested for the restored shell. */
-				LoadIcon(vhInstance, MAKEINTRESOURCE(301)))
+				(HANDLE)LoadIcon(vhInstance, MAKEINTRESOURCE(301)))
 #else
-				fRes ? LoadIcon(vhInstance, rglrdRcdsIco[ilrd].id+1) :
+				fRes ? (HANDLE)LoadIcon(vhInstance, (LPSTR)(UINT_PTR)(rglrdRcdsIco[ilrd].id+1)) :
 				HLoadRes0(rglrdRcdsIco[ilrd].id))
 #endif
 				== NULL)
@@ -2979,7 +2979,7 @@ struct PREFD *pprefd;
 #ifdef BRYANL
 	CommSzSz(SzShared("Used printer info from pref file"),szEmpty);
 #endif
-	return;
+	return 0;
 
 LError:
 #ifdef BRYANL

@@ -41,7 +41,7 @@ extern struct FKPD      vfkpdPap;
 extern struct FKPD      vfkpdChp;
 extern struct FKPDT     vfkpdText;
 
-#ifdef WIN 
+#ifdef WIN
 #undef ScanFnForBytes
 #define ScanFnForBytes(fn,hpch,cch,fWrite) \
 		C_ScanFnForBytes(fn,hpch,cch,fWrite)
@@ -52,48 +52,48 @@ extern struct FKPDT     vfkpdText;
 in any order, Noop means only one field in word, Noop must be second in pair.
 */
 struct SPX mpiwspxSep[] =
-	{ 
+	{
 	{ sprmSBkc, sprmSFTitlePage },
-	
+
 		{ sprmSCcolumns, sprmNoop },
-	
+
 		{ sprmSDxaColumns, sprmNoop },
-	
+
 #ifdef WIN
 		{ sprmSNfcPgn, sprmNoop },
-	
+
 		{ sprmSPgnStart, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 #else
 		{ sprmSFAutoPgn, sprmSNfcPgn },
-	
+
 		{ sprmSDyaPgn, sprmNoop },
-	
+
 		{ sprmSDxaPgn, sprmNoop },
-	
+
 #endif
 		{ sprmSFPgnRestart, sprmSFEndnote },
-	
+
 		{ sprmSLnc, sprmSGrpfIhdt },
-	
+
 		{ sprmSNLnnMod, sprmNoop },
-	
+
 		{ sprmSDxaLnn, sprmNoop },
-	
+
 		{ sprmSDyaHdrTop, sprmNoop },
-	
+
 		{ sprmSDyaHdrBottom, sprmNoop },
-	
+
 #ifdef WIN
 		{ sprmSLBetween, sprmSVjc },
-	
+
 		{ sprmSLnnMin, sprmNoop }
 	};
 
 
-#endif 
+#endif
 
 
 struct SPX mpiwspxPap[] =
@@ -102,106 +102,106 @@ struct SPX mpiwspxPap[] =
 			recorded in byte 1 of a PAPX. */
 		{ sprmPJc,
 			sprmNoop },
-	
+
 		{ sprmPFSideBySide, sprmPFKeep },
-	
+
 		{ sprmPFKeepFollow, sprmPFPageBreakBefore },
-	
+
 		{ sprmPBrcp, sprmPPc },
-	
+
 		{ sprmPBrcl, sprmPNfcSeqNumb },
-	
+
 		{ sprmPNoSeqNumb, sprmPFNoLineNumb },
-	
+
 		{ sprmPDxaRight, sprmNoop },
-	
+
 		{ sprmPDxaLeft, sprmNoop },
-	
+
 		{ sprmPDxaLeft1, sprmNoop },
-	
+
 		{ sprmPDyaLine, sprmNoop },
-	
+
 		{ sprmPDyaBefore, sprmNoop },
-	
+
 		{ sprmPDyaAfter, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 		{ sprmPFInTable, sprmPFTtp },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 		{ sprmPDxaAbs, sprmNoop },
-	
+
 		{ sprmPDyaAbs, sprmNoop },
-	
+
 		{ sprmPDxaWidth, sprmNoop },
-	
+
 		{ sprmPBrcTop, sprmNoop },
-	
+
 		{ sprmPBrcLeft, sprmNoop },
-	
+
 		{ sprmPBrcBottom, sprmNoop },
-	
+
 		{ sprmPBrcRight, sprmNoop },
-	
+
 		{ sprmPBrcBetween, sprmNoop },
-	
+
 		{ sprmPBrcBar, sprmNoop },
-	
+
 		{ sprmPFromText, sprmNoop }
-	};	
+	};
 
 
 
 struct SPX mpiwspxTap[] =
 	{
 			{ sprmTJc, sprmNoop },
-	
+
 		{ sprmTDxaGapHalf, sprmNoop },
-	
+
 		{ sprmTDyaRowHeight, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop },
-	
+
 		{ sprmNoop, sprmNoop }
-	};		
+	};
 
 
 #ifdef MAC
 /* Word 3 compatibility */
 CS struct SPX mpiwspxSepEquivW3[] =
-{ 
+{
 	{ sprmSBkcW3, sprmSFTitlePageW3 },
-	
+
 		{ sprmSCcolumnsW3, sprmNoop },
-	
+
 		{ sprmSDxaColumnsW3, sprmNoop },
-	
+
 		{ sprmSFAutoPgnW3, sprmSNfcPgnW3 },
-	
+
 		{ sprmSDyaPgnW3, sprmNoop },
-	
+
 		{ sprmSDxaPgnW3, sprmNoop },
-	
+
 		{ sprmSFPgnRestartW3, sprmSFEndnoteW3 },
-	
+
 		{ sprmSLncW3, sprmSGrpfIhdtW3 },
-	
+
 		{ sprmSNLnnModW3, sprmNoop },
-	
+
 		{ sprmSDxaLnnW3, sprmNoop },
-	
+
 		{ sprmSDyaHdrTopW3, sprmNoop },
-	
+
 		{ sprmSDyaHdrBottomW3, sprmNoop }
-	};	
+	};
 
 
 CS struct SPX mpiwspxPapW3[] =
@@ -210,29 +210,29 @@ CS struct SPX mpiwspxPapW3[] =
 			recorded in byte 1 of a PAPX. */
 		{ sprmPJc,
 			sprmNoop },
-	
+
 		{ sprmPFSideBySide, sprmPFKeep },
-	
+
 		{ sprmPFKeepFollow, sprmPFPageBreakBefore },
-	
+
 		{ sprmPBrcp, sprmNoop },
-	
+
 		{ sprmPBrcl, sprmPNfcSeqNumb },
-	
+
 		{ sprmPNoSeqNumb, sprmPFNoLineNumb },
-	
+
 		{ sprmPDxaRight, sprmNoop },
-	
+
 		{ sprmPDxaLeft, sprmNoop },
-	
+
 		{ sprmPDxaLeft1, sprmNoop },
-	
+
 		{ sprmPDyaLine, sprmNoop },
-	
+
 		{ sprmPDyaBefore, sprmNoop },
-	
+
 		{ sprmPDyaAfter, sprmNoop }
-	};	
+	};
 
 
 CS struct SPX mpiwspxPapEquivW3[] =
@@ -241,29 +241,29 @@ CS struct SPX mpiwspxPapEquivW3[] =
 			recorded in byte 1 of a PAPX. */
 		{ sprmPJcW3,
 			 sprmNoop },
-	
+
 		{ sprmPFTableW3, sprmPFKeepW3 },
-	
+
 		{ sprmPFKeepFollowW3, sprmPFPageBreakBeforeW3 },
-	
+
 		{ sprmPBrcpW3, sprmNoop },
-	
+
 		{ sprmPBrclW3, sprmPNfcSeqNumbW3 },
-	
+
 		{ sprmPNoSeqNumbW3, sprmPFNoLineNumbW3 },
-	
+
 		{ sprmPDxaRightW3, sprmNoop },
-	
+
 		{ sprmPDxaLeftW3, sprmNoop },
-	
+
 		{ sprmPDxaLeft1W3, sprmNoop },
-	
+
 		{ sprmPDyaLineW3, sprmNoop },
-	
+
 		{ sprmPDyaBeforeW3, sprmNoop },
-	
+
 		{ sprmPDyaAfterW3, sprmNoop }
-	};	
+	};
 
 
 #endif
@@ -298,7 +298,7 @@ FNewChpIns(doc, cp, pchp, stc)
 /* %%Function:C_FNewChpIns %%Owner:davidlu */
 HANDNATIVE C_FNewChpIns(doc, cp, pchp, stc)
 #endif /* !MAC */
-int doc; 
+int doc;
 CP cp;
 struct CHP *pchp;
 int stc;
@@ -455,9 +455,9 @@ struct PAP *ppap;
 		if (*pch == chEol || pch == pchLast)
 			{
 			int cchT = pch - pchBase + 1;
-			if (!FInsertRgch(doc, cp, pchBase, cchT, pchp, 
-					(*pch == chEol) ? ppap : NULL))
-				return;
+				if (!FInsertRgch(doc, cp, pchBase, cchT, pchp,
+						(*pch == chEol) ? ppap : NULL))
+					return 0;
 			cp += cchT;
 			pchBase = pch + 1;
 			}
@@ -475,19 +475,19 @@ NATIVE AddRun(fn, fcLim, pchProp, cchProp, pfkpd, fPara, fAllocMac, fPlcMustExp,
 /* %%Function:C_AddRun %%Owner:davidlu */
 HANDNATIVE C_AddRun(fn, fcLim, pchProp, cchProp, pfkpd, fPara, fAllocMac, fPlcMustExp)
 #endif /* WIN */
-int fn; 
-FC fcLim; 
-char *pchProp; 
+int fn;
+FC fcLim;
+char *pchProp;
 int  cchProp;
-struct FKPD *pfkpd; 
-int fPara; 
-int fAllocMac; 
+struct FKPD *pfkpd;
+int fPara;
+int fAllocMac;
 int fPlcMustExp;
 #ifdef MAC
 int fWord3;
 #endif /* MAC */
 {
-	AssertDo(FAddRun(fn, fcLim, pchProp, cchProp, pfkpd, fPara, 
+	AssertDo(FAddRun(fn, fcLim, pchProp, cchProp, pfkpd, fPara,
 			fAllocMac, fPlcMustExp, fWord3));
 }
 
@@ -649,7 +649,7 @@ int grpf;
 							!FNeHprgch((char HUGE *)pchProp, hpch + 1,
 							cchPropShare))
 						{ /* share existing property */
-						bCur = hpch - hpfkp;
+						bCur = hpch - (char HUGE *)hpfkp;
 						cchPropShare = 0;
 						break;  /* exit while */
 						}
@@ -682,7 +682,7 @@ int grpf;
 		if (pfkpd->bFreeFirst + sizeof(FC) + 1 > bNewLim)
 			{
 			int pn;
-LNewPage: 
+LNewPage:
 			fcFirst = pfkpd->fcFirst;
 			/* if no dry run, get the pointer to the proper bin table,
 				and get the bin table Mac. Otherwise claim we have 1
@@ -1020,7 +1020,7 @@ char rgb[];
 /* does the CbGrpprlProps, and also tbd's */
 /* %%Function:CbGrpprlFromPap %%Owner:davidlu */
 NATIVE int CbGrpprlFromPap(fNorm, pgrpprl, ppap, ppapBase, fWord3)
-BOOL fNorm;	/* when fTrue, grpprl is to be applied to piece. 
+BOOL fNorm;	/* when fTrue, grpprl is to be applied to piece.
 		when fFalse, grpprl is to be stored in PAPX */
 char *pgrpprl;
 struct PAP *ppap;
@@ -1116,7 +1116,7 @@ int fWord3;
 					else  if (*pdxaEarlier < dxaLater)
 						{
 /* E is the result */
-LE:                                     
+LE:
 						itbdDel = itbdDelMac++;
 						Assert(itbdDelMac <= itbdMax);
 						rgdxaDel[itbdDel] = *pdxaEarlier++;
@@ -1127,7 +1127,7 @@ LE:
 					else
 						{
 /* L is the result */
-LL:                                     
+LL:
 						itbdAdd = itbdAddMac++;
 						Assert(itbdAddMac <= itbdMax);
 						rgdxaAdd[itbdAdd] =  *pdxaLater++;
@@ -1354,7 +1354,7 @@ int docSrc;
 
 	StandardSep(&sepStandard);
 	CacheSect(docSrc, (CP)CpMacDoc(docSrc));
-	cchSepx = CbGrpprlProp(fTrue, grpprlSepx, cbMaxGrpprl, 
+	cchSepx = CbGrpprlProp(fTrue, grpprlSepx, cbMaxGrpprl,
 			&vsepFetch, &sepStandard, cwSEP - 1, mpiwspxSep, 0);
 	if (cchSepx)
 		{
@@ -1524,7 +1524,7 @@ BOOL fAllocMac; /* when fTrue, allocate according to cbMac else use fcPos. */
 
 /* %%Function:PnAlloc1 %%Owner:davidlu */
 EXPORT PnAlloc1(fn, fAllocMac)
-int fn; 
+int fn;
 BOOL fAllocMac;
 {
 	FC fc;
@@ -1538,13 +1538,13 @@ BOOL fAllocMac;
 #ifdef MAC
 /* %%Function:PnAlloc2 %%Owner:davidlu */
 EXPORT PnAlloc2(fn, pn, fAllocMac, fWord3)
-int fn, pn; 
+int fn, pn;
 BOOL fAllocMac;
 int fWord3;
 #else /* WIN */
 /* %%Function:PnAlloc2 %%Owner:davidlu */
 EXPORT PnAlloc2(fn, pn, fAllocMac)
-int fn, pn; 
+int fn, pn;
 BOOL fAllocMac;
 #endif /* MAC */
 {
@@ -1683,8 +1683,8 @@ struct CHP *pchp, *pchpBase;
 #ifdef MAC   /* this is bitfield order dependent! */
 		for (isprm = 0; w != 0; (uns)w <<= 1, isprm++)
 			if (w < 0 &&
-#else  /* WIN */			    
-					for (isprm = 0; w != 0; (uns)w >>= 1, isprm++)
+#else  /* WIN */
+						for (isprm = 0; w != 0; w = (uns)w >> 1, isprm++)
 					if (w & 1 &&
 #endif /* MAC */
 					(cbPrl = CbGenPrl(pchp, pchpBase, rgsprmChp[isprm], rgb))

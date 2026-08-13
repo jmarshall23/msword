@@ -1161,12 +1161,12 @@ int iIcon;
 			(WinMac(vfInitializing, vistg == istgInit) && !rgemd[iemd].fInit)
 			|| vmerr.fInhibit )
 		{
-		return;
+		return 0;
 		}
 
 	if (rgemd[iemd].fMemory && vmerr.fMemFail) /* repeated "out-of-memory" ? */
 		if (vmerr.fHadMemAlert)
-			return;
+			return 0;
 		else 
 			vmerr.fHadMemAlert = fTrue;
 

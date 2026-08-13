@@ -157,7 +157,7 @@ Plan:
 #ifdef SLOW  /* replace by a word.h macro */
 /* %%Function:Select %%Owner:chic */
 Select(psel, cpFirst, cpLim)
-struct SEL *psel; 
+struct SEL *psel;
 CP cpFirst, cpLim;
 {
 	Select1(psel, cpFirst, cpLim, maskSelChanged);
@@ -169,7 +169,7 @@ CP cpFirst, cpLim;
 /* S E L E C T  I N S */
 /* %%Function:SelectIns %%Owner:chic */
 SelectIns(psel, cpFirst)
-struct SEL *psel; 
+struct SEL *psel;
 CP cpFirst;
 {
 	Select1(psel, cpFirst, cpFirst, maskSelChanged);
@@ -234,7 +234,7 @@ int grpf;
 					cpLimTable <= psel->cpLim)
 				SelectRow(psel, cpFirstTable, cpLimTable);
 			SelectColumn(psel, cpFirstTable, cpLimTable, itcFirst, itcLim);
-			return;
+			return 0;
 			}
 		}
 
@@ -272,7 +272,7 @@ int grpf;
 	selection. This helps the case of page-upping into a large
 	selection. Charles said to leave this in for mac to avoid
 	potential bugs with highlighting.
-	
+
 	Note I don't know of any other situations besides dyadic move
 	where this overlap can occur, so the code below is probably
 	overcautious, since only selDotted can overlap selCur, but I am
@@ -284,7 +284,7 @@ int grpf;
 			(psel != &selDotted && !selDotted.fNil &&
 			FOverlapCa(&caT, &selDotted.ca)))
 		{
-		Beep(); 
+		Beep();
 		return;
 		}
 #endif
@@ -296,7 +296,7 @@ int grpf;
 	if (psel->fNil || !psel->fHidden)
 		if (PwwdWw(psel->ww)->fDirty)
 			UpdateWw(psel->ww, fFalse);
-/* note that UpdateWw can change selCur.doc! Yes! If selCur is in a 
+/* note that UpdateWw can change selCur.doc! Yes! If selCur is in a
    header in page view but the current page doesn't show the header,
    the preceding UpdateWw forces selCur into the main doc */
 	Debug(docSel = psel->doc;)
@@ -339,12 +339,12 @@ int grpf;
 		case skIns:
 /* conditions are: repeated, insert point, ON, at desired end of line */
 			if (!(fWithinCellChanges = (psel->fWithinCell || (!psel->fWithinCell &&
-					!psel->fTableAnchor && fTableAnchorNew))) && cpFirst == cpFirstOld && 
+					!psel->fTableAnchor && fTableAnchorNew))) && cpFirst == cpFirstOld &&
 					skNew == skIns && psel->fOn && psel->fInsEnd == grpf & maskInsEnd)
 				{
 				psel->fForward = psel->fRightward =  fTrue;
 				psel->cpFirstLine = cpNil; /* erase hint for block sel */
-				return;
+				return 0;
 				}
 			goto LSelOff;
 		case skColumn:
@@ -353,7 +353,7 @@ int grpf;
 			/* FALL THRU */
 		case skBlock:
 		case skGraphics:
-LSelOff:                
+LSelOff:
 			TurnOffSel(psel);
 			psel->fHidden = fFalse;
 			psel->fOn = fFalse; /* safety */
@@ -413,9 +413,9 @@ LSelOff:
 			{ /* ---... */
 			if (cpLimOld <= cpFirst)
 				{ /* --- +++ */
-LSeparateSels:                  
+LSeparateSels:
 				ToggleSel(psel, cpFirstOld, cpLimOld);
-LSelOn:                         
+LSelOn:
 				ToggleSel(psel, cpFirst, cpLim);
 				psel->xpFirst = vxpFirstMark;
 				psel->xpLim = vxpLimMark;
@@ -580,7 +580,7 @@ struct SELS *psels;
 /* sets the ww and doc fields of sel */
 /* %%Function:SetSelWw %%Owner:chic */
 SetSelWw(psel, ww)
-struct SEL *psel; 
+struct SEL *psel;
 int ww;
 {
 	psel->ww = ww;
@@ -605,7 +605,7 @@ struct SEL *psel;
 			MarkSelsBlock(psel->ww, psel);
 			break;
 		case skNil:
-			return;
+			return 0;
 		case skIns:
 			ClearInsertLine(psel);
 			break;
@@ -819,7 +819,7 @@ struct FLSS *pflss;
 		{
 /* we need to scan now to get past hidden text even if we are to the left
 	of the edl's xpLeft */
-		cp = CpFromXpVfli(xp, pflt, fFalse /* fTabTrail */, 
+		cp = CpFromXpVfli(xp, pflt, fFalse /* fTabTrail */,
 				WinMac(fTrue, !vpref.fNoItalicCrs));
 		}
 #ifdef MAC /* too random for WIN, can split CRLF, we do it from CpFirst/LimSty */
@@ -939,7 +939,7 @@ over xp, depending whichever is closer to the middle point of the char */
 				goto LHaveCp;
 				}
 			cp += ((struct CHRFG *)pchr)->dcp;
-			(char *)pchr += ((struct CHRFG *)pchr)->dbchr;
+			pchr = (struct CHR *)((char *)pchr + ((struct CHRFG *)pchr)->dbchr);
 			ich = pchr->ich;
 			pdxp = &vfli.rgdxp[ich];
 			continue;
@@ -957,7 +957,7 @@ over xp, depending whichever is closer to the middle point of the char */
 			break;
 			}
 /* note how chrm is cb of the variant chr structure! */
-		(char *)pchr += CbFromChrm(chrm);
+		pchr = (struct CHR *)((char *)pchr + CbFromChrm(chrm));
 		}
 
 LHaveCp:
@@ -1050,7 +1050,7 @@ cursor can be also used to click on it when the parais indented. */
 				{
 				CachePara(vfli.doc, vfli.cpMin);
 				FreePdrf(&drfFetch);
-				FExecUcm(FAbsPap(vfli.doc, &vpapFetch) ? ucmFormatPosition : 
+				FExecUcm(FAbsPap(vfli.doc, &vpapFetch) ? ucmFormatPosition :
 						ucmParagraphs, chmNil, fFalse);
 				return fFalse;
 				}
@@ -1078,13 +1078,13 @@ cursor can be also used to click on it when the parais indented. */
 	para formatting instead of char for copy looks, for
 	copy and move we will insert the text at the start
 	if the line/para/doc
-	
+
 	Check for selDotted below handles case of right button down
 	with ins pt, then drag so called again from within
 	DoContentHit.
-	
+
 	For Mac, DSscClick is false, so fMouseAction will be false
-	(may change if Mac adopts some variant of the quickops) 
+	(may change if Mac adopts some variant of the quickops)
 	*/
 
 	fMouseAction = fMouse && FSscClick();
@@ -1257,7 +1257,7 @@ here. */
 #else /* WIN */
 			/* Give CBT veto power on this action */
 			if (vhwndCBT == NULL ||
-					SendMessage(vhwndCBT, WM_CBTSEMEV, smvAnnFNMark, 
+					SendMessage(vhwndCBT, WM_CBTSEMEV, smvAnnFNMark,
 					MAKELONG((int)cp, (flt == fltFootnote ? 0 : 1))))
 				{
 				vrf.fVetoViewRef = fTrue;
@@ -1275,7 +1275,7 @@ here. */
 			the sel is not the same 1 sel cp range and
 			not extending.  If extending and cp's not
 			same as sel, continue on - not sel as pic.
-		
+
 			EXCEPT if in dyadic move/copy state, always
 			continue and do a normal select.
 		*/
@@ -1343,7 +1343,7 @@ LDisplayField:
 
 LHaveCp:
 	if (psel->fNil /*&& psel->fHidden*/) psel->fHidden = fFalse;
-/* fix having cpMacDoc if last line or select next line if line too short 
+/* fix having cpMacDoc if last line or select next line if line too short
 and off screen */
 	Assert(!fMouseAction);
 	if (sty == styLine || sty == styPara)
@@ -1376,7 +1376,7 @@ and off screen */
 			}
 		else
 			{
-			cpLim = CpLimSty(wwCur, psel->doc, 
+			cpLim = CpLimSty(wwCur, psel->doc,
 					(sty == styPara ? CpVisiForStyPara(wwCur, psel->doc, cp) :
 					cp), sty, fInsEnd);
 			cp = CpFirstSty(wwCur, psel->doc, cp, sty, fInsEnd);
@@ -1422,7 +1422,7 @@ in ChangeSel) */
 				CpLimSty(wwCur, psel->doc, cpT, sty,
 				sty < styPara || (sty >= styCol && sty <= styWholeTable)) :
 				CpFirstSty(wwCur, psel->doc, cp, sty, cp >= CpMacDoc(psel->doc));
-/* need to ensure that we don't collapse sel to an insertion pt beyond 
+/* need to ensure that we don't collapse sel to an insertion pt beyond
 	CpMacDocEdit. */
 		if (psel->cpAnchor > CpMacDocEdit(psel->doc) &&
 				cp > CpMacDocEdit(psel->doc))
@@ -1524,7 +1524,7 @@ extend to para bounds */
 					CpFirstTap(ca.doc, cpLimM1);
 					cpLimTable = caTap.cpLim;
 					SelectRow(psel, cpFirstTable, cpLimTable);
-					return;
+					return 0;
 					}
 				}
 			Select(psel, ca.cpFirst, ca.cpLim);
@@ -1543,9 +1543,9 @@ extend to para bounds */
 */
 /* %%Function:ChangeSel %%Owner:chic */
 ChangeSel(psel, cp, sty, fVisibleOnly, fMouse)
-struct SEL *psel; 
-CP cp; 
-int sty; 
+struct SEL *psel;
+CP cp;
+int sty;
 BOOL fVisibleOnly;
 {
 	int ww = psel->ww;
@@ -1563,7 +1563,7 @@ BOOL fVisibleOnly;
 
 	/* nothing to do, so return (this is to fix bug #7493) */
 	if (selCur.fIns && cp == psel->cpFirst)
-		return;
+		return 0;
 
 	doc = psel->doc;
 	cpFirst = psel->cpFirst;
@@ -1603,12 +1603,12 @@ BOOL fVisibleOnly;
 			psel->fTableAnchor = fTrue;
 			psel->fForward = (cp >= cpAnchor);
 			psel->sty = sty;
-			return;
+			return 0;
 			}
 /* if we've selected out of the anchor cell, we're using the cursor keys and
 	the new cp is still within the table, convert the selection to a table
 	column select and return */
-		else  if (!fCpInAnchorCell && !fMouse && 
+		else  if (!fCpInAnchorCell && !fMouse &&
 				FParasUpToCpInTable(&caInTable, cpNew))
 			{
 			if (psel->sty < styCol && psel->sty > styWholeTable)
@@ -1616,7 +1616,7 @@ BOOL fVisibleOnly;
 			CacheTc(wwNil, doc, cpNew, fFalse, fFalse);
 			itc = vtcc.itc;
 			ColumnSelBegin(psel, cpNew, itc, &caTapAnchor, itcAnchor, cpAnchor);
-			return;
+			return 0;
 			}
 /* if the resulting selection would not be entirely within a cell and
 	the previous selection is entirely within a cell we need to expand
@@ -1688,7 +1688,7 @@ sty == styLine */
 /* cpT is used to account for visibility of styPara */
 			cpT = (psel->sty == styPara ? CpVisiForStyPara(ww, doc, cpFirst) : cpFirst);
 			cpAnchor = cpLim = CpMin (cpLim,
-					styLine == psel->sty  || 
+					styLine == psel->sty  ||
 					((*hwwdCur)->fOutline && psel->sty > stySent) ? cpLim :
 					CpLimSty (ww, doc, cpT, sty,
 					fFalse));
@@ -1757,14 +1757,14 @@ in order to determine when the selection should be turned around.
 		{
 		Select(psel, cpFirst, cpLim);
 		if (psel->fTable)
-			fTableAnchor = fTrue; 
+			fTableAnchor = fTrue;
 		}
 
 	if (psel->fTable && !FInTableDocCp(psel->doc, cpAnchor))
 		{
 		Assert(!fForward);
-		cpAnchor -= ccpEop; 
-		Assert(FInTableDocCp(psel->doc, cpAnchor)); 
+		cpAnchor -= ccpEop;
+		Assert(FInTableDocCp(psel->doc, cpAnchor));
 		}
 	psel->cpAnchor = cpAnchor;
 	psel->fForward = fForward;
@@ -1841,7 +1841,7 @@ struct PT pt;
 		is a selection in selCur use selDotted,
 		else use selCur. Note that in dyadic move mode or if
 		selCur.fIns we cancel on a right click.
-	
+
 		Mac note: vfRightClick/FSscClick() will always be false, so
 		this is equivalent to setting psel= PSelActive()
 	*/
@@ -1866,7 +1866,7 @@ struct PT pt;
 	psel = ((vssc != sscNil) || FSscClick()) ?
 			&selDotted : &selCur;
 
-	if ((*hwwdCur)->fOutline && (FOutlineEmpty(wwCur, fTrue) || 
+	if ((*hwwdCur)->fOutline && (FOutlineEmpty(wwCur, fTrue) ||
 			(psel == &selCur &&
 			FOutlineSelect(pt, fExtend, fOption, fCommand))))
 		{
@@ -1886,7 +1886,7 @@ LRetClick:
 		if (FSscClick())
 			if (selCur.ww != wwCur)
 				NewCurWw(selCur.ww, fFalse /* fDoNotSelect */);
-		return;
+		return 0;
 		}
 	fPageView = (*hwwdCur)->fPageView;
 	if (!psel->fNil && psel->fHidden)
@@ -1924,11 +1924,11 @@ LRetClick:
 				(pt.yw < rcw.ywTop || pt.yw > rcw.ywBottom))
 			{
 			FExecUcm(ucmDocument, chmNil, fFalse);
-			return;
+			return 0;
 			}
 		}
 	if (idr == idrNil)
-		return;
+		return 0;
 	fSelBar = spt.fSelBar;
 	pdr = PdrFetchAndFree(hpldr, idr, &drfFetch);
 	fDocEq = ((docDr = pdr->doc) == psel->doc);
@@ -1958,11 +1958,11 @@ LRetClick:
 	/**********************************************************/
 
 	if (psel->fGraphics && FContentHitPic(psel, &pt, fExtend, fOption, fCommand))
-		return; /* picture click handled */
+		return 0; /* picture click handled */
 
 	psel->fSelAtPara = fFalse;
 
-	if ((WinMac(!FSscClick() && vfRightClick, fOption) || psel->fBlock) && 
+	if ((WinMac(!FSscClick() && vfRightClick, fOption) || psel->fBlock) &&
 			fExtend && !psel->fTableAnchor)
 		{
 		if (psel->sk == skNil)
@@ -1976,9 +1976,9 @@ LRetClick:
 				{
 				Assert(vpdrfHead == NULL);
 				DoContentHitBlock(psel, pt);
-				return;
+				return 0;
 				}
-			BlockModeEnd(); 
+			BlockModeEnd();
 			}
 		WinMac( vfRightClick, fOption ) = fFalse;
 		}
@@ -2001,9 +2001,9 @@ LRetClick:
 			Assert(!FSscClick());
 			Assert(vpdrfHead == NULL);
 			DoContentHitBlock(psel, pt);
-			return;
+			return 0;
 			}
-		BlockModeEnd(); 
+		BlockModeEnd();
 		}
 #endif /* WIN */
 
@@ -2029,7 +2029,7 @@ LRetClick:
 			CacheTable(psel->doc, cpFirst);
 			SelectRow(psel, caTable.cpFirst, caTable.cpLim);
 			psel->sty = styWholeTable;
-			return;
+			return 0;
 			}
 		goto LColSelect;
 		}
@@ -2075,7 +2075,7 @@ LColSelect:
 		Break1();
 		psel->sty = (WinMac(vfRightClick, fOption)) ? styNil :
 				(!fSelBar ? (fCommand ? stySent : (vfDoubleClick ? styWord : styChar))
-: 
+:
 				fCommand ? styDoc : (vfDoubleClick || spt.fInStyArea ? styPara : styLine) );
 		}
 	else  if (fDocEq)
@@ -2085,12 +2085,12 @@ LInTable:
 		if (fTableAnchor = FSelAnchoredInTable(psel, &caCell, &caTapAnchor, &itcAnchor))
 			{
 			caInTable = (psel->fTable) ? psel->ca : caCell;
-			if (FChangeSelToStyCol(psel, &cpFirst, pt.xw, 
+			if (FChangeSelToStyCol(psel, &cpFirst, pt.xw,
 					hpldr, &idr, dl, &caCell, &caInTable, spt.fInTable))
 				{
 				if (FDoContentHitColumn(psel, cpFirst,	idr, &caInTable, &dl,
 						&ptT, &hpldr, &idr, &spt, &caTapAnchor, itcAnchor, caCell.cpFirst))
-					return;
+					return 0;
 				}
 			}
 		if (psel->fTable)
@@ -2114,7 +2114,7 @@ LInTable:
 		if (!FSelectDlPt(psel, hpldr, idr, dl, ptT, psel->sty,
 				fExtend, fTrue/*fMouse*/))
 			/* special action was taken care of */
-			return;
+			return 0;
 #ifdef MAC
 /* when we start the selDotted selection for dyadic operations, we want to
 	update the ruler and style area in llc. */
@@ -2132,7 +2132,7 @@ LInTable:
 		/* Win: shouldn't get here if mouse dyadic op  bz */
 		Assert (!FSscClick());
 		DoContentHitBlock(psel, pt);
-		return;
+		return 0;
 		}
 
 /* record whether selection is anchored in a table */
@@ -2219,7 +2219,7 @@ LInTable:
 #endif
 				ScrollDown(wwCur, dysMinScroll, dysMaxScroll);
 
-DoCont1:                
+DoCont1:
 				UpdateWw(wwCur, fFalse);
 #ifdef WIN
 				if (vcConseqScroll < 0x7FFF)
@@ -2242,7 +2242,7 @@ DoCont1:
 				{
 				ScrollLeft(wwCur, dxpMinScrollSci);
 				pt.xp = (*hwwdCur)->xwMac - 1;
-DoCont2:                
+DoCont2:
 				;
 #ifdef MAC
 				if (GetNextEventReplay(1<<etUpdateEvt, &event, fFalse))
@@ -2264,7 +2264,7 @@ DoCont2:
 LMakeTableSel:
 				if (FDoContentHitColumn(psel, cpFirst, idr, &caInTable,
 						&dl, &ptT, &hpldr, &idr, &spt, &caTapAnchor, itcAnchor, caCell.cpFirst))
-					return;
+					return 0;
 				}
 			if (psel->fTable)
 				{
@@ -2303,7 +2303,7 @@ LMakeTableSel:
 /* cause cursor, if any, to start blinking */
 	psel->tickOld = 0;
 	if (psel->fIns) vxwCursor = psel->xw;
-	return;
+	return 0;
 }
 
 
@@ -2333,11 +2333,11 @@ int *pitcAnchor;
 
 
 /* L  D I S T  2  R C  P T */
-/* calculates the square of the minimulm distance between a rectangle and 
+/* calculates the square of the minimulm distance between a rectangle and
 a point. We assume point is outside of the rect. */
 /* %%Function:LDist2RcPt %%Owner:chic */
 long LDist2RcPt(prc, pt)
-struct RC *prc; 
+struct RC *prc;
 struct PT pt;
 {
 	int d1, d2;
@@ -2380,7 +2380,7 @@ BOOL fGetInsPtProps;
 			(selCur.fUpdateChp || fGetInsPtProps))
 		{
 /* no assignment is made if in insertion mode and props are fSysVanish */
-		GetPchpDocCpFIns (&selCur.chp, selCur.doc, 
+		GetPchpDocCpFIns (&selCur.chp, selCur.doc,
 				CpMin(selCur.cpFirst, CpMacDocEdit(selCur.doc)),
 				selCur.fIns, selCur.ww);
 		selCur.fUpdateChp = fFalse;
@@ -2419,7 +2419,7 @@ LBegin:
 	FetchCp (doc, cpT, fcmChars+fcmProps);
 	if (fIns)
 		{
-		if (vchpFetch.fSysVanish) return;
+		if (vchpFetch.fSysVanish) return 0;
 
 /* footnote character: use the next character instead!! */
 /* note: pseudo recurse since next character can also be footnote */
@@ -2869,7 +2869,7 @@ at the beginning of the following sty (fEnd false) */
 #else /* WIN */
 		/* returned cp WRT visible characters: */
 
-		/* 1. Normalize cp wrt CRLF 
+		/* 1. Normalize cp wrt CRLF
 			2. GetCaCharBlock
 			3. Figure which end of CharBlock
 			4. Adjust for fEnd
@@ -2910,7 +2910,7 @@ at the beginning of the following sty (fEnd false) */
 		return cp0;
 	case styLine:
 	case styLineEnd:
-		vhpldrRetSel = HwwdWw(ww); 
+		vhpldrRetSel = HwwdWw(ww);
 		vidrRetSel = 0;
 		NormCp(ww, doc, cp, ncpAnyVisible, dysMinAveLineSci, fEnd);
 		if (DlWhereDocCp(ww, doc, cp, fEnd, &vhpldrRetSel, &vidrRetSel, &cpT, NULL, fTrue)
@@ -2966,7 +2966,7 @@ A table cell mark contains chReturn/chTable pair, when a table cell mark
 is format hidden, chReturn is invisible but chTable is still returned
 from FetchVisibleRgch.
 */
-		cpIchPcr = CpFirstSty(ww, doc, 
+		cpIchPcr = CpFirstSty(ww, doc,
 				CpFromIchPcr(ich, rgcr, fvb.ccr), styCRLF, fFalse);
 
 		if (FWhiteSpaceCh(ch))
@@ -3352,7 +3352,7 @@ int grpf;
 		}
 
 	if (psel->cpFirst == cpFirst && psel->cpLim == cpLim && !psel->fTable)
-		return;
+		return 0;
 
 	if (vfExtendSel)
 		{
@@ -3450,7 +3450,7 @@ FSscClick()
 
 
 /* M A K E  S E L  C U R  V I S I */
-/*  Makes the current selection visible (wrt hidden text, dead fields, outline). 
+/*  Makes the current selection visible (wrt hidden text, dead fields, outline).
 */
 /* %%Function:MakeSelCurVisi %%Owner:chic */
 MakeSelCurVisi(fForceBlockToIp)
@@ -3500,7 +3500,7 @@ BOOL fForceBlockToIp;
 			cpFirst = CpFirstBlock();
 		}
 
-	/* need to check visibility of the first of the selection. 
+	/* need to check visibility of the first of the selection.
 		if insertion point precede visible text, no need to change it */
 
 	FetchCpPccpVisible(selCur.doc, cpFirst, &ccpFetch, wwCur, fFalse);
@@ -3520,7 +3520,7 @@ BOOL fForceBlockToIp;
 	fFirstVisi |= (cpFirst == cpFirstNew);
 
 	if (fFirstVisi && selCur.fIns)
-		return;
+		return 0;
 	/* if first was visible, must check the last for visibility */
 	if (fFirstVisi)
 		{
@@ -3540,7 +3540,7 @@ BOOL fForceBlockToIp;
 			bks.cpFirst = selCur.cpLast;
 			if (FGetBlockLine(&cp, &dcp, &bks))
 				cpLim = cp+dcp;
-			else  
+			else
 				cpLim = bks.cpFirst;
 			}
 		else
@@ -3550,7 +3550,7 @@ BOOL fForceBlockToIp;
 		FetchCpPccpVisible(selCur.doc, cpLastSel, &ccpFetch, wwCur, fFalse);
 		}
 
-	if (!fFirstVisi || ccpFetch == 0 || (vcpFetch != cpLastSel && 
+	if (!fFirstVisi || ccpFetch == 0 || (vcpFetch != cpLastSel &&
 			cpLim != CpLimSty(wwCur, selCur.doc, cpLastSel, styChar, fTrue)))
 		SelectIns(&selCur, cpFirstNew);
 	else
@@ -3571,7 +3571,7 @@ BOOL fForceBlockToIp;
 /* destroy the hidden transient property if hidden text is not shown */
 	if (selCur.chp.fVanish)
 		selCur.chp.fVanish =
-				(wwCur == wwNil || !selCur.fIns || 
+				(wwCur == wwNil || !selCur.fIns ||
 				PwwdWw(wwCur)->grpfvisi.fSeeHidden ||
 				PwwdWw(wwCur)->grpfvisi.fvisiShowAll);
 
@@ -3585,7 +3585,7 @@ BOOL fForceBlockToIp;
 	same pad as the next visi character (cpLastInvisi does
 	not have to be within the same pad as cpLastVisi)
 
-Note: cpLastVisi returned can be the same as cpLastInvisi in cases 
+Note: cpLastVisi returned can be the same as cpLastInvisi in cases
 where there is no hidden text in between.
 */
 /* %%Function:CpLastVisiOutline %%Owner:chic */
@@ -3633,12 +3633,12 @@ field result may also had pad entry but it is not showing in outline. */
 		CP cpLastInvisi;
 
 		/* ipadFromCpFetch can be the same as ipadFromCp when
-		you are in a table, each table cell can terminate a paragraph 
+		you are in a table, each table cell can terminate a paragraph
 		but all remain in a single pad, in that case, use cpLimPara
 		*/
 		cpLastInvisi = ((ipadFromCpFetch > ipadFromCp) ?
 			CpPlc(hplcpad, ipadFromCpFetch) : cpLimPara) - 1;
- 
+
 		Assert(cpLastInvisi >= cp0 && cpLastInvisi <= CpMacDocEdit(doc));
 		*pcpLastInvisi = CpFirstSty(ww, doc, cpLastInvisi, styCRLF, fFalse);
 		Assert(*pcpLastInvisi <= CpMacDocEdit(doc));
@@ -3673,7 +3673,7 @@ CP cp;
 		FetchCpPccpVisible(doc, cpNext, &ccpFetch, ww /*fvcScreen*/, fFalse /*fNested*/);
 		if (ccpFetch > 0 && (cp2 = vcpFetch) != cpNext)
 			{
-			if (PwwdWw(ww)->fOutline && 
+			if (PwwdWw(ww)->fOutline &&
 					cp == CpLastVisiOutline(ww, doc, cp, &cpLastInvisi))
 				{
 				cp = cpLastInvisi;
@@ -3819,7 +3819,7 @@ CP cp;
 	fvb.doc = doc;
 	dcpChunk = dcpAvgChar;
 
-	do 
+	do
 		{
 		fvb.cpLim = cp;
 		cp = CpVisibleBackCpField(doc, cp, ww);
@@ -3835,7 +3835,7 @@ small dcp.  If that fails, increase dcp. */
 
 	if (fvb.cch != 0)
 		cp = CpFromIchPcr (fvb.cch-1, rgcr, fvb.ccr);
-	else 
+	else
 /*  Special case : no visi character before, return cpNil */
 		cp = cpNil;
 
@@ -3852,22 +3852,22 @@ small dcp.  If that fails, increase dcp. */
 
 	Within this ca, only 1 cp is visible WRT screen and is returned in pcpVisi
 	Two exceptions are :
-	1) when there is no visible text between cp0 and CpMacDoc, 
+	1) when there is no visible text between cp0 and CpMacDoc,
 	pca->cpFirst is cp0, pca->cpLim is cpMacDocEdit, cpVisi is cpNil.
-	2) When there is no visible text after cp, 
+	2) When there is no visible text after cp,
 	pca-cpFirst is cpInVisi after cp,
 	pca->cpLim is CpMacDocEdit, cpVisi is cpNil.
 
 	In general, invisible text to the left of a visible cp is grouped as
-	one charblock.  
+	one charblock.
 	Exceptions are:
 	1) field in result mode.  The closing field bracket (invisible) is grouped
-	with the visible cp to the left.  
+	with the visible cp to the left.
 	2) outline with ellipse.  The last visible cp before the ... is grouped to the
-	right with the not showing characters as one charblock.  
+	right with the not showing characters as one charblock.
 	3) outline with hidden paragraph mark.  The hidden paragraph mark is grouped
 	with the visible char to the left.
-	4) table in a result field.  The first visible cp in the table does not group to 
+	4) table in a result field.  The first visible cp in the table does not group to
 	the left of the invisible field characters.  This is to allow insertion to the
 	beginning of the table.
 	5) in outline mode, when there is no visible text before the interesting cp,
@@ -3892,7 +3892,7 @@ CP *pcpVisi;
 		pca->doc = doc;
 		pca->cpFirst = pca->cpLim = CpMacDoc(doc);
 		*pcpVisi = cpNil;
-		return;
+		return 0;
 		}
 
 /* Find cpLim, also get a potential cpVisi */
@@ -3935,7 +3935,7 @@ CP *pcpVisi;
 			cpLim = cpFirst;
 			if ((cpVisiBefore = CpVisiBeforeCp(ww, doc, cpVisi2)) == cpNil)
 				cpFirst = cp0;
-			else 		
+			else
 				{
 				cpVisiBefore = CpFirstSty(ww, doc, cpVisiBefore, styCRLF, fFalse);
 				cpFirst = CpLimCharBlock(ww, doc, cpVisiBefore);
@@ -4065,7 +4065,7 @@ CP cp;
 
 /* E N S U R E  S E L  I N  W W */
 /* Check if pselActive is in wwCur */
-/* If not, select first cp in ww.  
+/* If not, select first cp in ww.
 	fExtend is true iff we want to keep the cpAnchor off screen.
 */
 
@@ -4074,37 +4074,37 @@ EnsureSelInWw(fExtend, psel)
 BOOL fExtend;
 struct SEL *psel;
 {
-	int itc, itcLim; 
+	int itc, itcLim;
 	struct PT pt;
 	CP cpFirst;
-	
+
 #ifdef WIN
 	{
 	extern BOOL vfRecording, fElActive;
 	/* Don't do this for for macros so they will be a little more
 		deterministic... */
 	if (vfRecording || fElActive)
-		return;
+		return 0;
 	}
 #endif
 
 	if ((*hwwdCur)->fPageView)
-		return; 
+		return 0;
 	if ((*hwwdCur)->fDirty)
 		UpdateWw(wwCur, fFalse);
-	cpFirst = PdrGalley(*hwwdCur)->cpFirst; 
+	cpFirst = PdrGalley(*hwwdCur)->cpFirst;
 	if (psel->cpFirst <= cpFirst && psel->cpLim > cpFirst)
-		return; 
+		return 0;
 	/* if either the beginning... */
 	if (FCpVisible(wwCur, psel->doc, psel->cpFirst, (psel->fIns) ? psel->fInsEnd : fFalse, fFalse, fTrue))
-		return;
+		return 0;
 	if (!psel->fIns)
 		{
 		/* ...or the end of the selection is displayed, do nothing */
 		if (FCpVisible(wwCur, psel->doc, psel->cpLim, fTrue, fFalse, fTrue))
-			return;
+			return 0;
 		}
-	
+
 
 	cpFirst = CpMin(PdrGalley(PwwdWw(wwCur))->cpFirst,
 				CpMacDocEdit(psel->doc));

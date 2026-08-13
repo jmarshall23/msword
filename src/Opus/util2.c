@@ -434,9 +434,9 @@ BOOL fEnd;
 				(*hwwdCur)->ywMin + dyp)
 			{
 			xw = XwFromWwCp(wwCur, hpldr, idr, selCur.doc, cp, cpFirst);
-			if (xw < (*hwwdCur)->xwMin || xw >= (*hwwdCur)->xwMac)
-				goto LNorm;
-			return;
+				if (xw < (*hwwdCur)->xwMin || xw >= (*hwwdCur)->xwMac)
+					goto LNorm;
+				return 0;
 			}
 		}
 
@@ -650,7 +650,7 @@ FreeUnusedPrcs()
 
 	/* if there are no PRCs allocated it's pointless to go on */
 	if (vhprc == 0 || !vmerr.fReclaimHprcs)
-		return;
+		return 0;
 
 	/* scan thru the document descriptors */
 	for (doc = 1; doc < docMac; doc++)

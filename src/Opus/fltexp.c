@@ -1259,11 +1259,11 @@ HAC	***phhac;
 					sizeof(TRE) * pev2->itreMac);
 			}
 		FreePhhacHtre(phhac, pev1->hrgtre);
-		FreePhhacHtre(phhac, pev2->hrgtre);
-		if (fFail)
-			{
-			return;
-			}
+			FreePhhacHtre(phhac, pev2->hrgtre);
+			if (fFail)
+				{
+				return 0;
+				}
 		}
 	Assert(pev1->itreMac + pev2->itreMac <= itreMax);
 	pevDest->itreMax = itreMax;
@@ -1314,7 +1314,7 @@ TRE	**htre;
 			*phhac = (**phhac)->hhacNext;
 			FreeH(htre);
 			FreeH(hhacFree);
-			return;
+			return 0;
 			}
 		}
 	Assert(fFalse);
@@ -2834,11 +2834,11 @@ EV	*pevTop;
 
 	if (fi == fiAVERAGE || fi == fiCOUNT)
 		{
-		if (av.c < 0)
-			{
-			pev->iszErrMsg = iszFEOverflow;
-			return;
-			}
+			if (av.c < 0)
+				{
+				pev->iszErrMsg = iszFEOverflow;
+				return 0;
+				}
 		}
 
 	switch (fi)
@@ -3324,13 +3324,13 @@ int  *piszErr;
 
 	if (fUseUtilCalc)
 		{
-		feb.pfnTiLex = TiLexSubCalc;
+		feb.pfnTiLex = (short (*)())TiLexSubCalc;
 		if (sz[0] == '=')
 			sz[0] = ' ';
 		}
 	else
 		{
-		feb.pfnTiLex = TiLexFPfeb;
+		feb.pfnTiLex = (short (*)())TiLexFPfeb;
 		}
 
 	feb.fSubCalc = fUseUtilCalc;
@@ -3516,7 +3516,7 @@ struct FFB  *pffb;
 	pfeb->cpFirstTable  = cp;
 	pfeb->cpFirstRel	= cpRel;
 	pfeb->pfnChFetch    = ChFetchFromFe;
-	pfeb->pfnTiLex      = TiLexFPfeb;
+	pfeb->pfnTiLex      = (short (*)())TiLexFPfeb;
 	pfeb->pffb          = pffb;
 
 	pfeb->ti            = tiNull;
@@ -3551,7 +3551,7 @@ BOOL         fBkmk, fVanished;
 	SetBytes(pfeb, 0, sizeof(FEB));
 	Assert(pfeb->hhac == hNil);
 	pfeb->pfnChFetch          = ChFetchFromBkSel;
-	pfeb->pfnTiLex            = TiLexSubCalc;
+	pfeb->pfnTiLex            = (short (*)())TiLexSubCalc;
 	pfeb->pfibk               = pfibk;
 	pfeb->ti                  = tiNull;
 	pfeb->fSubCalc            = fTrue;
@@ -3586,7 +3586,7 @@ FIBLK       *pfiblk;
 	SetBytes(pfeb, 0, sizeof(FEB));
 	Assert(pfeb->hhac == hNil);
 	pfeb->pfnChFetch          = ChFetchFromBlock;
-	pfeb->pfnTiLex            = TiLexSubCalc;
+	pfeb->pfnTiLex            = (short (*)())TiLexSubCalc;
 	pfeb->pfiblk              = pfiblk;
 	pfeb->ti                  = tiNull;
 	pfeb->fSubCalc            = fTrue;
@@ -3617,7 +3617,7 @@ BOOL         fBkmk;
 	SetBytes(pfeb, 0, sizeof(FEB));
 	Assert(pfeb->hhac == hNil);
 	pfeb->pfnChFetch          = ChFetchFromSz;
-	pfeb->pfnTiLex            = TiLexSubCalc;
+	pfeb->pfnTiLex            = (short (*)())TiLexSubCalc;
 	pfeb->pfibk               = pfibk;
 	pfeb->ti                  = tiNull;
 	pfeb->fSubCalc            = fTrue;

@@ -676,7 +676,7 @@ uns bsy;
 		if (bsy == bsyNil)
 			{
 			stName[0] = 0;
-			return;
+			return 0;
 			}
 
 		if (hpsy->stName[0] == 0)
@@ -796,5 +796,4 @@ int imtmMac;
 
 	return(imtmHigh);
 }
-
 

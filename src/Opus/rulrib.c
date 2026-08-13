@@ -568,7 +568,7 @@ int xa;
 	if (fInsert && (*hrsd)->pap.itbdMac >= itbdMax)
 		{  /* there are too many tabs to insert another */
 		Beep ();
-		return;
+		return 0;
 		}
 
 	/* set up the new tab */
@@ -627,7 +627,7 @@ int xa;
 
 	if (preb->xaCursor == xa)
 		/* no need to move */
-		return;
+		return 0;
 
 	/* get the dc's */
 	if (! FSetDcAttribs (hdc = GetDC ((*hrsd)->hwndMark), dccRuler))
@@ -801,7 +801,7 @@ int xa;
 	if (xa < xaMin || xa > xaMax || rc.xpRight < preb->xpLeft
 			|| rc.xpLeft > preb->xpRight)
 		/* nothing to display */
-		return;
+		return 0;
 
 	InvertRect (hdc, (LPRECT) &rc);
 }
@@ -1024,7 +1024,7 @@ struct PT ptMouse;
 	/* could not find a mark to drag or could not insert a tab */
 	Beep();
 	MeltHp();
-	return;
+	return 0;
 
 
 LHaveMark:
@@ -1063,7 +1063,7 @@ LHaveMark:
 		if (hdc != NULL)
 			ReleaseDC ((*hrsd)->hwndMark, hdc);
 		FreePreb (preb);
-		return;
+		return 0;
 		}
 
 	/* get all mouse messages */
@@ -1832,7 +1832,7 @@ int cb;
 			/* ApplyGrpprl was cancelled, bag out */
 			{
 			SetAgain(bcmNil);
-			return;
+			return 0;
 			}
 		vrulss.caRulerSprm = caSel;
 		vrulss.sk = selCur.sk;
@@ -1904,7 +1904,7 @@ EXPORT FlushRulerSprms ()
 	CHAR grpprl [cbMaxGrpprl];
 
 	if (vrulss.caRulerSprm.doc == docNil)
-		return;
+		return 0;
 
 	/* the ca in vrulss has already been expanded to its para boundries.  No
 		call to ExpandCaCache is needed */
@@ -1996,7 +1996,7 @@ InvalStyle()
 	HWND hwndRuler;
 
 	if (hmwdCur == hNil)	/* happens if WindowClose when combo dropped */
-		return;
+		return 0;
 
 	if ((hwndRuler = (*hmwdCur)->hwndRuler) != NULL)
 		{

@@ -985,7 +985,7 @@ int dytAbove;
 
 	CachePara(vtcc.doc, cp);
 	if (vpapFetch.fTtp)
-		return;
+		return 0;
 
 	xl = plr->xl + vtcc.xpDrLeft;
 	rc.xpLeft = xl - vtcc.dxpOutLeft;
@@ -1169,7 +1169,7 @@ struct LBS *plbsText, *plbsFtn;
 /* ensure that the next entry has the appropriate cp */
 	EnsureCpPgd(plbsText, ipgd);
 	if (vmerr.fMemFail)
-		return;
+		return 0;
 	Assert(ipgd < IMacPlc(hplcpgd));
 	if ((docFtn = (*hdod)->docFtn) != docNil)
 		{
@@ -1444,7 +1444,7 @@ int ipgd;
 			{
 			cIns++;
 			if (!FInsertInPlc(hplcpgd, ipgd, plbs->cp, &pgdNew))
-				return;
+				return 0;
 			caPage.doc = docNil;
 			}
 		else
@@ -1478,7 +1478,7 @@ int doc, ipgd;
 	Assert(ipgd < IMacPlc(hplcpgd));
 	cpInval = CpMin(cpMac, CpPlc(hplcpgd, ipgd));
 	if (cpInval < 0)
-		return;
+		return 0;
 	GetPlc(hplcpgd, ipgd, &pgd);
 	if (pgd.cl == 0)
 		dcpInval = (CP) 1;
@@ -1796,7 +1796,7 @@ int ipgd;
 			if (fSetup)
 				{
 				if ((hpldrNear = HplInit(cwDR * sizeof(int), (*plbs->hpllr)->ilrMac)) == hNil)
-					return;
+					return 0;
 				fSetup = fFalse;
 /* setting the fPageView for WIN case is so that vfli.dypLine gets the correct unit */
 				Win(PwwdWw(wwLayout)->fPageView = fTrue);

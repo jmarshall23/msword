@@ -182,12 +182,12 @@ int	cxt;
 		CancelContextHelp();
 
 	/* If "can't find help" message is up, don't even bother trying... */
-	if (cxt == CxtFromEid(eidCantFindHelp) || 
+	if (cxt == CxtFromEid(eidCantFindHelp) ||
 			/* ditto if we haven't finished booting yet... */
 	vhwndApp == NULL || vrf.fInQueryEndSession)
 		{
 		Beep();
-		return;
+		return 0;
 		}
 
 	/* Set timer to block unwanted double-clicks in help mode */
@@ -277,7 +277,7 @@ unsigned long	ulData;
 		qhlp->offabData = 0;
 		qhlp->ulTopic   = ulData;
 		}
-	else  /* Keyword -- add to data block     */		
+	else  /* Keyword -- add to data block     */
 		{
 		qhlp->ulTopic   = 0L;
 		qhlp->offabData = sizeof(HLP) + ((CchLpszLen(lpszHelp) >> 1) << 1) + 2;
@@ -366,12 +366,15 @@ unsigned long	ulData;
 		else
 			StToSz(st, szRun);
 
-		if ((h = RunApp(szRun, SW_SHOWNORMAL)) < 32
+		{
+		int wHelp = RunApp(szRun, SW_SHOWNORMAL);
+		h = (HANDLE)(UINT_PTR)wHelp;
+		if (wHelp < 32
 				|| (hwndHelp = LookForHelp(hHlp)) == NULL)
 			{
 			EndLongOp(fFalse);
-			if (h == 8)  /* Note: bug in Windows - we will never actually get
-						 			back 8 if oom failure, so we can't detect it here */
+				if (wHelp == 8)  /* Note: bug in Windows - we will never actually get
+								back 8 if oom failure, so we can't detect it here */
 				goto LDone;
 
 			if (vhwndCBT)
@@ -385,6 +388,7 @@ unsigned long	ulData;
 				ErrorEid(eidCantFindHelp, "");
 			return fFalse;
 			}
+		}
 		EndLongOp(fFalse);
 		}
 	Assert(hwndHelp != NULL && IsWindow(hwndHelp));
@@ -478,7 +482,7 @@ LPSTR lpchSrc;
 
 
 /* C X T   F R O M   W W   P T */
-/* Returns appropriate help context, given a ww pt.  
+/* Returns appropriate help context, given a ww pt.
 * Used in WwPaneWndProc (wproc.c).
 */
 /* %%Function:CxtFromWwPt %%Owner:rosiep */
@@ -566,12 +570,12 @@ HWND hwnd;
 		doc = (ww == wwCur) ? selCur.doc : PwwdWw(ww)->sels.doc;
 		if (PdodDoc(doc)->ihdt >= ihdtMaxSep)
 			{
-			return(vfIconBarMode ? cxtFtnSepIconBarMode : 
+			return(vfIconBarMode ? cxtFtnSepIconBarMode :
 					cxtFtnSepIconBar);
 			}
 		else
 			{
-			return(vfIconBarMode ? cxtHeaderFooterIconBarMode : 
+			return(vfIconBarMode ? cxtHeaderFooterIconBarMode :
 					cxtHeaderFooterIconBar);
 			}
 
@@ -625,18 +629,18 @@ int	cxt;
 		{
 		if (mf & MF_POPUP)  /* hilighted but not dropped down */
 			{
-			return ((cxt == cxtAppMenuSelect) ? 
+			return ((cxt == cxtAppMenuSelect) ?
 					cxtAppControl : cxtDocControl);
 			}
 			else  /* dropped down with an item selected; wParam contains
-				the SC_ code of the menu item */			
+				the SC_ code of the menu item */
 			{
-			return ((cxt == cxtAppMenuSelect) ? 
+			return ((cxt == cxtAppMenuSelect) ?
 #ifdef OPUS_X64
 					CxtAppSysMenu(item) :
 					CxtDocSysMenu(item));
 #else
-					CxtAppSysMenu(wParam) : 
+					CxtAppSysMenu(wParam) :
 					CxtDocSysMenu(wParam));
 #endif
 			}
@@ -689,8 +693,8 @@ WORD wParam;
 	int	bcm;
 
 	/* All selections from the control menu should fall through to
-		the default case below; only screen regions (title bar, 
-		maximize box, and window borders) will be picked out in 
+		the default case below; only screen regions (title bar,
+		maximize box, and window borders) will be picked out in
 		the case statement.  */
 
 	switch (wParam & 0xFFF0)
@@ -940,7 +944,7 @@ CMB *pcmb;
 		RtError(rerrHalt);
 		Assert(fFalse); /* NOT REACHED */
 		}
-	
+
 	if (FRunCBT(fFalse /* fStartup */))
 		return cmdOK;
 	else
@@ -965,11 +969,11 @@ CMB *pcmb;
 #endif
 
 		/* values come from version.h */
-		FSetCabSz(pcmb->hcab, szApp, 
+		FSetCabSz(pcmb->hcab, szApp,
 				Iag(CABABOUT, hszAboutApp));
-		FSetCabSz(pcmb->hcab, SzShared(szVersionDef), 
+		FSetCabSz(pcmb->hcab, SzShared(szVersionDef),
 				Iag(CABABOUT, hszAboutVersion));
-		FSetCabSz(pcmb->hcab, SzShared(szCopyrightDef), 
+		FSetCabSz(pcmb->hcab, SzShared(szCopyrightDef),
 				Iag(CABABOUT, hszAboutCopyright));
 #ifdef OPUS_X64
 		/* Win16 KERNEL ordinal 169 was GetFreeSpace.  It does not exist on
@@ -987,7 +991,7 @@ CMB *pcmb;
 				l = GlobalCompact(0L) >> 10;
 			}
 #else
-		if (vwWinVersion >= 0x0300 && 
+		if (vwWinVersion >= 0x0300 &&
 				(lpfn = GetProcAddress(GetModuleHandle(SzFrame("KERNEL")),
 				MAKEINTRESOURCE(idoGetFreeSpace))) != NULL)
 			/* use the windows 3 version */
@@ -1015,7 +1019,7 @@ CMB *pcmb;
 			if (!fInitialized)
 				InitMath();
 			}
-		FSetCabSz(pcmb->hcab, f8087 ? SzSharedKey("Present", Present) : 
+		FSetCabSz(pcmb->hcab, f8087 ? SzSharedKey("Present", Present) :
 				szNone, Iag(CABABOUT, hszAboutMath));
 
 		l = LcbDiskFreeSpace(0 /* default drive */) >> 10;
@@ -1162,7 +1166,7 @@ BOOL fStartup;    /* TRUE iff run from command line */
 		Assert(fFalse);  /* CBT shouldn't be allowing this event */
 		return fFalse;
 		}
-	
+
 	if (vfDeactByOtherApp)
 		WaitActivation();
 
@@ -1304,19 +1308,26 @@ LCantFind:
 	ShrinkSwapArea();
 
 	/* Load CBT dynamic library */
-	if ((hCbtLib = RunApp(SzSharedKey(szCbtLibDef, CbtLib), SW_SHOW)) < 32)
+	{
+	int wCbtLib = RunApp(SzSharedKey(szCbtLibDef, CbtLib), SW_SHOW);
+	hCbtLib = (HANDLE)(UINT_PTR)wCbtLib;
+	if (wCbtLib < 32)
 		{
-		if (hCbtLib == 8)
+		if (wCbtLib == 8)
 			goto LFailedNoMem;
 		else
 			goto LFailed;
 		}
+	}
 
 	/* Crank up CBT */
 	vrf.fCbtInit = fFalse;
-	if ((h = RunApp(SzSharedKey(szCbtDef, Cbt), SW_SHOWNORMAL)) < 32)
+	{
+	int wCbt = RunApp(SzSharedKey(szCbtDef, Cbt), SW_SHOWNORMAL);
+	h = (HANDLE)(UINT_PTR)wCbt;
+	if (wCbt < 32)
 		{
-		if (h == 8)
+		if (wCbt == 8)
 			{
 LFailedNoMem:
 			ErrorNoMemory(eidNoMemCBT);
@@ -1330,6 +1341,7 @@ LFailed:
 			}
 		return (fFalse);
 		}
+	}
 
 	/* Restore our swap size */
 	GrowSwapArea();
@@ -1718,10 +1730,10 @@ BOOL fStartup;  /* true if started CBT from command-line with /T */
 				GetDocSt(doc, stDoc, gdsoFullPath | gdsoNoUntitled);
 
 			/** Save current selection in Doc pane, if any **/
-			if (((hwwd = mpwwhwwd[(int)(*hmwd)->wwUpper]) == hNil) || 
+			if (((hwwd = mpwwhwwd[(int)(*hmwd)->wwUpper]) == hNil) ||
 					(*hwwd)->wk != wkDoc || DiDirtyDoc((*hwwd)->sels.doc))
 				/** there is no doc pane selection, or user doesn't want
-					to save changes, so the sel may be invalid; 
+					to save changes, so the sel may be invalid;
 					just set sel to 0 **/
 				mwdstate.sels.cpFirst = mwdstate.sels.cpLim = cp0;
 			else
@@ -1851,7 +1863,7 @@ LKillIt:
 
 
 /* These two arrays contain counts of buttons (cbtn) on the ruler and the
-	outline iconbar.  They are used to divide the buttons on these two 
+	outline iconbar.  They are used to divide the buttons on these two
 	iconbars into groups, so that we can pass the group number and button
 	index to CBT.  The other four iconbars are not subdivided into button
 	groups; they just pass an index.     -awe
@@ -1940,9 +1952,9 @@ struct SEL *psel;
 	Assert ((int) psel->cpLim == psel->cpLim);
 
 	pdod = PdodDoc(psel->doc);
-	smv = (pdod->fAtn ? smvAnnSelection : 
-			(pdod->fFtn ? smvFNSelection : 
-			(pdod->fDispHdr ? (FHeaderIhdt(pdod->ihdt) ? 
+	smv = (pdod->fAtn ? smvAnnSelection :
+			(pdod->fFtn ? smvFNSelection :
+			(pdod->fDispHdr ? (FHeaderIhdt(pdod->ihdt) ?
 			smvHdrSelection : smvFtrSelection) :
 			smvSelection    /* default */
 	)));
@@ -1969,7 +1981,7 @@ struct SEL *psel;
 	if (!psel->fTable)
 		{
 		CBTSelectPsel(psel);
-		return;
+		return 0;
 		}
 
 	/** CBT promises that we won't use any long files; we
@@ -2003,9 +2015,9 @@ struct SEL *psel;
 	Assert (vhwndCBT);
 
 	/* Pack table selection dimensions into loWord */
-	loWord = (iRowMin << 12) | (iRowMac << 8) | (psel->itcFirst << 4) | 
+	loWord = (iRowMin << 12) | (iRowMac << 8) | (psel->itcFirst << 4) |
 			(itcLim);
-	SendMessage(vhwndCBT, WM_CBTSEMEV, smvTableSelection, 
+	SendMessage(vhwndCBT, WM_CBTSEMEV, smvTableSelection,
 			MAKELONG(loWord, (int)psel->cpFirst));
 }
 
@@ -2027,11 +2039,11 @@ int	xaOld;      /* previous coordinates of tab */
 	Assert (!(xa == xaOld && xa == xaNil));
 
 	/* we either created, deleted, or moved the tab */
-	smv = (xaOld == xaNil ? smvTabCreate : 
+	smv = (xaOld == xaNil ? smvTabCreate :
 			(xa == xaNil ? smvTabDelete : smvTabMove));
 
 	/* we must be careful not to pass xaNil to CBT; pass 0 instead */
-	return(SendMessage(vhwndCBT, WM_CBTSEMEV, smv, 
+	return(SendMessage(vhwndCBT, WM_CBTSEMEV, smv,
 			MAKELONG((xaOld == xaNil ? 0 : xaOld), (xa == xaNil ? 0 : xa))));
 }
 
@@ -2052,7 +2064,7 @@ BOOL fLockOnLeft1;     /* left indent and first line indent moved together */
 	Assert (imk >= imkIndLeft1 && imk < imkNormMax && imk != imkDefTab);
 
 	/* we must be careful not to pass xaNil to CBT; pass 0 instead */
-	return(SendMessage(vhwndCBT, WM_CBTSEMEV, (imk == imkIndLeft && 
+	return(SendMessage(vhwndCBT, WM_CBTSEMEV, (imk == imkIndLeft &&
 			fLockOnLeft1) ? smvIndentBoth : SmvFromImk(imk),
 			MAKELONG((xaOld == xaNil ? 0 : xaOld), (xa == xaNil ? 0 : xa))));
 }
@@ -2121,4 +2133,3 @@ int	cch;
 	GlobalFree(hText);
 }
 #endif /* TEXTEVENT */
-

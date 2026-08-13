@@ -613,7 +613,7 @@ int docStshNew, fNuke, fFrom;
 			FreeHsttb(hsttbChpeDest);
 			FreeHsttb(hsttbPapeDest);
 			ErrorNoMemory(eidNoMemMerge);
-			return;
+			return 0;
 			}
 		}
 
@@ -940,7 +940,7 @@ LEstimateSize:
 						}
 					FEnsureStcDefined(docDestMother, stcSrc, &stshDest.cstcStd);
 					}
-				return;
+				return 0;
 				}
 			}
 
@@ -1161,10 +1161,10 @@ BOOL fSysModalMsg;
 	CMB cmb;
 
 	if (!FInitCmb(&cmb, bcmApplyStyleDlg, hNil, cmmAction | cmmBuiltIn))
-		return;
+		return 0;
 
 	if (!FSetCabSz(cmb.hcab, szStyle, Iag(CABAPPLYSTYLE, hszASStyle)))
-		return;
+		return 0;
 
 	/* execute Action only...cab is already set up. */
 	cmb.wParam = fSysModalMsg;
@@ -1804,7 +1804,7 @@ CP dcp, cpDest;
 	Win(struct CA caT);
 
 	if (DocMother(docSrcStsh) == (docDestMother = DocMother(docDest)))
-		return;
+		return 0;
 	Win( StartLongOp() );
 	Win( CopyFonts( docSrcStsh, PcaSetDcp(&caT,docDest, cpDest, dcp )) );
 
@@ -1843,14 +1843,14 @@ struct CA *pcaDest;
 	CHAR mpftcSrcftcDest[cftcLastRemap];
 
 	if (docSrcFtc == docDestFtc || DcpCa(pcaDest) == 0)
-		return;
+		return 0;
 
 	/* font tables of documents are already identical */
 	if ((ftcSrcMac = PdodDoc(docSrcFtc)->ftcMac) <= PdodDoc(docDestFtc)->ftcMac &&
 			!FNeRgch( *PdodDoc(docSrcFtc)->hmpftcibstFont,
 			*PdodDoc(docDestFtc)->hmpftcibstFont, 
 			PdodDoc(docSrcFtc)->ftcMac ))
-		return;
+		return 0;
 
 	Assert(ftcSrcMac >= 0 && ftcSrcMac <= cftcLastRemap);
 
@@ -1909,6 +1909,5 @@ struct CA *pcaDest;
 			}
 		}
 }
-
 
 

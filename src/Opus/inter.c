@@ -250,7 +250,7 @@ BOOL fOrd;
 		int nT = n % 10;
 		CopyTextPpch ((n/10)+dszTens, ppch, (fOrd && nT == 0));
 		if (nT == 0)
-			return;
+			return 0;
 
 		*(*ppch)++ = '-';
 		n = nT;

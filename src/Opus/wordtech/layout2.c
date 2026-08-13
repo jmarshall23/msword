@@ -1104,14 +1104,14 @@ struct LBS *plbsAbs;	/* reference for abs objects */
 	if (phdt->hpllr == hNil)
 		{
 		StopProfile();
-		return;
+		return 0;
 		}
 	if (ihdt >= ihdtMaxSep)
 		{
 		if (phdt->dyl == 0)
 			{
 			StopProfile();
-			return;
+			return 0;
 			}
 		if (plbsAbs == 0 || !plbsAbs->fAbsPresent)
 			xl = plbs->xl;
@@ -1179,7 +1179,7 @@ int xl;         /* use -1 to maintain xl */
 	if (ilrMac <= 0)
 		{
 		StopProfile();
-		return;
+		return 0;
 		}
 	fFirst = fTrue;
 	for (ilrFrom = 0, ilrTo = IMacPllr(plbsTo); ilrFrom < ilrMac; ilrFrom++)
@@ -1471,7 +1471,7 @@ struct LBS *plbsId, *plbsTo;
 		{
 		Assert(plbsId == 0 && plbsTo == 0);
 		StopProfile();
-		return;
+		return 0;
 		}
 
 	if (plbsId == 0)
@@ -1562,7 +1562,7 @@ struct LBS *plbs;
 	if (plbs == 0 || !plbs->fOnLbsStack || (ilbs = (*vhpllbs)->ilbsMac - 1) < 0)
 		{
 		StopProfile();
-		return;
+		return 0;
 		}
 
 	plbs->fOnLbsStack = fFalse;
@@ -1571,7 +1571,7 @@ struct LBS *plbs;
 			{
 			DeleteFromPl(vhpllbs, ilbs);
 			StopProfile();
-			return;
+			return 0;
 			}
 	StopProfile();
 }

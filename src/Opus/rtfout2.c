@@ -821,7 +821,7 @@ int doc;
 	ca.cpLim = CpMacDoc( doc );
 
 	rarf.fn = fn;
-	RtfOut(&ca, &AppendRgchToFnRtf, &rarf, rooAll);
+	RtfOut(&ca, (int (*)())AppendRgchToFnRtf, &rarf, rooAll);
 	/* if disk full, fn has been deleted by caller */
 }
 
@@ -877,7 +877,7 @@ int cbInitial;
 		if (vsab.docStsh != docNil)
 			CheckScrapStsh(vsab.docStsh);
 
-	RtfOut(PcaSet(&ca, doc, cpFirst, cpLim), &AppendRgchToHandleRtf,
+	RtfOut(PcaSet(&ca, doc, cpFirst, cpLim), (int (*)())AppendRgchToHandleRtf,
 			&rhpcchw, rooAll & ~rooInfo);
 
 	/* Since Windows rounds global handles to 16 byte boundaries we must
@@ -1231,5 +1231,4 @@ int *piTop;
 		}
 	return (fldsOut);
 }
-
 

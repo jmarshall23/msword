@@ -813,7 +813,7 @@ int roo;
 			ccp = min(ccp, cbRtfBuf);
 
 			if (vmerr.fDiskFail || vmerr.fMemFail)
-				return;
+				return 0;
 
 		/* are there bookmarks starts or ends in current run? */
 			if (bkmkRtf.fHaveBkmks)
@@ -2220,4 +2220,3 @@ CP *pcp;
 
 /* overcome slm bogosities */
 #include "rtfout2.c"
-

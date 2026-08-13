@@ -153,6 +153,9 @@ extern int              vfFileCacheDirty;
 extern struct DMFLAGS   DMFlags;
 extern int              fnDMEnum;
 extern HPSYT 		vhpsyt;
+
+CHAR *PchFnTermPrevCur();
+CHAR *PchFnHasExt();
 extern struct PPR     **vhpprPRPrompt;
 extern struct ITR	vitr;
 
@@ -198,7 +201,7 @@ BOOL fPromptSI;
 			RtError(rerrOutOfMemory);
 		if (DiDirtyDoc(doc))
 			DoEmergSave(doc);
-		return;
+		return 0;
 		}
 
 	cmb.cmm = cmmNormal;
@@ -399,14 +402,14 @@ BOOL fDirty;
 			|| ! DiDirtyDoc (doc) || WwDisp(doc,wwNil,fFalse) != wwNil)
 		/*  the original doc was not saved, or there is no dot, or
 				the dot isn't dirty, or the dot is in a user window.
-				--> don't save it. */
+		--> don't save it. */
 		{
-		return;
+		return 0;
 		}
 
 	if (IdMessageBoxMstRgwMb (mstSaveDotToo, NULL, MB_YESNO | 
 			MB_APPLMODAL | MB_DEFBUTTON1 | MB_ICONQUESTION)  !=  IDYES )
-		return;
+		return 0;
 
 	ChainCmd (bcmSaveDot);
 }
@@ -1504,6 +1507,7 @@ LErrRet:
 	colon or nothing; NULL otherwise.
 */
 /* %%Function:PchFnTermPrevCur  %%Owner:peterj */
+CHAR *
 PchFnTermPrevCur(sz)
 CHAR *sz;
 {
@@ -1531,6 +1535,7 @@ CHAR *sz;
 
 /* return location of extension period, or NULL if none */
 /* %%Function:PchFnHasExt  %%Owner:peterj */
+CHAR *
 PchFnHasExt(sz)
 char * sz;
 {
@@ -1775,7 +1780,7 @@ DoEmergSave(doc)
 		vcRescue = 0;
 
 	rgw[0] = doc;
-	rgw[1] = stFile;
+	rgw[1] = (WORD)(UINT_PTR)stFile;
 
 	if (IdMessageBoxMstRgwMb(mstSaveRescue, rgw, 
 			MB_ICONHAND|MB_YESNO|MB_DEFBUTTON2) == IDYES)
@@ -2955,7 +2960,7 @@ BOOL fQuicksave;
 {
 
 	if (vhpprSave == hNil)
-		return;
+		return 0;
 
 	StartUMeas (umSavePrompt);
 

@@ -683,7 +683,7 @@ struct STTB ***phsttbPaf;
 	Assert( vpri.hdc != NULL );
 
 	if ((*phsttbPaf = HsttbInit(20, fFalse/*fExt*/)) == hNil)
-		return;
+		return 0;
 
 	tc = GetDeviceCaps(vpri.hdc, TEXTCAPS);
 
@@ -946,7 +946,7 @@ int hps;
 	fonts dialog or combos */
 
 	if ((uns)(hps - hpsMin) >= (hpsMac - hpsMin))
-		return;
+		return 0;
 
 /* Add this size to the PAF */
 
@@ -1383,10 +1383,10 @@ BOOL fForceDefault;
 	if ((chMorn == '\0') || (chEve == '\0') || (chMorn == chEve))
 		{
 lblInvalid:
-		bltb(szDefAM, vitr.rgszMornEve[iszMorn], cchMaxMornEve);
-		bltb(szDefPM, vitr.rgszMornEve[iszEve], cchMaxMornEve);
-		return;
-		}
+			bltb(szDefAM, vitr.rgszMornEve[iszMorn], cchMaxMornEve);
+			bltb(szDefPM, vitr.rgszMornEve[iszEve], cchMaxMornEve);
+			return 0;
+			}
 
 	CchCopyLpszCchMax((CHAR FAR *) szFldPicReserved, (CHAR FAR *) szFldPicRes,
 			cchMaxFldPicRes);

@@ -105,6 +105,7 @@ int mwCreate;   	/* communication during window creation */
 
 
 PN PnAlloc();
+HWND HwndCreateWindowRc();
 HWND HwndCreateScrollBar();
 #ifdef OPUS_X64
 void OpusX64Trace();
@@ -298,7 +299,7 @@ LFileNotFound:
 				/* mst = mstNumCharsLFA; */
 				pdc = pdcmPmt | pdcmCreate | pdcmSL | pdcmImmed |
 						pdcmTimeout | pdcmRestOnInput;
-				rgw [3] = szAuthor;
+				rgw [3] = (unsigned)(UINT_PTR)szAuthor;
 				Assert(PdodDoc(doc)->hsttbAssoc);
 				GetSzFromSttb(PdodDoc(doc)->hsttbAssoc, 
 						ibstAssocAuthor, szAuthor);
@@ -1203,7 +1204,7 @@ int doc;
 	struct FLD fld;
 
 	if (hplcfld == hNil || !pdod->fMother || pdod->fLockForEdit)
-		return;
+		return 0;
 
 	for ( ifld = 0, ifldMac = IMacPlc( hplcfld ); ifld < ifldMac; ifld++ )
 		{
@@ -1216,7 +1217,7 @@ int doc;
 			}
 		}
 
-	return;
+	return 0;
 }
 
 
@@ -1430,6 +1431,6 @@ CheckCloseUntitled()
 				SendMessage(PmwdMw(PwwdWw(ww)->mw)->hwnd, WM_CLOSE, 0, 0L);
 				InhibitRecorder(&fRecordingSav, fFalse);
 				}
-			return;
+				return 0;
 			}
 }

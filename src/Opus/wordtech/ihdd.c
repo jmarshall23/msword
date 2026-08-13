@@ -77,7 +77,7 @@ struct CA *pca;
 	SetWords(pca, 0, cwCA);
 /*      pca->doc = docNil;      */
 	if (ihdd == ihddNil)
-		return;
+		return 0;
 	if (ihdd == ihddTFtn)
 		{
 		if (FCreateChSpec(doc, chTFtn))
@@ -113,7 +113,7 @@ struct CA *pca;
 	pca->doc = doc;
 	Assert(doc != docNil);
 	if (doc == docNil || hplchdd == hNil || ihdd == ihddNil)
-		return;
+		return 0;
 	Assert(ihdd < IMacPlc(hplchdd));
 	if (ihdd < IMacPlc(hplchdd))
 		{

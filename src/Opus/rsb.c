@@ -286,7 +286,7 @@ LBlank:
 			PatBltBorder( hdc, &rc, fTrue /*fVert*/, fTrue /*fTop*/ );
 			PatBltBorder( hdc, &rc, fFalse /*fVert*/, fTrue /*fTop*/ );
 			}
-		return;
+		return 0;
 		}
 
 /* SPECIAL WINDOW TYPES: SIZE BOX & SPLIT BOX & PG VW ICON */
@@ -324,14 +324,14 @@ LBlank:
 			0, 0,
 					vsci.dcibScreen.ropBitBlt );    /* raster op */
 			}
-		return;
+			return 0;
 	case maskWndSizeBox:
 		RSBPaintBms( hdc, &vrsbi.bmsSizeBox, &rc );
-		return;
+		return 0;
 	case maskWndSplitBox:
 		if (SelectObject( hdc, vsci.hbrBorder ))
 			PatBltRc( hdc, &rc, PATCOPY );
-		return;
+		return 0;
 		}
 
 /* SCROLL BAR WINDOW: Paint dirty areas */
@@ -366,7 +366,7 @@ int izpp;
 
 	Assert( !GetWindowWord( hwnd, offset(RSBS,fBlank) ) );
 	if (pzpp->zpMin >= pzpp->zpMac)
-		return;
+		return 0;
 
 	RSBZppToRc( hwnd, pzpp, &rc );
 
@@ -443,12 +443,12 @@ int spsNew;
 	union GRPZPP grpzpp, grpzppNew;
 
 	if (sps == spsNew)
-		return;		/* current setting is already correct */
+		return 0;		/* current setting is already correct */
 	if (GetWindowWord( hwnd, offset(RSBS,fBlank) ))
 		goto LDone;
 
 	if ((hdc = GetDC( hwnd)) == NULL)
-		return;
+		return 0;
 
 	RSBComputeGrpzpp( hwnd, sps, &grpzpp );
 
@@ -519,7 +519,7 @@ int izpp;
 	if (FEmptyRc(prc))
 		{
 		Assert( GetWindowWord( hwnd, offset( RSBS,izppInvert)) == iNil);
-		return;
+		return 0;
 		}
 
 	if (izpp == izppThumb)
@@ -672,20 +672,20 @@ struct PT ptHit;
 		if (zpHit >= pzpp->zpMin && zpHit < pzpp->zpMac)
 			break;
 	if (izpp >= izppMax)
-		return;
+		return 0;
 
 /* if there is no thumb (not enough display space), only the arrows work */
 
 	if (grpzpp.zppThumb.zpMac <= grpzpp.zppThumb.zpMin &&
 			izpp != izppUArrow && izpp != izppDArrow)
-		return;
+		return 0;
 
 /* UpdateWindow avoids confusing the inversion code by insuring that the
 	window is up to date */
 	UpdateWindow(hwnd);
 
 	if ((hdc = GetDC(hwnd)) == NULL)
-		return;
+		return 0;
 
 	SetCapture(hwnd);
 	RSBZppToRc( hwnd, pzpp, &rc );
@@ -927,5 +927,3 @@ int fVert, fTopLeft;
 
 	return &vrsbi.rgbms [((!fVert) << 1) + (!fTopLeft)];
 }
-
-

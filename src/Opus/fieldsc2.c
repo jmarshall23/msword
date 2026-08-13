@@ -368,7 +368,7 @@ struct STTB **hsttbAssoc;
 	int docMother = DocMother (doc);
 
 	if (pValue == NULL)
-		return;
+		return 0;
 
 	/*  store *pValue into info area */
 	switch (rgifd [iifd].ifcSource)
@@ -750,6 +750,5 @@ int nfc, cchMax;
 #endif /* DEBUG */
 		}
 }
-
 
 

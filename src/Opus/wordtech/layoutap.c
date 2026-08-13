@@ -322,7 +322,7 @@ struct LR *plr;
 			&xlLeftMargin, &xlRightMargin);
 #endif /* !PCWORD */
 	if (plr->fFixedXl)
-		return;
+		return 0;
 	dxlBetween = XlFromXa(vpapFetch.dxaFromText);
 
 /* set xl now */
@@ -378,7 +378,7 @@ struct LR *plr;
 		dxlBleed = XlFromXa(vpapFetch.dxaFromText);
 		xlRightAbs = plr->xl + plr->dxl + dxlBleed;
 		if (xlRightAbs <= xlLeftMargin)
-			return;	/* right edge of abs is in left margin */
+			return 0;	/* right edge of abs is in left margin */
 
 		xlLeftAbs = plr->xl - dxlBleed;
 		dxlBetween = XlFromXa(vsepFetch.dxaColumns);
@@ -697,7 +697,7 @@ struct LBS *plbs;
 	Assert(vfInFormatPage);
 	lrp = LrpInPl(plbs->hpllr, plbs->ilrCur);
 	if (lrp->dyl == 0)
-		return;
+		return 0;
 	Assert(lrp->lrk == lrkAbs);
 	fInline = lrp->fInline;
 	drcl = lrp->drcl;
@@ -737,7 +737,7 @@ struct LBS *plbs;
 		}
 
 	if (ilr == ilrMac)
-		return;
+		return 0;
 	if (++vcLayout > 10)
 		{
 #ifdef DEBUG
@@ -747,7 +747,7 @@ struct LBS *plbs;
 		ReportSz("Layout exceeded 10 retries.");
 #endif
 #endif
-		return;
+		return 0;
 		}
 
 /* collision was found - restart, remembering abs positions */

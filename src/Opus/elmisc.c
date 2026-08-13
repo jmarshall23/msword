@@ -8,6 +8,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "heap.h"
 #include "debug.h"
 #include "doc.h"
+#include "ourmath.h"
 #include "props.h"
 #include "border.h"
 #include "version.h"
@@ -17,7 +18,6 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #define chReturn        13
 #define chEop           10
 
-extern long LWholeFromNum();
 
 #include "fkp.h"
 #include "file.h"
@@ -188,7 +188,7 @@ char * st;
 	if (!FLegalBkmkName(stBuf))
 		{
 		ErrorEid(eidInvalBkmkNam, "SetBk");
-		return;
+		return 0;
 		}
 	AssureLegalSel(pca);
 	if (!FInsertStBkmk(pca, stBuf, NULL))
@@ -503,7 +503,7 @@ int fDot;
 	if ((iglsy = IglsyFromSt(doc, *pstName)) == iNil)
 		{
 		ErrorEid(eidNoGlsy, "ElGloss");
-		return;
+		return 0;
 		}
 
 	CmdDoExpandGlsy(doc, iglsy, fTrue);
@@ -565,7 +565,7 @@ BOOL fDot;
 EL ElBlockSel()
 {
 	CMB cmb;
-	if (vfBlockSel) return;
+	if (vfBlockSel) return 0;
 	CmdBlkExtend(&cmb);
 }
 
@@ -600,7 +600,7 @@ EL ElInsPara()
 		RtError(rerrModeError);
 
 	if (!FDeleteCheck(fFalse, rpkText, NULL))
-		return;
+		return 0;
 
 	/* FDeleteCheck() can result in vrerr set... */
 	if (vrerr != rerrNil)
@@ -714,20 +714,20 @@ SD huge * hpsd;
 	cpStart = selCur.cpFirst;
 
 	if (!FDeleteCheck(fFalse, rpkText, NULL))
-		return;
+		return 0;
 
 	/* FDeleteCheck() can result in vrerr set... */
 	if (vrerr != rerrNil)
 		RtError(vrerr);
 
 	if (!FSetUndoBefore(ucmTyping, uccInsert))
-		return;
+		return 0;
 
 	vuab.selsBefore = selsBefore;
 
 
 	if ((cch = CchFromSd(*hpsd)) == 0)
-		return;
+		return 0;
 
 	/* Auto-delete */
 	CmdAutoDelete(&caRM);
@@ -1206,7 +1206,7 @@ BOOL fOn;
 			if (fOn && vhwndAppIconBar != hNil)
 				{
 				vfRestoreRibbon = fTrue;
-				return;
+				return 0;
 				}
 
 			CmdRibbon(NULL);
@@ -1380,7 +1380,7 @@ int dcp;
 	if (vcElParams == 0)
 		dcp = 1;
 	else  if (dcp == 0)
-		return;
+		return 0;
 
 	/* Special case for selection: delete the selection and remove
 		one from count... */
@@ -1391,7 +1391,7 @@ int dcp;
 		if (dcp < 0 && !vpref.fAutoDelete)
 			{
 			if (++dcp == 0)
-				return;
+				return 0;
 
 			SelectIns(&selCur, selCur.cpFirst);
 			}
@@ -2230,5 +2230,3 @@ BOOL fDisable;
 
 	vfDisableAutoMacros = fDisable;
 }
-
-

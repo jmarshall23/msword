@@ -732,7 +732,7 @@ int fSetUndo;
 		{
 		if (fSetUndo)
 			SetUndoNil();
-		return;
+		return 0;
 		}
 
 /* ca will be changed to expand according to the sgc of the first sprm
@@ -765,7 +765,7 @@ will be applied to the range of cp's described by the ca */
 			ApplyPrlSgc((char HUGE *)grpprl, cb, &selCur.chp, sgcChp);
 #endif /* MAC */
 			selCur.fUpdateRibbon = fTrue;   /* make Ribbon aware of Trans prop */
-			return;
+			return 0;
 			}
 		else  if (selCur.fBlock)
 			{
@@ -805,7 +805,7 @@ will be applied to the range of cp's described by the ca */
 				SetUndoAfter(0);
 LReturn:
 			EndLongOp (fFalse /* fAll */);
-			return;
+			return 0;
 			}
 		ca = selCur.ca;
 /* do not apply prop to trailing blanks, except: if property is vanished
@@ -835,7 +835,7 @@ or if selection was made character by character carefully */
 		fUndoCancel = !FSetUndoB1(ucmFormatting, uccFormat, &ca);
 		if (fRestoreRulerDoc)
 			vrulss.caRulerSprm.doc = docRulerSave;
-		if (fUndoCancel) return;
+		if (fUndoCancel) return 0;
 		}
 
 /* flush any pending sprms in ruler sprm cache */
@@ -993,13 +993,13 @@ char *psprm;
 			}
 		else
 			*pcaInval = *pca;
-		return;
+		return 0;
 	case sgcPap:
 		ExpandCaCache(pca, pcaInval, &caPara, sgc, CacheParaPRC);
-		return;
+		return 0;
 	case sgcTap:
 		ExpandCaTap(pca, pcaInval);
-		return;
+		return 0;
 	case sgcSep:
 #ifdef JR
 		vfJRProps = fFalse;
@@ -1012,7 +1012,7 @@ char *psprm;
 		vfJRProps = fTrue;
 		caSect.doc = docNil;
 #endif /* JR */
-		return;
+		return 0;
 		}
 }
 
@@ -1129,7 +1129,7 @@ struct CA *pca;
 	if (vmerr.fMemFail)
 		{
 		vmerr.fFmtFailed = fTrue;
-		return;
+		return 0;
 		}
 
 /* Now just add this sprm to the pieces. */
@@ -1588,7 +1588,7 @@ bytes from pprlNew */
 		if (cbLeft + dbprl > cbMaxGrpprl)
 			{
 			*pcbLeft = cbMaxGrpprl + 1; 
-			return;
+			return 0;
 			}
 		bltb(pgrpprlLeft + bprlIns + cbDel,
 				pgrpprlLeft + bprlIns + cbNew,
@@ -2271,6 +2271,7 @@ struct CHP *pchp;
 #ifdef WIN /* not used in MacWord */
 /* %%Function:EmitSprmCMajCa %%Owner:davidlu */
 EmitSprmCMajCa(pca, pchp)
+struct CA *pca;
 struct CHP *pchp;
 {
 	int cb;
@@ -2443,22 +2444,21 @@ inval page view */
 		if (esprm.sgc == sgcSep)
 			{
 			InvalPageView(DocMother(doc));
-			return;
+			return 0;
 			}
 
 		if (esprm.sgc != sgcPap)
-			return;
+			return 0;
 		if ((cchSprm = esprm.cch) == 0)
 			cchSprm = *(pprl + 1) + 2;  /* variable-length type */
 		for (csprm = sizeof(rgsprmParaBad), psprm = rgsprmParaBad; csprm-- > 0 ; )
 			if (*pprl == *psprm++)
 				{
 				InvalPageView(DocMother(doc));
-				return;
+				return 0;
 				}
 		cch -= cchSprm;
 		pprl += cchSprm;
 		}
 }
-
 

@@ -220,7 +220,7 @@ std::size_t count_dark_client_pixels(const HWND window,
     if (window == nullptr || !GetClientRect(window, &client)) {
         return 0;
     }
-    const int width = (std::min)(client.right, 800L);
+    const int width = (std::min)(client.right, static_cast<LONG>(800));
     const int top = (std::max)(0, y_first);
     const int bottom = (std::min)(client.bottom, static_cast<LONG>(y_limit));
     const int height = bottom - top;
@@ -431,8 +431,8 @@ bool make_foreground_and_focus(const HWND main_window, const HWND focus,
     if (!GetClientRect(focus, &client)) {
         return false;
     }
-    activation_point.x = (std::min)(client.right - 1, 20L);
-    activation_point.y = (std::min)(client.bottom - 1, 10L);
+    activation_point.x = (std::min)(client.right - 1, static_cast<LONG>(20));
+    activation_point.y = (std::min)(client.bottom - 1, static_cast<LONG>(10));
     if (activation_point.x < 0 || activation_point.y < 0 ||
         !ClientToScreen(focus, &activation_point) ||
         !SetCursorPos(activation_point.x, activation_point.y)) {

@@ -960,7 +960,7 @@ BOOL fFat, fForceLine;
 		Assert((*hpldr)->idrMax == vtapFetch.itcMac+1);
 #endif
 		if (idr == (*hpldr)->idrMax - 1)
-			return;
+			return 0;
 		}
 
 	DrclToRcw(hpldr, &pdr->drcl, &rcw);
@@ -1115,7 +1115,7 @@ BOOL fFat, fForceLine;
 
 LRestorePen:
 	Mac(SetPenState(&penState));
-	return;  /* for WIN so label has a line of code */
+	return 0;  /* for WIN so label has a line of code */
 }
 
 

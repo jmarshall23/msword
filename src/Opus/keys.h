@@ -210,23 +210,31 @@ extern int vgrpfKeyBoardState;
 #define kcShowVars		KcShift(KcAlt('V'))
 
 
+#ifndef KmePfn
+#ifdef OPUS_X64
+#define KmePfn(fn) { .pfn = (PFN)(fn) }
+#else
+#define KmePfn(fn) fn
+#endif
+#endif
+
 #ifdef PREVIEWC /* from preview.c */
 
 #define rgkmePrvwDef	\
-	{ kcTab,	ktFunc,   PrvwTab },			\
-	{ kcReturn,	ktFunc,   PrvwReturn }, 		\
+	{ kcTab,	ktFunc,   KmePfn(PrvwTab) },			\
+	{ kcReturn,	ktFunc,   KmePfn(PrvwReturn) }, 		\
 	{ kcEscape,	ktMacro,  bcmPrintPreview },		\
-	{ kcPageUp,	ktFunc,   PrvwPageUp }, 		\
-	{ kcPageDown,	ktFunc,   PrvwPageDown },		\
+	{ kcPageUp,	ktFunc,   KmePfn(PrvwPageUp) }, 		\
+	{ kcPageDown,	ktFunc,   KmePfn(PrvwPageDown) },		\
 	{ 'A',		ktMacro,  bcmPrvwPages },		\
 	{ 'B',		ktMacro,  bcmPrvwBound },		\
 	{ 'C',		ktMacro,  bcmPrintPreview },		\
 	{ 'P',		ktMacro,  bcmPrint },			\
 	{ 'V',		ktMacro,  bcmPageView },		\
-	{ VK_F1,	ktFunc,   PrvwF1 },			\
+	{ VK_F1,	ktFunc,   KmePfn(PrvwF1) },			\
 	{ VK_F10,	ktMacro,  bcmMenuMode },		\
-	{ KcShift(kcTab),      ktFunc,	 PrvwTab },		\
-	{ KcShift(VK_F1),      ktFunc,	 PrvwShiftF1 }, 	\
+	{ KcShift(kcTab),      ktFunc,	 KmePfn(PrvwTab) },		\
+	{ KcShift(VK_F1),      ktFunc,	 KmePfn(PrvwShiftF1) }, 	\
 	{ KcAlt(KcShift('A')), ktMacro, bcmPrvwPages }, 	\
 	{ KcAlt(KcShift('B')), ktMacro, bcmPrvwBound }, 	\
 	{ KcAlt(KcShift('C')), ktMacro, bcmPrintPreview },	\
@@ -258,81 +266,81 @@ extern int vgrpfKeyBoardState;
 
 
 #define rgKmeOutlineIBDef \
-	{ kcTab,		    ktFunc, IBTab },		\
-	{ kcReturn,		    ktFunc, IBReturn }, 	\
-	{ kcEscape,		    ktFunc, IBCancel }, 	\
-	{ kcSpace,		    ktFunc, IBReturn	},	\
-	{ kcLeft,		    ktFunc, IBMoveLeft },	\
-	{ StripCtrl(kcMoveUp),	    ktFunc, IBMoveUp }, 	\
-	{ kcRight,		    ktFunc, IBMoveRight },	\
-	{ StripCtrl(kcMoveDown),    ktFunc, IBMoveDown },	\
-	{ StripCtrl(kcLevel1),	    ktFunc, IBLevel1 }, 	\
-	{ StripCtrl(kcLevel2),	    ktFunc, IBLevel2 }, 	\
-	{ StripCtrl(kcLevel3),	    ktFunc, IBLevel3 }, 	\
-	{ StripCtrl(kcLevel4),	    ktFunc, IBLevel4 }, 	\
-	{ StripCtrl(kcLevel5),	    ktFunc, IBLevel5 }, 	\
-	{ StripCtrl(kcLevel6),	    ktFunc, IBLevel6 }, 	\
-	{ StripCtrl(kcLevel7),	    ktFunc, IBLevel7 }, 	\
-	{ StripCtrl(kcLevel8),	    ktFunc, IBLevel8 }, 	\
-	{ StripCtrl(kcLevel9),	    ktFunc, IBLevel9 }, 	\
-	{ 'A',			    ktFunc, IBExpandAll },	\
-	{ StripCtrl(kcConvToBody),  ktFunc, IBConvertToBody },	\
-	{ StripCtrl(kcExpandAll1),  ktFunc, IBExpandAll },	\
-	{ StripCtrl(kcExpand1),     ktFunc, IBExpand }, 	\
-	{ StripCtrl(kcCollapse1),   ktFunc, IBCollapse },	\
-	{ VK_F1,		    ktFunc, IBGetHelpOutline },
+	{ kcTab,		    ktFunc, KmePfn(IBTab) },		\
+	{ kcReturn,		    ktFunc, KmePfn(IBReturn) }, 	\
+	{ kcEscape,		    ktFunc, KmePfn(IBCancel) }, 	\
+	{ kcSpace,		    ktFunc, KmePfn(IBReturn)	},	\
+	{ kcLeft,		    ktFunc, KmePfn(IBMoveLeft) },	\
+	{ StripCtrl(kcMoveUp),	    ktFunc, KmePfn(IBMoveUp) }, 	\
+	{ kcRight,		    ktFunc, KmePfn(IBMoveRight) },	\
+	{ StripCtrl(kcMoveDown),    ktFunc, KmePfn(IBMoveDown) },	\
+	{ StripCtrl(kcLevel1),	    ktFunc, KmePfn(IBLevel1) }, 	\
+	{ StripCtrl(kcLevel2),	    ktFunc, KmePfn(IBLevel2) }, 	\
+	{ StripCtrl(kcLevel3),	    ktFunc, KmePfn(IBLevel3) }, 	\
+	{ StripCtrl(kcLevel4),	    ktFunc, KmePfn(IBLevel4) }, 	\
+	{ StripCtrl(kcLevel5),	    ktFunc, KmePfn(IBLevel5) }, 	\
+	{ StripCtrl(kcLevel6),	    ktFunc, KmePfn(IBLevel6) }, 	\
+	{ StripCtrl(kcLevel7),	    ktFunc, KmePfn(IBLevel7) }, 	\
+	{ StripCtrl(kcLevel8),	    ktFunc, KmePfn(IBLevel8) }, 	\
+	{ StripCtrl(kcLevel9),	    ktFunc, KmePfn(IBLevel9) }, 	\
+	{ 'A',			    ktFunc, KmePfn(IBExpandAll) },	\
+	{ StripCtrl(kcConvToBody),  ktFunc, KmePfn(IBConvertToBody) },	\
+	{ StripCtrl(kcExpandAll1),  ktFunc, KmePfn(IBExpandAll) },	\
+	{ StripCtrl(kcExpand1),     ktFunc, KmePfn(IBExpand) }, 	\
+	{ StripCtrl(kcCollapse1),   ktFunc, KmePfn(IBCollapse) },	\
+	{ VK_F1,		    ktFunc, KmePfn(IBGetHelpOutline) },
 
 
 #define rgKmeHdrIBDef \
-	{ kcTab,	ktFunc, IBTab },		\
-	{ kcReturn,	ktFunc, IBReturn    },		\
-	{ kcEscape,	ktFunc, IBCancel    },		\
-	{ kcSpace,	ktFunc, IBReturn    },		\
-	{ kcLeft,	ktFunc, IBMoveLeft  },		\
-	{ kcUp, 	ktFunc, IBMoveLeft  },		\
-	{ kcRight,	ktFunc, IBMoveRight },		\
-	{ kcDown,	ktFunc, IBMoveRight },		\
-	{ 'C',		ktFunc, IBHdrRetToDoc },	\
-	{ 'D',		ktFunc, IBHdrDate },		\
-	{ 'L',		ktFunc, IBHdrLinkPrev },	\
-	{ 'P',		ktFunc, IBHdrPage },		\
-	{ 'R',		ktFunc, IBHdrLinkPrev },	\
-	{ 'T',		ktFunc, IBHdrTime },		\
-	{ VK_F1,	ktFunc, IBGetHelpHdr },
+	{ kcTab,	ktFunc, KmePfn(IBTab) },		\
+	{ kcReturn,	ktFunc, KmePfn(IBReturn)    },		\
+	{ kcEscape,	ktFunc, KmePfn(IBCancel)    },		\
+	{ kcSpace,	ktFunc, KmePfn(IBReturn)    },		\
+	{ kcLeft,	ktFunc, KmePfn(IBMoveLeft)  },		\
+	{ kcUp, 	ktFunc, KmePfn(IBMoveLeft)  },		\
+	{ kcRight,	ktFunc, KmePfn(IBMoveRight) },		\
+	{ kcDown,	ktFunc, KmePfn(IBMoveRight) },		\
+	{ 'C',		ktFunc, KmePfn(IBHdrRetToDoc) },	\
+	{ 'D',		ktFunc, KmePfn(IBHdrDate) },		\
+	{ 'L',		ktFunc, KmePfn(IBHdrLinkPrev) },	\
+	{ 'P',		ktFunc, KmePfn(IBHdrPage) },		\
+	{ 'R',		ktFunc, KmePfn(IBHdrLinkPrev) },	\
+	{ 'T',		ktFunc, KmePfn(IBHdrTime) },		\
+	{ VK_F1,	ktFunc, KmePfn(IBGetHelpHdr) },
 
 
 #define rgKmeDbgIBDef \
-	{ kcTab,	ktFunc, IBTab },		\
-	{ kcReturn,	ktFunc, IBReturn },		\
-	{ kcEscape,	ktFunc, IBCancel },		\
-	{ kcSpace,	ktFunc, IBReturn    },		\
-	{ kcLeft,	ktFunc, IBMoveLeft },		\
-	{ kcUp, 	ktFunc, IBMoveLeft },		\
-	{ kcRight,	ktFunc, IBMoveRight },		\
-	{ kcDown,	ktFunc, IBMoveRight },		\
-	{ 'E',		ktFunc, IBTraceMacro }, 	\
-	{ 'R',		ktFunc, IBAnimateMacro },	\
-	{ 'S',		ktFunc, IBContinueMacro },	\
-	{ 'U',		ktFunc, IBStepMacro },		\
-	{ 'V',		ktFunc, IBShowVars },		\
-	{ VK_F1,	ktFunc, IBGetHelpMacro },
+	{ kcTab,	ktFunc, KmePfn(IBTab) },		\
+	{ kcReturn,	ktFunc, KmePfn(IBReturn) },		\
+	{ kcEscape,	ktFunc, KmePfn(IBCancel) },		\
+	{ kcSpace,	ktFunc, KmePfn(IBReturn)    },		\
+	{ kcLeft,	ktFunc, KmePfn(IBMoveLeft) },		\
+	{ kcUp, 	ktFunc, KmePfn(IBMoveLeft) },		\
+	{ kcRight,	ktFunc, KmePfn(IBMoveRight) },		\
+	{ kcDown,	ktFunc, KmePfn(IBMoveRight) },		\
+	{ 'E',		ktFunc, KmePfn(IBTraceMacro) }, 	\
+	{ 'R',		ktFunc, KmePfn(IBAnimateMacro) },	\
+	{ 'S',		ktFunc, KmePfn(IBContinueMacro) },	\
+	{ 'U',		ktFunc, KmePfn(IBStepMacro) },		\
+	{ 'V',		ktFunc, KmePfn(IBShowVars) },		\
+	{ VK_F1,	ktFunc, KmePfn(IBGetHelpMacro) },
 
 
 #define rgKmePreviewIBDef \
-	{ kcTab,	ktFunc, IBTab	    },		\
-	{ kcReturn,	ktFunc, IBReturn    },		\
-	{ kcEscape,	ktFunc, IBCancel    },		\
-	{ kcSpace,	ktFunc, IBReturn    },		\
-	{ kcLeft,	ktFunc, IBMoveLeft  },		\
-	{ kcUp, 	ktFunc, IBMoveLeft  },		\
-	{ kcRight,	ktFunc, IBMoveRight },		\
-	{ kcDown,	ktFunc, IBMoveRight },		\
-	{ 'A',		ktFunc, IBPrvwPages },		\
-	{ 'B',		ktFunc, IBPrvwBound },		\
-	{ 'C',		ktFunc, IBPrvwClose },		\
-	{ 'P',		ktFunc, IBPrvwPrint },		\
-	{ 'V',		ktFunc, IBPageView  },		\
-	{ VK_F1,	ktFunc, IBGetHelpPreview },
+	{ kcTab,	ktFunc, KmePfn(IBTab)	    },		\
+	{ kcReturn,	ktFunc, KmePfn(IBReturn)    },		\
+	{ kcEscape,	ktFunc, KmePfn(IBCancel)    },		\
+	{ kcSpace,	ktFunc, KmePfn(IBReturn)    },		\
+	{ kcLeft,	ktFunc, KmePfn(IBMoveLeft)  },		\
+	{ kcUp, 	ktFunc, KmePfn(IBMoveLeft)  },		\
+	{ kcRight,	ktFunc, KmePfn(IBMoveRight) },		\
+	{ kcDown,	ktFunc, KmePfn(IBMoveRight) },		\
+	{ 'A',		ktFunc, KmePfn(IBPrvwPages) },		\
+	{ 'B',		ktFunc, KmePfn(IBPrvwBound) },		\
+	{ 'C',		ktFunc, KmePfn(IBPrvwClose) },		\
+	{ 'P',		ktFunc, KmePfn(IBPrvwPrint) },		\
+	{ 'V',		ktFunc, KmePfn(IBPageView)  },		\
+	{ VK_F1,	ktFunc, KmePfn(IBGetHelpPreview) },
 
 
 #endif /* ICONBAR3C */
@@ -341,23 +349,23 @@ extern int vgrpfKeyBoardState;
 #ifdef RULRIBC /* from rulrib.c */
 
 #define rgKmeRulerDef \
-	{ kcTab,	    ktFunc, RETab	},	\
-	{ kcReturn,	    ktFunc, REReturn	},	\
-	{ kcEscape,	    ktFunc, REEscape	},	\
-	{ VK_END,	    ktFunc, REEnd	},	\
-	{ VK_HOME,	    ktFunc, REHome	},	\
-	{ kcLeft,	    ktFunc, RELeft	},	\
-	{ kcRight,	    ktFunc, RERight	},	\
-	{ kcInsert,	    ktFunc, REInsert	},	\
-	{ kcDelete,	    ktFunc, REDelete	},	\
-	{ '1',		    ktFunc, RETabLeft	},	\
-	{ '2',		    ktFunc, RETabCenter },	\
-	{ '3',		    ktFunc, RETabRight	},	\
-	{ '4',		    ktFunc, RETabDecimal },	\
-	{ 'F',		    ktFunc, REIndLeft1	},	\
-	{ 'L',		    ktFunc, REIndLeft	},	\
-	{ 'R',		    ktFunc, REIndRight	},	\
-	{ VK_F1,	    ktFunc, REGetHelp	},
+	{ kcTab,	    ktFunc, KmePfn(RETab)	},	\
+	{ kcReturn,	    ktFunc, KmePfn(REReturn)	},	\
+	{ kcEscape,	    ktFunc, KmePfn(REEscape)	},	\
+	{ VK_END,	    ktFunc, KmePfn(REEnd)	},	\
+	{ VK_HOME,	    ktFunc, KmePfn(REHome)	},	\
+	{ kcLeft,	    ktFunc, KmePfn(RELeft)	},	\
+	{ kcRight,	    ktFunc, KmePfn(RERight)	},	\
+	{ kcInsert,	    ktFunc, KmePfn(REInsert)	},	\
+	{ kcDelete,	    ktFunc, KmePfn(REDelete)	},	\
+	{ '1',		    ktFunc, KmePfn(RETabLeft)	},	\
+	{ '2',		    ktFunc, KmePfn(RETabCenter) },	\
+	{ '3',		    ktFunc, KmePfn(RETabRight)	},	\
+	{ '4',		    ktFunc, KmePfn(RETabDecimal) },	\
+	{ 'F',		    ktFunc, KmePfn(REIndLeft1)	},	\
+	{ 'L',		    ktFunc, KmePfn(REIndLeft)	},	\
+	{ 'R',		    ktFunc, KmePfn(REIndRight)	},	\
+	{ VK_F1,	    ktFunc, KmePfn(REGetHelp)	},
 
 
 #endif /* RULRIBC */

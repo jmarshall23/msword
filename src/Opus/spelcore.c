@@ -23,16 +23,13 @@
 #define NOFONT
 /* #define NOGDI */
 #define NOHDC
-/* #define NOMB */
-/* #define NOMEMMGR */
+/* #define NOMB #define NOMEMMGR */
 #define NOMENUS
 #define NOMETAFILE
 #define NOMINMAX
-/* #define NOMSG */
-/* #define NOOPENFILE */
+/* #define NOMSG #define NOOPENFILE */
 #define NOPEN
-/* #define NOPOINT */
-/* #define NORECT */
+/* #define NOPOINT #define NORECT */
 #define NOREGION
 #define NOSCROLL
 #define NOSOUND
@@ -121,16 +118,12 @@ struct SCD *vpscd;
 
 NATIVE FCopySzToGhd( char *, struct GHD * ); /* DECLARATION ONLY */
 
-/* ****
-*
-	Function: TmcGosubSpellMM
-*  Author:
-*  Copyright: Microsoft 1986
-*  Date: 8/31/87
-*
-*  Description: Command function for "Spelling Missmatched Word" dialog
-*
-** ***/
+/* Function: TmcGosubSpellMM Author:
+ *  Copyright: Microsoft 1986
+ *  Date: 8/31/87
+ *
+ * Description: Command function for "Spelling Missmatched Word" dialog
+ */
 
 /* %%Function:TmcGosubSpellMM %%Owner:bryanl */
 int TmcGosubSpellMM()
@@ -154,7 +147,7 @@ int TmcGosubSpellMM()
 	pcabspellerMM->iSplMMAddToBox = vrf.udcDefault;
 	pcabspellerMM->fSplMMAutoSugg = vpref.fSplAutoSugg;
 	pcabspellerMM->fSplMMIgnoreCaps = vrf.fSplIgnoreCaps;
-	(int)(pcabspellerMM->uSplMMSuggList) = uNinchList;
+	pcabspellerMM->uSplMMSuggList = uNinchList;
 
 	cmb.hcab = hcabspellerMM;
 	cmb.cmm = cmmNormal;
@@ -230,10 +223,10 @@ WORD wOld, wNew, wParam;
 
 		if (vpspv->fInScanDoc)
 			{
-			/* if we are canceling and scanning doc, TermScanDoc will be
-			   called in FScanDoc on return from TmcOurDoDlg. This will cause
-			   the screen to redraw only after the dialog has come down. bz
-			*/
+			/* if we are canceling and scanning doc, TermScanDoc will be called
+			 * in FScanDoc on return from TmcOurDoDlg. This will cause the
+			 * screen to redraw only after the dialog has come down. bz
+			 */
 			if (!vpspv->fSplCancel)
 				return fFalse;	/* Stay in dialog */
 			}
@@ -247,8 +240,9 @@ WORD wOld, wNew, wParam;
 			{
 			CP cpT = vpscd->cpTestWord;
 
-/* HACK FIX (bug 5617): for repeated word, show previous word too
-	to get the full context */
+/* HACK FIX (bug 5617): for repeated word, show previous word too to get the
+ * full context
+ */
 			if (vpspv->LookupError == REPEAT_WORD)
 				cpT = CpFirstSty( selCur.ww, selCur.doc, 
 						cpT, styWord, fTrue );
@@ -342,8 +336,9 @@ WORD wOld, wNew, wParam;
 				break;
 				}
 
-/* for miscapitalizion, accept the user's precise input unconditionally */
-/* also do not bother to look up replacement word if it's too long */
+/* for miscapitalizion, accept the user's precise input unconditionally also do
+ * not bother to look up replacement word if it's too long
+ */
 			if ((vpspv->LookupError == CAP_REQUIRED)
 					|| (vpspv->LookupError == ALLCAPS_REQUIRED)
 					|| (vpspv->LookupError == IMPROP_CAP))
@@ -370,17 +365,11 @@ LReplaceXact:
 				break;
 				}
 
-/* for NOT FOUND errors:
-		look up the replacement word
-			if found in aux cache
-			use user's exact input & add it to aux cache
-			else if caps error
-			add corrected caps word to doc and aux cache
-			else if found in dictionary
-			add to dictionary with spcReplace
-			else
-			add to dictionary with spcReplaceXact
-*/
+/* for NOT FOUND errors: look up the replacement word if found in aux cache use
+ * user's exact input & add it to aux cache else if caps error add corrected
+ * caps word to doc and aux cache else if found in dictionary add to dictionary
+ * with spcReplace else add to dictionary with spcReplaceXact
+ */
 
 			MyResetRepeatWord();
 			lResult = LMyLookUpWord( vpspl->ghdReplaceWord.ghsz, 
@@ -444,9 +433,9 @@ LCancel:
 }
 
 
-/* S p l  T e r m  O r  S c a n */
-/* Scan for next word, set up dialog accordingly.  if cancelled, do nothing */
-/* %%Function:SplTermOrScan %%Owner:bryanl */
+/* S p l T e r m O r S c a n Scan for next word, set up dialog accordingly. if
+ * cancelled, do nothing %%Function:SplTermOrScan %%Owner:bryanl
+ */
 SplTermOrScan()
 {
 	int ilng = lgcCur.ilng;
@@ -465,7 +454,7 @@ SplTermOrScan()
 		if (spc == spcDone || spc == spcAbort)
 			{
 			TermScanDoc( spc == spcDone );
-			return;
+			return 0;
 			}
 		if( ilng != FINN )
 			EnableTmc(tmcSplMMSugg, fTrue);
@@ -475,9 +464,9 @@ SplTermOrScan()
 }
 
 
-/* S e t u p  M M  W o r d */
-/* Set up MisMatched word dialog controls based on the bad word and on the
-	problem detected with it. */
+/* S e t u p M M W o r d Set up MisMatched word dialog controls based on the bad
+ * word and on the problem detected with it.
+ */
 
 /* %%Function:SetupMMWord %%Owner:bryanl */
 SetupMMWord()
@@ -527,18 +516,20 @@ LAddOK:
 	SetFocusTmc( tmcSplMMChangeTo );
 	FEnableMMChange();
 	Select(&selCur,vpscd->cpTestWord, vpscd->cpLimWord );
-/* store back selCur which resulted, in case AssureLegalSel actions 
-   expanded the sel to include fields. */
+
+/* store back selCur which resulted, in case AssureLegalSel actions expanded the
+ * sel to include fields.
+ */
 	vpscd->cpTestWord = selCur.cpFirst;
 	vpscd->cpLimWord = selCur.cpLim;
 	vpspv->fSeeSel = fTrue;
 }
 
 
-/* F  E n a b l e  M M  C h a n g e */
-/* set up state of Change button in MisMatched word dialog according
-	to current contents of Change To editctl */
-/* %%Function:FEnableMMChange %%Owner:bryanl */
+/* F E n a b l e M M C h a n g e set up state of Change button in MisMatched
+ * word dialog according to current contents of Change To editctl
+ * %%Function:FEnableMMChange %%Owner:bryanl
+ */
 FEnableMMChange()
 {
 	int f;
@@ -556,9 +547,9 @@ FEnableMMChange()
 }
 
 
-/* S p l  I g n o r e  O n c e */
-/* called for Ctrl-I hack which means ignore misspelling, but do not add to cache */
-/* %%Function:SplIgnoreOnce %%Owner:bryanl */
+/* S p l I g n o r e O n c e called for Ctrl-I hack which means ignore
+ * misspelling, but do not add to cache %%Function:SplIgnoreOnce %%Owner:bryanl
+ */
 SplIgnoreOnce()
 {
 #ifdef BRYANL
@@ -569,16 +560,16 @@ SplIgnoreOnce()
 
 	if (!vpspv->fInScanDoc)	/* all done, take down dialog */
 		EndDlg (tmcOK);		/* gotta do it manually cause SDM doesn't
-	know about this key */
+	know about this key
+	*/
 	/* this will NOT send a dlmTerm (sez bobz) */
 }
 
 
-/* S p l  C h a n g e  O n c e */
-/* called for Ctrl-C hack (in 1.00a) which means change misspelled 
-word once, i.e. do not add to cache.
-*/ 
-/* %%Function:SplChangeOnce %%Owner:chic */
+/* S p l C h a n g e O n c e called for Ctrl-C hack (in 1.00a) which means
+ * change misspelled word once, i.e. do not add to cache.
+ * %%Function:SplChangeOnce %%Owner:chic
+ */
 SplChangeOnce()
 {
 	CHAR szReplaceWord[cbReplaceWordMax + 2];
@@ -591,14 +582,15 @@ SplChangeOnce()
 	SplTermOrScan();
 	if (!vpspv->fInScanDoc)	/* all done, take down dialog */
 		EndDlg (tmcOK);		/* gotta do it manually cause SDM doesn't
-	know about this key */
+	know about this key
+	*/
 	/* this will NOT send a dlmTerm */
 }
 
 
-/* 
-/* W  C o m b o  S p e l l  M M */
-/* Combo box fill routine for user dictionary combo in Mismatched Word dialog */
+/* /* W C o m b o S p e l l M M Combo box fill routine for user dictionary combo
+ * in Mismatched Word dialog
+ */
 
 /* %%Function:WComboSpellMM %%Owner:bryanl */
 EXPORT WORD WComboSpellMM(tmm, sz, isz, filler, tmc, wParam)
@@ -659,8 +651,10 @@ char *sz;
 		sz [0] = '\0';
 		return fFalse;
 		}
-/* note: string may be larger than ichMac because entire GHD is not
-	passed to speller */
+
+/* note: string may be larger than ichMac because entire GHD is not passed to
+ * speller
+ */
 	while ((*sz++ = *lpch++) != '\0')
 		;
 	GlobalUnlock( pghd->ghsz );
@@ -773,12 +767,11 @@ LRet:
 }
 
 
-/* FFillArrayWithSugg is similar to FillSuggBox, except that it puts
-* the suggestions in the string array accessed via ad.   It puts as
-* many suggestions as will fit in the array, or as many as are available.
-* It returns fFalse if not enough memory, fTrue if OK.
-*/
-/* %%Function:FFillArrayWithSugg %%Owner:bryanl */
+/* FFillArrayWithSugg is similar to FillSuggBox, except that it puts the
+ * suggestions in the string array accessed via ad. It puts as many suggestions
+ * as will fit in the array, or as many as are available. It returns fFalse if
+ * not enough memory, fTrue if OK. %%Function:FFillArrayWithSugg %%Owner:bryanl
+ */
 FFillArrayWithSugg(ad)
 AD ad;
 {
@@ -867,8 +860,10 @@ LAbort:
 			TerminateAbortCheck(pdcRestoreImmed);
 			vpscd->fPrompt = fFalse;
 			TmcGosubSpellMM();
-/* following may occur on allocation failure because dlmTerm stuff does
-	not get done. May also happen if we cancel out bz */
+
+/* following may occur on allocation failure because dlmTerm stuff does not get
+ * done. May also happen if we cancel out bz
+ */
 			if (vpspv->fInScanDoc)
 				TermScanDoc( fTrue );
 			break;
@@ -947,21 +942,18 @@ int fNoError;
 
 
 
-/* S p c  S c a n  D o c  N e x t  W o r d */
-/* Perform next stage of scan defined by InitScanDoc.  
-	Handles ignored and Replace words silently, returns in the following 
-	cases:
-
-	spcDone - scan complete
-	spcAbort - user performed early abort of the scan
-	other spc values: word is in error or not found
-
-	The parameter fContAtBeginning is only checked when considering continuing
-	scan at beginning of document.   If vpscd->fPrompt is false,
-	fContAtBeginning is used, otherwise a dialog box is popped up to allow
-	the user to choose.   The purpose of this is to allow silent (no
-	dialogs) operation for macros.
-*/
+/* S p c S c a n D o c N e x t W o r d Perform next stage of scan defined by
+ * InitScanDoc. Handles ignored and Replace words silently, returns in the
+ * following cases:
+ *
+ * spcDone - scan complete spcAbort - user performed early abort of the scan
+ * other spc values: word is in error or not found
+ *
+ * The parameter fContAtBeginning is only checked when considering continuing
+ * scan at beginning of document. If vpscd->fPrompt is false, fContAtBeginning
+ * is used, otherwise a dialog box is popped up to allow the user to choose. The
+ * purpose of this is to allow silent (no dialogs) operation for macros.
+ */
 
 
 /* %%Function:SpcScanDocNextWord %%Owner:bryanl */
@@ -991,8 +983,9 @@ BOOL fDialog, fNoDlgContAtBeginning;
 
 			EndLongOp(fFalse);
 
-		/* If fPrompt is true, bring up a dialog box r.e. continue at
-					* beginning.   Otherwise, use fNoDlgContAtBeginning to decide. */
+		/* If fPrompt is true, bring up a dialog box r.e. continue at beginning.
+		 * Otherwise, use fNoDlgContAtBeginning to decide.
+		 */
 			if (fDialog)
 				{
 			/* ask: "Continue checking at beginning of document?" */
@@ -1105,29 +1098,23 @@ LTryAgain:
 
 
 
-/**********************************************/
-/* F  G e t  N e x t  W o r d  F r o m  D o c */
-/*
-	Inputs:
-	vpscd - pointer to frame SCD
-	vpscd->cpScan  - cp at which to start scan
-	vpscd->cpScanLocalMac - return false if next word starts beyond
-				this cp
-	vpscd->rgchCase is filled out from the speller 
-
-	Outputs:
-
-	if return value is TRUE, fills out the following:
-	vpscd->cpTestWord - cp of start of returned word
-	vpscd->cpLimWord - cp of end of returned word
-	vpscd->szTestWord - the word
-
-	if return value is FALSE, no more words are available
-*/
-/* Profiling reveals that it takes 25 times longer to check the word
-	than is spent in this routine, so coding this in assembler would
+/* F G e t N e x t W o r d F r o m D o c Inputs: vpscd - pointer to frame SCD
+ * vpscd->cpScan - cp at which to start scan vpscd->cpScanLocalMac - return
+ * false if next word starts beyond this cp vpscd->rgchCase is filled out from
+ * the speller
+ *
+ * Outputs:
+ *
+ * if return value is TRUE, fills out the following: vpscd->cpTestWord - cp of
+ * start of returned word vpscd->cpLimWord - cp of end of returned word
+ * vpscd->szTestWord - the word
+ *
+ * if return value is FALSE, no more words are available
+ */
+/* Profiling reveals that it takes 25 times longer to check the word than is
+ * spent in this routine, so coding this in assembler would
 	not currently speed up the speller.	(bradv 3-10-89)
-*/
+ */
 
 /* %%Function:FGetNextWordFromDoc %%Owner:bryanl */
 NATIVE FGetNextWordFromDoc()
@@ -1160,10 +1147,11 @@ LFirstRun:
 				}
 
 			hpchLim = vhpchFetch + ccp;
-/* treat super/subscript and fSpec as non-word text, to avoid
-	deleting footnotes, pictures, etc, either as "words" by themselves
-	or as imbedded in words. Same for struct thru text, cause it's not really
-	there. */
+
+/* treat super/subscript and fSpec as non-word text, to avoid deleting
+ * footnotes, pictures, etc, either as "words" by themselves or as imbedded in
+ * words. Same for struct thru text, cause it's not really there.
+ */
 			if (vchpFetch.hpsPos != 0 || vchpFetch.fSpec || vchpFetch.fStrike)
 				{
 				if ((uns) ich - cbWordMin <= cbWordMax - cbWordMin)
@@ -1362,5 +1350,5 @@ HANDLE ghszReplaceWord;
 HANDLE GhMySpellGetrgchCase()
 {
 	Assert( vpspl->hstack != NULL );
-	return WCallOtherStack( vpspl->lpfnGhSpellGetrgchCase, vpspl->hstack, NULL, 0 );
+	return (HANDLE)(UINT_PTR)WCallOtherStack( vpspl->lpfnGhSpellGetrgchCase, vpspl->hstack, NULL, 0 );
 }

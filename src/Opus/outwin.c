@@ -477,7 +477,7 @@ DrawOtlMoveMarker(xp, yp, dyp, mkt)
 	struct RC rc, rcDraw;
 
 	if (mkt == mktOff || (iLevel = SaveDC(hdc)) == 0)
-		return;
+		return 0;
 
 	xw = XwFromXp(hwwdCur, 0, xp);
 	yw = YwFromYp(hwwdCur, 0, yp);
@@ -588,7 +588,7 @@ struct RC *prc1, *prc2;
 /* calculate yp */
 	if ((dl = DlWhereDocCp(wwCur, doc, CpPlc(hplcpad, ipad), fFalse,
 			&hpldr, &idr, NULL, NULL,fTrue)) == dlNil)
-		return;
+		return 0;
 	GetPlc(PdrGalley(*hwwdCur)->hplcedl, dl, &edl);
 	yp = edl.ypTop + edl.dyp;
 
@@ -901,7 +901,7 @@ int xwT, ywT;
 #else
 	if ((pmdcd = PmdcdCacheIdrb(idrbOtlPat, hdc)) == NULL || xwT < PwwdWw(ww)->xwMin)
 #endif /* WIN23 */
-		return;
+		return 0;
 
 	rgbTextSave = SetTextColor(hdc, 0x00ffffffL);
 	rgbBkgrndSave = SetBkColor(hdc, 0x00000000L);
@@ -1581,7 +1581,7 @@ struct MKS *pmks;
 {
 	if (pmks->mkt == mkt &&
 			(pmks->xp == xp && pmks->yp == yp))
-		return;
+		return 0;
 /* turn off current mkt */
 	DrawOtlMoveMarker(pmks->xp, pmks->yp, pmks->dyp, pmks->mkt);
 /* now the mark is off */
@@ -1676,5 +1676,4 @@ CP cp;
 	return pad.fShow;
 
 }
-
 
