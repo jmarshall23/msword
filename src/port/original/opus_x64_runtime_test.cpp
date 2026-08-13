@@ -81,6 +81,7 @@ extern "C" TestWord HdlgStartDlg(TestDltHeader**, void**, TestDli*);
 extern "C" TestWord HdlgSetCurDlg(TestWord);
 extern "C" HWND HwndFromDlg(TestWord);
 extern "C" HWND HwndOfTmc(TestWord);
+extern "C" void GetTmcRec(TestWord, TestSdmRec*);
 extern "C" int FModalDlg(TestWord);
 extern "C" int FFreeDlg();
 extern "C" TestWord TmcDoDlgDli(TestDltHeader**, void**, TestDli*);
@@ -98,11 +99,11 @@ int new_modal_init_count = 0;
 int new_modal_exit_count = 0;
 bool new_modal_controls_present = false;
 
-bool WindowHasClass(const HWND window, const char* expected) {
-    char class_name[32] = {};
-    return window != nullptr &&
-           GetClassNameA(window, class_name, sizeof(class_name)) != 0 &&
-           std::strcmp(class_name, expected) == 0;
+bool HasControlRecord(const TestWord tmc) {
+    TestSdmRec rectangle{};
+    GetTmcRec(tmc, &rectangle);
+    return HwndOfTmc(tmc) == nullptr && rectangle.dx > 0 &&
+           rectangle.dy > 0;
 }
 
 int ModalRuntimeProbe(TestWord message, TestWord, TestWord, TestWord,
@@ -121,10 +122,10 @@ int NewModalRuntimeProbe(TestWord message, TestWord, TestWord, TestWord,
     if (message == 1) {
         ++new_modal_init_count;
         new_modal_controls_present =
-            WindowHasClass(HwndOfTmc(0x0402), "Button") &&
-            WindowHasClass(HwndOfTmc(0x0403), "Button") &&
-            WindowHasClass(HwndOfTmc(0x0404), "Edit") &&
-            WindowHasClass(HwndOfTmc(0x0405), "ListBox");
+            HasControlRecord(0x0402) &&
+            HasControlRecord(0x0403) &&
+            HasControlRecord(0x0404) &&
+            HasControlRecord(0x0405);
         EndDlg(2);
     } else if (message == 4) {
         ++new_modal_exit_count;
@@ -305,7 +306,7 @@ int main() {
     if (first == 0 || second == 0 || first == second || first_host == parent ||
         second_host == parent || first_host == second_host ||
         GetParent(first_host) != parent || GetParent(second_host) != parent ||
-        first_control == nullptr || GetParent(first_control) != first_host ||
+        first_control != nullptr ||
         FModalDlg(first) || !FModalDlg(second)) {
         DestroyWindow(parent);
         EndSdm();

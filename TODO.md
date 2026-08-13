@@ -114,9 +114,8 @@ kept stable so citations elsewhere do not rot.
 
 ## Shim dependency order
 
-Execution order here is 15a, 12, 13, 14, 15b. Item 15 splits: the decision and the
-deletion of the native control classes come first because they change how much of items
-13 and 14 has to exist, and SDM's own control drawing comes last because it needs both.
+Execution order here is 12, 13, 14, 15b. Item 15 still finishes after item 14 because
+SDM's own control drawing needs both the device context and the input loop.
 Numbering stays stable so citations do not rot.
 
 ### 12. kernel32 tier, 84 entries, no SDL
@@ -313,17 +312,7 @@ navigation, and a common file dialog: more work than gdi32 and user32 combined.
 It is also self-inflicted. Word 1.1a shipped SDM, which drew its own controls on Win16
 primitives. Native controls are a choice this port made, in code we own.
 
-Split this in two, because as one item it deadlocks against item 14: 14's checks need
-dialogs, and 15's check needs 13's device context and 14's input routing.
-
-15a, before item 12: make SDM draw its own controls again in `src/port/`. Remove
-`create_native_control`, `create_untracked_control`, built-in class-name
-`CreateWindowExA` calls, and `GetOpenFileNameA`/`GetSaveFileNameA` usage from
-`opus_sdm_runtime.cpp`. Replace each with an SDM-owned object record; no rendering yet.
-This deletes the largest chunk of the shim before it is written and the dialogs end up
-looking like Word 1.1a rather than like host widgets.
-
-15b, after item 14: SDM's own control drawing, over item 13's device context.
+What remains is SDM's own control drawing, over item 13's device context, after item 14.
 
 Exclude `opus_win95_chrome.cpp` from non-Windows targets until the SDM path can redraw
 that chrome. It is 2882 lines of Win32 chrome with `<windowsx.h>` and `uxtheme.dll`, and
@@ -331,9 +320,8 @@ has no cross-platform meaning as written.
 
 The two comdlg32 entries become a small SDM-drawn file browser over item 12's file APIs.
 
-Done when: 15a, zero `CreateWindowExA` calls with a built-in class name remain in
-`opus_sdm_runtime.cpp`. 15b, a new `opus_sdm_render_test` renders the About and Save As
-dialogs to a pixel buffer and diffs against a checked-in reference image, and
+Done when: a new `opus_sdm_render_test` renders the About and Save As dialogs to a
+pixel buffer and diffs against a checked-in reference image, and
 `ctest -L ui` is green headless on the Linux runner.
 
 ---

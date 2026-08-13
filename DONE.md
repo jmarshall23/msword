@@ -1,5 +1,29 @@
 # DONE
 
+## Make SDM controls state-owned again
+
+`opus_sdm_runtime.cpp` no longer creates Win32 child controls for SDM-owned buttons,
+edits, list boxes, combo boxes, or statics. Those controls now live as `ControlState`
+records, with untracked labels and frames kept alongside the dialog state. The Open and
+Save As path no longer calls the native common file dialog; the existing test hook still
+injects a selected path, and otherwise the SDM path cancels until the later file browser
+is drawn over the shim.
+
+`HwndOfTmc` keeps its ABI but now returns `nullptr` for SDM controls, and
+`opus_x64_runtime_test.cpp` checks the control records through `GetTmcRec` instead of
+expecting child HWND classes.
+
+Validated with the done-condition grep for `CreateWindowExA` in
+`opus_sdm_runtime.cpp`, which now finds only the two `OpusSdmDialog` host-window calls.
+`opus_sdm_runtime.cpp` and `opus_x64_runtime_test.cpp` compile in the focused runtime
+target. `win32_coverage` passes after removing the now-stale uncovered entries
+`GetClassNameA`, `GetComboBoxInfo`, `GetFileAttributesExA`, and
+`SetEnvironmentVariableA`.
+
+The full default macOS build still hits the existing legacy C `implicit-int` failures,
+and the focused runtime test links far enough to hit the existing macOS `-luser32`
+linker gap.
+
 ## Move `RC` out of the top-level `LANGUAGES`
 
 `src/CMakeLists.txt` now declares only `C` and `CXX` in `project()`, enables `RC` only

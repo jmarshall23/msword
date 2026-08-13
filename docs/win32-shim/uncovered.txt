@@ -73,12 +73,10 @@ FrameRect
 GetActiveWindow
 GetAncestor
 GetCapture
-GetClassNameA
 GetClassNameW
 GetClientRect
 GetClipboardData
 GetClipboardOwner
-GetComboBoxInfo
 GetCurrentDirectoryA
 GetCurrentObject
 GetCurrentProcess
@@ -92,7 +90,6 @@ GetDlgCtrlID
 GetDriveTypeA
 GetEnvironmentVariableA
 GetFileAttributesA
-GetFileAttributesExA
 GetFileType
 GetFocus
 GetFullPathNameA
@@ -211,7 +208,6 @@ SetCapture
 SetClipboardData
 SetCursor
 SetCursorPos
-SetEnvironmentVariableA
 SetFocus
 SetKeyboardState
 SetLastError

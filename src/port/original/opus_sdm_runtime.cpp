@@ -1,6 +1,5 @@
 #include "opus_x64_compat.h"
 #include "opus_x64_heap.h"
-#include "commdlg.h"
 #include "objbase.h"
 extern "C" {
 #include "dac.h"
@@ -58,6 +57,15 @@ using OriginalListProc = Word (*)(Word, char*, int, Word, Word, Word);
 using FontValueProc = int (*)(const char*);
 using FontNameFromValueProc = void (*)(int, char*, int);
 
+enum class ControlKind {
+    unknown,
+    button,
+    combo,
+    edit,
+    list,
+    statik,
+};
+
 struct Rec {
     int x;
     int y;
@@ -84,6 +92,7 @@ struct Dli {
 };
 
 struct ControlState {
+    ControlKind kind = ControlKind::unknown;
     Word value = 0;
     Dword selection = 0;
     bool enabled = true;
@@ -115,8 +124,8 @@ struct DialogState {
     std::string caption;
     std::string current_directory;
     std::string file_pattern;
-    HWND directory_label = nullptr;
     std::unordered_map<Tmc, ControlState> controls;
+    std::vector<ControlState> untracked_controls;
 };
 
 std::unordered_map<Hdlg, DialogState> g_dialogs;
@@ -553,95 +562,50 @@ HWND create_dialog_host(const DialogState& dialog, const Dli* initializer) {
 HWND create_native_control(DialogState& dialog, const Tmc tmc,
                            const char* window_class, const char* caption,
                            const Rec& rectangle, const DWORD control_style) {
-    if (dialog.window == nullptr || !IsWindow(dialog.window)) {
-        return nullptr;
-    }
     auto& state = dialog.controls[tmc];
+    if (_stricmp(window_class, "BUTTON") == 0) {
+        state.kind = ControlKind::button;
+    } else if (_stricmp(window_class, "COMBOBOX") == 0) {
+        state.kind = ControlKind::combo;
+    } else if (_stricmp(window_class, "EDIT") == 0) {
+        state.kind = ControlKind::edit;
+    } else if (_stricmp(window_class, "LISTBOX") == 0) {
+        state.kind = ControlKind::list;
+    } else if (_stricmp(window_class, "STATIC") == 0) {
+        state.kind = ControlKind::statik;
+    } else {
+        state.kind = ControlKind::unknown;
+    }
     state.rectangle = rectangle;
     state.text = caption == nullptr ? "" : caption;
-    state.window = CreateWindowExA(
-        0, window_class, state.text.c_str(),
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | control_style,
-        scaled_x(rectangle.x), scaled_y(rectangle.y),
-        (std::max)(1, scaled_x(rectangle.dx)),
-        (std::max)(1, scaled_y(rectangle.dy)), dialog.window,
-        reinterpret_cast<HMENU>(static_cast<std::uintptr_t>(tmc)),
-        GetModuleHandleW(nullptr), nullptr);
-    if (state.window != nullptr) {
-        SendMessageA(state.window, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
-                     false);
-    }
+    state.visible = (control_style & WS_VISIBLE) != 0 ||
+                    (control_style & WS_CHILD) == 0;
     return state.window;
 }
 
 void create_static_text(DialogState& dialog, const char* caption,
                         const Rec& rectangle) {
-    if (dialog.window == nullptr || !IsWindow(dialog.window)) {
-        return;
-    }
-    const HWND window = CreateWindowExA(
-        0, "STATIC", caption,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | SS_LEFT,
-        scaled_x(rectangle.x), scaled_y(rectangle.y),
-        (std::max)(1, scaled_x(rectangle.dx)),
-        (std::max)(1, scaled_y(rectangle.dy)), dialog.window, nullptr,
-        GetModuleHandleW(nullptr), nullptr);
-    if (window != nullptr) {
-        SendMessageA(window, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
-                     false);
-    }
+    ControlState state{};
+    state.kind = ControlKind::statik;
+    state.rectangle = rectangle;
+    state.text = caption == nullptr ? "" : caption;
+    dialog.untracked_controls.push_back(std::move(state));
 }
 
 void create_untracked_control(DialogState& dialog, const char* window_class,
                               const char* caption, const Rec& rectangle,
                               const DWORD control_style) {
-    if (dialog.window == nullptr || !IsWindow(dialog.window)) {
-        return;
+    ControlState state{};
+    if (_stricmp(window_class, "BUTTON") == 0) {
+        state.kind = ControlKind::button;
+    } else if (_stricmp(window_class, "STATIC") == 0) {
+        state.kind = ControlKind::statik;
     }
-    const HWND window = CreateWindowExA(
-        0, window_class, caption,
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | control_style,
-        scaled_x(rectangle.x), scaled_y(rectangle.y),
-        (std::max)(1, scaled_x(rectangle.dx)),
-        (std::max)(1, scaled_y(rectangle.dy)), dialog.window, nullptr,
-        GetModuleHandleW(nullptr), nullptr);
-    if (window != nullptr) {
-        SendMessageA(window, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
-                     false);
-    }
-}
-
-bool window_is_class(const HWND window, const char* expected) {
-    if (window == nullptr || !IsWindow(window)) {
-        return false;
-    }
-    char actual[32] = {};
-    return GetClassNameA(window, actual, static_cast<int>(sizeof(actual))) != 0 &&
-           _stricmp(actual, expected) == 0;
-}
-
-void add_entry_to_native_control(const ControlState& state,
-                                 const std::string& entry) {
-    if (state.window == nullptr || !IsWindow(state.window)) {
-        return;
-    }
-    const UINT message =
-        window_is_class(state.window, "COMBOBOX") ? CB_ADDSTRING : LB_ADDSTRING;
-    SendMessageA(state.window, message, 0,
-                 reinterpret_cast<LPARAM>(entry.c_str()));
-}
-
-void reset_native_list(ControlState& state) {
-    if (state.window == nullptr || !IsWindow(state.window)) {
-        return;
-    }
-    const UINT message = window_is_class(state.window, "COMBOBOX")
-                             ? CB_RESETCONTENT
-                             : LB_RESETCONTENT;
-    SendMessageA(state.window, message, 0, 0);
+    state.rectangle = rectangle;
+    state.text = caption == nullptr ? "" : caption;
+    state.visible = (control_style & WS_VISIBLE) != 0 ||
+                    (control_style & WS_CHILD) == 0;
+    dialog.untracked_controls.push_back(std::move(state));
 }
 
 std::string join_path(const std::string& directory,
@@ -657,15 +621,10 @@ void add_native_list_entry(DialogState& dialog, const Tmc tmc,
                            const std::string& entry) {
     auto& state = dialog.controls[tmc];
     state.entries.push_back(entry);
-    add_entry_to_native_control(state, entry);
 }
 
 void set_open_directory_label(DialogState& dialog) {
-    if (dialog.directory_label != nullptr &&
-        IsWindow(dialog.directory_label)) {
-        SetWindowTextA(dialog.directory_label,
-                       dialog.current_directory.c_str());
-    }
+    dialog.controls[kTmcOpenFileDir].text = dialog.current_directory;
 }
 
 void establish_open_directory(DialogState& dialog,
@@ -713,12 +672,6 @@ void populate_open_lists(DialogState& dialog) {
     auto& directories = dialog.controls[kTmcOpenFileDir];
     files.entries.clear();
     directories.entries.clear();
-    if (files.window != nullptr) {
-        SendMessageA(files.window, LB_RESETCONTENT, 0, 0);
-    }
-    if (directories.window != nullptr) {
-        SendMessageA(directories.window, LB_RESETCONTENT, 0, 0);
-    }
 
     WIN32_FIND_DATAA find_data{};
     HANDLE find = FindFirstFileA(
@@ -769,9 +722,6 @@ void read_open_cab(DialogState& dialog) {
     }
     auto& edit = dialog.controls[kTmcOpenFileName];
     edit.text = file_name;
-    if (edit.window != nullptr) {
-        SetWindowTextA(edit.window, edit.text.c_str());
-    }
 
     if (dialog.cab != nullptr && *dialog.cab != nullptr &&
         OpusCbOfH(dialog.cab) >= kOpenCabBytes) {
@@ -782,10 +732,6 @@ void read_open_cab(DialogState& dialog) {
                     sizeof(read_only));
         auto& checkbox = dialog.controls[kTmcOpenReadOnly];
         checkbox.value = read_only != 0;
-        if (checkbox.window != nullptr) {
-            SendMessageA(checkbox.window, BM_SETCHECK,
-                         checkbox.value ? BST_CHECKED : BST_UNCHECKED, 0);
-        }
     }
     establish_open_directory(dialog, edit.text);
     populate_open_lists(dialog);
@@ -793,23 +739,11 @@ void read_open_cab(DialogState& dialog) {
 
 void sync_open_cab(DialogState& dialog) {
     auto edit = dialog.controls.find(kTmcOpenFileName);
-    if (edit != dialog.controls.end() && edit->second.window != nullptr) {
-        const int length = GetWindowTextLengthA(edit->second.window);
-        std::vector<char> buffer(static_cast<std::size_t>(length) + 1);
-        GetWindowTextA(edit->second.window, buffer.data(),
-                       static_cast<int>(buffer.size()));
-        edit->second.text = buffer.data();
-    }
     if (dialog.cab != nullptr && edit != dialog.controls.end()) {
         FSetCabSz(dialog.cab, edit->second.text.c_str(), kOpenFileNameIag);
     }
 
     auto checkbox = dialog.controls.find(kTmcOpenReadOnly);
-    if (checkbox != dialog.controls.end() && checkbox->second.window != nullptr) {
-        checkbox->second.value = static_cast<Word>(
-            SendMessageA(checkbox->second.window, BM_GETCHECK, 0, 0) ==
-            BST_CHECKED);
-    }
     if (dialog.cab != nullptr && *dialog.cab != nullptr &&
         OpusCbOfH(dialog.cab) >= kOpenCabBytes &&
         checkbox != dialog.controls.end()) {
@@ -823,9 +757,6 @@ void sync_open_cab(DialogState& dialog) {
 void populate_new_type_list(DialogState& dialog) {
     auto& list = dialog.controls[kTmcNewTypeList];
     list.entries.clear();
-    if (list.window != nullptr) {
-        SendMessageA(list.window, LB_RESETCONTENT, 0, 0);
-    }
 
     const std::string initial = dialog.controls[kTmcNewType].text;
     add_native_list_entry(dialog, kTmcNewTypeList,
@@ -863,9 +794,6 @@ void read_new_cab(DialogState& dialog) {
     }
     auto& edit = dialog.controls[kTmcNewType];
     edit.text = type_name;
-    if (edit.window != nullptr) {
-        SetWindowTextA(edit.window, edit.text.c_str());
-    }
 
     bool new_template = false;
     if (dialog.cab != nullptr && *dialog.cab != nullptr &&
@@ -880,35 +808,19 @@ void read_new_cab(DialogState& dialog) {
     dialog.controls[kTmcNewDot].value = new_template;
     dialog.controls[kTmcRNewDoc].value = !new_template;
     dialog.controls[kTmcRNewDot].value = new_template;
-    if (dialog.controls[kTmcRNewDoc].window != nullptr) {
-        SendMessageA(dialog.controls[kTmcRNewDoc].window, BM_SETCHECK,
-                     new_template ? BST_UNCHECKED : BST_CHECKED, 0);
-    }
-    if (dialog.controls[kTmcRNewDot].window != nullptr) {
-        SendMessageA(dialog.controls[kTmcRNewDot].window, BM_SETCHECK,
-                     new_template ? BST_CHECKED : BST_UNCHECKED, 0);
-    }
     populate_new_type_list(dialog);
 }
 
 void sync_new_cab(DialogState& dialog) {
     auto edit = dialog.controls.find(kTmcNewType);
-    if (edit != dialog.controls.end() && edit->second.window != nullptr) {
-        const int length = GetWindowTextLengthA(edit->second.window);
-        std::vector<char> buffer(static_cast<std::size_t>(length) + 1);
-        GetWindowTextA(edit->second.window, buffer.data(),
-                       static_cast<int>(buffer.size()));
-        edit->second.text = buffer.data();
-    }
     if (dialog.cab != nullptr && edit != dialog.controls.end()) {
         FSetCabSz(dialog.cab, edit->second.text.c_str(), kNewTypeIag);
     }
 
     bool new_template = false;
     const auto radio = dialog.controls.find(kTmcRNewDot);
-    if (radio != dialog.controls.end() && radio->second.window != nullptr) {
-        new_template = SendMessageA(radio->second.window, BM_GETCHECK, 0, 0) ==
-                       BST_CHECKED;
+    if (radio != dialog.controls.end()) {
+        new_template = radio->second.value != 0;
     }
     dialog.controls[kTmcNewDot].value = new_template;
     if (dialog.cab != nullptr && *dialog.cab != nullptr &&
@@ -968,15 +880,7 @@ void materialize_open_template(DialogState& dialog) {
                           WS_TABSTOP | WS_BORDER | WS_VSCROLL | LBS_NOTIFY |
                               LBS_SORT | LBS_NOINTEGRALHEIGHT);
     create_static_text(dialog, "&Directories:", {71, 38, 50, 9});
-    dialog.directory_label = CreateWindowExA(
-        0, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_LEFT,
-        scaled_x(70), scaled_y(24), scaled_x(78), scaled_y(8),
-        dialog.window, nullptr, GetModuleHandleW(nullptr), nullptr);
-    if (dialog.directory_label != nullptr) {
-        SendMessageA(dialog.directory_label, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
-                     false);
-    }
+    create_untracked_control(dialog, "STATIC", "", {70, 24, 78, 8}, SS_LEFT);
     create_native_control(dialog, kTmcOk, "BUTTON", "OK",
                           {154, 5, 47, 14},
                           WS_TABSTOP | BS_DEFPUSHBUTTON);
@@ -1060,10 +964,6 @@ CabSaveNative* save_cab(DialogState& dialog) {
 void set_save_check(DialogState& dialog, const Tmc tmc, const bool checked) {
     auto& state = dialog.controls[tmc];
     state.value = checked;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        SendMessageA(state.window, BM_SETCHECK,
-                     checked ? BST_CHECKED : BST_UNCHECKED, 0);
-    }
 }
 
 void populate_save_directories(DialogState& dialog) {
@@ -1075,9 +975,6 @@ void populate_save_directories(DialogState& dialog) {
 
     auto& list = dialog.controls[kTmcSaveDirectoryList];
     list.entries.clear();
-    if (list.window != nullptr) {
-        SendMessageA(list.window, LB_RESETCONTENT, 0, 0);
-    }
 
     char parent[32768] = {};
     const std::string parent_spec = join_path(dialog.current_directory, "..");
@@ -1106,9 +1003,6 @@ void populate_save_directories(DialogState& dialog) {
 
     auto& label = dialog.controls[kTmcSaveDirectory];
     label.text = dialog.current_directory;
-    if (label.window != nullptr) {
-        SetWindowTextA(label.window, label.text.c_str());
-    }
 }
 
 void set_save_options_visible(DialogState& dialog, const bool visible) {
@@ -1121,9 +1015,6 @@ void set_save_options_visible(DialogState& dialog, const bool visible) {
             continue;
         }
         found->second.visible = visible;
-        if (found->second.window != nullptr) {
-            ShowWindow(found->second.window, visible ? SW_SHOWNA : SW_HIDE);
-        }
     }
     if (dialog.window == nullptr || !IsWindow(dialog.window)) {
         return;
@@ -1142,9 +1033,6 @@ void set_save_options_visible(DialogState& dialog, const bool visible) {
 void read_save_cab(DialogState& dialog) {
     auto& edit = dialog.controls[kTmcSaveFile];
     edit.text = read_cab_string(dialog, 1);
-    if (edit.window != nullptr) {
-        SetWindowTextA(edit.window, edit.text.c_str());
-    }
 
     if (auto* cab = save_cab(dialog); cab != nullptr) {
         set_save_check(dialog, kTmcSaveQuick, cab->quick_save != 0);
@@ -1155,33 +1043,19 @@ void read_save_cab(DialogState& dialog) {
         format.value = static_cast<Word>(cab->format);
         const std::string entry = "Current document format";
         format.entries = {entry};
-        add_entry_to_native_control(format, entry);
-        if (format.window != nullptr) {
-            SendMessageA(format.window, CB_SETCURSEL, 0, 0);
-        }
     }
     populate_save_directories(dialog);
 }
 
 void sync_save_cab(DialogState& dialog) {
     auto& edit = dialog.controls[kTmcSaveFile];
-    if (edit.window != nullptr && IsWindow(edit.window)) {
-        const int length = GetWindowTextLengthA(edit.window);
-        std::vector<char> buffer(static_cast<std::size_t>(length) + 1);
-        GetWindowTextA(edit.window, buffer.data(),
-                       static_cast<int>(buffer.size()));
-        edit.text = buffer.data();
-    }
     if (dialog.cab != nullptr) {
         FSetCabSz(dialog.cab, edit.text.c_str(), 1);
     }
     if (auto* cab = save_cab(dialog); cab != nullptr) {
         const auto checked = [&dialog](const Tmc tmc) {
             const auto found = dialog.controls.find(tmc);
-            return found != dialog.controls.end() &&
-                   found->second.window != nullptr &&
-                   SendMessageA(found->second.window, BM_GETCHECK, 0, 0) ==
-                       BST_CHECKED;
+            return found != dialog.controls.end() && found->second.value != 0;
         };
         cab->quick_save = checked(kTmcSaveQuick);
         cab->backup = checked(kTmcSaveBackup);
@@ -1245,35 +1119,8 @@ bool is_font_size_control(const DialogState& dialog, const Tmc tmc) {
 
 void refresh_font_control_value(DialogState& dialog, const Tmc raw_tmc,
                                 ControlState& state,
-                                const bool read_native_text) {
+                                const bool) {
     const Tmc tmc = static_cast<Tmc>(raw_tmc & ~0x8000u);
-    if (read_native_text && state.window != nullptr &&
-        IsWindow(state.window)) {
-        HWND text_window = state.window;
-        if (window_is_class(state.window, "COMBOBOX")) {
-            COMBOBOXINFO info{};
-            info.cbSize = sizeof(info);
-            if (GetComboBoxInfo(state.window, &info) &&
-                info.hwndItem != nullptr) {
-                text_window = info.hwndItem;
-            }
-        }
-        const int wide_length = GetWindowTextLengthW(text_window);
-        std::vector<WCHAR> wide_text(
-            static_cast<std::size_t>(wide_length) + 1);
-        GetWindowTextW(text_window, wide_text.data(),
-                       static_cast<int>(wide_text.size()));
-        const int byte_count = WideCharToMultiByte(
-            CP_ACP, 0, wide_text.data(), -1, nullptr, 0, nullptr, nullptr);
-        if (byte_count > 0) {
-            std::vector<char> text(static_cast<std::size_t>(byte_count));
-            WideCharToMultiByte(CP_ACP, 0, wide_text.data(), -1, text.data(),
-                                byte_count, nullptr, nullptr);
-            state.text = text.data();
-        } else {
-            state.text.clear();
-        }
-    }
 
     if (is_font_name_control(dialog, tmc) &&
         g_font_name_to_value != nullptr && !state.text.empty()) {
@@ -1324,23 +1171,9 @@ std::vector<std::string> installed_windows_fonts() {
 void replace_list_entries(DialogState& dialog, const Tmc tmc,
                           const std::vector<std::string>& entries) {
     auto& state = dialog.controls[tmc];
-    if (state.window != nullptr && IsWindow(state.window)) {
-        const int length = GetWindowTextLengthA(state.window);
-        std::vector<char> buffer(static_cast<std::size_t>(length) + 1);
-        GetWindowTextA(state.window, buffer.data(),
-                       static_cast<int>(buffer.size()));
-        state.text = buffer.data();
-    }
     const std::string edit_text = state.text;
     state.entries = entries;
-    reset_native_list(state);
-    for (const auto& entry : state.entries) {
-        add_entry_to_native_control(state, entry);
-    }
     state.text = edit_text;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        SetWindowTextA(state.window, state.text.c_str());
-    }
 }
 
 bool populate_windows_font_control(DialogState& dialog, const Tmc tmc) {
@@ -1406,16 +1239,8 @@ bool populate_original_list(DialogState& dialog, const Tmc raw_tmc) {
     }
 
     auto& state = dialog.controls[tmc];
-    if (state.window != nullptr && IsWindow(state.window)) {
-        const int length = GetWindowTextLengthA(state.window);
-        std::vector<char> text_buffer(static_cast<std::size_t>(length) + 1);
-        GetWindowTextA(state.window, text_buffer.data(),
-                       static_cast<int>(text_buffer.size()));
-        state.text = text_buffer.data();
-    }
     const std::string edit_text = state.text;
     state.entries.clear();
-    reset_native_list(state);
 
     const Hdlg previous_current = g_current_dialog;
     g_current_dialog = dialog.handle;
@@ -1434,15 +1259,11 @@ bool populate_original_list(DialogState& dialog, const Tmc raw_tmc) {
             break;
         }
         state.entries.emplace_back(buffer);
-        add_entry_to_native_control(state, state.entries.back());
     }
 
     g_current_dialog = previous_current;
     sync_current_dialog_globals();
     state.text = edit_text;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        SetWindowTextA(state.window, state.text.c_str());
-    }
     return !state.entries.empty();
 }
 
@@ -1457,9 +1278,6 @@ void read_style_cab(DialogState& dialog, const Tmc tmc) {
     }
     auto& state = dialog.controls[tmc];
     state.text = style_name;
-    if (state.window != nullptr) {
-        SetWindowTextA(state.window, state.text.c_str());
-    }
 }
 
 void sync_style_cab(DialogState& dialog, const Tmc tmc) {
@@ -1468,13 +1286,6 @@ void sync_style_cab(DialogState& dialog, const Tmc tmc) {
         return;
     }
     auto& state = found->second;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        const int length = GetWindowTextLengthA(state.window);
-        std::vector<char> buffer(static_cast<std::size_t>(length) + 1);
-        GetWindowTextA(state.window, buffer.data(),
-                       static_cast<int>(buffer.size()));
-        state.text = buffer.data();
-    }
     if (dialog.cab != nullptr) {
         FSetCabSz(dialog.cab, state.text.c_str(), 1);
     }
@@ -1512,10 +1323,6 @@ CabCharacterNative* character_cab(DialogState& dialog) {
 void set_native_check(DialogState& dialog, const Tmc tmc, const int value) {
     auto& state = dialog.controls[tmc];
     state.value = static_cast<Word>(value);
-    if (state.window != nullptr) {
-        SendMessageA(state.window, BM_SETCHECK,
-                     value != 0 ? BST_CHECKED : BST_UNCHECKED, 0);
-    }
 }
 
 void read_character_cab(DialogState& dialog) {
@@ -1531,9 +1338,6 @@ void read_character_cab(DialogState& dialog) {
     auto& font = dialog.controls[kTmcCharacterName];
     font.text = font_name;
     font.value = static_cast<Word>(cab->ftc);
-    if (font.window != nullptr) {
-        SetWindowTextA(font.window, font.text.c_str());
-    }
 
     char size_text[32] = {};
     if (cab->hps >= 0 && cab->hps != 0x8001) {
@@ -1546,15 +1350,10 @@ void read_character_cab(DialogState& dialog) {
     auto& size = dialog.controls[kTmcCharacterSize];
     size.text = size_text;
     size.value = static_cast<Word>(cab->hps);
-    if (size.window != nullptr) {
-        SetWindowTextA(size.window, size.text.c_str());
-    }
 
     if (cab->color >= 0 &&
         static_cast<std::size_t>(cab->color) <
             dialog.controls[kTmcCharacterColor].entries.size()) {
-        SendMessageA(dialog.controls[kTmcCharacterColor].window, CB_SETCURSEL,
-                     cab->color, 0);
         dialog.controls[kTmcCharacterColor].value =
             static_cast<Word>(cab->color);
     }
@@ -1582,13 +1381,6 @@ void sync_character_cab(DialogState& dialog) {
     }
     const auto read_text = [&dialog](const Tmc tmc) {
         auto& state = dialog.controls[tmc];
-        if (state.window != nullptr) {
-            const int length = GetWindowTextLengthA(state.window);
-            std::vector<char> buffer(static_cast<std::size_t>(length) + 1);
-            GetWindowTextA(state.window, buffer.data(),
-                           static_cast<int>(buffer.size()));
-            state.text = buffer.data();
-        }
         return state.text;
     };
     if (g_font_name_to_value != nullptr) {
@@ -1605,14 +1397,9 @@ void sync_character_cab(DialogState& dialog) {
             cab->hps = hps;
         }
     }
-    const LRESULT color = SendMessageA(
-        dialog.controls[kTmcCharacterColor].window, CB_GETCURSEL, 0, 0);
-    if (color != CB_ERR) {
-        cab->color = static_cast<int>(color);
-    }
+    cab->color = dialog.controls[kTmcCharacterColor].value;
     const auto checked = [&dialog](const Tmc tmc) {
-        return SendMessageA(dialog.controls[tmc].window, BM_GETCHECK, 0, 0) ==
-               BST_CHECKED;
+        return dialog.controls[tmc].value != 0;
     };
     cab->bold = checked(kTmcUserMin + 5);
     cab->italic = checked(kTmcUserMin + 6);
@@ -1816,25 +1603,7 @@ HWND ensure_control_window(const Tmc raw_tmc) {
     if (state.window != nullptr && IsWindow(state.window)) {
         return state.window;
     }
-    if (g_dialog.window == nullptr || !IsWindow(g_dialog.window)) {
-        return nullptr;
-    }
-
-    const Tmc tmc = static_cast<Tmc>(raw_tmc & ~0x8000u);
-    DWORD style = WS_CHILD | WS_CLIPSIBLINGS;
-    if (state.visible) {
-        style |= WS_VISIBLE;
-    }
-    state.window = CreateWindowExA(
-        0, "STATIC", state.text.c_str(), style, state.rectangle.x,
-        state.rectangle.y, (std::max)(1, state.rectangle.dx),
-        (std::max)(1, state.rectangle.dy), g_dialog.window,
-        reinterpret_cast<HMENU>(static_cast<std::uintptr_t>(tmc)),
-        GetModuleHandleW(nullptr), nullptr);
-    if (state.window != nullptr) {
-        EnableWindow(state.window, state.enabled);
-    }
-    return state.window;
+    return nullptr;
 }
 
 void copy_text(const std::string& source, char* destination,
@@ -1912,26 +1681,10 @@ void commit_ribbon_list_selection(DialogState& dialog, const Tmc tmc) {
 }
 
 std::string selected_list_text(const ControlState& control_state) {
-    if (control_state.window == nullptr) {
+    if (control_state.value >= control_state.entries.size()) {
         return {};
     }
-    const bool combo = window_is_class(control_state.window, "COMBOBOX");
-    const LRESULT selection = SendMessageA(
-        control_state.window, combo ? CB_GETCURSEL : LB_GETCURSEL, 0, 0);
-    if (selection == (combo ? CB_ERR : LB_ERR)) {
-        return {};
-    }
-    const LRESULT length = SendMessageA(
-        control_state.window, combo ? CB_GETLBTEXTLEN : LB_GETTEXTLEN,
-        selection, 0);
-    if (length == (combo ? CB_ERR : LB_ERR)) {
-        return {};
-    }
-    std::vector<char> text(static_cast<std::size_t>(length) + 1);
-    SendMessageA(control_state.window, combo ? CB_GETLBTEXT : LB_GETTEXT,
-                 selection,
-                 reinterpret_cast<LPARAM>(text.data()));
-    return text.data();
+    return control_state.entries[control_state.value];
 }
 
 void select_new_type(DialogState& dialog) {
@@ -1945,10 +1698,6 @@ void select_new_type(DialogState& dialog) {
     }
     auto& edit = dialog.controls[kTmcNewType];
     edit.text = selected;
-    if (edit.window != nullptr) {
-        SetWindowTextA(edit.window, edit.text.c_str());
-        SendMessageA(edit.window, EM_SETSEL, 0, static_cast<LPARAM>(-1));
-    }
 }
 
 void select_open_file(DialogState& dialog) {
@@ -1962,11 +1711,6 @@ void select_open_file(DialogState& dialog) {
     }
     auto& edit = dialog.controls[kTmcOpenFileName];
     edit.text = join_path(dialog.current_directory, selected);
-    if (edit.window != nullptr) {
-        SetWindowTextA(edit.window, edit.text.c_str());
-        SendMessageA(edit.window, EM_SETSEL, 0,
-                     static_cast<LPARAM>(-1));
-    }
 }
 
 void enter_open_directory(DialogState& dialog) {
@@ -1992,9 +1736,6 @@ void enter_open_directory(DialogState& dialog) {
     populate_open_lists(dialog);
     auto& edit = dialog.controls[kTmcOpenFileName];
     edit.text = join_path(dialog.current_directory, dialog.file_pattern);
-    if (edit.window != nullptr) {
-        SetWindowTextA(edit.window, edit.text.c_str());
-    }
 }
 
 void finish_native_dialog(DialogState& dialog, const Tmc result) {
@@ -2031,43 +1772,13 @@ void handle_dialog_command(const Hdlg handle, const WPARAM w_param,
     const Tmc tmc = static_cast<Tmc>(LOWORD(w_param) & ~0x8000u);
     const Word notification = HIWORD(w_param);
     auto found = dialog->controls.find(tmc);
-    if (found != dialog->controls.end() &&
-        found->second.window == reinterpret_cast<HWND>(l_param)) {
-        if (tmc == kTmcOpenFileName && dialog->hid == kIddOpen) {
-            const int length = GetWindowTextLengthA(found->second.window);
-            std::vector<char> text(static_cast<std::size_t>(length) + 1);
-            GetWindowTextA(found->second.window, text.data(),
-                           static_cast<int>(text.size()));
-            found->second.text = text.data();
-        } else if (tmc == kTmcOpenReadOnly && dialog->hid == kIddOpen) {
-            found->second.value = static_cast<Word>(
-                SendMessageA(found->second.window, BM_GETCHECK, 0, 0) ==
-                BST_CHECKED);
-        } else if (tmc == kTmcNewType && dialog->hid == kIddNewDoc) {
-            const int length = GetWindowTextLengthA(found->second.window);
-            std::vector<char> text(static_cast<std::size_t>(length) + 1);
-            GetWindowTextA(found->second.window, text.data(),
-                           static_cast<int>(text.size()));
-            found->second.text = text.data();
-        } else if (tmc == kTmcSaveFile && dialog->hid == kIddSaveAs) {
-            const int length = GetWindowTextLengthA(found->second.window);
-            std::vector<char> text(static_cast<std::size_t>(length) + 1);
-            GetWindowTextA(found->second.window, text.data(),
-                           static_cast<int>(text.size()));
-            found->second.text = text.data();
-        } else if (dialog->hid == kIddSaveAs &&
-                   (tmc == kTmcSaveQuick || tmc == kTmcSaveBackup ||
-                    tmc == kTmcSaveLockAnnotations)) {
-            found->second.value = static_cast<Word>(SendMessageA(
-                found->second.window, BM_GETCHECK, 0, 0) == BST_CHECKED);
-        }
-    }
+    (void)l_param;
     g_current_dialog = handle;
     g_focus_dialog = handle;
     sync_current_dialog_globals();
 
     if (found != dialog->controls.end() &&
-        window_is_class(found->second.window, "COMBOBOX")) {
+        found->second.kind == ControlKind::combo) {
         OpusX64TraceRibbon("combo", notification, tmc,
                            found->second.value, dialog->commands_active,
                            0, 0, 0);
@@ -2102,9 +1813,8 @@ void handle_dialog_command(const Hdlg handle, const WPARAM w_param,
         }
         if (notification == CBN_SELCHANGE) {
             ensure_icon_bar_commands_active(*dialog, tmc);
-            const LRESULT selection =
-                SendMessageA(found->second.window, CB_GETCURSEL, 0, 0);
-            if (selection != CB_ERR) {
+            const Word selection = found->second.value;
+            if (selection < found->second.entries.size()) {
                 dialog->controls[static_cast<Tmc>(tmc + 1)].value =
                     static_cast<Word>(selection);
                 found->second.value = static_cast<Word>(selection);
@@ -2114,8 +1824,6 @@ void handle_dialog_command(const Hdlg handle, const WPARAM w_param,
                 OpusX64TraceRibbon("combo-select", notification, tmc,
                                    found->second.value,
                                    static_cast<int>(selection), 0, 0, 0);
-                SetWindowTextA(found->second.window,
-                               found->second.text.c_str());
                 invoke_dialog_proc(*dialog, kDlmClick,
                                    static_cast<Tmc>(tmc + 1));
                 invoke_dialog_proc(*dialog, kDlmChange, tmc);
@@ -2159,11 +1867,6 @@ void handle_dialog_command(const Hdlg handle, const WPARAM w_param,
     }
     if (dialog->hid == kIddSaveAs && tmc == kTmcSaveDirectoryList &&
         (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
-        const LRESULT selection = SendMessageA(
-            found->second.window, LB_GETCURSEL, 0, 0);
-        if (selection != LB_ERR) {
-            found->second.value = static_cast<Word>(selection);
-        }
         invoke_dialog_proc(*dialog,
                            notification == LBN_DBLCLK ? kDlmDblClk
                                                      : kDlmClick,
@@ -2237,7 +1940,6 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
         owner = vhWndMsgBoxParent;
     }
 
-    std::vector<char> file_buffer(32768, '\0');
     std::string initial = opening ?
         dialog.controls[kTmcOpenFileName].text :
         dialog.controls[kTmcSaveFile].text;
@@ -2247,58 +1949,9 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
         initial = initial_alias->second;
     }
     establish_open_directory(dialog, initial.empty() ? "*.*" : initial);
-    if (initial.find_first_of("*?") == std::string::npos) {
-        lstrcpynA(file_buffer.data(), initial.c_str(),
-                  static_cast<int>(file_buffer.size()));
-    }
-
-    std::string default_extension = "doc";
-    const std::size_t slash = initial.find_last_of("\\/");
-    const std::size_t dot = initial.find_last_of('.');
-    if (dot != std::string::npos &&
-        (slash == std::string::npos || dot > slash) &&
-        dot + 1 < initial.size()) {
-        default_extension = initial.substr(dot + 1);
-    }
-
-    static const char open_filter[] =
-        "Documents (*.doc;*.docx;*.odt;*.dot)\0*.doc;*.docx;*.odt;*.dot\0"
-        "OpenDocument Text (*.odt)\0*.odt\0"
-        "Rich Text Format (*.rtf)\0*.rtf\0"
-        "Text Files (*.txt)\0*.txt\0"
-        "All Files (*.*)\0*.*\0\0";
-    static const char save_filter[] =
-        "Word Documents (*.doc)\0*.doc\0"
-        "Word 2007-2024 Documents (*.docx)\0*.docx\0"
-        "OpenDocument Text (*.odt)\0*.odt\0"
-        "Document Templates (*.dot)\0*.dot\0"
-        "All Files (*.*)\0*.*\0\0";
 
     Tmc result = kTmcCancel;
     for (;;) {
-        OPENFILENAMEA file_dialog{};
-        file_dialog.lStructSize = sizeof(file_dialog);
-        file_dialog.hwndOwner = owner;
-        file_dialog.lpstrFilter = opening ? open_filter : save_filter;
-        file_dialog.nFilterIndex = 1;
-        file_dialog.lpstrFile = file_buffer.data();
-        file_dialog.nMaxFile = static_cast<DWORD>(file_buffer.size());
-        file_dialog.lpstrInitialDir = dialog.current_directory.empty() ?
-            nullptr : dialog.current_directory.c_str();
-        file_dialog.lpstrTitle = opening ? "Open" : "Save As";
-        file_dialog.lpstrDefExt = default_extension.c_str();
-        file_dialog.Flags = OFN_EXPLORER | OFN_ENABLESIZING |
-            OFN_LONGNAMES | OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
-        if (opening) {
-            file_dialog.Flags |= OFN_FILEMUSTEXIST;
-            if (dialog.controls[kTmcOpenReadOnly].value != 0) {
-                file_dialog.Flags |= OFN_READONLY;
-            }
-        } else {
-            file_dialog.Flags |= OFN_NOREADONLYRETURN |
-                                 OFN_OVERWRITEPROMPT;
-        }
-
         char test_path[32768]{};
 #ifdef OPUS_TEST_HOOKS
         const DWORD test_path_length = GetEnvironmentVariableA(
@@ -2307,42 +1960,20 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
 #else
         const DWORD test_path_length = 0;
 #endif
-        BOOL accepted = FALSE;
-        if (test_path_length > 0 && test_path_length < std::size(test_path)) {
-            lstrcpynA(file_buffer.data(), test_path,
-                      static_cast<int>(file_buffer.size()));
-            if (saving && OpusModernPathIsDocx(test_path)) {
-                file_dialog.nFilterIndex = 2;
-            } else if (saving && OpusModernPathIsOdt(test_path)) {
-                file_dialog.nFilterIndex = 3;
-            }
-#ifdef OPUS_TEST_HOOKS
-            SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
-#endif
-            accepted = TRUE;
-        } else {
-            accepted = opening ? GetOpenFileNameA(&file_dialog) :
-                                 GetSaveFileNameA(&file_dialog);
-        }
-        if (!accepted) {
-            if (CommDlgExtendedError() != 0) {
-                MessageBoxA(owner,
-                    "The Windows file dialog could not be opened.",
-                    opening ? "Open" : "Save As",
-                    MB_OK | MB_ICONEXCLAMATION);
-                result = static_cast<Tmc>(-1);
-            } else {
-                invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
-                result = kTmcCancel;
-            }
+        if (test_path_length == 0 || test_path_length >= std::size(test_path)) {
+            invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
+            result = kTmcCancel;
             break;
         }
+#ifdef OPUS_TEST_HOOKS
+        SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
+#endif
 
-        std::string selected_path = file_buffer.data();
-        if (saving && (file_dialog.nFilterIndex == 2 ||
-                       file_dialog.nFilterIndex == 3)) {
-            const char* modern_extension = file_dialog.nFilterIndex == 2 ?
-                ".docx" : ".odt";
+        std::string selected_path = test_path;
+        const bool save_docx = saving && OpusModernPathIsDocx(test_path);
+        const bool save_odt = saving && OpusModernPathIsOdt(test_path);
+        if (save_docx || save_odt) {
+            const char* modern_extension = save_docx ? ".docx" : ".odt";
             const std::size_t selected_slash =
                 selected_path.find_last_of("\\/");
             const std::size_t selected_dot = selected_path.find_last_of('.');
@@ -2401,16 +2032,8 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
                 selected_path;
             auto& edit = dialog.controls[kTmcOpenFileName];
             edit.text = legacy_path;
-            if (edit.window != nullptr) {
-                SetWindowTextA(edit.window, edit.text.c_str());
-            }
             auto& read_only = dialog.controls[kTmcOpenReadOnly];
-            read_only.value =
-                (file_dialog.Flags & OFN_READONLY) != 0;
-            if (read_only.window != nullptr) {
-                SendMessageA(read_only.window, BM_SETCHECK,
-                    read_only.value ? BST_CHECKED : BST_UNCHECKED, 0);
-            }
+            read_only.value = 0;
             sync_open_cab(dialog);
         } else {
             g_win95_save_alias.active = true;
@@ -2419,9 +2042,6 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
             g_win95_save_alias.legacy_path = legacy_path;
             auto& edit = dialog.controls[kTmcSaveFile];
             edit.text = legacy_path;
-            if (edit.window != nullptr) {
-                SetWindowTextA(edit.window, edit.text.c_str());
-            }
             sync_save_cab(dialog);
             if (auto* cab = save_cab(dialog);
                 cab != nullptr && modern) {
@@ -2942,34 +2562,12 @@ Word SabGetDlg() { return g_dialog.sab; }
 void SetTmcVal_sdm21(Tmc tmc, Word value) {
     auto& state = control(tmc);
     state.value = value;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        if (window_is_class(state.window, "BUTTON")) {
-            SendMessageA(state.window, BM_SETCHECK,
-                         value ? BST_CHECKED : BST_UNCHECKED, 0);
-        } else if (window_is_class(state.window, "LISTBOX")) {
-            SendMessageA(state.window, LB_SETCURSEL, value, 0);
-        } else {
-            SendMessageA(state.window, CB_SETCURSEL, value, 0);
-        }
-    }
 }
 Word ValGetTmc(Tmc tmc) {
     const Tmc value_tmc = static_cast<Tmc>(tmc & ~0x8000u);
     const auto found = g_dialog.controls.find(value_tmc);
     if (found == g_dialog.controls.end()) {
         return 0;
-    }
-    if (found->second.window != nullptr &&
-        window_is_class(found->second.window, "BUTTON")) {
-        found->second.value = static_cast<Word>(SendMessageA(
-            found->second.window, BM_GETCHECK, 0, 0) == BST_CHECKED);
-    } else if (found->second.window != nullptr &&
-               window_is_class(found->second.window, "LISTBOX")) {
-        const LRESULT selection = SendMessageA(
-            found->second.window, LB_GETCURSEL, 0, 0);
-        if (selection != LB_ERR) {
-            found->second.value = static_cast<Word>(selection);
-        }
     }
     refresh_font_control_value(g_dialog, value_tmc, found->second, true);
     return found->second.value;
@@ -2980,9 +2578,6 @@ void SetTmcText_sdm21(Tmc tmc, char* text) {
     state.text = counted_or_zero_terminated(text);
     if (state.text.size() > state.text_limit) {
         state.text.resize(state.text_limit);
-    }
-    if (state.window != nullptr && IsWindow(state.window)) {
-        SetWindowTextA(state.window, state.text.c_str());
     }
     refresh_font_control_value(g_dialog, tmc, state, false);
 }
@@ -3057,9 +2652,6 @@ void RedisplayTmc(Tmc tmc) { populate_original_list(g_dialog, tmc); }
 void EnableTmc_sdm21(Tmc tmc, int enabled) {
     auto& state = control(tmc);
     state.enabled = enabled != 0;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        EnableWindow(state.window, state.enabled);
-    }
 }
 int FEnabledTmc_sdm21(Tmc tmc) {
     const auto* state = find_control(tmc);
@@ -3071,9 +2663,6 @@ void EnableNoninteractiveTmc(Tmc tmc, int enabled) {
 void SetVisibleTmc(Tmc tmc, int visible) {
     auto& state = control(tmc);
     state.visible = visible != 0;
-    if (state.window != nullptr && IsWindow(state.window)) {
-        ShowWindow(state.window, state.visible ? SW_SHOWNA : SW_HIDE);
-    }
 }
 int FIsVisibleTmc(Tmc tmc) {
     const auto* state = find_control(tmc);
@@ -3091,7 +2680,6 @@ void CompleteComboTmc(Tmc) {}
 void AddListBoxEntry(Tmc tmc, char* entry) {
     auto& state = control(tmc);
     state.entries.emplace_back(counted_or_zero_terminated(entry));
-    add_entry_to_native_control(state, state.entries.back());
 }
 void InsertListBoxEntry(Tmc tmc, char* entry, Word index) {
     auto& state = control(tmc);
@@ -3099,20 +2687,12 @@ void InsertListBoxEntry(Tmc tmc, char* entry, Word index) {
     const auto position = (std::min)(entries.size(), std::size_t{index});
     entries.insert(entries.begin() + static_cast<std::ptrdiff_t>(position),
                    counted_or_zero_terminated(entry));
-    if (state.window != nullptr && IsWindow(state.window)) {
-        SendMessageA(state.window, CB_INSERTSTRING,
-                     static_cast<WPARAM>(position),
-                     reinterpret_cast<LPARAM>(entries[position].c_str()));
-    }
 }
 void DeleteListBoxEntry(Tmc tmc, Word index) {
     auto& state = control(tmc);
     auto& entries = state.entries;
     if (index < entries.size()) {
         entries.erase(entries.begin() + index);
-        if (state.window != nullptr && IsWindow(state.window)) {
-            SendMessageA(state.window, CB_DELETESTRING, index, 0);
-        }
     }
 }
 Word CentryListBoxTmc(Tmc tmc) {
