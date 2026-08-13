@@ -554,7 +554,7 @@ int doc;
 			{
 			AssertDo(FNormalizeStFile(stz, stDot, nfoDot));
 			if ((docDot = DocOpenDot (stDot, fTrue, doc)) == docNil)
-				return;
+				return 0;
 			}
 
 		if ((hsttb = PdodDoc(doc)->hsttbAssoc) != hNil)
@@ -1965,7 +1965,7 @@ NDD	*pndd;
 				}
 #endif 
 			if (FQueryAbortCheck())
-				return;
+				return 0;
 			}}
 		ChangeProgressReport(hppr, 100);
 		StopProgressReport(hppr, pdcRestoreImmed);
@@ -2059,5 +2059,4 @@ int *pgrpf;
 		}
 	*pgrpf = grpf;
 }
-
 

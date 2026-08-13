@@ -69,6 +69,15 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "format.h"
 #include "border.h"
 
+#ifdef OPUS_X64
+static int SearchBeep()
+{
+	return Beep();
+}
+#else
+#define SearchBeep Beep
+#endif
+
 #include "idd.h"
 #include "sdmdefs.h"
 #include "sdmver.h"
@@ -416,16 +425,16 @@ WORD	wNew, wOld, wParam;
 		/* Add all the looks keys to the Search (or Replace) keymap. */
 		/* Don't allow search & replace formatting in macro desktop */
 		AddLooksKeys((*hkmpCur)->hkmpNext, hkmpCur, ilcdMaxSearch);
-		AddKeyPfn(hkmpCur, KcCtrl(vkFont), fBeepMacro ? Beep : EnumFontUp);
-		AddKeyPfn(hkmpCur, KcShift(KcCtrl(vkFont)), fBeepMacro ? Beep : EnumFontDown);
-		AddKeyPfn(hkmpCur, KcCtrl(vkPoint), fBeepMacro ? Beep : EnumPtSizeUp);
-		AddKeyPfn(hkmpCur, KcShift(KcCtrl(vkPoint)), fBeepMacro ? Beep : EnumPtSizeDn);
-		AddKeyPfn(hkmpCur, KcCtrl(vkColor), fBeepMacro ? Beep : EnumColorUp);
-		AddKeyPfn(hkmpCur, KcShift(KcCtrl(vkColor)), fBeepMacro ? Beep : EnumColorDn);
+		AddKeyPfn(hkmpCur, KcCtrl(vkFont), fBeepMacro ? SearchBeep : EnumFontUp);
+		AddKeyPfn(hkmpCur, KcShift(KcCtrl(vkFont)), fBeepMacro ? SearchBeep : EnumFontDown);
+		AddKeyPfn(hkmpCur, KcCtrl(vkPoint), fBeepMacro ? SearchBeep : EnumPtSizeUp);
+		AddKeyPfn(hkmpCur, KcShift(KcCtrl(vkPoint)), fBeepMacro ? SearchBeep : EnumPtSizeDn);
+		AddKeyPfn(hkmpCur, KcCtrl(vkColor), fBeepMacro ? SearchBeep : EnumColorUp);
+		AddKeyPfn(hkmpCur, KcShift(KcCtrl(vkColor)), fBeepMacro ? SearchBeep : EnumColorDn);
 
 		/* Don't allow user to replace revision properties */
-		AddKeyPfn(hkmpCur, KcCtrl(vkStrike), fBeepMacro || vfReplace ? Beep : DoLooksStrike);
-		AddKeyPfn(hkmpCur, KcCtrl(vkRMark), fBeepMacro || vfReplace ? Beep : DoLooksRMark);
+		AddKeyPfn(hkmpCur, KcCtrl(vkStrike), fBeepMacro || vfReplace ? SearchBeep : DoLooksStrike);
+		AddKeyPfn(hkmpCur, KcCtrl(vkRMark), fBeepMacro || vfReplace ? SearchBeep : DoLooksRMark);
 
 		/* the above additions to the keymap could fail on low memory */
 		if (FRareT(reMemAlert7, vmerr.fMemFail))
@@ -1845,7 +1854,7 @@ CP    rgcpFetch[];
 	if (cpLimRun <= 0)
 		{
 		*pccpFetch = 0;
-		return;
+		return 0;
 		}
 LRestart:
 	Assert(*picpFetchMac >= 0);
@@ -1866,7 +1875,7 @@ LRestart:
 				ww/*fvcScreen*/, fNotPlain);
 #endif /* DEBUG */
 		Assert(*pccpFetch <= cbSector);
-		return;
+		return 0;
 		}
 	cpCur = cpLimRun;
 LContinue:
@@ -1881,7 +1890,7 @@ LContinue:
 			{
 			Assert(cBeenHere++ < 2);
 			if (vcpFetch + *pccpFetch >= cpLimRun)
-				return;
+				return 0;
 			/* We know we have the true beginning of a run only if
 			vcpFetch > cpCur or if cpCur == cp0. */
 			while (vcpFetch + *pccpFetch < cpLimRun)
@@ -1921,7 +1930,7 @@ LContinue:
 				blt(&rgcpFetch[1], &rgcpFetch[0], sizeof(CP) * (128 - 1));
 				rgcpFetch[128 - 1] = vcpFetch;
 				}
-			return;
+			return 0;
 			}
 		}
 	*pccpFetch = 0;
@@ -2054,7 +2063,7 @@ struct BMIB *pbmib;
 		CpSearchSz() and CpSearchSzBackward() work out for non-text
 		searches. */
 		pbmib->cwSearch = 1;
-		return;
+		return 0;
 		}
 
 	/* special value that will make initialization of mpchdcp work
@@ -2284,7 +2293,7 @@ CHAR *pch;
 
 /* %%Function:ChAnsiFromOem %%Owner:rosiep */
 CHAR ChAnsiFromOem(ch)
-CHAR *ch;
+CHAR ch;
 {
 	CHAR szOem[2];
 	CHAR szAnsi[2];

@@ -925,15 +925,16 @@ CPR	*pcpr;
 	struct HYPB	*phypb;
 
 	if ((*vhhypb)->fHyphWord)
-		return;
+		return 0;
 	Assert (pcpr != NULL);
 	if (pcpr == NULL) /* just to avoid low memory trashing */
-		return;
+		return 0;
 	pcpr->hppr = HpprStartProgressReport(mstHyphenate, NULL,
 			nIncrPercent, fTrue);
 	phypb = *vhhypb;
 	ProgressReportPercent(pcpr->hppr, phypb->cpStart, phypb->cpLim,
 			phypb->cpLine, &pcpr->cpRptNext);
+	return 0;
 }
 
 

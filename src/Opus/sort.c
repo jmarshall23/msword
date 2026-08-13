@@ -148,6 +148,7 @@ CP    CpSRNormalCpPsod();
 CP    CpSRBlockCpPsod();
 CP    CpSROutlineCpPsod();
 CP    CpLimBlock();
+typedef CP (*PFNSR)();
 
 #ifdef DEBUG
 struct SELS selsSave;
@@ -184,7 +185,7 @@ csconst PFN  rgpfnPK[irgpfnScMax] =
 };
 
 
-csconst PFN  rgpfnSR[ipfnSRMax] =
+csconst PFNSR  rgpfnSR[ipfnSRMax] =
 {
 	CpSRNormalCpPsod,
 			CpSRBlockCpPsod,
@@ -540,7 +541,7 @@ SE SeBuildSortRec()
 	struct SOD HUGE *hpsod;
 	CP            cpFirstRecord, cpLimSort, cpT;
 	BOOL          (*pfnPK)();
-	CP            (*pfnSR)();
+	PFNSR         pfnSR;
 	CHAR          *pSRInfo;
 	int           isod;
 	SE            seEmerg;

@@ -453,7 +453,7 @@ int ibrcl, ibrcp;
 	SetWords( pbrc, 0, 6 );
 	/* if none, we don't care about line type */
 	if (ibrcp == ibrcpNone)
-		return;
+		return 0;
 
 	/* Determine the kind of line */
 	switch (ibrcl)
@@ -462,7 +462,7 @@ int ibrcl, ibrcp;
 		SetWords( pbrc, uNinch, 6 );
 		/* fall through */
 	case ibrclNone:	 /* will cause both to be set to none */
-		return;
+		return 0;
 	case ibrclSingle:
 		brc = brcSingle;
 		break;
@@ -493,7 +493,7 @@ int ibrcl, ibrcp;
 		{
 	default:      /* unrecognized */
 		SetWords( pbrc, uNinch, 6 );
-		return;
+		return 0;
 	case ibrcpBox:
 		SetWords( pbrc, brc, 4 );
 		break;
@@ -1484,7 +1484,7 @@ BOOL fMapLR;  /* if true, map left, right borders to bar */
 LUnknownBrcp:
 		*pibrcp = uNinchRadio;
 		*pibrcl = uNinchRadio;
-		return;
+		return 0;
 		}
 
 	/* figure out the line width */
@@ -2001,5 +2001,4 @@ CHAR    *sz;
 		}
 
 }
-
 

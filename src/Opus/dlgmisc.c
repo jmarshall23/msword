@@ -167,17 +167,17 @@ int ch;
 	CheckCollapseBlock();
 
 	if (!FSetUndoBefore(bcmInsBreak, uccPaste))
-		return;
+		return 0;
 
 	if (CmdAutoDelete(&caRM) != cmdOK)
-		return;
+		return 0;
 
 	cp = selCur.cpFirst;
 	CachePara(doc, cp);
 	chp = selCur.chp;
 	chp.fRMark = PdodMother(doc)->dop.fRevMarking;
 	if (!FInsertRgch(doc, cp, &ch, 1, &chp, NULL))
-		return;
+		return 0;
 	PdodDoc(doc)->fFormatted = fTrue;
 	SelectIns( &selCur, cp + 1 );
 	PushInsSelCur();
@@ -1700,7 +1700,7 @@ int *pfUndoCancel;
 	if (hdod == hNil || hsttb == hNil || hplcbkf == hNil || hplcbkf == hNil)
 		{
 		Assert (fFalse);
-		return;
+		return 0;
 		}
 
 	Assert (doc == DocMother (doc));
@@ -1708,7 +1708,7 @@ int *pfUndoCancel;
 
 	DeleteIbkf (doc, ibkf, hsttb, hplcbkf, hplcbkl, pfUndoCancel);
 	if (pfUndoCancel && *pfUndoCancel)
-		return;
+		return 0;
 
 	if (IMacPlc(hplcbkf) == 0)
 		/*  no more bookmarks, get rid of structures */
@@ -2148,7 +2148,7 @@ PromptUserName()
 	SzToSt(sz, vpref.stUsrName);
 	GetInitials(vpref.stUsrName, vpref.stUsrInitl);
 	ForceKeyboardSpeed();
-	return;
+	return 0;
 #else
 	CMB cmb;
 	CHAR dlt [sizeof (dltUserName)];
@@ -2156,13 +2156,13 @@ PromptUserName()
 	if (!vmerr.fSdmInit && !FAssureSdmInit())
 		{
 		SetErrorMat(matMem);
-		return;
+		return 0;
 		}
 
 	BltDlt(dltUserName, dlt);
 
 	if ((cmb.hcab = HcabAlloc(cabiCABUSERNAME)) == hNil)
-		return;
+		return 0;
 
 	if (!FSetCabSt(cmb.hcab, vpref.stUsrName, 
 			Iag(CABUSERNAME, hszName)))
@@ -2316,12 +2316,13 @@ CHAR * stzInitl;
 ForceKeyboardSpeed()
 {
 	HANDLE hKeyboardModule;
-	FARPROC lpfnSetSpeed;
+	typedef VOID (*PFNSETSPEED)(int);
+	PFNSETSPEED lpfnSetSpeed;
 	extern int vwWinVersion;
 
 	if (vwWinVersion < 0x0210)
 		/* don't even try in old versions of windows */
-		return;
+		return 0;
 
 	/* first change the WIN.INI so windows will do this for us from
 		now on (won't effect this windows session) */
@@ -2331,7 +2332,7 @@ ForceKeyboardSpeed()
 	/* now change it for this session */
 	/* NOTE: code stolen from USERs wininit1.c */
 	if ((hKeyboardModule = GetModuleHandle(SzShared("KEYBOARD"))) != NULL &&
-			(lpfnSetSpeed = GetProcAddress(hKeyboardModule,
+			(lpfnSetSpeed = (PFNSETSPEED)GetProcAddress(hKeyboardModule,
 					MAKEINTRESOURCE(idoSetSpeed)))
 			!= NULL)
 		(*lpfnSetSpeed)((int)31);
@@ -2371,5 +2372,3 @@ struct SEL	*psel;
 	return fFalse;
 
 } /* FSelWithinTable */
-
-

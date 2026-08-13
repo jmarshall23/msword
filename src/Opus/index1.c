@@ -1474,7 +1474,7 @@ int ihteScan, ihteMax;
 
 		/*  Check the special case of a node with no kids  */
 		if (ihteKid1 >= ihteMax)
-			return;
+			return 0;
 
 		hpidbKid1 = rghpidb[ihteKid1];
 		hpidbKid2 = rghpidb[ihteKid2];
@@ -1508,6 +1508,7 @@ int ihteScan, ihteMax;
 			fHeapOk = fFalse;
 			}
 		}
+	return 0;
 }
 
 

@@ -88,6 +88,9 @@ extern BOOL             vfRecorderOOM;
 
 extern long LFromCab();
 extern struct AONNODE **HBuildAONTree();
+extern CHAR **HstCreate();
+extern void **PpvAllocCb();
+extern void *LpConvHp();
 extern SB SbAlloc();
 
 TMC TmcDoCatSrh();
@@ -187,7 +190,7 @@ CMB * pcmb;
 
 	if (FCmdFillCab())
 		{
-		if ((hrgIndex = PpvAllocCb(sbDds, 2 * sizeof(int))) == hNil)
+		if ((hrgIndex = (int **)PpvAllocCb(sbDds, 2 * sizeof(int))) == hNil)
 			goto LRet;
 
 		StartLongOp();
@@ -409,7 +412,7 @@ CMB * pcmb;
 		if (!FEnsureHstDMQPath())
 			return cmdError;
 
-		if ((hrgIndex = PpvAllocCb(sbDds, 2 * sizeof(int))) == hNil)
+		if ((hrgIndex = (int **)PpvAllocCb(sbDds, 2 * sizeof(int))) == hNil)
 			return cmdError;
 
 		pcab = *hcab;
@@ -1687,12 +1690,12 @@ int **hrgIndex;
 		}
 
 	if (stFiles [0] == 0)
-		return;
+		return 0;
 
 	StToSzInPlace( stFiles );
 	rgpch [0] = &stFiles [0];
 	if (IdMessageBoxMstRgwMb (mstCatDelete, rgpch, MB_YESNOQUESTION) != IDYES)
-		return;
+		return 0;
 
 
 /* Enumerate files, showing each in the prompt as it is deleted */
@@ -2051,7 +2054,7 @@ EndDMEnum()
 		if ((fnDMFcTable = FnOpenSt(rgchFile, fOstCreate, ofcDMEnum, NULL)) == fnNil)
 			{
 			DMFlags.dma = dma_StartFromScratch;
-			return;   /* can't open temp file, will not set dma_ReadFcs */
+			return 0;   /* can't open temp file, will not set dma_ReadFcs */
 			}
 		}
 	else
@@ -2094,7 +2097,7 @@ EndDMEnum()
 		}
 	hprgfcDMEnum = (HP) NULL;
 
-	return;
+	return 0;
 }
 
 
@@ -2158,5 +2161,4 @@ Select1stCatLB()
 		}
 
 }
-
 

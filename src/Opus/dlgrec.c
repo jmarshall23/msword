@@ -329,7 +329,7 @@ CMB * pcmb;
 		RecordSt(StSharedKey("Sub MAIN", SubMain));
 		RecordEop();
 		vrac.racop = racopNil;
-		SaveCabs(RecordCabForSaveCabs, fFalse);
+		SaveCabs((PFN_SAVECAB)RecordCabForSaveCabs, fFalse);
 		}
 
 	return cmdOK;
@@ -429,7 +429,7 @@ CMB * pcmb;
 
 	if (vrf.fPauseRecorder)
 		{
-		SaveCabs(RecordCabForSaveCabs, fFalse);
+		SaveCabs((PFN_SAVECAB)RecordCabForSaveCabs, fFalse);
 		}
 	else
 		{
@@ -567,7 +567,7 @@ BOOL fAskSave, fForceKill;
 
 			ErrorEid(eidNoMemRecord, "CmdStopRecorder");
 
-			SaveCabs(RecordCabForSaveCabs, fFalse);
+			SaveCabs((PFN_SAVECAB)RecordCabForSaveCabs, fFalse);
 			return fFalse;
 			}
 		else
@@ -678,7 +678,7 @@ int sc;
 		break;
 
 	default:
-		return;
+		return 0;
 		}
 
 	RecordEop();
@@ -718,7 +718,7 @@ int sc;
 		break;
 
 	default:
-		return;
+		return 0;
 		}
 
 	RecordEop();
@@ -1080,7 +1080,7 @@ int idd;
 	if ((cmb.hcab = HcabAlloc(cabi)) == hNil)
 		{
 		ErrorNoMemory(eidNoMemForRecord);
-		return;
+		return 0;
 		}
 
 	SetVdocStsh(selCur.doc);
@@ -1109,10 +1109,10 @@ int idd;
 		int itbd;
 		HCABTABS hcab;
 
-		if ((hcab = HcabAlloc(cabiCABTABS)) == hNil)
-			{
-			ErrorEid(eidNoMemRecord, "RecordStyleProps(t)");
-			return;
+			if ((hcab = HcabAlloc(cabiCABTABS)) == hNil)
+				{
+				ErrorEid(eidNoMemRecord, "RecordStyleProps(t)");
+				return 0;
 			}
 
 		for (itbd = 0; itbd < pap.itbdMac; itbd += 1)

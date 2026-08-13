@@ -1078,7 +1078,7 @@ BOOL fAll;
 
 	if (doc == docNil || (hplcfld = PdodDoc (doc)->hplcfld) == hNil)
 		/*  nothing to do */
-		return;
+		return 0;
 
 	while (ifld < IMacPlc( hplcfld ))
 		{
@@ -1132,6 +1132,5 @@ CP cp;
 	pffb->flt = fltNil;
 	pffb->cpField = cpNil;
 	pffb->fPMergeRules = fTrue;
+	return 0;
 }
-
-

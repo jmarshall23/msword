@@ -1076,7 +1076,7 @@ int	ichMax;
 	if (cch >= ichMax)
 		{
 		/* It's full already.  no can do... */
-		return;
+		return 0;
 		}
 	pch = &szWord[cch - 1];
 	if (!FWhite(*pch))
@@ -1089,6 +1089,7 @@ int	ichMax;
 	cchCopy = min(cchCopy, ichMax - cch);
 	bltbyte(sz, pch, cchCopy);
 	szWord[ichMax - 1] = '\0';
+	return 0;
 }
 
 
@@ -1167,5 +1168,3 @@ BOOL	fQuoteIt;
 		}
 	*pchPen = '\0';
 }
-
-

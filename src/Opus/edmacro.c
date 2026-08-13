@@ -58,6 +58,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #endif /* PROTOTYPE */
 
 extern SY * PsyGetSyFromBcmElg();
+extern char **HstCreate();
 
 extern int vgrfMenuCmdsAreDirty;
 extern vrerr;
@@ -1313,14 +1314,14 @@ LCleanUp:
 int IdQuerySaveChanges(pmei)
 MEI *pmei;
 {
-	unsigned rgw[2];
+	LONG_PTR rgw[2];
 	char szName[cchMaxSyName];
 
 	AssertDo(FGetStMacro(pmei->docEdit, szName));
 
 	StToSzInPlace(szName);
-	rgw[0] = szName;
-	return IdMessageBoxMstRgwMb(mstSaveChangesMcr, rgw, mbQuerySave);
+	rgw[0] = (LONG_PTR)szName;
+	return IdMessageBoxMstRgwMb(mstSaveChangesMcr, (int *)rgw, mbQuerySave);
 }
 
 
@@ -1337,7 +1338,7 @@ int mw;
 	AssertH(hmwd);
 	/* will happen when first macro editor window is opened */
 	if (vhwndAppIconBar == NULL || (*hmwd)->docMcr == docNil)
-		return;
+		return 0;
 
 	imei = ImeiFromMw(mw);
 	pmei = PmeiImei(imei);
@@ -1363,7 +1364,7 @@ int imei;
 	Assert(imei != -1);
 
 	if (imei == (*vhmes)->imeiCur)
-		return;
+		return 0;
 
 	GetWindowText(PmwdMw(PmeiImei(imei)->mw)->hwnd, 
 			(LPSTR) szTitle, sizeof (szTitle));
@@ -1389,7 +1390,7 @@ char * stDesc;
 	uns bsy;
 
 	if (!FNeSt(stOldName, stNewName))
-		return;
+		return 0;
 
 	if (!FNeNcSt(stOldName, stNewName))
 		{
@@ -1400,14 +1401,14 @@ char * stDesc;
 
 		/* Can't change built-in names! */
 		if ((bcm = BcmOfSt(stOldName)) < bcmMacStd)
-			return;
+			return 0;
 
 		hpsy = (HPSY) (vhpsyt->grpsy + bcm);
 		Assert(hpsy->stName[0] == stNewName[0]);
 		bltbh((char huge *) stNewName + 1, hpsy->stName + 1, 
 				stNewName[0]);
 		DirtyDoc(docDot);
-		return;
+		return 0;
 		}
 
 	elg = ElgFromDoc(docDot);
@@ -1415,7 +1416,7 @@ char * stDesc;
 	/* make a copy with the new name */
 	imcr = ImcrFromDocDotBcm(docDot, BsyOfStDocDot(stOldName, docDot));
 	if ((bsy = BsyAddCmd1(stNewName, docDot, imcr)) == bsyNil)
-		return;
+		return 0;
 	DirtyDoc(docDot);
 
 	if (stDesc != NULL)
@@ -1745,7 +1746,6 @@ int imei;
 {
 	extern int ElaDebug();
 	extern int GetInfoElx();
-	extern ELI ** HeliNew();
 
 	RERR rerr;
 	MEI * pmei;
@@ -1761,7 +1761,7 @@ int imei;
 		{
 		pmei = &(*vhmes)->rgmei[imei];
 		if ((PmeiImei(imei)->heli = HeliNew(pmei->elg, pmei->elm,
-				CchReadEdit, ElaDebug, GetInfoElx, -1, (long) imei)) == hNil)
+				CchReadEdit, (VOID (*)())ElaDebug, (VOID (*)())GetInfoElx, -1, (long) imei)) == hNil)
 			{
 			EndLongOp(fFalse);
 LNoMemory:

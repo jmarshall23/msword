@@ -212,12 +212,17 @@ frontier, including the remaining `disp1.c` lvalue-cast resets, legacy early ret
 in display/edit/create/compare/dialog code, signed SDM parser range declarations, and
 the edit-control/region shim surface (`EM_GETSEL`, `EM_GETLINECOUNT`,
 `EM_REPLACESEL`, `EM_GETHANDLE`, `WM_CTLCOLOREDIT`, `GetParent`, `CreateRectRgn`).
-The next blockers are now spread across later dialog/catalog/search tabs work:
-`tabs.c` lvalue-cast, pointer-return, and legacy return cleanup; `dlgrec.c`
-recorder callback adapters plus `WS_MAXIMIZE`/`SC_ARRANGE`; legacy return cleanup in
-`dlglook1.c`, `dlgmisc.c`, `dlgdoc.c`, `replace.c`, `search.c`, `catalog.c`, and
-`edmacro.c`; and the next pointer-return/prototype fixes in `search.c`, `catalog.c`,
-`dlgmisc.c`, and `edmacro.c`.
+The next filtered `opus_word1_ui_test` build now advances through the
+tabs/dialog/catalog/search frontier, including `tabs.c` lvalue-cast cleanup,
+`dlgrec.c` recorder callback adapters, dialog/search/catalog/edmacro pointer-return
+fixes, legacy early returns, typed sort callbacks, and the next shim constants for
+system commands, message boxes, hyphenation child controls, and message dispatch. The
+next blockers are now in the engine/automation/document-manager frontier:
+`etcmd.c` lvalue-cast and handle-return fixes; `docman1.c`/`docman2.c`
+`HstCreate`/`HAllocateCw` declarations plus legacy returns; DDE client/server handle
+typing and `MB_SYSTEMMODAL`, `MB_ICONHAND`, `SW_SHOWMINNOACTIVE`; and `print2.c`
+printer string handles, `WM_WININICHANGE`, driver-dialog callback typing, and legacy
+returns.
 
 Build the first pass mechanically:
 

@@ -1904,7 +1904,7 @@ struct SEL *psel;
 		if (itcMac == itcFirst + 1)
 			rgbrcT[ibrcInside] = brcNone;
 		blt(rgbrcT, rgbrc, cbrcCellBorders);
-		return;
+		return 0;
 		}
 
 	brcTop = rgbrcT[ibrcTop];
@@ -1955,8 +1955,7 @@ struct SEL *psel;
 	rgbrc[ibrcLeft] = brcLeft;
 	rgbrc[ibrcRight] = brcRight;
 	rgbrc[ibrcInside] = brcInside;
+	return 0;
 }
-
-
 
 

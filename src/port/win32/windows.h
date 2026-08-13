@@ -358,6 +358,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef MB_ICONEXCLAMATION
 #define MB_ICONEXCLAMATION 0x0030
 #endif
+#ifndef MB_ICONASTERISK
+#define MB_ICONASTERISK 0x0040
+#endif
 #ifndef MB_DEFBUTTON2
 #define MB_DEFBUTTON2 0x0100
 #endif
@@ -389,6 +392,12 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef WM_NCCREATE
 #define WM_NCCREATE 0x0081
+#endif
+#ifndef WM_NCDESTROY
+#define WM_NCDESTROY 0x0082
+#endif
+#ifndef WM_NCCALCSIZE
+#define WM_NCCALCSIZE 0x0083
 #endif
 #ifndef WM_COMMAND
 #define WM_COMMAND 0x0111
@@ -480,6 +489,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef MK_SHIFT
 #define MK_SHIFT 0x0004
+#endif
+#ifndef MK_LBUTTON
+#define MK_LBUTTON 0x0001
 #endif
 #ifndef VK_SHIFT
 #define VK_SHIFT 0x10
@@ -657,6 +669,12 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef WS_CHILD
 #define WS_CHILD 0x40000000u
 #endif
+#ifndef WS_CHILDWINDOW
+#define WS_CHILDWINDOW WS_CHILD
+#endif
+#ifndef WS_MAXIMIZE
+#define WS_MAXIMIZE 0x01000000u
+#endif
 #ifndef WS_VISIBLE
 #define WS_VISIBLE 0x10000000u
 #endif
@@ -700,6 +718,12 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef GWLP_USERDATA
 #define GWLP_USERDATA (-21)
+#endif
+#ifndef GWLP_WNDPROC
+#define GWLP_WNDPROC (-4)
+#endif
+#ifndef GWLP_HINSTANCE
+#define GWLP_HINSTANCE (-6)
 #endif
 
 #ifndef SW_HIDE
@@ -874,6 +898,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef SC_KEYMENU
 #define SC_KEYMENU 0xf100
 #endif
+#ifndef SC_ARRANGE
+#define SC_ARRANGE 0xf110
+#endif
 #ifndef SC_RESTORE
 #define SC_RESTORE 0xf120
 #endif
@@ -924,6 +951,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef PM_REMOVE
 #define PM_REMOVE 1
+#endif
+#ifndef PM_NOYIELD
+#define PM_NOYIELD 2
 #endif
 
 #ifndef MF_CHANGE
@@ -1205,6 +1235,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef WM_USER
 #define WM_USER 0x0400
 #endif
+#ifndef WM_CREATE
+#define WM_CREATE 0x0001
+#endif
 #ifndef WM_DESTROY
 #define WM_DESTROY 0x0002
 #endif
@@ -1216,6 +1249,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef WM_KILLFOCUS
 #define WM_KILLFOCUS 0x0008
+#endif
+#ifndef WM_ENABLE
+#define WM_ENABLE 0x000a
 #endif
 #ifndef WM_SETREDRAW
 #define WM_SETREDRAW 0x000b
@@ -1234,6 +1270,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef WM_ERASEBKGND
 #define WM_ERASEBKGND 0x0014
+#endif
+#ifndef WM_SETCURSOR
+#define WM_SETCURSOR 0x0020
 #endif
 #ifndef WM_QUEUESYNC
 #define WM_QUEUESYNC 0x0023
@@ -1510,6 +1549,12 @@ BOOL SetWindowPos(HWND window, HWND insert_after, int x, int y, int cx, int cy,
                   UINT flags);
 LONG_PTR GetWindowLongPtrA(HWND window, int index);
 LONG_PTR SetWindowLongPtrA(HWND window, int index, LONG_PTR new_long);
+#ifndef GetWindowLongPtr
+#define GetWindowLongPtr GetWindowLongPtrA
+#endif
+#ifndef SetWindowLongPtr
+#define SetWindowLongPtr SetWindowLongPtrA
+#endif
 LONG GetWindowLongA(HWND window, int index);
 LONG SetWindowLongA(HWND window, int index, LONG new_long);
 LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,

@@ -1209,7 +1209,7 @@ SelMacroFromItem()
 	uns bsy;
 
 	if ((ibsy = ValGetTmc(tmcTitleList)) == uNinchList)
-		return;
+		return 0;
 
 	bsy = PceatmDlgCur()->rgbsy[ibsy];
 
@@ -1290,7 +1290,7 @@ UpdItemList()
 
 	/* We ran out of memory earlier, so just return... */
 	if (PceatmDlgCur()->hmudFull == hNil)
-		return;
+		return 0;
 
 	/* Inhibit listbox display updating */
 	StartListBoxUpdate(tmcTitle);
@@ -1493,4 +1493,3 @@ MUD ** hmudSrc;
 
 	return fTrue;
 }
-

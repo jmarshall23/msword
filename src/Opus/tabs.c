@@ -77,6 +77,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 
 
 #define cchGrpprlApplyTabs 4 + (3*itbdMax*sizeof(int)) + (itbdMax*sizeof(CHAR))
+extern char **HstCreate();
 /* # of char that fits in the to-be-cleared static text list. */
 /* Say the width of tmcTabsClList is x.  Then the following
 	constant is: floor((x - 12) / 4)  where 4 is a width of the
@@ -210,7 +211,7 @@ CMB * pcmb;
 	TDSD tdsd;
 	int  tmc;
 
-	vptdsd = &tdsd;
+	pcmb->pv = &tdsd;
 	tmc = TmcTabs(pcmb);
 
 	return tmc == tmcOK ? cmdOK : tmc == tmcCancel ? cmdCancelled : cmdError;
@@ -738,13 +739,13 @@ BOOL fAllowBlank;
 			(cch == 0 || (*PchSkipSpacesPch(sz) == '\0')))
 		{
 		vptdsd->itbdCur = itbdBlank;
-		return;
+		return 0;
 		}
 
 	if (!FZaFromSs(&dxaTabPos, sz, cch, vpref.ut, &fOverflow))
 		{
 		vptdsd->itbdCur = fOverflow ? itbdTooLarge : itbdNil;
-		return;
+		return 0;
 		}
 
 	for (itbd = 0; itbd < vptdsd->itbdMac &&
@@ -899,7 +900,7 @@ CMB * pcmb;
 
 	/* Depending on the state change, set up the radio buttons */
 	if ((hcab = HcabFromDlg(fFalse)) == hcabNotFilled || hcab == hcabNull)
-		return;
+		return 0;
 
 	SetTdsd(pcmb, fFalse);
 	if (vptdsd->itbdCur == itbdNil || vptdsd->itbdCur == itbdNew ||
@@ -970,7 +971,7 @@ CMB * pcmb;
 			SetFocusTmc(tmcTabsPos);
 			SetTmcTxs(tmcTabsPos, TxsOfFirstLim(0, ichLimLast));
 			}
-		return;
+		return 0;
 		}
 
 	if (vfRecording) 
@@ -983,7 +984,7 @@ CMB * pcmb;
 		SetTmcText(tmcTabsPos, sz);
 		SetTmcVal((tmcTabsPos & ~ftmcGrouped) + 1,vptdsd->itbdCur);
 		if ((hcab = HcabFromDlg(fFalse)) == hcabNotFilled || hcab == hcabNull)
-			return;
+			return 0;
 
 		FRecordCab(pcmb->hcab, IDDTabs, tmcTabsClear, fFalse);
 		}
@@ -993,8 +994,8 @@ CMB * pcmb;
 		if (!FInsertClListDxa(pcmb, vptdsd->rgdxaTab[itbd]))
 			{
 			/* Could not add it to the "to be cleared" list,
-				bag it. */
-			return;
+			bag it. */
+			return 0;
 			}
 
 		if (itbd != vptdsd->itbdMac - 1)

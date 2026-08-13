@@ -1254,7 +1254,7 @@ LPrefixMatch:
 	if (isrd != csrdMax)
 		rgsrd[isrd].srt = srtNil;  /* must do this to mark the end of valid
 			SRD entries */
-	return;
+	return 0;
 }
 
 

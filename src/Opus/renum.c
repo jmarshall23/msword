@@ -725,7 +725,7 @@ int *pnfc,*pn;
 		pch++;
 	*pchPunc = (WbFromCh(chPunc) == wbWhite) ? chNix : chPunc;
 	*ppch = pch;
-	return;
+	return 0;
 }
 
 
@@ -1630,5 +1630,4 @@ LAutoRenumEnd:
 	PdodDoc(selCur.doc)->fInvalSeqLev = vidf.fInvalSeqLev = fTrue;
 	EndLongOp (fFalse);
 }
-
 
