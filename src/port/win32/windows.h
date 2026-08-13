@@ -1094,6 +1094,12 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef COLOR_APPWORKSPACE
 #define COLOR_APPWORKSPACE 12
 #endif
+#ifndef COLOR_HIGHLIGHT
+#define COLOR_HIGHLIGHT 13
+#endif
+#ifndef COLOR_HIGHLIGHTTEXT
+#define COLOR_HIGHLIGHTTEXT 14
+#endif
 
 #ifndef CS_VREDRAW
 #define CS_VREDRAW 0x0001
@@ -1377,6 +1383,12 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef SM_CYHSCROLL
 #define SM_CYHSCROLL 3
 #endif
+#ifndef SM_CXSCREEN
+#define SM_CXSCREEN 0
+#endif
+#ifndef SM_CYSCREEN
+#define SM_CYSCREEN 1
+#endif
 #ifndef SM_CYMENU
 #define SM_CYMENU 15
 #endif
@@ -1391,6 +1403,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef SM_CYFRAME
 #define SM_CYFRAME 33
+#endif
+#ifndef SM_CXFRAME
+#define SM_CXFRAME 32
 #endif
 #ifndef SM_CXSMICON
 #define SM_CXSMICON 49
@@ -1809,6 +1824,27 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef SM_CXHTHUMB
 #define SM_CXHTHUMB 10
+#endif
+#ifndef SM_CXICON
+#define SM_CXICON 11
+#endif
+#ifndef SM_CYICON
+#define SM_CYICON 12
+#endif
+#ifndef SM_CXCURSOR
+#define SM_CXCURSOR 13
+#endif
+#ifndef SM_CYCURSOR
+#define SM_CYCURSOR 14
+#endif
+#ifndef SM_CXDLGFRAME
+#define SM_CXDLGFRAME 7
+#endif
+#ifndef SM_CYDLGFRAME
+#define SM_CYDLGFRAME 8
+#endif
+#ifndef SM_CURSORLEVEL
+#define SM_CURSORLEVEL 25
 #endif
 
 #ifndef SC_SIZE

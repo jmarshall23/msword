@@ -414,3 +414,36 @@ implemented.
 Reviewed by agy and claude: agy outlined the predictable failure contract;
 claude narrowed the implementation to `Escape`, preserved its legacy prototype,
 and caught the `NEXTBAND` stale-output trap.
+
+## Add user32 startup seed
+
+The non-Windows runtime now links a first `user32.cpp` shim. It implements the
+startup surface reached by the current SDM/runtime path: `RegisterClass*`,
+`CreateWindowEx*`, `DestroyWindow`, window validity, parent/owner traversal,
+window long slots, basic rect/position/visibility/enabled/focus state, screen DC
+acquisition through gdi32, deterministic system metrics/colors, and simple
+message queue stubs. `kernel32.cpp` also owns `GetCurrentProcessId`,
+`GetEnvironmentVariableA`, and `SetEnvironmentVariableA`.
+
+`opus_x64_runtime_test` no longer links with macOS `dynamic_lookup`, so missing
+Win32 imports surface as link errors instead of null function calls. The previous
+segfaulting runtime test now passes.
+
+`opus_win32_user32_test` covers duplicate class registration, synchronous
+`WM_NCCREATE`, user data and extra bytes, parent versus owner, child invalidation
+through `DestroyWindow`, focus/enabled state, work-area metrics, rect adjustment,
+and screen/window DC release.
+
+Validated with `cmake --build build-item14a --target
+opus_original_strtbl_test opus_original_sttb_test opus_original_plc_test
+opus_sdm_cab_test opus_original_command_test opus_win32_memory_test
+opus_win32_resource_test opus_win32_gdi_object_test opus_win32_gdi_raster_test
+opus_win32_font_test opus_win32_print_test opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine opus_x64_runtime --parallel 8`,
+then `ctest --test-dir build-item14a -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy and claude: agy identified the minimal startup API set, and
+claude caught that `dynamic_lookup` was hiding the real link gate and narrowed the
+message pump to no-work stubs for this runtime path.

@@ -1,0 +1,616 @@
+#include "windows.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <deque>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace {
+
+constexpr DWORD kWindowMagic = 0x55533232u;
+
+struct RegisteredClass {
+    ATOM atom = 0;
+    std::string name;
+    WNDPROC procedure = nullptr;
+    int window_extra = 0;
+    HINSTANCE instance = nullptr;
+};
+
+struct WindowObject {
+    DWORD magic = kWindowMagic;
+    RegisteredClass klass;
+    std::string text;
+    DWORD style = 0;
+    DWORD extended_style = 0;
+    RECT rectangle{0, 0, 0, 0};
+    HWND parent = nullptr;
+    HWND owner = nullptr;
+    HMENU menu = nullptr;
+    HINSTANCE instance = nullptr;
+    LONG_PTR user_data = 0;
+    bool enabled = true;
+    bool visible = false;
+    std::vector<unsigned char> extra;
+};
+
+std::mutex g_user_lock;
+std::vector<RegisteredClass> g_classes;
+std::vector<WindowObject*> g_windows;
+std::deque<MSG> g_messages;
+ATOM g_next_atom = 1;
+HWND g_active_window = nullptr;
+HWND g_focus_window = nullptr;
+
+WindowObject* window_from_handle(HWND handle) {
+    auto* window = static_cast<WindowObject*>(handle);
+    return window != nullptr && window->magic == kWindowMagic ? window : nullptr;
+}
+
+std::string narrow_string(LPCWSTR text) {
+    std::string result;
+    if (text == nullptr) return result;
+    while (*text != 0) {
+        result.push_back(static_cast<char>(*text & 0xff));
+        ++text;
+    }
+    return result;
+}
+
+bool class_name_is_atom(LPCSTR name) {
+    return (reinterpret_cast<std::uintptr_t>(name) >> 16u) == 0;
+}
+
+RegisteredClass* find_class(LPCSTR name) {
+    if (name == nullptr) return nullptr;
+    if (class_name_is_atom(name)) {
+        const auto atom = static_cast<ATOM>(reinterpret_cast<std::uintptr_t>(name));
+        for (auto& klass : g_classes) {
+            if (klass.atom == atom) return &klass;
+        }
+        return nullptr;
+    }
+    for (auto& klass : g_classes) {
+        if (klass.name == name) return &klass;
+    }
+    return nullptr;
+}
+
+RegisteredClass builtin_class(LPCSTR name) {
+    RegisteredClass klass{};
+    klass.name = name != nullptr && !class_name_is_atom(name) ? name : "";
+    return klass;
+}
+
+HWND handle_from_window(WindowObject* window) {
+    return static_cast<HWND>(window);
+}
+
+WindowObject* first_child(HWND parent) {
+    for (auto* window : g_windows) {
+        if (window_from_handle(handle_from_window(window)) != nullptr &&
+            window->parent == parent) {
+            return window;
+        }
+    }
+    return nullptr;
+}
+
+WindowObject* next_sibling(HWND window) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return nullptr;
+    bool found = false;
+    for (auto* candidate : g_windows) {
+        if (window_from_handle(handle_from_window(candidate)) == nullptr) continue;
+        if (found && candidate->parent == object->parent) return candidate;
+        if (candidate == object) found = true;
+    }
+    return nullptr;
+}
+
+bool message_matches(const MSG& message, HWND window, UINT filter_min,
+                     UINT filter_max) {
+    if (window != nullptr && message.hwnd != window) return false;
+    if (filter_min != 0 || filter_max != 0) {
+        if (message.message < filter_min || message.message > filter_max) {
+            return false;
+        }
+    }
+    return true;
+}
+
+COLORREF system_color(int index) {
+    switch (index) {
+        case COLOR_WINDOW: return RGB(255, 255, 255);
+        case COLOR_WINDOWTEXT: return RGB(0, 0, 0);
+        case COLOR_WINDOWFRAME: return RGB(0, 0, 0);
+        case COLOR_BTNFACE: return RGB(192, 192, 192);
+        case COLOR_BTNTEXT: return RGB(0, 0, 0);
+        case COLOR_MENU: return RGB(192, 192, 192);
+        case COLOR_APPWORKSPACE: return RGB(128, 128, 128);
+        case COLOR_SCROLLBAR: return RGB(192, 192, 192);
+        case COLOR_CAPTIONTEXT: return RGB(255, 255, 255);
+        case COLOR_BTNSHADOW: return RGB(128, 128, 128);
+        case COLOR_GRAYTEXT: return RGB(128, 128, 128);
+        case COLOR_HIGHLIGHT: return RGB(0, 0, 128);
+        case COLOR_HIGHLIGHTTEXT: return RGB(255, 255, 255);
+        default: return RGB(0, 0, 0);
+    }
+}
+
+LONG_PTR get_window_extra(const WindowObject& window, int index) {
+    if (index < 0 ||
+        index + static_cast<int>(sizeof(LONG_PTR)) >
+            static_cast<int>(window.extra.size())) {
+        return 0;
+    }
+    LONG_PTR value = 0;
+    std::memcpy(&value, window.extra.data() + index, sizeof(value));
+    return value;
+}
+
+LONG_PTR set_window_extra(WindowObject& window, int index, LONG_PTR value) {
+    if (index < 0 ||
+        index + static_cast<int>(sizeof(LONG_PTR)) >
+            static_cast<int>(window.extra.size())) {
+        return 0;
+    }
+    const LONG_PTR previous = get_window_extra(window, index);
+    std::memcpy(window.extra.data() + index, &value, sizeof(value));
+    return previous;
+}
+
+}  // namespace
+
+extern "C" {
+
+ATOM RegisterClassExA(const WNDCLASSEXA* window_class) {
+    if (window_class == nullptr || window_class->lpszClassName == nullptr) {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+    std::lock_guard<std::mutex> guard(g_user_lock);
+    if (find_class(window_class->lpszClassName) != nullptr) {
+        SetLastError(ERROR_CLASS_ALREADY_EXISTS);
+        return 0;
+    }
+    RegisteredClass klass{};
+    klass.atom = g_next_atom++;
+    klass.name = window_class->lpszClassName;
+    klass.procedure = window_class->lpfnWndProc;
+    klass.window_extra = (std::max)(0, window_class->cbWndExtra);
+    klass.instance = window_class->hInstance;
+    g_classes.push_back(klass);
+    SetLastError(ERROR_SUCCESS);
+    return klass.atom;
+}
+
+ATOM RegisterClassA(const WNDCLASSA* window_class) {
+    if (window_class == nullptr) return 0;
+    WNDCLASSEXA extended{};
+    extended.cbSize = sizeof(extended);
+    extended.style = window_class->style;
+    extended.lpfnWndProc = window_class->lpfnWndProc;
+    extended.cbClsExtra = window_class->cbClsExtra;
+    extended.cbWndExtra = window_class->cbWndExtra;
+    extended.hInstance = window_class->hInstance;
+    extended.hIcon = window_class->hIcon;
+    extended.hCursor = window_class->hCursor;
+    extended.hbrBackground = window_class->hbrBackground;
+    extended.lpszMenuName = window_class->lpszMenuName;
+    extended.lpszClassName = window_class->lpszClassName;
+    return RegisterClassExA(&extended);
+}
+
+ATOM RegisterClassExW(const WNDCLASSEXW* window_class) {
+    if (window_class == nullptr) return 0;
+    WNDCLASSEXA narrow{};
+    narrow.cbSize = sizeof(narrow);
+    narrow.style = window_class->style;
+    narrow.lpfnWndProc = window_class->lpfnWndProc;
+    narrow.cbClsExtra = window_class->cbClsExtra;
+    narrow.cbWndExtra = window_class->cbWndExtra;
+    narrow.hInstance = window_class->hInstance;
+    narrow.hIcon = window_class->hIcon;
+    narrow.hCursor = window_class->hCursor;
+    narrow.hbrBackground = window_class->hbrBackground;
+    const std::string class_name = narrow_string(window_class->lpszClassName);
+    narrow.lpszClassName = class_name.c_str();
+    return RegisterClassExA(&narrow);
+}
+
+HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
+                     LPCSTR window_name, DWORD style, int x, int y, int width,
+                     int height, HWND parent, HMENU menu, HINSTANCE instance,
+                     LPVOID parameter) {
+    RegisteredClass klass{};
+    {
+        std::lock_guard<std::mutex> guard(g_user_lock);
+        if (auto* registered = find_class(class_name)) {
+            klass = *registered;
+        } else {
+            klass = builtin_class(class_name);
+        }
+    }
+    auto* window = new WindowObject();
+    window->klass = klass;
+    window->text = window_name != nullptr ? window_name : "";
+    window->style = style;
+    window->extended_style = extended_style;
+    window->rectangle = {x, y, x + width, y + height};
+    window->parent = (style & WS_CHILD) != 0 ? parent : nullptr;
+    window->owner = (style & WS_CHILD) == 0 ? parent : nullptr;
+    window->menu = menu;
+    window->instance = instance;
+    window->extra.resize(static_cast<std::size_t>(klass.window_extra));
+    HWND handle = static_cast<HWND>(window);
+    g_windows.push_back(window);
+    if (g_active_window == nullptr) g_active_window = handle;
+    if (klass.procedure != nullptr) {
+        CREATESTRUCTA create{};
+        create.lpCreateParams = parameter;
+        create.hInstance = instance;
+        create.hMenu = menu;
+        create.hwndParent = parent;
+        create.cy = height;
+        create.cx = width;
+        create.y = y;
+        create.x = x;
+        create.style = static_cast<LONG>(style);
+        create.lpszName = window_name;
+        create.lpszClass = class_name;
+        create.dwExStyle = extended_style;
+        if (klass.procedure(handle, WM_NCCREATE, 0,
+                            reinterpret_cast<LPARAM>(&create)) == 0) {
+            DestroyWindow(handle);
+            return nullptr;
+        }
+        klass.procedure(handle, WM_CREATE, 0, reinterpret_cast<LPARAM>(&create));
+    }
+    return handle;
+}
+
+HWND CreateWindowExW(DWORD extended_style, LPCWSTR class_name,
+                     LPCWSTR window_name, DWORD style, int x, int y, int width,
+                     int height, HWND parent, HMENU menu, HINSTANCE instance,
+                     LPVOID parameter) {
+    const std::string narrow_class = narrow_string(class_name);
+    const std::string narrow_name = narrow_string(window_name);
+    return CreateWindowExA(extended_style, narrow_class.c_str(),
+                           narrow_name.c_str(), style, x, y, width, height,
+                           parent, menu, instance, parameter);
+}
+
+BOOL IsWindow(HWND window) {
+    return window_from_handle(window) != nullptr;
+}
+
+BOOL DestroyWindow(HWND window) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    while (auto* child = first_child(window)) {
+        DestroyWindow(handle_from_window(child));
+    }
+    if (object->klass.procedure != nullptr) {
+        object->klass.procedure(window, WM_DESTROY, 0, 0);
+    }
+    if (g_active_window == window) g_active_window = nullptr;
+    if (g_focus_window == window) g_focus_window = nullptr;
+    object->magic = 0;
+
+    // ponytail: leak tiny destroyed window records; replace with generation
+    // handles when churn matters.
+    return TRUE;
+}
+
+HDC GetDC(HWND window) {
+    if (window != nullptr && !IsWindow(window)) return nullptr;
+    return CreateCompatibleDC(nullptr);
+}
+
+int ReleaseDC(HWND, HDC device_context) {
+    return DeleteDC(device_context) ? 1 : 0;
+}
+
+int GetSystemMetrics(int index) {
+    switch (index) {
+        case SM_CXSCREEN: return 640;
+        case SM_CYSCREEN: return 480;
+        case SM_CXVSCROLL:
+        case SM_CYHSCROLL:
+        case SM_CYVSCROLL:
+            return 16;
+        case SM_CXBORDER:
+        case SM_CYBORDER:
+            return 1;
+        case SM_CYCAPTION: return 19;
+        case SM_CYMENU: return 18;
+        case SM_CXFULLSCREEN: return 640;
+        case SM_CYFULLSCREEN: return 480;
+        case SM_MOUSEPRESENT: return 1;
+        case SM_CYFRAME:
+        case SM_CXFRAME:
+        case SM_CXDLGFRAME:
+        case SM_CYDLGFRAME:
+            return 4;
+        case SM_CXSMICON: return 16;
+        case SM_CYVTHUMB:
+        case SM_CXHTHUMB:
+            return 16;
+        case SM_CXICON:
+        case SM_CYICON:
+        case SM_CXCURSOR:
+        case SM_CYCURSOR:
+            return 32;
+        case SM_CURSORLEVEL:
+            return 0;
+        default:
+            return 0;
+    }
+}
+
+DWORD GetSysColor(int index) {
+    return system_color(index);
+}
+
+LONG_PTR GetWindowLongPtrA(HWND window, int index) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    switch (index) {
+        case GWL_STYLE: return object->style;
+        case GWL_EXSTYLE: return object->extended_style;
+        case GWLP_USERDATA: return object->user_data;
+        case GWLP_WNDPROC:
+            return reinterpret_cast<LONG_PTR>(object->klass.procedure);
+        case GWLP_HINSTANCE:
+            return reinterpret_cast<LONG_PTR>(object->instance);
+        default:
+            return get_window_extra(*object, index);
+    }
+}
+
+LONG_PTR GetWindowLongPtrW(HWND window, int index) {
+    return GetWindowLongPtrA(window, index);
+}
+
+LONG_PTR SetWindowLongPtrA(HWND window, int index, LONG_PTR new_long) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    switch (index) {
+        case GWL_STYLE: {
+            const LONG_PTR previous = object->style;
+            object->style = static_cast<DWORD>(new_long);
+            return previous;
+        }
+        case GWL_EXSTYLE: {
+            const LONG_PTR previous = object->extended_style;
+            object->extended_style = static_cast<DWORD>(new_long);
+            return previous;
+        }
+        case GWLP_USERDATA: {
+            const LONG_PTR previous = object->user_data;
+            object->user_data = new_long;
+            return previous;
+        }
+        case GWLP_WNDPROC: {
+            const LONG_PTR previous =
+                reinterpret_cast<LONG_PTR>(object->klass.procedure);
+            object->klass.procedure = reinterpret_cast<WNDPROC>(new_long);
+            return previous;
+        }
+        default:
+            return set_window_extra(*object, index, new_long);
+    }
+}
+
+LONG_PTR SetWindowLongPtrW(HWND window, int index, LONG_PTR new_long) {
+    return SetWindowLongPtrA(window, index, new_long);
+}
+
+LONG GetWindowLongA(HWND window, int index) {
+    return static_cast<LONG>(GetWindowLongPtrA(window, index));
+}
+
+LONG SetWindowLongA(HWND window, int index, LONG new_long) {
+    return static_cast<LONG>(SetWindowLongPtrA(window, index, new_long));
+}
+
+LRESULT DefWindowProcA(HWND, UINT, WPARAM, LPARAM) {
+    return 1;
+}
+
+LRESULT DefWindowProcW(HWND, UINT, WPARAM, LPARAM) {
+    return 1;
+}
+
+HCURSOR LoadCursorA(HINSTANCE, LPCSTR cursor_name) {
+    return const_cast<LPSTR>(cursor_name);
+}
+
+HCURSOR LoadCursorW(HINSTANCE, LPCWSTR cursor_name) {
+    return const_cast<LPWSTR>(cursor_name);
+}
+
+HWND GetActiveWindow(void) {
+    return g_active_window;
+}
+
+BOOL IsChild(HWND parent, HWND window) {
+    for (auto* object = window_from_handle(window); object != nullptr;
+         object = window_from_handle(object->parent)) {
+        if (object->parent == parent) return TRUE;
+    }
+    return FALSE;
+}
+
+HWND GetParent(HWND window) {
+    auto* object = window_from_handle(window);
+    return object != nullptr ? object->parent : nullptr;
+}
+
+HWND GetWindow(HWND window, UINT command) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return nullptr;
+    switch (command) {
+        case GW_OWNER: return object->owner;
+        case GW_CHILD: return handle_from_window(first_child(window));
+        case GW_HWNDNEXT: return handle_from_window(next_sibling(window));
+        default: return nullptr;
+    }
+}
+
+BOOL GetWindowRect(HWND window, LPRECT rectangle) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || rectangle == nullptr) return FALSE;
+    *rectangle = object->rectangle;
+    return TRUE;
+}
+
+BOOL AdjustWindowRectEx(LPRECT rectangle, DWORD style, BOOL menu,
+                        DWORD extended_style) {
+    if (rectangle == nullptr) return FALSE;
+    int x = 0;
+    int y = 0;
+    if ((style & (WS_BORDER | WS_DLGFRAME | WS_THICKFRAME)) != 0 ||
+        (extended_style & WS_EX_DLGMODALFRAME) != 0) {
+        x += GetSystemMetrics(SM_CXFRAME);
+        y += GetSystemMetrics(SM_CYFRAME);
+    }
+    if ((style & WS_CAPTION) != 0) y += GetSystemMetrics(SM_CYCAPTION);
+    if (menu) y += GetSystemMetrics(SM_CYMENU);
+    rectangle->left -= x;
+    rectangle->right += x;
+    rectangle->top -= y;
+    rectangle->bottom += y;
+    return TRUE;
+}
+
+BOOL SystemParametersInfoA(UINT action, UINT, LPVOID data, UINT) {
+    if (action == SPI_GETWORKAREA && data != nullptr) {
+        auto* rectangle = static_cast<RECT*>(data);
+        *rectangle = {0, 0, GetSystemMetrics(SM_CXSCREEN),
+                      GetSystemMetrics(SM_CYSCREEN)};
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL ShowWindow(HWND window, int command_show) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    const BOOL was_visible = object->visible ? TRUE : FALSE;
+    object->visible = command_show != SW_HIDE;
+    return was_visible;
+}
+
+BOOL EnableWindow(HWND window, BOOL enable) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    const BOOL was_enabled = object->enabled ? TRUE : FALSE;
+    object->enabled = enable != FALSE;
+    return was_enabled;
+}
+
+BOOL IsWindowEnabled(HWND window) {
+    auto* object = window_from_handle(window);
+    return object != nullptr && object->enabled ? TRUE : FALSE;
+}
+
+HWND SetActiveWindow(HWND window) {
+    if (window != nullptr && !IsWindow(window)) return nullptr;
+    const HWND previous = g_active_window;
+    g_active_window = window;
+    return previous;
+}
+
+HWND SetFocus(HWND window) {
+    if (window != nullptr && !IsWindow(window)) return nullptr;
+    const HWND previous = g_focus_window;
+    g_focus_window = window;
+    return previous;
+}
+
+HWND GetFocus(void) {
+    return g_focus_window;
+}
+
+BOOL SetWindowPos(HWND window, HWND, int x, int y, int cx, int cy, UINT flags) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    if ((flags & SWP_NOMOVE) == 0) {
+        const int width = object->rectangle.right - object->rectangle.left;
+        const int height = object->rectangle.bottom - object->rectangle.top;
+        object->rectangle.left = x;
+        object->rectangle.top = y;
+        object->rectangle.right = x + width;
+        object->rectangle.bottom = y + height;
+    }
+    if ((flags & SWP_NOSIZE) == 0) {
+        object->rectangle.right = object->rectangle.left + cx;
+        object->rectangle.bottom = object->rectangle.top + cy;
+    }
+    if ((flags & SWP_SHOWWINDOW) != 0) object->visible = true;
+    if ((flags & SWP_HIDEWINDOW) != 0) object->visible = false;
+    return TRUE;
+}
+
+BOOL SetWindowTextA(HWND window, LPCSTR text) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    object->text = text != nullptr ? text : "";
+    return TRUE;
+}
+
+BOOL UpdateWindow(HWND window) {
+    return IsWindow(window);
+}
+
+BOOL IsDialogMessageA(HWND, LPMSG) {
+    return FALSE;
+}
+
+BOOL TranslateMessage(const MSG*) {
+    return FALSE;
+}
+
+LRESULT DispatchMessageA(const MSG* message) {
+    if (message == nullptr) return 0;
+    auto* object = window_from_handle(message->hwnd);
+    if (object == nullptr || object->klass.procedure == nullptr) {
+        return DefWindowProcA(message->hwnd, message->message, message->wParam,
+                              message->lParam);
+    }
+    return object->klass.procedure(message->hwnd, message->message,
+                                   message->wParam, message->lParam);
+}
+
+BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    if (window != nullptr && !IsWindow(window)) return FALSE;
+    g_messages.push_back({window, message, wparam, lparam, 0, {0, 0}});
+    return TRUE;
+}
+
+VOID PostQuitMessage(int exit_code) {
+    g_messages.push_back(
+        {nullptr, WM_QUIT, static_cast<WPARAM>(exit_code), 0, 0, {0, 0}});
+}
+
+BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max) {
+    if (message == nullptr) return FALSE;
+    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
+        if (!message_matches(*it, window, filter_min, filter_max)) continue;
+        *message = *it;
+        g_messages.erase(it);
+        return message->message == WM_QUIT ? 0 : 1;
+    }
+    return FALSE;
+}
+
+int MessageBoxA(HWND, LPCSTR, LPCSTR, UINT) {
+    return IDOK;
+}
+
+}  // extern "C"

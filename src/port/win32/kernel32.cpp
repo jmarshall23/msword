@@ -254,6 +254,10 @@ HANDLE GetCurrentProcess(void) {
     return reinterpret_cast<HANDLE>(static_cast<uintptr_t>(2));
 }
 
+DWORD GetCurrentProcessId(void) {
+    return static_cast<DWORD>(getpid());
+}
+
 BOOL TerminateProcess(HANDLE, UINT exit_code) {
     std::exit(static_cast<int>(exit_code));
 }
@@ -879,6 +883,23 @@ LONG InterlockedExchange(volatile LONG* target, LONG value) {
 LPWSTR GetCommandLineW(void) {
     static WCHAR command[] = {'W', 'O', 'R', 'D', '1', 0};
     return command;
+}
+
+DWORD GetEnvironmentVariableA(LPCSTR name, LPSTR buffer, DWORD size) {
+    if (name == nullptr) return 0;
+    const char* value = std::getenv(name);
+    if (value == nullptr) return 0;
+    const DWORD needed = static_cast<DWORD>(std::strlen(value));
+    if (buffer != nullptr && size != 0) {
+        lstrcpynA(buffer, value, static_cast<int>(size));
+    }
+    return needed >= size ? needed + 1 : needed;
+}
+
+BOOL SetEnvironmentVariableA(LPCSTR name, LPCSTR value) {
+    if (name == nullptr) return FALSE;
+    if (value == nullptr) return unsetenv(name) == 0 ? TRUE : FALSE;
+    return setenv(name, value, 1) == 0 ? TRUE : FALSE;
 }
 
 USHORT CaptureStackBackTrace(DWORD, DWORD, PVOID*, DWORD*) { return 0; }

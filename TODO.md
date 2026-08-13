@@ -232,6 +232,14 @@ Message ordering is where ports like this actually fail. Word assumes Windows 2/
 delivery order around focus, capture and paint. Expect more time there than on any
 individual entry point.
 
+A first non-Windows `user32.cpp` seed is in place. It covers the startup link
+surface that blocked `opus_x64_runtime_test`: class registration, window creation
+and destruction, parent/owner lookup, window extra bytes, DC acquisition, system
+metrics/colors, simple visibility/enabled/focus state, environment/process helpers
+used by the runtime harness, and honest no-work message stubs. The runtime test no
+longer uses macOS `dynamic_lookup`, so missing imports fail at link time instead of
+as null calls.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

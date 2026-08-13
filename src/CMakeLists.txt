@@ -920,6 +920,7 @@ else()
         port/win32/module.cpp
         port/win32/objbase.c
         port/win32/resource.cpp
+        port/win32/user32.cpp
     )
     add_dependencies(opus_x64_runtime opus_generated_win32_resources)
 endif()
@@ -1311,6 +1312,27 @@ if(NOT WIN32)
         )
     endforeach()
 
+    add_executable(opus_win32_user32_test
+        port/original/opus-win32-user32-test.cpp
+    )
+    target_compile_features(opus_win32_user32_test PRIVATE cxx_std_20)
+    target_compile_definitions(opus_win32_user32_test PRIVATE
+        WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
+    )
+    target_include_directories(opus_win32_user32_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+    target_link_libraries(opus_win32_user32_test PRIVATE opus_x64_runtime)
+    set_target_properties(opus_win32_user32_test PROPERTIES
+        FOLDER "Original Opus x64/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_win32_user32_test PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        )
+    endforeach()
+
     add_executable(opus_win32_memory_test
         port/original/opus-win32-memory-test.cpp
     )
@@ -1345,8 +1367,12 @@ target_include_directories(opus_x64_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE
 target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime)
 if(WIN32)
     target_link_libraries(opus_x64_runtime_test PRIVATE user32 gdi32)
-elseif(APPLE)
-    target_link_options(opus_x64_runtime_test PRIVATE -Wl,-undefined,dynamic_lookup)
+else()
+    target_compile_options(opus_x64_runtime_test PRIVATE
+        $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
+        $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
+        $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
+    )
 endif()
 set_target_properties(opus_x64_runtime_test PROPERTIES
     FOLDER "Original Opus x64/tests"
@@ -1435,6 +1461,7 @@ if(NOT WIN32)
     add_test(NAME opus_win32_gdi_raster_test COMMAND $<TARGET_FILE:opus_win32_gdi_raster_test>)
     add_test(NAME opus_win32_font_test COMMAND $<TARGET_FILE:opus_win32_font_test>)
     add_test(NAME opus_win32_print_test COMMAND $<TARGET_FILE:opus_win32_print_test>)
+    add_test(NAME opus_win32_user32_test COMMAND $<TARGET_FILE:opus_win32_user32_test>)
     add_test(NAME opus_win32_memory_test COMMAND $<TARGET_FILE:opus_win32_memory_test>)
 endif()
 if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
