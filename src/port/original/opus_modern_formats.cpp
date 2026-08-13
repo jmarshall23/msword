@@ -98,13 +98,17 @@ std::wstring wide_path(const char* path) {
         return {};
     }
     const int count = MultiByteToWideChar(CP_ACP, 0, path, -1, nullptr, 0);
-    std::wstring result(count > 0 ? static_cast<std::size_t>(count) : 0,
-                        L'\0');
+    std::vector<WCHAR> native(count > 0 ? static_cast<std::size_t>(count) : 0,
+                              WCHAR{});
     if (count > 1) {
-        MultiByteToWideChar(CP_ACP, 0, path, -1, result.data(), count);
-        result.resize(static_cast<std::size_t>(count - 1));
+        MultiByteToWideChar(CP_ACP, 0, path, -1, native.data(), count);
+        std::wstring result;
+        result.reserve(static_cast<std::size_t>(count - 1));
+        for (int index = 0; index < count - 1; ++index)
+            result.push_back(static_cast<wchar_t>(native[index]));
+        return result;
     }
-    return result;
+    return {};
 }
 
 std::wstring utf8_to_wide(std::string_view value) {
@@ -114,26 +118,36 @@ std::wstring utf8_to_wide(std::string_view value) {
     const int count = MultiByteToWideChar(CP_UTF8, 0, value.data(),
                                            static_cast<int>(value.size()),
                                            nullptr, 0);
-    std::wstring result(count > 0 ? static_cast<std::size_t>(count) : 0,
-                        L'\0');
+    std::vector<WCHAR> native(count > 0 ? static_cast<std::size_t>(count) : 0,
+                              WCHAR{});
     if (count > 0) {
         MultiByteToWideChar(CP_UTF8, 0, value.data(),
-                            static_cast<int>(value.size()), result.data(),
+                            static_cast<int>(value.size()), native.data(),
                             count);
+        std::wstring result;
+        result.reserve(static_cast<std::size_t>(count));
+        for (int index = 0; index < count; ++index)
+            result.push_back(static_cast<wchar_t>(native[index]));
+        return result;
     }
-    return result;
+    return {};
 }
 
 std::string wide_to_utf8(std::wstring_view value) {
     if (value.empty()) {
         return {};
     }
-    const int count = WideCharToMultiByte(CP_UTF8, 0, value.data(),
+    std::vector<WCHAR> native;
+    native.reserve(value.size());
+    for (const wchar_t code_unit : value)
+        native.push_back(static_cast<WCHAR>(static_cast<std::uint16_t>(
+            code_unit)));
+    const int count = WideCharToMultiByte(CP_UTF8, 0, native.data(),
                                           static_cast<int>(value.size()),
                                           nullptr, 0, nullptr, nullptr);
     std::string result(count > 0 ? static_cast<std::size_t>(count) : 0, '\0');
     if (count > 0) {
-        WideCharToMultiByte(CP_UTF8, 0, value.data(),
+        WideCharToMultiByte(CP_UTF8, 0, native.data(),
                             static_cast<int>(value.size()), result.data(),
                             count, nullptr, nullptr);
     }
@@ -142,12 +156,17 @@ std::string wide_to_utf8(std::wstring_view value) {
 
 std::string wide_to_ansi(std::wstring_view value) {
     if (value.empty()) return {};
+    std::vector<WCHAR> native;
+    native.reserve(value.size());
+    for (const wchar_t code_unit : value)
+        native.push_back(static_cast<WCHAR>(static_cast<std::uint16_t>(
+            code_unit)));
     const int count = WideCharToMultiByte(
-        1252, WC_NO_BEST_FIT_CHARS, value.data(),
+        1252, WC_NO_BEST_FIT_CHARS, native.data(),
         static_cast<int>(value.size()), nullptr, 0, "?", nullptr);
     std::string result(count > 0 ? static_cast<std::size_t>(count) : 0, '\0');
     if (count > 0) {
-        WideCharToMultiByte(1252, WC_NO_BEST_FIT_CHARS, value.data(),
+        WideCharToMultiByte(1252, WC_NO_BEST_FIT_CHARS, native.data(),
                             static_cast<int>(value.size()), result.data(),
                             count, "?", nullptr);
     }
@@ -158,14 +177,19 @@ std::wstring ansi_to_wide(std::string_view value) {
     if (value.empty()) return {};
     const int count = MultiByteToWideChar(
         1252, 0, value.data(), static_cast<int>(value.size()), nullptr, 0);
-    std::wstring result(count > 0 ? static_cast<std::size_t>(count) : 0,
-                        L'\0');
+    std::vector<WCHAR> native(count > 0 ? static_cast<std::size_t>(count) : 0,
+                              WCHAR{});
     if (count > 0) {
         MultiByteToWideChar(1252, 0, value.data(),
-                            static_cast<int>(value.size()), result.data(),
+                            static_cast<int>(value.size()), native.data(),
                             count);
+        std::wstring result;
+        result.reserve(static_cast<std::size_t>(count));
+        for (int index = 0; index < count; ++index)
+            result.push_back(static_cast<wchar_t>(native[index]));
+        return result;
     }
-    return result;
+    return {};
 }
 
 std::string xml_escape(std::wstring_view text) {
