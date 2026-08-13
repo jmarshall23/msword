@@ -1,12 +1,12 @@
 #include <Windows.h>
 #include <DbgHelp.h>
 #include <rtcapi.h>
+#include "opus_x64_compat.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
-#include <cwchar>
 
 extern "C" int WINAPI OpusOriginalWinMain(HINSTANCE instance,
                                              HINSTANCE previous,
@@ -38,6 +38,24 @@ extern "C" void OpusRegisterOriginalDialogCallbacks(
     OpusFontNameFromValueProc);
 
 namespace {
+
+bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
+    if (text == nullptr || needle == nullptr || *needle == 0) {
+        return false;
+    }
+    for (; *text != 0; ++text) {
+        LPCWSTR cursor = text;
+        LPCWSTR wanted = needle;
+        while (*cursor != 0 && *wanted != 0 && *cursor == *wanted) {
+            ++cursor;
+            ++wanted;
+        }
+        if (*wanted == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void WriteCrashText(HANDLE file, const char* text) {
     DWORD written = 0;
@@ -376,15 +394,16 @@ LONG WINAPI ObserveVectoredException(EXCEPTION_POINTERS* exception) {
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                     PWSTR command_line, int show_command) {
-    if ((command_line != nullptr &&
-         std::wcsstr(command_line, L"--self-test") != nullptr) ||
-        std::wcsstr(GetCommandLineW(), L"--self-test") != nullptr) {
+    const LPCWSTR self_test = OPUSW("--self-test");
+    if (OpusWideContains(command_line, self_test) ||
+        OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
     }
 
-    /* Exclude the current directory and PATH from DLL resolution.  The app
-       directory remains available for intentionally deployed components and
-       system DLLs are resolved only from System32. */
+    /* Exclude the current directory and PATH from DLL resolution. The app
+     * directory remains available for intentionally deployed components and
+     * system DLLs are resolved only from System32.
+     */
     SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR |
                              LOAD_LIBRARY_SEARCH_SYSTEM32 |
                              LOAD_LIBRARY_SEARCH_USER_DIRS);
@@ -397,7 +416,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     ResetRibbonTrace();
 
     /* The native SDM shim owns the controls, while Microsoft's original
-       callbacks still own every font, point-size, color, and style list. */
+     * callbacks still own every font, point-size, color, and style list.
+     */
     OpusRegisterOriginalDialogCallbacks(WListFontName, WListFontSize,
                                         WListStyles, Look1WListEntbl,
                                         OpusX64FtcFromFontName,

@@ -207,15 +207,15 @@ the densest surface in `opus_win95_chrome.cpp`, `opus_modern_formats.cpp`,
 `SendMessageW`, `PostMessageW` and `GetModuleHandleW`, plus `wWinMain` entry points at
 `opus_product_entry.cpp:44` and `opus_original_startup_probe.cpp:399`. Windows `WCHAR`
 is 16-bit; clang, gcc and Emscripten default `wchar_t` to 32-bit.
-`std::wcsstr(command_line, L"--self-test")` at `opus_original_startup_probe.cpp:402`
-sits on the smoke-test path.
+The startup self-test path sits in `opus_original_startup_probe.cpp`.
 
 This is jphonorato's fifth obstacle, the one he scoped to "~5 files in `src/port/`".
 
 Status: `src/port/win32/windows.h` defines `WCHAR`, `LPWSTR`, `LPCWSTR`, `PWSTR` and
 `PCWSTR` as 16-bit shim types, and asserts `sizeof(WCHAR) == 2`. `opus_x64_compat.h`
 defines `OPUSW("")` for C++ port code so non-Windows literals can use UTF-16 storage
-instead of host `wchar_t`.
+instead of host `wchar_t`. `opus_original_startup_probe.cpp` uses that boundary for
+`--self-test` detection before narrowing the command line with `WideCharToMultiByte`.
 
 Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
 or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit
