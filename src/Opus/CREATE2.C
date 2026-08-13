@@ -824,7 +824,7 @@ int doc;
 	Dispose. */
 	if (doc == docNil || mpdochdod[doc] == hNil || doc == docScrap
 			|| FDocBusy(doc))
-		return;
+		return 0;
 
 	if (vhplbmc != hNil)
 		InvalBmc(doc, cp0, CpMacDoc(doc));
@@ -1103,4 +1103,3 @@ int doc, fn;
 		/* if this fails then the author will be incorrect */
 		FChangeStInSttb( hsttb, ibstAssocAuthor, vpref.stUsrName );
 }
-

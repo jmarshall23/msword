@@ -157,6 +157,42 @@ typedef struct tagBITMAPCOREHEADER {
     WORD bcPlanes;
     WORD bcBitCount;
 } BITMAPCOREHEADER;
+#define OPUS_WIN32_HAS_BITMAP_TYPES 1
+typedef BITMAPCOREHEADER* LPBITMAPCOREHEADER;
+
+typedef struct tagRGBTRIPLE {
+    BYTE rgbtBlue;
+    BYTE rgbtGreen;
+    BYTE rgbtRed;
+} RGBTRIPLE;
+
+typedef struct tagRGBQUAD {
+    BYTE rgbBlue;
+    BYTE rgbGreen;
+    BYTE rgbRed;
+    BYTE rgbReserved;
+} RGBQUAD;
+
+typedef struct tagBITMAPINFOHEADER {
+    DWORD biSize;
+    LONG biWidth;
+    LONG biHeight;
+    WORD biPlanes;
+    WORD biBitCount;
+    DWORD biCompression;
+    DWORD biSizeImage;
+    LONG biXPelsPerMeter;
+    LONG biYPelsPerMeter;
+    DWORD biClrUsed;
+    DWORD biClrImportant;
+} BITMAPINFOHEADER;
+typedef BITMAPINFOHEADER* LPBITMAPINFOHEADER;
+
+typedef struct tagBITMAPINFO {
+    BITMAPINFOHEADER bmiHeader;
+    RGBQUAD bmiColors[1];
+} BITMAPINFO;
+typedef BITMAPINFO* LPBITMAPINFO;
 
 typedef struct tagBITMAP {
     LONG bmType;
@@ -167,6 +203,7 @@ typedef struct tagBITMAP {
     WORD bmBitsPixel;
     LPVOID bmBits;
 } BITMAP;
+typedef BITMAP* LPBITMAP;
 
 typedef LRESULT(CALLBACK* WNDPROC)(HWND, UINT, WPARAM, LPARAM);
 
@@ -233,7 +270,30 @@ typedef struct tagLOGFONTA {
 
 typedef struct tagTEXTMETRICA {
     LONG tmHeight;
+    LONG tmAscent;
+    LONG tmDescent;
+    LONG tmInternalLeading;
+    LONG tmExternalLeading;
+    LONG tmAveCharWidth;
+    LONG tmMaxCharWidth;
+    LONG tmWeight;
+    BYTE tmItalic;
+    BYTE tmUnderlined;
+    BYTE tmStruckOut;
+    BYTE tmFirstChar;
+    BYTE tmLastChar;
+    BYTE tmDefaultChar;
+    BYTE tmBreakChar;
+    BYTE tmPitchAndFamily;
+    BYTE tmCharSet;
+    LONG tmOverhang;
+    LONG tmDigitizedAspectX;
+    LONG tmDigitizedAspectY;
 } TEXTMETRICA, *LPTEXTMETRICA;
+typedef TEXTMETRICA TEXTMETRIC;
+typedef LPTEXTMETRICA LPTEXTMETRIC;
+typedef LOGFONTA LOGFONT;
+typedef LPLOGFONTA LPLOGFONT;
 
 typedef int(CALLBACK* FONTENUMPROCA)(const LOGFONTA*, const TEXTMETRICA*,
                                      DWORD, LPARAM);
@@ -390,6 +450,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef MAKEINTRESOURCEA
 #define MAKEINTRESOURCEA(id) ((LPSTR)(ULONG_PTR)((WORD)(id)))
 #endif
+#ifndef MAKEINTRESOURCE
+#define MAKEINTRESOURCE MAKEINTRESOURCEA
+#endif
 #ifndef IDC_ARROW
 #define IDC_ARROW MAKEINTRESOURCEA(32512)
 #endif
@@ -414,6 +477,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef VK_RETURN
 #define VK_RETURN 0x0d
+#endif
+#ifndef MK_SHIFT
+#define MK_SHIFT 0x0004
 #endif
 #ifndef VK_SHIFT
 #define VK_SHIFT 0x10
@@ -655,9 +721,88 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef PATINVERT
 #define PATINVERT ((DWORD)0x005A0049)
 #endif
+#ifndef PATCOPY
+#define PATCOPY ((DWORD)0x00F00021)
+#endif
+#ifndef SRCCOPY
+#define SRCCOPY ((DWORD)0x00CC0020)
+#endif
+#ifndef DSTINVERT
+#define DSTINVERT ((DWORD)0x00550009)
+#endif
+
+#ifndef ETO_OPAQUE
+#define ETO_OPAQUE 2
+#endif
+#ifndef ETO_CLIPPED
+#define ETO_CLIPPED 4
+#endif
+#ifndef ETO_GRAYED
+#define ETO_GRAYED 1
+#endif
 
 #ifndef MM_ANISOTROPIC
 #define MM_ANISOTROPIC 8
+#endif
+#ifndef MM_LOMETRIC
+#define MM_LOMETRIC 2
+#endif
+#ifndef TRANSPARENT
+#define TRANSPARENT 1
+#endif
+#ifndef OPAQUE
+#define OPAQUE 2
+#endif
+#ifndef DRAWPATTERNRECT
+#define DRAWPATTERNRECT 25
+#endif
+#ifndef ANSI_CHARSET
+#define ANSI_CHARSET 0
+#endif
+#ifndef BI_RGB
+#define BI_RGB 0L
+#endif
+#ifndef DIB_RGB_COLORS
+#define DIB_RGB_COLORS 0
+#endif
+#ifndef CBM_INIT
+#define CBM_INIT 0x04
+#endif
+#ifndef META_SETBKCOLOR
+#define META_SETBKCOLOR 0x0201
+#endif
+#ifndef META_SETTEXTCOLOR
+#define META_SETTEXTCOLOR 0x0209
+#endif
+#ifndef META_SETWINDOWORG
+#define META_SETWINDOWORG 0x020b
+#endif
+#ifndef META_SETWINDOWEXT
+#define META_SETWINDOWEXT 0x020c
+#endif
+#ifndef META_STRETCHDIB
+#define META_STRETCHDIB 0x0f43
+#endif
+#ifndef NULLREGION
+#define NULLREGION 1
+#endif
+#ifndef SIMPLEREGION
+#define SIMPLEREGION 2
+#endif
+#ifndef COMPLEXREGION
+#define COMPLEXREGION 3
+#endif
+#ifndef RGN_AND
+#define RGN_AND 1
+#endif
+#ifndef RGN_OR
+#define RGN_OR 2
+#endif
+#ifndef RGN_XOR
+#define RGN_XOR 3
+#endif
+#ifndef RGN_DIFF
+#define RGN_DIFF 4
 #endif
 
 #ifndef SWP_NOSIZE
@@ -669,6 +814,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef SWP_NOZORDER
 #define SWP_NOZORDER 0x0004
 #endif
+#ifndef SWP_NOREDRAW
+#define SWP_NOREDRAW 0x0008
+#endif
 #ifndef SWP_NOACTIVATE
 #define SWP_NOACTIVATE 0x0010
 #endif
@@ -678,6 +826,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef GW_HWNDNEXT
 #define GW_HWNDNEXT 2
+#endif
+#ifndef GW_HWNDFIRST
+#define GW_HWNDFIRST 0
 #endif
 #ifndef GW_HWNDPREV
 #define GW_HWNDPREV 3
@@ -898,6 +1049,28 @@ typedef struct _WIN32_FIND_DATAA {
 #define SYSTEM_FONT 13
 #endif
 
+#ifndef GMEM_FIXED
+#define GMEM_FIXED 0x0000
+#endif
+#ifndef GMEM_MOVEABLE
+#define GMEM_MOVEABLE 0x0002
+#endif
+#ifndef GMEM_ZEROINIT
+#define GMEM_ZEROINIT 0x0040
+#endif
+#ifndef GMEM_SHARE
+#define GMEM_SHARE 0x2000
+#endif
+#ifndef GMEM_DDESHARE
+#define GMEM_DDESHARE 0x2000
+#endif
+#ifndef GHND
+#define GHND (GMEM_MOVEABLE | GMEM_ZEROINIT)
+#endif
+#ifndef GPTR
+#define GPTR (GMEM_FIXED | GMEM_ZEROINIT)
+#endif
+
 #ifndef SS_LEFT
 #define SS_LEFT 0x00000000
 #endif
@@ -1008,6 +1181,88 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef BST_CHECKED
 #define BST_CHECKED 0x0001
+#endif
+
+#ifndef WM_USER
+#define WM_USER 0x0400
+#endif
+#ifndef WM_DESTROY
+#define WM_DESTROY 0x0002
+#endif
+#ifndef WM_SIZE
+#define WM_SIZE 0x0005
+#endif
+#ifndef WM_SETFOCUS
+#define WM_SETFOCUS 0x0007
+#endif
+#ifndef WM_KILLFOCUS
+#define WM_KILLFOCUS 0x0008
+#endif
+#ifndef WM_SETREDRAW
+#define WM_SETREDRAW 0x000b
+#endif
+#ifndef WM_SETTEXT
+#define WM_SETTEXT 0x000c
+#endif
+#ifndef WM_GETTEXT
+#define WM_GETTEXT 0x000d
+#endif
+#ifndef WM_GETTEXTLENGTH
+#define WM_GETTEXTLENGTH 0x000e
+#endif
+#ifndef WM_PAINT
+#define WM_PAINT 0x000f
+#endif
+#ifndef WM_ERASEBKGND
+#define WM_ERASEBKGND 0x0014
+#endif
+#ifndef WM_QUEUESYNC
+#define WM_QUEUESYNC 0x0023
+#endif
+#ifndef WM_GETDLGCODE
+#define WM_GETDLGCODE 0x0087
+#endif
+#ifndef WM_CHAR
+#define WM_CHAR 0x0102
+#endif
+#ifndef WM_SYSKEYDOWN
+#define WM_SYSKEYDOWN 0x0104
+#endif
+#ifndef WM_MOUSEFIRST
+#define WM_MOUSEFIRST 0x0200
+#endif
+#ifndef WM_LBUTTONDBLCLK
+#define WM_LBUTTONDBLCLK 0x0203
+#endif
+#ifndef WM_MOUSELAST
+#define WM_MOUSELAST 0x0209
+#endif
+#ifndef WM_CUT
+#define WM_CUT 0x0300
+#endif
+#ifndef WM_COPY
+#define WM_COPY 0x0301
+#endif
+#ifndef WM_PASTE
+#define WM_PASTE 0x0302
+#endif
+#ifndef WM_CLEAR
+#define WM_CLEAR 0x0303
+#endif
+#ifndef EN_ERRSPACE
+#define EN_ERRSPACE 0x0500
+#endif
+#ifndef EM_SETHANDLE
+#define EM_SETHANDLE 0x00bc
+#endif
+#ifndef DLGC_WANTARROWS
+#define DLGC_WANTARROWS 0x0001
+#endif
+#ifndef DLGC_HASSETSEL
+#define DLGC_HASSETSEL 0x0008
+#endif
+#ifndef DLGC_WANTCHARS
+#define DLGC_WANTCHARS 0x0080
 #endif
 
 #ifndef FORMAT_MESSAGE_IGNORE_INSERTS
@@ -1171,6 +1426,7 @@ typedef struct _WIN32_FIND_DATAA {
 
 FARPROC GetProcAddress(HMODULE module, LPCSTR name);
 HMODULE GetModuleHandleW(LPCWSTR module_name);
+HMODULE GetModuleHandleA(LPCSTR module_name);
 DWORD GetTempPathA(DWORD buffer_length, LPSTR buffer);
 UINT GetTempFileNameA(LPCSTR path_name, LPCSTR prefix, UINT unique, LPSTR file_name);
 DWORD GetCurrentProcessId(void);
@@ -1249,6 +1505,16 @@ BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max);
 BOOL IsDialogMessageA(HWND dialog, LPMSG message);
 VOID PostQuitMessage(int exit_code);
 HGDIOBJ GetStockObject(int object);
+HGDIOBJ SelectObject(HDC device_context, HGDIOBJ object);
+HFONT CreateFontIndirectA(const LOGFONTA* logical_font);
+BOOL GetTextMetricsA(HDC device_context, LPTEXTMETRICA text_metric);
+HBITMAP CreateBitmapIndirect(const BITMAP* bitmap);
+HBITMAP CreateBitmap(int width, int height, UINT planes, UINT bits_per_pixel,
+                     LPCVOID bits);
+HDC CreateCompatibleDC(HDC device_context);
+int GetObjectA(HANDLE object, int buffer_size, LPVOID object_data);
+LONG GetBitmapBits(HBITMAP bitmap, LONG count, LPVOID bits);
+DWORD GetBitmapDimension(HBITMAP bitmap);
 int GetClassNameA(HWND window, LPSTR class_name, int max_count);
 BOOL SetWindowTextA(HWND window, LPCSTR text);
 int GetWindowTextLengthA(HWND window);
@@ -1278,6 +1544,7 @@ VOID EndPaint(HWND window, LPPAINTSTRUCT paint);
 HWND GetClipboardOwner(void);
 BOOL OpenClipboard(HWND window);
 BOOL EmptyClipboard(void);
+HANDLE GetClipboardData(UINT format);
 HANDLE SetClipboardData(UINT format, HANDLE memory);
 BOOL CloseClipboard(void);
 int SetMapMode(HDC device_context, int map_mode);
@@ -1286,12 +1553,24 @@ DWORD SetWindowExt(HDC device_context, int x, int y);
 VOID SetScrollRange(HWND window, int bar, int minimum, int maximum,
                     BOOL redraw);
 int SetScrollPos(HWND window, int bar, int position, BOOL redraw);
+HANDLE GlobalAlloc(UINT flags, SIZE_T bytes);
+LPVOID GlobalLock(HANDLE memory);
+BOOL GlobalUnlock(HANDLE memory);
+HANDLE GlobalFree(HANDLE memory);
+HANDLE GlobalReAlloc(HANDLE memory, SIZE_T bytes, UINT flags);
+SIZE_T GlobalSize(HANDLE memory);
 
 #ifndef CreateWindow
 #define CreateWindow(class_name, window_name, style, x, y, width, height,       \
                      parent, menu, instance, parameter)                        \
     CreateWindowExA(0, (class_name), (window_name), (style), (x), (y), (width), \
                     (height), (parent), (menu), (instance), (parameter))
+#endif
+#ifndef GetModuleHandle
+#define GetModuleHandle GetModuleHandleA
+#endif
+#ifndef GetObject
+#define GetObject GetObjectA
 #endif
 #ifndef GetNextWindow
 #define GetNextWindow GetWindow
@@ -1307,6 +1586,12 @@ int SetScrollPos(HWND window, int bar, int position, BOOL redraw);
 #endif
 #ifndef FindWindow
 #define FindWindow FindWindowA
+#endif
+#ifndef CreateFontIndirect
+#define CreateFontIndirect CreateFontIndirectA
+#endif
+#ifndef GetTextMetrics
+#define GetTextMetrics GetTextMetricsA
 #endif
 
 HGDIOBJ GetCurrentObject(HDC device_context, UINT object_type);

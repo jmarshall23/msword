@@ -229,7 +229,7 @@ BOOL fFrameLines;
 	int mpblz[blMax+1];
 
 	if (FEmptyRc(&rcw))
-		return;
+		return 0;
 
 #ifdef MAC
 	fLaserWriter = vlm == lmPrint && vprsu.prid == pridLaser;
@@ -789,7 +789,7 @@ LNextCornerLine:
 
 LDrawBrc:
 	if (FEmptyRc(&rcw))
-		return;	/* nothing left to draw */
+		return 0;	/* nothing left to draw */
 
 	PenNormal();
 
@@ -1165,7 +1165,7 @@ CP cp, cpCurPara, cpFirstPara;
 		CachePara(doc,cpCurPara);
 		}
 	if (ch == chSect || ch == chColumnBreak || vpapFetch.fTtp)
-		return;
+		return 0;
 
 	pap = vpapFetch;
 	Assert(FInCa(doc, cp, &caSect));
@@ -1284,7 +1284,7 @@ int dxpToXw, ywLine;
 
 	*prcAdjusted = *prcOpaque;
 	if (vfli.xpRight > vfli.xpMarginRight)
-		return; /* we decline to adjust things in this case */
+		return 0; /* we decline to adjust things in this case */
 	Assert(vfli.xpLeft >= vfli.xpMarginLeft); /* no need to check mirror condition */
 
 	dypBrcTop = vfli.fTop ? vfli.dypBrcTop : 0;
@@ -1307,7 +1307,7 @@ int dxpToXw, ywLine;
 	rcT.ywBottom = rcT.ywTop;
 	rcT.ywTop = ywSav;
 	if (rcT.ywTop >= rcT.ywBottom)
-		return;
+		return 0;
 
 	/* clear space to left */
 	if (prcOpaque->xwLeft < vfli.xpMarginLeft + dxpToXw)

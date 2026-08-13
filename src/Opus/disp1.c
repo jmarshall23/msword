@@ -317,7 +317,7 @@ int		ww, idr, dl, ypLine;
 	if (!vrf.fInDisplayFli)
 		{
 		vrf.fInDisplayFli = !vrf.fInDisplayFli;
-		return;
+		return 0;
 		}
 
 	Assert(hpldr != NULL );
@@ -684,20 +684,20 @@ struct RC *prcwClip;
 	if (prcwClip != NULL)
 		{
 		if (xw < prcwClip->xwLeft || xw + vfti.dxpBorder > prcwClip->xwRight)
-			return;
+			return 0;
 		if (yw < prcwClip->ywTop)
 			{
 			dyw -= yw - prcwClip->ywTop;
 			yw = prcwClip->ywTop;
 			}
 		if ((dyw = min(dyw, prcwClip->ywBottom - yw)) <= 0)
-			return;
+			return 0;
 		Assert(yw >= prcwClip->ywTop && yw + dyw <= prcwClip->ywBottom && dyw > 0);
 		}
 	if (vlm = lmPreview)
 		{
 		DrawPrvwLine(hdc, xw, yw, vfti.dxpBorder, dyw, colAuto);
-		return;
+		return 0;
 		}
 	hbrOld = SelectObject(hdc, vfli.fPrint ? vpri.hbrText:vsci.hbrText);
 	PatBlt(hdc, xw, yw, vfti.dxpBorder, dyw, PATCOPY);
@@ -818,8 +818,8 @@ int		dxpToXw, ywLine;
 						&rcErase, fErased, eto);
 				ich++;
 				}
-			(char *) pchr = (char *)*vhgrpchr + bchrCur;
-			(char *) pchp = (char *)*vhgrpchr + bchpCur;
+			pchr = (struct CHR *)((char *)*vhgrpchr + bchrCur);
+			pchp = (struct CHP *)((char *)*vhgrpchr + bchpCur);
 			((struct CHRT *)pchr)++;
 			}
 		else  if (chrm == chrmChp)
@@ -872,7 +872,7 @@ int		dxpToXw, ywLine;
 			{
 /* real cp can be calculated as vfli.cpMin + ich + dcpVanish */
 			dcpVanish += ((struct CHRV *)pchr)->dcp;
-			(char *)pchr += cbCHRV;
+			pchr = (struct CHR *)((char *)pchr + cbCHRV);
 			}
 		else  if (chrm == chrmDisplayField)
 			{
@@ -924,7 +924,7 @@ int		dxpToXw, ywLine;
 			pchp = (char *)*vhgrpchr + bchpCur;
 			dcpVanish += ((struct CHRDF *)pchr)->dcp -1;
 			ptPen.xp = xpNew;
-			(char *) pchr += cbCHRDF;
+			pchr = (struct CHR *)((char *)pchr + cbCHRDF);
 			}
 		else  if (chrm == chrmFormula)
 			{
@@ -979,7 +979,7 @@ int		dxpToXw, ywLine;
 			ptPen.xp = xpNew;
 			ptPen.yp = ypNew;
 			fNoSkip = vfli.fPrint;
-			(char *) pchr += cbCHRF;
+			pchr = (struct CHR *)((char *)pchr + cbCHRF);
 			}
 		else  if (chrm == chrmFormatGroup)
 			{
@@ -994,7 +994,7 @@ int		dxpToXw, ywLine;
 				}
 			/* note that rcOpaque and rcErase will no
 				longer change (rcErase not used) */
-			(char *) pchr += cbCHRFG;
+			pchr = (struct CHR *)((char *)pchr + cbCHRFG);
 			}
 		else  /*if (chrm == chrmEnd)*/
 			
@@ -1065,8 +1065,8 @@ LDacNop:
 						bchrCur = (char *) pchr - (char *)*vhgrpchr;
 						bchpCur = (char *) pchp - (char *)*vhgrpchr;
 						EndUL(&uls, &rcwClip);
-						(char *) pchr = (char *)*vhgrpchr + bchrCur;
-						(char *) pchp = (char *)*vhgrpchr + bchpCur;
+						pchr = (struct CHR *)((char *)*vhgrpchr + bchrCur);
+						pchp = (struct CHP *)((char *)*vhgrpchr + bchpCur);
 						}
 
 				if (!fErased && !fPrvwPrint)

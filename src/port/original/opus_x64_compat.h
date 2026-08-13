@@ -125,7 +125,7 @@ HFILE OpusOpenFile(LPCSTR file_name, void *legacy_ofs, UINT style);
  * layout types. Modern windows.h honors NOGDI more broadly, so provide the
  * SDK-compatible data structures when that switch hid them.
  */
-#ifdef NOGDI
+#if defined(NOGDI) && !defined(OPUS_WIN32_HAS_BITMAP_TYPES)
 typedef struct tagBITMAPCOREHEADER
     {
     DWORD bcSize;

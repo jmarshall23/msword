@@ -195,7 +195,7 @@ int dxp;
 			DxsFromDxa(pwwd, xaRightMaxSci) - dxpDisp)
 			+ pwwd->xhScroll)) <= 0)
 		/* would scroll too far */
-		return;
+		return 0;
 	else
 		{
 		/* how far are we from home point? */
@@ -223,7 +223,7 @@ int dxp;
 			DxsFromDxa(pwwd, -xaLeftMinSci))
 			- pwwd->xhScroll)) <= 0)
 		/* would scroll too far */
-		return;
+		return 0;
 	else
 		{
 		/* how far are we from home point ? */
@@ -527,7 +527,7 @@ struct RC *prcwClip;
 		fOver = fTrue;
 		}		
 	if (dxp < 0 || pt.yp < prcwClip->ypTop || pt.yp >= prcwClip->ypBottom)
-		return;
+		return 0;
 
 	ch = mptlcch[tlc];
 	SetBytes(&rgch[0], ch, 32);
@@ -751,7 +751,7 @@ struct RC *prc;
 	struct RC rcBorder;
 
 	if (!pwwd->xwSelBar)
-		return;
+		return 0;
 
 /* draw portion of style name window border that extends above ypMin */
 /* This is the only drawing/invalidation that we have to do in this area */

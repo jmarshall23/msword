@@ -661,7 +661,7 @@ struct XSR *pxsr;
 			{
 LPostAbort:
 			PostTn(pxbc, tntAbort, NULL, 0);
-			return;
+			return 0;
 			}
 
 		if (!pxsr->fNotEmptyPcaDel)
@@ -921,7 +921,7 @@ struct XSR *pxsr;
 		pxsr->fc = fc0;
 		pxsr->dfc = fc0;
 		XReplace(fPlan, pxbc, pxsr);
-		return;
+		return 0;
 		}
 
 	hplcpcdDest = (*hdodDest)->hplcpcd;
@@ -956,7 +956,7 @@ struct XSR *pxsr;
 		if (ipcdFirst == iNil || ipcdLim == iNil)
 			{
 			PostTn(pxbc, tntAbort, NULL, 0);
-			return;
+			return 0;
 			}
 
 		/* number of pieces to be added */
@@ -1187,7 +1187,7 @@ rest of the !fShort processing? */
 	Assert(caT.cpLim <= CpMac2Doc(caT.doc));
 	caT.cpLim = CpMin(caT.cpLim, CpMac2Doc(caT.doc));
 	if (caT.cpLim <= caT.cpFirst)
-		return;
+		return 0;
 
 /* these PLCs are in short and long docs */
 	if ((hplc = (*hdod)->hplcpgd) != 0)
@@ -1199,7 +1199,7 @@ rest of the !fShort processing? */
 		XDelInHplcEdit(fPlan, pxbc, &pxsr->xsaPheDel, &caT, hplc, edcPhe);
 
 	if ((*hdod)->fShort)
-		return;
+		return 0;
 /* PLCs for long docs only */
 
 	if ((*hdod)->docFtn != docNil)
@@ -1265,7 +1265,7 @@ in all relevant structures: PGD, PAD
 			if (edc != edcSea)
 				{
 				if ((ipgd=IInPlcMult(hplcDest, cpDest)) >= IMacPlc(hplcDest))
-					return;
+					return 0;
 				GetPlc(hplcDest, ipgd, &foo);
 				foo.pad.fUnk = fTrue;
 				PutPlcLast(hplcDest, ipgd, &foo);
@@ -1273,7 +1273,7 @@ in all relevant structures: PGD, PAD
 			if (edc == edcPad)
 				(*hdodDest)->fOutlineDirty = fTrue;
 			}
-		return;
+		return 0;
 		}
 
 	cpFirst = pcaSrc->cpFirst;
@@ -1292,7 +1292,7 @@ in all relevant structures: PGD, PAD
 		iFirst = pxsa->iFirst;
 
 	if ((cIns = pxsa->c) == 0)
-		return;
+		return 0;
 
 	if (fPlan)
 		{
@@ -1302,7 +1302,7 @@ in all relevant structures: PGD, PAD
 			if ((hplcDest = HplcCreateEdc(hdodDest, edc)) == hNil)
 				{
 				PostTn(pxbc, tntAbort, NULL, 0);
-				return;
+				return 0;
 				}
 
 			/* this is now guaranteed (all long-dod docs always have a sed) */
@@ -1371,7 +1371,7 @@ int edc;
 	AssertH(hplc);
 
 	if ((iMacPlc = IMacPlc(hplc)) == 0)
-		return;
+		return 0;
 
 	if (fPlan || pxsa == NULL)
 		{
@@ -1390,7 +1390,7 @@ int edc;
 		}
 
 	if (iFirst >= iMacPlc)
-		return;
+		return 0;
 
 	/* there is a potential path where cDel is unitialized. assert we can
 		never follow that path. */
@@ -1464,7 +1464,7 @@ int edcDrp;
 		pdrp = ((int *) PdodDoc(pcaSrc->doc)) + edcDrp;
 		docSubSrc = pdrp->doc;
 		if ((hplcRefSrc = pdrp->hplcRef) == hNil)
-			return;
+			return 0;
 		}
 	hplcSrc = PdodDoc(docSubSrc)->hplcfnd;
 
@@ -1482,7 +1482,7 @@ int edcDrp;
 /* we are inserting cfoo = ifooLim-ifooFirst footnotes/annotations...
 */
 	if ((cfoo = pxsf->ifooLim - pxsf->ifooFirst) <= 0)
-		return;
+		return 0;
 
 	hdodDest = mpdochdod[docDest];
 
@@ -1490,7 +1490,7 @@ int edcDrp;
 		{
 LPostAbort:
 		PostTn(pxbc, tntAbort, NULL, 0);
-		return;
+		return 0;
 		}
 
 		/* BLOCK - heap pointer */
@@ -1579,7 +1579,7 @@ int edcDrp;
 	pdrp = ((int *)PdodDoc(pca->doc)) + edcDrp;
 	docSub = pdrp->doc;
 /* test if footnote table exists at all */
-	if ((hplcRef = pdrp->hplcRef) == hNil)  return;
+	if ((hplcRef = pdrp->hplcRef) == hNil)  return 0;
 
 	if (fPlan)
 		{
@@ -1589,7 +1589,7 @@ int edcDrp;
 
 	/* this could be positive because of a -1 return value from IInPlcCheck */
 	if ((cfoo = pxsf->ifooFirst - pxsf->ifooLim) >= 0)
-		return;
+		return 0;
 
 #ifdef DEBUG
 	if (!fPlan)
@@ -1660,7 +1660,7 @@ XAddHdrText.  make sure that we will return without doing anything anyway (and
 don't save any state) */
 
 	if (!pdod->fMother || docHdr == docNil)
-		return;
+		return 0;
 
 #ifdef DEBUG
 	if (fPlan)
@@ -1675,7 +1675,7 @@ deleted */
 	isedLim = IInPlc(hplcsed, pca->cpLim);
 
 	if (ised == isedLim)
-		return;
+		return 0;
 
 	docHdrDisp = docHdr;
 

@@ -892,7 +892,7 @@ struct PRC **hprc;
 	struct PRC  **hprcT, *pprc;
 
 	if (hprc == 0)
-		return;
+		return 0;
 	hprcT = hprc;
 
 	for (;;)
@@ -1116,7 +1116,7 @@ struct PLC **hplcfld;
 	struct FLD fld;
 
 	if (hplcfld == hNil)
-		return;
+		return 0;
 
 #ifdef SHOWFLDS
 	CommSz (SzShared("ResetFieldsHplcfld: resetting fields\n\r"));
@@ -1866,7 +1866,6 @@ int doc;
 		}
 	return fTrue;
 }
-
 
 
 

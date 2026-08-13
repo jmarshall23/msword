@@ -78,6 +78,16 @@ extern int OpusUnicodeBindPendingClipboard();
 
 extern LPCH LpchIncr();
 
+HANDLE HDataWriteDocCps();
+HANDLE HWriteText();
+HANDLE HWritePict();
+HANDLE HWriteRTF();
+HANDLE HRenderClipLink();
+HANDLE GlobalAlloc2();
+HBITMAP HbmMonoFromHbmColor();
+typedef HBITMAP (*PFNCREATEDIBITMAP)(HDC, LPBITMAPINFOHEADER, DWORD, LPSTR,
+		LPBITMAPINFO, UINT);
+typedef int (*PFNGETDIBITS)(HDC, HBITMAP, UINT, UINT, LPSTR, LPBITMAPINFO, UINT);
 VOID BuildMFRecordForDIB(struct MFHDRDIBMF *, struct WINMRTAG *, unsigned long, int, int);
 int CbDIBHeader(LPBITMAPINFOHEADER);
 #define WIDTHBYTES(i)   (((i)+31)/32*4)      /* ULONG aligned ! */
@@ -272,7 +282,7 @@ int cf;
 /*  %%Function:  HDataWriteDocCps   %%Owner:  bobz       */
 
 
-HDataWriteDocCps (cf, doc, cpFirst, cpLim, cbInitial, pfBlankPic)
+HANDLE HDataWriteDocCps (cf, doc, cpFirst, cpLim, cbInitial, pfBlankPic)
 int cf, doc;
 CP cpFirst, cpLim;
 int cbInitial;
@@ -336,7 +346,7 @@ int *pfBlankPic;  /* set true if an empty picture; else ignored */
 /*  %%Function:  HWriteText   %%Owner:  bobz       */
 
 
-HWriteText (doc, cpFirst, cpLim, cbInitial)
+HANDLE HWriteText (doc, cpFirst, cpLim, cbInitial)
 int doc;
 CP cpFirst, cpLim;
 int cbInitial;
@@ -475,7 +485,7 @@ Failed:
 /*  %%Function:  HWritePict   %%Owner:  bobz       */
 
 
-HWritePict (doc, cpFirst, cpLim, cbInitial, pfBlankPic, cf)
+HANDLE HWritePict (doc, cpFirst, cpLim, cbInitial, pfBlankPic, cf)
 int doc;
 CP cpFirst, cpLim;
 int cbInitial;
@@ -619,12 +629,12 @@ int cf; /* requested clipboard format */
 				int cbInfoHdr;
 				LPCH lpBits;
 				HANDLE hGDI;
-				FARPROC lpfn;
+				PFNCREATEDIBITMAP lpfn;
 
 				if ((hGDI = GetModuleHandle(SzShared("GDI"))) == NULL)
 					goto Failed;
 
-				lpfn = GetProcAddress(hGDI, MAKEINTRESOURCE(idoCreateDIBitmap));
+				lpfn = (PFNCREATEDIBITMAP)GetProcAddress(hGDI, MAKEINTRESOURCE(idoCreateDIBitmap));
 				Assert(lpfn != NULL);
 
 				if ((lpch = GlobalLock(hData)) == NULL)
@@ -800,7 +810,7 @@ CP cp;
 		Assert (ich < vfli.ichMac);
 		Assert (pchr->chrm);
 		Assert (pchr->chrm != chrmEnd);
-		(char *)pchr += pchr->chrm;
+			pchr = (struct CHR *)((char *)pchr + pchr->chrm);
 		}
 	return ich;
 }
@@ -1189,7 +1199,7 @@ struct RC *prcWinMF;  /* window org/ext rc for metafiles. may be null */
 		LPCH lpBits;
 		LPCH lpBitsInfo;
 		HANDLE hGDI;
-		FARPROC lpfn;
+			PFNGETDIBITS lpfn;
 		int cBitsPix;
 
 
@@ -1239,7 +1249,7 @@ struct RC *prcWinMF;  /* window org/ext rc for metafiles. may be null */
 #undef lpbi
 			lpBits = LpchIncr(lpBitsInfo, (unsigned)cbInfoHdr);
 
-			lpfn = GetProcAddress(hGDI, MAKEINTRESOURCE(idoGetDIBits));
+			lpfn = (PFNGETDIBITS)GetProcAddress(hGDI, MAKEINTRESOURCE(idoGetDIBits));
 			Assert(lpfn != NULL);
 			// calling GetDIBits (a Win 3 call) through GetProcAddress 
 			// because we still have to run under Win 2
@@ -1791,7 +1801,7 @@ ReadDone:
 /********************************/
 /*  %%Function:  HbmMonoFromHbmColor  %%Owner:  bobz       */
 
-HbmMonoFromHbmColor( hbmSrc )
+HBITMAP HbmMonoFromHbmColor( hbmSrc )
 HBITMAP hbmSrc;
 	{   /* Return a monochrome copy of the passed bitmap. Return NULL
 		if an error occurred.  Assumes that the passed bitmap can be
@@ -2348,4 +2358,3 @@ BOOL FDIBInMetafile()
 
 	return fFalse;
 }
-
