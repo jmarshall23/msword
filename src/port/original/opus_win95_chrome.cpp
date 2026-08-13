@@ -206,7 +206,7 @@ wchar_t g_pending_high_surrogate = 0;
 
 struct LanguageChoice {
     UINT command;
-    const wchar_t* label;
+    const WCHAR* label;
     const char* tag;
 };
 
@@ -222,23 +222,23 @@ PendingUnicodeInput g_active_unicode_input;
 bool g_unicode_input_active = false;
 
 constexpr std::array<LanguageChoice, 17> kLanguageChoices{{
-    {kCmdLanguageBase, L"&Automatic (Keyboard)", "auto"},
-    {kCmdLanguageBase + 1, L"&English (United States)", "en-US"},
-    {kCmdLanguageBase + 2, L"&Spanish", "es-ES"},
-    {kCmdLanguageBase + 3, L"&French", "fr-FR"},
-    {kCmdLanguageBase + 4, L"&German", "de-DE"},
-    {kCmdLanguageBase + 5, L"&Polish / Central European", "pl-PL"},
-    {kCmdLanguageBase + 6, L"&Greek", "el-GR"},
-    {kCmdLanguageBase + 7, L"&Russian / Cyrillic", "ru-RU"},
-    {kCmdLanguageBase + 8, L"&Turkish", "tr-TR"},
-    {kCmdLanguageBase + 9, L"&Hebrew", "he-IL"},
-    {kCmdLanguageBase + 10, L"&Arabic", "ar-SA"},
-    {kCmdLanguageBase + 11, L"&Thai", "th-TH"},
-    {kCmdLanguageBase + 12, L"&Vietnamese", "vi-VN"},
-    {kCmdLanguageBase + 13, L"&Japanese", "ja-JP"},
-    {kCmdLanguageBase + 14, L"Chinese (&Simplified)", "zh-CN"},
-    {kCmdLanguageBase + 15, L"Chinese (&Traditional)", "zh-TW"},
-    {kCmdLanguageBase + 16, L"&Korean", "ko-KR"},
+    {kCmdLanguageBase, OPUSW("&Automatic (Keyboard)"), "auto"},
+    {kCmdLanguageBase + 1, OPUSW("&English (United States)"), "en-US"},
+    {kCmdLanguageBase + 2, OPUSW("&Spanish"), "es-ES"},
+    {kCmdLanguageBase + 3, OPUSW("&French"), "fr-FR"},
+    {kCmdLanguageBase + 4, OPUSW("&German"), "de-DE"},
+    {kCmdLanguageBase + 5, OPUSW("&Polish / Central European"), "pl-PL"},
+    {kCmdLanguageBase + 6, OPUSW("&Greek"), "el-GR"},
+    {kCmdLanguageBase + 7, OPUSW("&Russian / Cyrillic"), "ru-RU"},
+    {kCmdLanguageBase + 8, OPUSW("&Turkish"), "tr-TR"},
+    {kCmdLanguageBase + 9, OPUSW("&Hebrew"), "he-IL"},
+    {kCmdLanguageBase + 10, OPUSW("&Arabic"), "ar-SA"},
+    {kCmdLanguageBase + 11, OPUSW("&Thai"), "th-TH"},
+    {kCmdLanguageBase + 12, OPUSW("&Vietnamese"), "vi-VN"},
+    {kCmdLanguageBase + 13, OPUSW("&Japanese"), "ja-JP"},
+    {kCmdLanguageBase + 14, OPUSW("Chinese (&Simplified)"), "zh-CN"},
+    {kCmdLanguageBase + 15, OPUSW("Chinese (&Traditional)"), "zh-TW"},
+    {kCmdLanguageBase + 16, OPUSW("&Korean"), "ko-KR"},
 }};
 
 struct VerticalRulerDragState {
