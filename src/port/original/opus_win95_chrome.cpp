@@ -65,6 +65,10 @@ constexpr WCHAR kZoomPageWidth[] = OPUSW("Page Width");
 constexpr WCHAR kZoomWholePage[] = OPUSW("Whole Page");
 constexpr WCHAR kZoomPrintPreview[] = OPUSW("Print Preview");
 constexpr WCHAR kDwmApiLibrary[] = OPUSW("dwmapi.dll");
+constexpr WCHAR kFormatGlyphColor[] = OPUSW("A");
+constexpr WCHAR kFormatGlyphBold[] = OPUSW("B");
+constexpr WCHAR kFormatGlyphItalic[] = OPUSW("I");
+constexpr WCHAR kFormatGlyphUnderline[] = OPUSW("U");
 constexpr int kToolbarBitmap = 201;
 constexpr int kSpriteCell = 20;
 constexpr COLORREF kButtonFace = RGB(192, 192, 192);
@@ -743,9 +747,10 @@ void draw_format_glyph(HWND toolbar, HDC dc, const FormatButton& spec,
         spec.glyph == FormatGlyph::color) {
         HFONT font = CreateFontIndirectW(&logical);
         old_font = static_cast<HFONT>(SelectObject(dc, font));
-        DrawTextW(dc, spec.glyph == FormatGlyph::color ? L"A" :
-                  spec.glyph == FormatGlyph::bold ? L"B" :
-                  spec.glyph == FormatGlyph::italic ? L"I" : L"U",
+        DrawTextW(dc, spec.glyph == FormatGlyph::color ? kFormatGlyphColor :
+                  spec.glyph == FormatGlyph::bold ? kFormatGlyphBold :
+                  spec.glyph == FormatGlyph::italic ? kFormatGlyphItalic :
+                  kFormatGlyphUnderline,
                   1, &area, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         SelectObject(dc, old_font);
         DeleteObject(font);
