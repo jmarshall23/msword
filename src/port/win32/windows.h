@@ -1327,6 +1327,30 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef WHITENESS
 #define WHITENESS ((DWORD)0x00FF0062)
 #endif
+#ifndef ROP_PSo
+#define ROP_PSo ((DWORD)0x00FC008A)
+#endif
+#ifndef ROP_PSno
+#define ROP_PSno ((DWORD)0x00F3022A)
+#endif
+#ifndef ROP_DPSxx
+#define ROP_DPSxx ((DWORD)0x00960169)
+#endif
+#ifndef ROP_PDSxxn
+#define ROP_PDSxxn ((DWORD)0x00690145)
+#endif
+#ifndef ROP_Pn
+#define ROP_Pn ((DWORD)0x000F0001)
+#endif
+#ifndef ROP_DPSnao
+#define ROP_DPSnao ((DWORD)0x00B00E05)
+#endif
+#ifndef ROP_DSnx
+#define ROP_DSnx ((DWORD)0x00990066)
+#endif
+#ifndef ROP_DPo
+#define ROP_DPo ((DWORD)0x00FA0089)
+#endif
 
 #ifndef VERTRES
 #define VERTRES 10
@@ -3063,6 +3087,7 @@ HBITMAP LoadBitmapA(HANDLE instance, LPSTR bitmap_name);
 HBITMAP LoadBitmapW(HANDLE instance, LPWSTR bitmap_name);
 int GetDeviceCaps(HDC device_context, int index);
 int SetStretchBltMode(HDC device_context, int stretch_mode);
+int SetROP2(HDC device_context, int draw_mode);
 int Escape(HDC device_context, int escape, int count, LPSTR input, LPSTR output);
 HWND WindowFromPoint(POINT point);
 DWORD SetViewportExt(HDC device_context, int x, int y);

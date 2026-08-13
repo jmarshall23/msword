@@ -316,3 +316,32 @@ Reviewed by agy and claude: both recommended the `nm`-over-archives path, a pure
 CMake script, and a burn-down baseline instead of a source grep or compiled
 scanner. Claude also called out the Mach-O leading-underscore trap, which the
 script strips before matching.
+
+## Add GDI raster operations
+
+The non-Windows gdi32 shim now rasterizes `PatBlt`, `BitBlt`, `StretchBlt`,
+`SetPixel`, `GetPixel`, `GetDIBits`, `SetStretchBltMode`, and `SetROP2` against
+the selected bitmap in a memory DC. The implementation covers the raster ops
+Word needs for toolbar, caret, and selection drawing, including `BLACKNESS`,
+`WHITENESS`, `PATCOPY`, `PATINVERT`, `DSTINVERT`, `SRCCOPY`, `NOTSRCCOPY`,
+`SRCAND`, `SRCINVERT`, and the documented pattern/source ROPs from the reference
+notes. Resource 201's toolbar bitmap now returns one cached bitmap handle so
+`LoadImageW(201)` and `LoadBitmapA(201)` agree.
+
+`opus_win32_gdi_raster_test` exercises solid and patterned destination writes,
+source blits, nearest-neighbor stretching, clipping from negative origins, DIB
+row reads, and DC mode state returns. The Win32 coverage baseline no longer
+lists the covered raster entry points.
+
+Validated with `cmake -S src -B build-item13b -DCMAKE_C_FLAGS=-std=gnu89`,
+`cmake --build build-item13b --target opus_original_engine opus_x64_runtime
+opus_original_strtbl_test opus_original_sttb_test opus_original_plc_test
+opus_sdm_cab_test opus_original_command_test opus_win32_memory_test
+opus_win32_resource_test opus_win32_gdi_object_test opus_win32_gdi_raster_test
+--parallel 8`, and `ctest --test-dir build-item13b -R
+'strtbl|sttb|plc|sdm_cab|command|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|win32_coverage'
+--output-on-failure`, which passed 10/10. `opus_x64_runtime_test` remains behind
+item 14 because startup SDM still reaches missing user32 metrics/color APIs.
+
+Reviewed by agy and claude: both kept this subtask to software raster operations
+inside the gdi32 shim, with text metrics and user32 left for their own items.

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <mutex>
 #include <vector>
 
@@ -156,6 +157,120 @@ void init_stock_objects() {
     g_black_brush.brush.color = RGB(0, 0, 0);
     g_black_pen.pen.color = RGB(0, 0, 0);
     g_white_pen.pen.color = RGB(255, 255, 255);
+}
+
+std::optional<COLORREF> pixel_at(const BitmapData& bitmap, int x, int y) {
+    if (x < 0 || y < 0 || x >= bitmap.width || y >= bitmap.height) {
+        return std::nullopt;
+    }
+    const auto offset = static_cast<std::size_t>(y * bitmap.width_bytes);
+    if (bitmap.bits_per_pixel == 32) {
+        DWORD value = 0;
+        std::memcpy(&value, bitmap.bits.data() + offset + x * 4, sizeof(value));
+        return value & 0x00ffffffu;
+    }
+    if (bitmap.bits_per_pixel == 24) {
+        const unsigned char* pixel = bitmap.bits.data() + offset + x * 3;
+        return RGB(pixel[2], pixel[1], pixel[0]);
+    }
+    if (bitmap.bits_per_pixel == 1) {
+        const unsigned char byte = bitmap.bits[offset + x / 8];
+        const bool set = (byte & (0x80u >> (x % 8))) != 0;
+        return set ? RGB(255, 255, 255) : RGB(0, 0, 0);
+    }
+    return std::nullopt;
+}
+
+bool put_pixel(BitmapData& bitmap, int x, int y, COLORREF color) {
+    if (x < 0 || y < 0 || x >= bitmap.width || y >= bitmap.height) return false;
+    color &= 0x00ffffffu;
+    const auto offset = static_cast<std::size_t>(y * bitmap.width_bytes);
+    if (bitmap.bits_per_pixel == 32) {
+        std::memcpy(bitmap.bits.data() + offset + x * 4, &color, sizeof(color));
+        return true;
+    }
+    if (bitmap.bits_per_pixel == 24) {
+        unsigned char* pixel = bitmap.bits.data() + offset + x * 3;
+        pixel[0] = GetBValue(color);
+        pixel[1] = GetGValue(color);
+        pixel[2] = GetRValue(color);
+        return true;
+    }
+    if (bitmap.bits_per_pixel == 1) {
+        unsigned char& byte = bitmap.bits[offset + x / 8];
+        const unsigned char mask = static_cast<unsigned char>(0x80u >> (x % 8));
+        if ((color & 0x00ffffffu) != 0) {
+            byte |= mask;
+        } else {
+            byte &= static_cast<unsigned char>(~mask);
+        }
+        return true;
+    }
+    return false;
+}
+
+GdiObject* bitmap_from_dc(GdiObject* dc) {
+    auto* bitmap = dc != nullptr ? object_from_handle(dc->dc.bitmap) : nullptr;
+    return bitmap != nullptr && bitmap->kind == GdiKind::Bitmap ? bitmap : nullptr;
+}
+
+COLORREF pattern_color(GdiObject& dc, int x, int y) {
+    auto* brush = object_from_handle(dc.dc.brush);
+    if (brush == nullptr || brush->kind != GdiKind::Brush) return RGB(255, 255, 255);
+    auto* pattern = object_from_handle(brush->brush.pattern);
+    if (pattern != nullptr && pattern->kind == GdiKind::Bitmap) {
+        const int px = pattern->bitmap.width == 0 ? 0 : x % pattern->bitmap.width;
+        const int py = pattern->bitmap.height == 0 ? 0 : y % pattern->bitmap.height;
+        if (auto color = pixel_at(pattern->bitmap, px, py)) return *color;
+    }
+    return brush->brush.color;
+}
+
+COLORREF eval_rop(DWORD rop, COLORREF destination, COLORREF source,
+                  COLORREF pattern) {
+    rop &= ~CAPTUREBLT;
+    destination &= 0x00ffffffu;
+    source &= 0x00ffffffu;
+    pattern &= 0x00ffffffu;
+    switch (rop) {
+        case BLACKNESS: return RGB(0, 0, 0);
+        case WHITENESS: return RGB(255, 255, 255);
+        case PATCOPY: return pattern;
+        case PATINVERT: return pattern ^ destination;
+        case DSTINVERT: return (~destination) & 0x00ffffffu;
+        case SRCCOPY: return source;
+        case NOTSRCCOPY: return (~source) & 0x00ffffffu;
+        case SRCAND: return source & destination;
+        case SRCINVERT: return source ^ destination;
+        case ROP_DPSxx: return destination ^ pattern ^ source;
+        case ROP_PDSxxn: return (~(pattern ^ destination ^ source)) & 0x00ffffffu;
+        case ROP_PSo: return pattern | source;
+        case ROP_PSno: return pattern | ((~source) & 0x00ffffffu);
+        case ROP_Pn: return (~pattern) & 0x00ffffffu;
+        case ROP_DPSnao: return destination | (pattern & ((~source) & 0x00ffffffu));
+        case ROP_DSnx: return destination ^ ((~source) & 0x00ffffffu);
+        case ROP_DPo: return destination | pattern;
+        default: return destination;
+    }
+}
+
+bool source_rop(DWORD rop) {
+    rop &= ~CAPTUREBLT;
+    switch (rop) {
+        case SRCCOPY:
+        case NOTSRCCOPY:
+        case SRCAND:
+        case SRCINVERT:
+        case ROP_DPSxx:
+        case ROP_PDSxxn:
+        case ROP_PSo:
+        case ROP_PSno:
+        case ROP_DPSnao:
+        case ROP_DSnx:
+            return true;
+        default:
+            return false;
+    }
 }
 
 }  // namespace
@@ -422,6 +537,164 @@ BOOL SetBitmapDimensionEx(HBITMAP bitmap_handle, int width, int height,
     bitmap->bitmap.width = width;
     bitmap->bitmap.height = height;
     return TRUE;
+}
+
+int SetStretchBltMode(HDC device_context, int stretch_mode) {
+    auto* dc = dc_from_handle(device_context);
+    if (dc == nullptr) return 0;
+    const int previous = dc->dc.stretch_mode;
+    dc->dc.stretch_mode = stretch_mode;
+    return previous;
+}
+
+int SetROP2(HDC device_context, int draw_mode) {
+    auto* dc = dc_from_handle(device_context);
+    if (dc == nullptr) return 0;
+    const int previous = dc->dc.raster_operation;
+    dc->dc.raster_operation = draw_mode;
+    return previous;
+}
+
+COLORREF GetPixel(HDC device_context, int x, int y) {
+    auto* bitmap = bitmap_from_dc(dc_from_handle(device_context));
+    if (bitmap == nullptr) return CLR_INVALID;
+    const auto color = pixel_at(bitmap->bitmap, x, y);
+    return color ? *color : CLR_INVALID;
+}
+
+COLORREF SetPixel(HDC device_context, int x, int y, COLORREF color) {
+    auto* bitmap = bitmap_from_dc(dc_from_handle(device_context));
+    if (bitmap == nullptr) return CLR_INVALID;
+    return put_pixel(bitmap->bitmap, x, y, color) ? (color & 0x00ffffffu)
+                                                  : CLR_INVALID;
+}
+
+BOOL PatBlt(HDC device_context, int x, int y, int width, int height,
+            DWORD raster_operation) {
+    auto* dc = dc_from_handle(device_context);
+    auto* destination = bitmap_from_dc(dc);
+    if (dc == nullptr) return FALSE;
+    if (destination == nullptr) return TRUE;
+    const int left = (std::max)(x, dc->dc.clip.left);
+    const int top = (std::max)(y, dc->dc.clip.top);
+    const int right = (std::min)({x + width, dc->dc.clip.right,
+                                  static_cast<int>(destination->bitmap.width)});
+    const int bottom = (std::min)({y + height, dc->dc.clip.bottom,
+                                   static_cast<int>(destination->bitmap.height)});
+    if (right <= left || bottom <= top) return TRUE;
+    for (int py = top; py < bottom; ++py) {
+        for (int px = left; px < right; ++px) {
+            const COLORREF old = pixel_at(destination->bitmap, px, py).value_or(0);
+            put_pixel(destination->bitmap, px, py,
+                      eval_rop(raster_operation, old, 0, pattern_color(*dc, px, py)));
+        }
+    }
+    return TRUE;
+}
+
+BOOL BitBlt(HDC destination_dc, int x_destination, int y_destination, int width,
+            int height, HDC source_dc, int x_source, int y_source,
+            DWORD raster_operation) {
+    auto* destination_context = dc_from_handle(destination_dc);
+    auto* destination = bitmap_from_dc(destination_context);
+    auto* source_context = dc_from_handle(source_dc);
+    auto* source = bitmap_from_dc(source_context);
+    if (destination_context == nullptr) return FALSE;
+    if (destination == nullptr) return TRUE;
+    if (source_rop(raster_operation) && source == nullptr) return FALSE;
+    const int left = (std::max)(x_destination, destination_context->dc.clip.left);
+    const int top = (std::max)(y_destination, destination_context->dc.clip.top);
+    const int right = (std::min)({x_destination + width, destination_context->dc.clip.right,
+                                  static_cast<int>(destination->bitmap.width)});
+    const int bottom = (std::min)({y_destination + height, destination_context->dc.clip.bottom,
+                                   static_cast<int>(destination->bitmap.height)});
+    if (right <= left || bottom <= top) return TRUE;
+    std::vector<COLORREF> source_pixels;
+    if (source != nullptr) {
+        source_pixels.reserve(static_cast<std::size_t>((right - left) * (bottom - top)));
+        for (int py = top; py < bottom; ++py) {
+            for (int px = left; px < right; ++px) {
+                const int sx = x_source + (px - x_destination);
+                const int sy = y_source + (py - y_destination);
+                source_pixels.push_back(pixel_at(source->bitmap, sx, sy).value_or(0));
+            }
+        }
+    }
+    std::size_t index = 0;
+    for (int py = top; py < bottom; ++py) {
+        for (int px = left; px < right; ++px) {
+            const COLORREF source_color =
+                source != nullptr ? source_pixels[index++] : 0;
+            const COLORREF old = pixel_at(destination->bitmap, px, py).value_or(0);
+            put_pixel(destination->bitmap, px, py,
+                      eval_rop(raster_operation, old, source_color,
+                               pattern_color(*destination_context, px, py)));
+        }
+    }
+    return TRUE;
+}
+
+BOOL StretchBlt(HDC destination, int x_destination, int y_destination,
+                int width_destination, int height_destination, HDC source,
+                int x_source, int y_source, int width_source, int height_source,
+                DWORD raster_operation) {
+    if (width_destination <= 0 || height_destination <= 0 ||
+        width_source <= 0 || height_source <= 0) {
+        return FALSE;
+    }
+    auto* destination_context = dc_from_handle(destination);
+    auto* destination_bitmap = bitmap_from_dc(destination_context);
+    auto* source_bitmap = bitmap_from_dc(dc_from_handle(source));
+    if (destination_context == nullptr) return FALSE;
+    if (destination_bitmap == nullptr) return TRUE;
+    if (source_rop(raster_operation) && source_bitmap == nullptr) return FALSE;
+    const int left = (std::max)(x_destination, destination_context->dc.clip.left);
+    const int top = (std::max)(y_destination, destination_context->dc.clip.top);
+    const int right = (std::min)({x_destination + width_destination,
+                                  destination_context->dc.clip.right,
+                                  static_cast<int>(destination_bitmap->bitmap.width)});
+    const int bottom = (std::min)({y_destination + height_destination,
+                                   destination_context->dc.clip.bottom,
+                                   static_cast<int>(destination_bitmap->bitmap.height)});
+    if (right <= left || bottom <= top) return TRUE;
+    for (int py = top; py < bottom; ++py) {
+        for (int px = left; px < right; ++px) {
+            const int sx = x_source + ((px - x_destination) * width_source) /
+                                          width_destination;
+            const int sy = y_source + ((py - y_destination) * height_source) /
+                                          height_destination;
+            const COLORREF source_color =
+                source_bitmap != nullptr ? pixel_at(source_bitmap->bitmap, sx, sy).value_or(0) : 0;
+            const COLORREF old = pixel_at(destination_bitmap->bitmap, px, py).value_or(0);
+            put_pixel(destination_bitmap->bitmap, px, py,
+                      eval_rop(raster_operation, old, source_color,
+                               pattern_color(*destination_context, px, py)));
+        }
+    }
+    return TRUE;
+}
+
+int GetDIBits(HDC, HBITMAP bitmap_handle, UINT start_scan, UINT scan_lines,
+              LPVOID bits, BITMAPINFO* bitmap_info, UINT) {
+    auto* bitmap = object_from_handle(bitmap_handle);
+    if (bitmap == nullptr || bitmap->kind != GdiKind::Bitmap) return 0;
+    if (bitmap_info != nullptr) {
+        bitmap_info->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bitmap_info->bmiHeader.biWidth = bitmap->bitmap.width;
+        bitmap_info->bmiHeader.biHeight = bitmap->bitmap.height;
+        bitmap_info->bmiHeader.biPlanes = bitmap->bitmap.planes;
+        bitmap_info->bmiHeader.biBitCount = bitmap->bitmap.bits_per_pixel;
+        bitmap_info->bmiHeader.biSizeImage =
+            static_cast<DWORD>(bitmap->bitmap.bits.size());
+    }
+    if (bits == nullptr) return static_cast<int>(bitmap->bitmap.height);
+    if (start_scan >= static_cast<UINT>(bitmap->bitmap.height)) return 0;
+    const UINT rows = (std::min)(scan_lines,
+        static_cast<UINT>((std::max<LONG>)(0, bitmap->bitmap.height - start_scan)));
+    const auto row_bytes = static_cast<std::size_t>(bitmap->bitmap.width_bytes);
+    std::memcpy(bits, bitmap->bitmap.bits.data() + row_bytes * start_scan,
+                row_bytes * rows);
+    return static_cast<int>(rows);
 }
 
 }  // extern "C"

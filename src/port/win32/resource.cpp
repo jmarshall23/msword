@@ -25,6 +25,7 @@ struct OpusResourceHandle {
 OpusResourceHandle g_toolbar_bitmap{kToolbarBitmapId, IMAGE_BITMAP,
                                     kOpusToolbar201Bmp,
                                     kOpusToolbar201Bmp_size};
+HBITMAP g_toolbar_bitmap_handle = nullptr;
 OpusResourceHandle g_word_icon{kWordIconId, IMAGE_ICON, kOpusIcon301Ico,
                                kOpusIcon301Ico_size};
 OpusResourceHandle g_document_icon{kDocumentIconId, IMAGE_ICON,
@@ -109,8 +110,11 @@ HBITMAP LoadStockBitmap(WORD id) {
 
 HANDLE LoadIntegerResource(WORD id, UINT type) {
     if (type == IMAGE_BITMAP && id == kToolbarBitmapId && HasToolbarBitmap()) {
-        return OpusGdiCreateBitmapFromBmpBytes(g_toolbar_bitmap.bytes,
-                                               g_toolbar_bitmap.size);
+        if (g_toolbar_bitmap_handle == nullptr) {
+            g_toolbar_bitmap_handle = OpusGdiCreateBitmapFromBmpBytes(
+                g_toolbar_bitmap.bytes, g_toolbar_bitmap.size);
+        }
+        return g_toolbar_bitmap_handle;
     }
     if (type == IMAGE_BITMAP) {
         return LoadStockBitmap(id);

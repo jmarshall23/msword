@@ -2,7 +2,6 @@ AdjustWindowRectEx
 AppendMenuA
 AppendMenuW
 BeginPaint
-BitBlt
 BringWindowToTop
 CallNextHookEx
 CallWindowProcW
@@ -114,7 +113,6 @@ MultiByteToWideChar
 OffsetRect
 OpenClipboard
 OpenIcon
-PatBlt
 PeekMessageA
 Polygon
 PostMessageW
@@ -144,11 +142,9 @@ SetKeyboardState
 SetMapMode
 SetMenuInfo
 SetMenuItemBitmaps
-SetPixel
 SetPropW
 SetScrollPos
 SetScrollRange
-SetStretchBltMode
 SetTextColor
 SetTimer
 SetViewportExtEx
@@ -162,7 +158,6 @@ SetWindowPos
 SetWindowTextA
 SetWindowTextW
 ShowWindow
-StretchBlt
 SystemParametersInfoA
 TextOutW
 TrackPopupMenu
