@@ -185,6 +185,10 @@ src/port/win32/
   trace.c         TRACE/PANIC and unimplemented-call accounting
 ```
 
+Status: non-Windows original-engine include paths now expose `src/port/win32`, and
+that directory has the minimal `shellapi.h` surface needed by `opus_win16_platform.cpp`:
+`SW_SHOWNORMAL` plus `ShellExecuteA`.
+
 Build the first pass mechanically:
 
 - Generate the first declaration list from `docs/win32-shim/api-inventory.tsv`.
