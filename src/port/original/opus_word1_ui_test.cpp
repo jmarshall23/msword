@@ -50,6 +50,13 @@ bool wide_contains(LPCWSTR text, LPCWSTR needle) {
     return false;
 }
 
+std::basic_string<WCHAR> argument_to_wide(const wchar_t* text) {
+    std::basic_string<WCHAR> wide;
+    if (text == nullptr) return wide;
+    for (; *text != 0; ++text) wide.push_back(static_cast<WCHAR>(*text));
+    return wide;
+}
+
 BOOL CALLBACK find_window_callback(const HWND window, const LPARAM value) {
     auto& search = *reinterpret_cast<WindowSearch*>(value);
     DWORD process_id = 0;
@@ -585,7 +592,7 @@ bool window_is_responsive(const HANDLE process, const HWND window) {
                                2000, &message_result) != 0;
 }
 
-bool capture_window_bmp(const HWND window, const wchar_t* path) {
+bool capture_window_bmp(const HWND window, LPCWSTR path) {
     RECT bounds{};
     if (window == nullptr || path == nullptr || !GetWindowRect(window, &bounds))
         return false;
@@ -672,51 +679,58 @@ int wmain(const int argument_count, wchar_t** arguments) {
             "--docx-pdf-export FILE]\n";
         return 1;
     }
+    const std::basic_string<WCHAR> executable_argument =
+        argument_to_wide(arguments[1]);
+    const std::basic_string<WCHAR> mode_argument = argument_count >= 3 ?
+        argument_to_wide(arguments[2]) : std::basic_string<WCHAR>{};
+    const std::basic_string<WCHAR> docx_argument = argument_count >= 4 ?
+        argument_to_wide(arguments[3]) : std::basic_string<WCHAR>{};
     const bool typing_mode =
-        argument_count == 3 && std::wcscmp(arguments[2], L"--typing") == 0;
+        argument_count == 3 &&
+        lstrcmpW(mode_argument.c_str(), OPUSW("--typing")) == 0;
     const bool interaction_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--interaction") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--interaction")) == 0;
     const bool selection_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--selection") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--selection")) == 0;
     const bool caret_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--caret") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--caret")) == 0;
     const bool formatting_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--formatting") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--formatting")) == 0;
     const bool color_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--color") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--color")) == 0;
     const bool font_typing_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--font-typing") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--font-typing")) == 0;
     const bool unicode_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--unicode") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--unicode")) == 0;
     const bool about_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--about") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--about")) == 0;
     const bool clipboard_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--clipboard") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--clipboard")) == 0;
     const bool save_as_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--save-as") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--save-as")) == 0;
     const bool pdf_export_mode =
         argument_count == 3 &&
-        std::wcscmp(arguments[2], L"--pdf-export") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--pdf-export")) == 0;
     const bool docx_pdf_export_mode =
         argument_count == 4 &&
-        std::wcscmp(arguments[2], L"--docx-pdf-export") == 0;
+        lstrcmpW(mode_argument.c_str(), OPUSW("--docx-pdf-export")) == 0;
     const bool formatted_docx_open_mode =
         argument_count == 4 &&
-        (std::wcscmp(arguments[2], L"--docx-format-open") == 0 ||
+        (lstrcmpW(mode_argument.c_str(), OPUSW("--docx-format-open")) == 0 ||
          docx_pdf_export_mode);
     const bool docx_open_mode =
         argument_count == 4 &&
-        (std::wcscmp(arguments[2], L"--docx-open") == 0 ||
+        (lstrcmpW(mode_argument.c_str(), OPUSW("--docx-open")) == 0 ||
          formatted_docx_open_mode);
     if (argument_count == 3 && !typing_mode && !interaction_mode &&
         !selection_mode && !caret_mode && !formatting_mode && !color_mode &&
@@ -735,14 +749,15 @@ int wmain(const int argument_count, wchar_t** arguments) {
     bool keep_pdf = false;
     if (docx_open_mode) {
         const int path_size = WideCharToMultiByte(
-            CP_ACP, 0, arguments[3], -1, nullptr, 0, nullptr, nullptr);
+            CP_ACP, 0, docx_argument.c_str(), -1, nullptr, 0, nullptr,
+            nullptr);
         if (path_size <= 1) {
             std::cerr << "DOCX open test received an invalid path\n";
             return 83;
         }
         docx_path.resize(static_cast<std::size_t>(path_size));
-        WideCharToMultiByte(CP_ACP, 0, arguments[3], -1, docx_path.data(),
-                            path_size, nullptr, nullptr);
+        WideCharToMultiByte(CP_ACP, 0, docx_argument.c_str(), -1,
+                            docx_path.data(), path_size, nullptr, nullptr);
         docx_path.pop_back();
         if (GetFileAttributesA(docx_path.c_str()) == INVALID_FILE_ATTRIBUTES) {
             std::cerr << "DOCX open test file does not exist\n";
@@ -780,14 +795,17 @@ int wmain(const int argument_count, wchar_t** arguments) {
         }
     }
 
-    std::wstring command_line = L"\"" + std::wstring(arguments[1]) + L"\"";
+    std::basic_string<WCHAR> command_line;
+    command_line.push_back(OPUSW("\"")[0]);
+    command_line += executable_argument;
+    command_line.push_back(OPUSW("\"")[0]);
     STARTUPINFOW startup{};
     startup.cb = sizeof(startup);
     PROCESS_INFORMATION process{};
     LPWCH environment = GetEnvironmentStringsW();
-    if (!CreateProcessW(arguments[1], command_line.data(), nullptr, nullptr,
-                        FALSE, CREATE_UNICODE_ENVIRONMENT, environment,
-                        nullptr, &startup, &process)) {
+    if (!CreateProcessW(executable_argument.c_str(), command_line.data(),
+                        nullptr, nullptr, FALSE, CREATE_UNICODE_ENVIRONMENT,
+                        environment, nullptr, &startup, &process)) {
         if (environment != nullptr) FreeEnvironmentStringsW(environment);
         SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
         SetEnvironmentVariableA("WORD1_TEST_PDF_PATH", nullptr);
@@ -965,9 +983,9 @@ int wmain(const int argument_count, wchar_t** arguments) {
             SendMessageW(pane, kWmOpusX64QuerySelection, 103, 20) : -1;
         const LRESULT body_font_charset = pane != nullptr ?
             SendMessageW(pane, kWmOpusX64QuerySelection, 104, 20) : -1;
-        wchar_t capture_path[32768]{};
+        WCHAR capture_path[32768]{};
         const DWORD capture_length = GetEnvironmentVariableW(
-            L"WORD1_TEST_CAPTURE_PATH", capture_path,
+            OPUSW("WORD1_TEST_CAPTURE_PATH"), capture_path,
             static_cast<DWORD>(std::size(capture_path)));
         if (capture_length > 0 && capture_length < std::size(capture_path)) {
             ShowWindow(main_window, SW_RESTORE);
