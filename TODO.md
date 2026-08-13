@@ -217,12 +217,17 @@ tabs/dialog/catalog/search frontier, including `tabs.c` lvalue-cast cleanup,
 `dlgrec.c` recorder callback adapters, dialog/search/catalog/edmacro pointer-return
 fixes, legacy early returns, typed sort callbacks, and the next shim constants for
 system commands, message boxes, hyphenation child controls, and message dispatch. The
-next blockers are now in the engine/automation/document-manager frontier:
-`etcmd.c` lvalue-cast and handle-return fixes; `docman1.c`/`docman2.c`
-`HstCreate`/`HAllocateCw` declarations plus legacy returns; DDE client/server handle
-typing and `MB_SYSTEMMODAL`, `MB_ICONHAND`, `SW_SHOWMINNOACTIVE`; and `print2.c`
-printer string handles, `WM_WININICHANGE`, driver-dialog callback typing, and legacy
-returns.
+next filtered `opus_word1_ui_test` build now advances through the
+engine/automation/document-manager, DDE, and print frontier, including `etcmd.c`
+callback and handle typing, `docman1.c`/`docman2.c` heap-string declarations and
+legacy returns, DDE word-handle casts and modal constants, `print2.c` printer string
+handles, driver-dialog callback typing, `WM_WININICHANGE`, and PostScript
+pointer-sized argument handling. The next blockers are now in the EL runtime frontier:
+`elsubs2.c`/`elsubs3.c` callback typing, `HeliNew` declaration cleanup, and legacy
+returns; `eldlg.c` dialog handle/object allocation typing plus `BLACKNESS`; `eldde.c`
+DDE handle casts plus `GMEM_LOWER` and `WM_SYSKEYUP`; `elfile.c` file-handle and
+heap-string typing; `elmisc.c` and `elmisc2.c` message-box constants, window state
+constants, callback casts, and legacy returns.
 
 Build the first pass mechanically:
 

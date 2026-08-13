@@ -84,6 +84,7 @@ extern int              fnDMEnum;
 extern int              fnDMFcTable;
 extern CHAR           **hstDMQPath;
 extern CHAR            *PchSkipPath();
+extern CHAR           **HszCreate();
 extern struct FINDFILE  **hDMDTA;  /* search results from FFirst and FNext */
 extern struct SUMD      vsumd;
 extern CHAR	    	szDoc[];
@@ -407,7 +408,7 @@ CHAR *pchFilename;
 
 	DMFlags.fFileInUse = fFalse;
 	if (!DMFlags.fSrhInProgress)
-		return;
+		return 0;
 	pchFilename+= CchPath(pchFilename);
 	SanitizeSz(pchFilename, szClean, cchMaxFile, fFalse);
 	pch = szClean;
@@ -417,6 +418,7 @@ CHAR *pchFilename;
 	vfAwfulNoise = fFalse;
 	Beep();
 /*Delay(50);*/
+	return 0;
 }
 
 
@@ -949,5 +951,4 @@ CHAR *sz;
 {
 	return (PchSkipPath(sz)-sz);
 }
-
 

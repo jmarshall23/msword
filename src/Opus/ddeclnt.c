@@ -158,7 +158,7 @@ BOOL fHot;
 	if (!FFillSzArgPasteLink(szArg))
 		{
 		Beep();
-		return;
+		return 0;
 		}
 
 	/* add merge format switch */
@@ -447,7 +447,7 @@ ATOM atomApp, atomTopic;
 		{
 		/* terminate unwanted conversations */
 		DdeDbgCommSz ("InitiateAck: duplicate terminated.");
-		PostMessage (hwndThem, WM_DDE_TERMINATE, hwndUs, 0L);
+		PostMessage (hwndThem, WM_DDE_TERMINATE, (WPARAM)hwndUs, 0L);
 		}
 
 	/*  we don't use the atoms they sent us */
@@ -484,7 +484,7 @@ GarbageCollectDde ()
 
 	if (docDde == docNil || (hplcddli = PdodDoc (docDde)->hplcddli) == hNil)
 		/*  nothing to do! */
-		return;
+		return 0;
 
 
 	/*  reset fRef marks in ddlis and dcls */
@@ -513,7 +513,7 @@ GarbageCollectDde ()
 				/*  stop if we have waiting messages */
 				{
 				DdeRpt2(DdeDbgCommSz ("Garbage: interrupted 1"));
-				return;
+				return 0;
 				}
 
 			AssureAllFieldsParsed (doc);
@@ -532,7 +532,7 @@ GarbageCollectDde ()
 							/*  stop if we have waiting messages */
 							{
 							DdeRpt2(DdeDbgCommSz ("Garbage: interrupted 2"));
-							return;
+							return 0;
 							}
 
 						DdeRpt2(DdeDbgCommInt("Garbage: by brute force, ifld",ifld));
@@ -728,7 +728,7 @@ UpdateHotLinks ()
 									*/
 								{
 								DdeRpt2(DdeDbgCommSz ("UpdateHotLinks interrupted"));
-								return;
+								return 0;
 								}
 
 							SetUndoNil(); /* user is HOSED (LATER) */
@@ -756,7 +756,7 @@ UpdateHotLinks ()
 	if (vfDeactByOtherApp && !vidf.fNotLive)
 		UpdateAllWws (fTrue);
 
-	return;
+	return 0;
 }
 
 
@@ -806,11 +806,11 @@ int wLow, wHigh;
 						dcl, message, 0);
 				goto LDataNack;
 				}
-			if ((lpdms = GlobalLockClip (wLow)) == NULL)
+			if ((lpdms = GlobalLockClip ((HANDLE)(UINT_PTR)wLow)) == NULL)
 				{
 				/* incoming data--could easily not be lockable */
 				ShrinkSwapArea();
-				lpdms = GlobalLockClip (wLow);
+				lpdms = GlobalLockClip ((HANDLE)(UINT_PTR)wLow);
 				GrowSwapArea();
 				if (lpdms == NULL)
 					/* still can't lock it */
@@ -821,7 +821,7 @@ int wLow, wHigh;
 					}
 				}
 			dms = *lpdms;
-			GlobalUnlock (wLow);
+			GlobalUnlock ((HANDLE)(UINT_PTR)wLow);
 
 			DdeRpt2(CommSzRgNum (SzShared("WM_DDE_DATA: dms (grpf,cf): "),
 					&dms, CwFromCch(cbDMS)));
@@ -904,7 +904,7 @@ LDataNack:
 
 			if (wLow != NULL &&
 					(fMustFree || (dms.fRelease && (!dms.fAck || fSuccess))))
-				GlobalFree (wLow);
+				GlobalFree ((HANDLE)(UINT_PTR)wLow);
 
 			return fTrue;
 			}
@@ -1152,7 +1152,7 @@ MST mst;
 ATOM atom1, atom2, atom3;
 int mb;
 {
-	int rgw [3];
+	LONG_PTR rgw [3];
 	CHAR sz1 [40];
 	CHAR sz2 [40];
 	CHAR sz3 [40];
@@ -1160,10 +1160,10 @@ int mb;
 	AtomToSz(atom1, sz1, 40);
 	AtomToSz(atom2, sz2, 40);
 	AtomToSz(atom3, sz3, 40);
-	rgw [0] = sz1;
-	rgw [1] = sz2;
-	rgw [2] = sz3;
-	return IdMessageBoxMstRgwMb (mst, rgw, mb);
+	rgw [0] = (LONG_PTR)sz1;
+	rgw [1] = (LONG_PTR)sz2;
+	rgw [2] = (LONG_PTR)sz3;
+	return IdMessageBoxMstRgwMb (mst, (int *)rgw, mb);
 }
 
 
@@ -1735,7 +1735,7 @@ int dcl, iddli;
 	struct FLD fld;
 
 	if (docDde == docNil || (hplcddli = PdodDoc (docDde)->hplcddli) == hNil)
-		return;
+		return 0;
 
 	for (doc = 0; doc < docMac; doc++)
 		if ((hdod = mpdochdod [doc]) != hNil &&
@@ -1766,6 +1766,7 @@ int dcl, iddli;
 				ifld++;
 				}
 			}
+	return 0;
 }
 
 
@@ -1781,7 +1782,7 @@ int dcl;
 	struct DDLI ddli;
 
 	if (docDde == docNil || (hplcddli = PdodDoc (docDde)->hplcddli) == hNil)
-		return;
+		return 0;
 
 	iddli = IMacPlc( hplcddli ) - 1;
 	while (iddli--)
@@ -1790,6 +1791,7 @@ int dcl;
 		if (ddli.dcl == dcl)
 			DeleteDdliClient (iddli);
 		}
+	return 0;
 }
 
 
@@ -1859,5 +1861,4 @@ ATOM atomApp, atomTopic;
 
 	return dclNil;
 }
-
 

@@ -61,6 +61,7 @@ extern int              irgfcDMFilenameStart;
 extern struct FCB       **mpfnhfcb[];
 
 SB SbAlloc();
+extern CHAR **HszCreate();
 
 
 /* %%Function:FCkDMExpand %%Owner:chic */
@@ -508,7 +509,7 @@ LBlt1:
 		break;
 	default:
 		Assert(fFalse);
-		return;
+		return 0;
 		}
 
 	*pchSortField++ = ':';
@@ -518,7 +519,7 @@ LBlt1:
 	if (CchStFromFc(fnDMEnum,fc,rgchTemp,cchMaxDMFileSt) <= 1)
 		{
 		stSortField[0] += 2; /* account for ": " added above */
-		return;
+		return 0;
 		}
 
 	pchTemp = rgchTemp+ichDMSortMin;
@@ -542,10 +543,11 @@ LBlt2:
 		break;
 	default:
 		Assert(fFalse);
-		return;
+		return 0;
 		}
 	stSortField[0] = pchSortField-stSortField-1;
 	Assert(stSortField[0] < cchMax);
+	return 0;
 }
 
 
@@ -867,18 +869,19 @@ struct AONNODE **hAONRoot;
 		{
 	case OPLEAF:    /* end of the line */
 		FreeH(hAONRoot);
-		return;
+		return 0;
 	case OPNOT:
 		FreeAONTree((**hAONRoot).hLeftBranch);
 		FreeH(hAONRoot);
-		return;
+		return 0;
 	case OPOR:
 	case OPAND:
 		FreeAONTree((**hAONRoot).hLeftBranch);
 		FreeAONTree((**hAONRoot).hRightBranch);
 		FreeH(hAONRoot);
-		return;
+		return 0;
 		}
+	return 0;
 }
 
 
@@ -1449,17 +1452,17 @@ DMSort()
 	hprgfcOld= hprgfcDMEnum;
 	/* do the initial sorting */
 	if (!FHpRgFcQSort(0,cDMFileMac-1,hprgfcOld,soffset,pfn,fnDMEnum))
-		return;
+		return 0;
 
 	if (DMFlags.dms!=dmsAuthor && DMFlags.dms!=dmsLastSavedBy)
-		return;   /* only Author or LastSavedBy has to look for blank field */
+		return 0;   /* only Author or LastSavedBy has to look for blank field */
 
 	irgfcDMFilenameStart=cDMFileMac;
 	/* we know the exact size, so only allocate that many */
 	if ((sbNew = SbAlloc(cDMFileMac*4, &cbNew)) == sbNil)
 		{
 		DMFlags.fDMOutOfMemory=fTrue;
-		return;
+		return 0;
 		}
 
 	if ((fNotResort = (DMFlags.dma != dma_Resort)))
@@ -1490,7 +1493,7 @@ DMSort()
 		irgfcDMFilenameStart=cDMFileMac;
 		if (fNotResort)
 			RestorePrompt();
-		return;       /* all the docs have Sort field info */
+		return 0;       /* all the docs have Sort field info */
 		}
 	irgfcSortDocs++;
 	/*************
@@ -1514,7 +1517,7 @@ DMSort()
 	cDMEnumMax=cbNew/4;  /* new max allocated size. We may have gotten more */
 	if (fNotResort)
 		RestorePrompt();
-	return;              /* than we asked for. */
+	return 0;              /* than we asked for. */
 }
 
 
@@ -1750,7 +1753,7 @@ rghszHswap (i, j, rghsz)
 int i, j;
 unsigned **rghsz[];
 {
-	unsigned temp;
+	unsigned **temp;
 
 	temp = rghsz[i];
 	rghsz[i] = rghsz[j];

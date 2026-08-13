@@ -43,6 +43,9 @@ csconst CHAR stSystemDde[] = St("System");
 #endif
 
 WCompSt ();
+HANDLE HRenderClipLink();
+HANDLE HDataWriteSti();
+HANDLE HDataWriteDocCps();
 
 #define cchDdeLinkBkmkBase 9   /* includes terminator */
 
@@ -102,7 +105,7 @@ LExeNACK:
 
 			if (!FPostDdeDcl (dcl, WM_DDE_ACK, das, wHigh))
 				{
-				GlobalFree (wHigh);
+				GlobalFree ((HANDLE)(UINT_PTR)wHigh);
 
 				if (PdcldDcl(dcl)->fTermReceived && !PdcldDcl(dcl)->fExecuting)
 					/* channel destroyed in course of EXECUTE */
@@ -136,12 +139,12 @@ LExeNACK:
 				{
 				goto LNackPoke;
 				}
-			if ((lpdms = GlobalLockClip (wLow)) == NULL)
+			if ((lpdms = GlobalLockClip ((HANDLE)(UINT_PTR)wLow)) == NULL)
 				/*  couldn't lock object, should be rare */
 				{
 				/* incoming data--could easily not be lockable */
 				ShrinkSwapArea();
-				lpdms = GlobalLockClip (wLow);
+				lpdms = GlobalLockClip ((HANDLE)(UINT_PTR)wLow);
 				GrowSwapArea();
 				if (lpdms == NULL)
 					/* still can't lock it */
@@ -152,7 +155,7 @@ LExeNACK:
 					}
 				}
 			dms = *lpdms;
-			GlobalUnlock (wLow);
+			GlobalUnlock ((HANDLE)(UINT_PTR)wLow);
 			if (doc != docSystem && 
 					(ibkmk = IbkmkFromDclItem (dcl, wHigh)) != ibkmkNil)
 				/*  we have some place to put the data */
@@ -203,10 +206,10 @@ LNackPoke:
 				{
 LNoAckPoke:
 				DeleteAtom (wHigh);
-				GlobalFree (wLow);
+				GlobalFree ((HANDLE)(UINT_PTR)wLow);
 				}
 			else  if (das == dasACK && dms.fRelease)
-				GlobalFree (wLow);
+				GlobalFree ((HANDLE)(UINT_PTR)wLow);
 			break;
 			}
 
@@ -271,14 +274,14 @@ LNoAckPoke:
 			int das = dasNACK;
 
 			/*  get the options */
-			if ((lpdms = GlobalLockClip (wLow)) == NULL)
+			if ((lpdms = GlobalLockClip ((HANDLE)(UINT_PTR)wLow)) == NULL)
 				{
 				ReportDdeError ("Cannot lock handle, dropping message", 
 						dcl, message, 0);
 				return fTrue;
 				}
 			dms = *lpdms;
-			GlobalUnlock (wLow);
+			GlobalUnlock ((HANDLE)(UINT_PTR)wLow);
 
 			/*  if item exists and we can render in cf, set up advise */
 			/*  (we do not support an ADVISE on the system topic) */
@@ -286,7 +289,7 @@ LNoAckPoke:
 					FRenderDocItemCf (doc, wHigh, dms.cf) &&
 					FAdviseItem (dcl, wHigh, dms.cf, dms.fAck, dms.fNoData))
 				{
-				GlobalFree (wLow);
+				GlobalFree ((HANDLE)(UINT_PTR)wLow);
 				das = dasACK;
 				}
 
@@ -295,7 +298,7 @@ LNoAckPoke:
 				{
 				DeleteAtom (wHigh);
 				if (das == dasNACK)
-					GlobalFree (wLow);
+					GlobalFree ((HANDLE)(UINT_PTR)wLow);
 				}
 			break;
 			}
@@ -390,7 +393,7 @@ ATOM atomApp, atomTopic;
 		/*  initiate is not directed to us or we are not accepting links */
 		{
 		DdeDbgCommAtom ("InitiateDde: initiate refused", dclNil, atomApp);
-		return;
+		return 0;
 		}
 
 	DdeDbgCommAtom ("InitiateDde", dclNil, atomTopic);
@@ -454,7 +457,7 @@ HWND hwndThem;
 		{
 		DeleteAtom(atomTopic);
 		DeleteAtom(atomApp);
-		return; /* OOM - channel not created */
+		return 0; /* OOM - channel not created */
 		}
 
 	pdcld = PdcldDcl (dcl);
@@ -475,7 +478,7 @@ HWND hwndThem;
 	of some failure.
 */
 /*  %%Function:HRenderClipLink %%Owner:peterj  */
-HRenderClipLink ()
+HANDLE HRenderClipLink ()
 
 {
 	LPCH lpch;
@@ -576,7 +579,7 @@ ValidateServerLinks ()
 	vddes.fInvalidDdli = fFalse;
 
 	if (hplddli == hNil)
-		return;
+		return 0;
 
 	DdeDbgCommSz ("ValidateServerLinks");
 
@@ -606,6 +609,7 @@ ValidateServerLinks ()
 			}
 		}
 	MeltHp ();
+	return 0;
 }
 
 
@@ -625,7 +629,7 @@ UpdateDirtyLinks ()
 	vddes.fDirtyLinks = fFalse;
 
 	if (hplddli == hNil)
-		return; /* no links */
+		return 0; /* no links */
 
 	DdeDbgCommSz ("UpdateDirtyLinks");
 	FreezeHp ();
@@ -657,6 +661,7 @@ UpdateDirtyLinks ()
 			}
 		}
 	MeltHp ();
+	return 0;
 }
 
 
@@ -875,7 +880,7 @@ LFailed:
 	cannot be written.  Handle has cbDMS bytes at the begining unused.
 */
 /*  %%Function:HDataWriteSti %%Owner:peterj  */
-HDataWriteSti (sti)
+HANDLE HDataWriteSti (sti)
 int sti;
 {
 	HANDLE h = NULL;
@@ -1065,7 +1070,6 @@ BOOL fAckReq, fNoData;
 
 	return fTrue;
 }
-
 
 
 

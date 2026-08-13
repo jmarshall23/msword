@@ -352,6 +352,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef MB_YESNO
 #define MB_YESNO 0x0004
 #endif
+#ifndef MB_ICONHAND
+#define MB_ICONHAND 0x0010
+#endif
 #ifndef MB_ICONQUESTION
 #define MB_ICONQUESTION 0x0020
 #endif
@@ -366,6 +369,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef MB_APPLMODAL
 #define MB_APPLMODAL 0x0000
+#endif
+#ifndef MB_SYSTEMMODAL
+#define MB_SYSTEMMODAL 0x1000
 #endif
 
 #ifndef IDOK
@@ -729,6 +735,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef SW_HIDE
 #define SW_HIDE 0
 #endif
+#ifndef SW_SHOWMINNOACTIVE
+#define SW_SHOWMINNOACTIVE 7
+#endif
 #ifndef SW_SHOWNORMAL
 #define SW_SHOWNORMAL 1
 #endif
@@ -779,6 +788,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef DRAWPATTERNRECT
 #define DRAWPATTERNRECT 25
+#endif
+#ifndef PASSTHROUGH
+#define PASSTHROUGH 19
 #endif
 #ifndef ANSI_CHARSET
 #define ANSI_CHARSET 0
@@ -1271,6 +1283,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef WM_ERASEBKGND
 #define WM_ERASEBKGND 0x0014
 #endif
+#ifndef WM_WININICHANGE
+#define WM_WININICHANGE 0x001a
+#endif
 #ifndef WM_SETCURSOR
 #define WM_SETCURSOR 0x0020
 #endif
@@ -1486,8 +1501,16 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 
 FARPROC GetProcAddress(HMODULE module, LPCSTR name);
+HMODULE LoadLibraryA(LPCSTR module_name);
+BOOL FreeLibrary(HMODULE module);
 HMODULE GetModuleHandleW(LPCWSTR module_name);
 HMODULE GetModuleHandleA(LPCSTR module_name);
+#ifndef LoadLibrary
+#define LoadLibrary LoadLibraryA
+#endif
+#ifndef GetModuleHandle
+#define GetModuleHandle GetModuleHandleA
+#endif
 DWORD GetTempPathA(DWORD buffer_length, LPSTR buffer);
 UINT GetTempFileNameA(LPCSTR path_name, LPCSTR prefix, UINT unique, LPSTR file_name);
 DWORD GetCurrentProcessId(void);

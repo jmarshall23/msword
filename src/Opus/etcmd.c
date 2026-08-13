@@ -166,7 +166,7 @@ csconst CHAR szExtDat[]             = "dat";
 struct ETLIB
 	{
 	HANDLE  hLib;
-	HANDLE  hstack;
+	HSTACK  hstack;
 	struct GHD  ghdWord;
 	struct GHD  ghdWorkspace;
 	struct GHD  ghdRgpos;
@@ -218,8 +218,8 @@ CMB * pcmb;
 		{
 		/* initialize the cab */
 		pcabThesaurus = (CABTHESAURUS *) *pcmb->hcab;
-		(int)(pcabThesaurus->uSynList) = LB_ERR;
-		(int)(pcabThesaurus->uDefList) = LB_ERR;
+		pcabThesaurus->uSynList = LB_ERR;
+		pcabThesaurus->uDefList = LB_ERR;
 		if (!FSetCabSz(pcmb->hcab, szEmpty, Iag(CABTHESAURUS, hszLookup)))
 			return cmdNoMemory;
 		}
@@ -348,7 +348,7 @@ BOOL FLoadThesaurus ()
 	stPath[cchPath+1] = NULL;
 	hLib = LoadLibrary(stPath+1);
 
-	if (hLib < 32)
+	if ((UINT_PTR)hLib < 32)
 		{
 		if (hLib == 8)  goto NoMem;
 		else  
@@ -359,19 +359,23 @@ BOOL FLoadThesaurus ()
 
 	/* Get Thesaurus Entry Point Addresses */
 
-	vpetlib->lpfnHStackET = GetProcAddress(hLib, MAKEINTRESOURCE(idoHStackET));
+	vpetlib->lpfnHStackET =
+			(HSTACK (FAR PASCAL *)())GetProcAddress(hLib, MAKEINTRESOURCE(idoHStackET));
 	if (vpetlib->lpfnHStackET == NULL)
 		goto NoLoad;
 
-	vpetlib->lpfnFInitET = GetProcAddress(hLib, MAKEINTRESOURCE(idoFInitET));
+	vpetlib->lpfnFInitET =
+			(BOOL (FAR PASCAL *)())GetProcAddress(hLib, MAKEINTRESOURCE(idoFInitET));
 	if (vpetlib->lpfnFInitET == NULL)
 		goto NoLoad;
 
-	vpetlib->lpfnWETLookup = GetProcAddress(hLib, MAKEINTRESOURCE(idoWETLookup));
+	vpetlib->lpfnWETLookup =
+			(int (FAR PASCAL *)())GetProcAddress(hLib, MAKEINTRESOURCE(idoWETLookup));
 	if (vpetlib->lpfnWETLookup == NULL)
 		goto NoLoad;
 
-	vpetlib->lpfnFCloseET = GetProcAddress(hLib, MAKEINTRESOURCE(idoFCloseET));
+	vpetlib->lpfnFCloseET =
+			(BOOL (FAR PASCAL *)())GetProcAddress(hLib, MAKEINTRESOURCE(idoFCloseET));
 	if (vpetlib->lpfnFCloseET == NULL)
 		goto NoLoad;
 
@@ -1277,5 +1281,3 @@ LNewSiz:
 		return fFalse;
 
 }
-
-

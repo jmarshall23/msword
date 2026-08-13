@@ -78,6 +78,7 @@ extern CHAR             szNone[];
 extern HWND vhwndApp;
 
 extern CP CpFromIpgd();
+extern char (**HszCreate())[];
 
 #ifdef OPUS_X64
 static const char stOn[] = "\004 on ";
@@ -1262,7 +1263,7 @@ char **ppchPort, **ppchDriver;
 		*ppchDriver = NULL;
 		*ppchPort = NULL;
 		ReportSz("Warning - no printer name found - set values to null");
-		return;
+		return 0;
 		}
 	/* Parse the port name out of the list entry. */
 	pchPort = &szListEntry[0] + CchSz(szListEntry) - 1;
@@ -1352,7 +1353,7 @@ LCleanUp:
 		FreePh(&hszPrinter);
 		FreePh(&hszPort);
 		FreePh(&hszDriver);
-		return;
+		return 0;
 		}
 
 	FreeH(vpri.hszPrinter);
@@ -1374,7 +1375,8 @@ LCleanUp:
 	WriteProfileString((LPSTR) SzFrame("windows"), (LPSTR) SzFrame("Device"),
 			(LPSTR) szWinDev);
 	/* notify the world of said change */
-	SendMessage(0xffff, WM_WININICHANGE, 0, (LPSTR) SzShared("windows"));
+	SendMessage((HWND)(UINT_PTR)0xffff, WM_WININICHANGE, 0,
+			(LPARAM)(LPSTR) SzShared("windows"));
 }
 
 
@@ -1429,7 +1431,8 @@ char *pchPrinter, *pchPort, *pchDriver;
 	char *pch;
 	HWND hwndDlg = (HWND)NULL;
 	HANDLE hDriver;
-	FARPROC lpfnDevMode;
+	typedef VOID (*PFNDEVMODE)(HWND, HANDLE, LPSTR, LPSTR);
+	PFNDEVMODE lpfnDevMode;
 	char szDriver[ichMaxProfileSz];
 
 	/* Get the name of the driver, complete with extension. */
@@ -1437,7 +1440,7 @@ char *pchPrinter, *pchPort, *pchDriver;
 	bltbyte(SzFrameKey(".DRV",DRV), pch - 1, 5);
 
 	/* The driver is not resident; attempt to load it. */
-	if ((hDriver = LoadLibrary((LPSTR)szDriver)) <= 32)
+	if ((UINT_PTR)(hDriver = LoadLibrary((LPSTR)szDriver)) <= 32)
 		{
 #ifdef BZ
 		{ 
@@ -1449,23 +1452,23 @@ char *pchPrinter, *pchPort, *pchDriver;
 		}
 #endif /* BZ */
 
-		if (hDriver != 2)
+		if ((UINT_PTR)hDriver != 2)
 			{
 			/* If hDriver is 2, then the user has cancelled a dialog
 			box; there's no need to put up another. */
 			ErrorEid(eidBadPrinter, "");
 			}
-		return;
+		return 0;
 		}
 
 
 	/* Find the driver's DeviceMode() entry. */
-	if ((lpfnDevMode = GetProcAddress(hDriver, 
+	if ((lpfnDevMode = (PFNDEVMODE)GetProcAddress(hDriver,
 			MAKEINTRESOURCE(idoDeviceMode))) == NULL)
 		{
 		ErrorEid(eidBadPrinter, "");
 		FreeLibrary(hDriver);
-		return;
+		return 0;
 		}
 
 
@@ -1481,6 +1484,7 @@ char *pchPrinter, *pchPort, *pchDriver;
 		Beep();
 
 	FreeLibrary(hDriver);
+	return 0;
 }
 
 
@@ -1501,7 +1505,7 @@ CP cp;
 	struct DOD *pdod;
 	struct DTTM dttm;
 	struct RC rc;
-	int rgw[2];
+	LONG_PTR rgw[2];
 	CP cpPara, cpLimPara, cpLine;
 	struct LR lr;
 	char rgch[cchMaxPic];
@@ -1625,7 +1629,7 @@ LConvert:
 #ifdef DEBUG
 	default:
 		Assert(fFalse);
-		return;
+		return 0;
 #endif
 		}
 
@@ -1641,14 +1645,16 @@ LConvert:
 /* define origin, height and width variables */
 	EmitComplexPs(SzFrame("/wp$xorig %d def"), rgw);
 	EmitComplexPs(SzFrame("/wp$yorig %d def"), &rgw[1]);
-	EmitComplexPs(SzFrame("/wp$y %d def"), &dyp);
-	EmitComplexPs(SzFrame("/wp$x %d def"), &dxp);
+	rgw[0] = dyp;
+	EmitComplexPs(SzFrame("/wp$y %d def"), rgw);
+	rgw[0] = dxp;
+	EmitComplexPs(SzFrame("/wp$x %d def"), rgw);
 
 /* define page number variables */
 	rgw[0] = vfmtss.pgn;
 	EmitComplexPs(SzFrame("/wp$page %d def"), rgw);
 	rgch[CchLongToRgchNfc((LONG)vfmtss.pgn,rgch,vsepFetch.nfcPgn,31)] = 0;
-	rgw[0] = rgch;
+	rgw[0] = (LONG_PTR)rgch;
 	EmitComplexPs(SzFrame("/wp$fpage (%s) def"), rgw);
 
 /* define date ... */
@@ -1656,14 +1662,14 @@ LConvert:
 	DefSzPicDTTmplt(fTrue /* fDate */, rgch, cchMaxPic);
 	LocalSzPicDTTmplt(rgch, szPic);
 	rgch[CchFormatDttmPic(&dttm, szPic, rgch, cchMaxPic)] = 0;
-	rgw[0] = rgch;
+	rgw[0] = (LONG_PTR)rgch;
 	EmitComplexPs(SzFrame("/wp$date (%s) def"), rgw);
 
 /* ...and time variables */
 	DefSzPicDTTmplt(fFalse /* fDate */, rgch, cchMaxPic);
 	LocalSzPicDTTmplt(rgch, szPic);
 	rgch[CchFormatDttmPic(&dttm, szPic, rgch, cchMaxPic)] = 0;
-	rgw[0] = rgch;
+	rgw[0] = (LONG_PTR)rgch;
 	EmitComplexPs(SzFrame("/wp$time (%s) def"), rgw);
 
 /* define drawing box procedure */
@@ -1685,7 +1691,7 @@ LConvert:
 		stcp = StcpFromStc(vpapFetch.stc, pdod->stsh.cstcStd);
 		GenStyleNameForStcp(rgch, pdod->stsh.hsttbName,pdod->stsh.cstcStd,stcp);
 		rgch[rgch[0] + 1] = 0;
-		rgw[0] = &rgch[1];
+		rgw[0] = (LONG_PTR)&rgch[1];
 		EmitComplexPs(SzFrame("/wp$style (%s) def"), rgw);
 
 		/* before/after */
@@ -1707,8 +1713,10 @@ LConvert:
 	case idPrintPsRow:
 		EmitPsSz(SzFrame("/wp$top 0 def"));
 		EmitPsSz(SzFrame("/wp$bottom 0 def"));
-		EmitComplexPs(SzFrame("/wp$left %d def"), &lr.dxl);
-		EmitComplexPs(SzFrame("/wp$right %d def"), &lr.xl);
+		rgw[0] = lr.dxl;
+		EmitComplexPs(SzFrame("/wp$left %d def"), rgw);
+		rgw[0] = lr.xl;
+		EmitComplexPs(SzFrame("/wp$right %d def"), rgw);
 		break;
 
 	case idPrintPsPage:
@@ -1720,10 +1728,12 @@ LConvert:
 
 		/* left/right */
 		GetXlMargins(&dop, vfmtss.pgn & 1, 72, &xlLeft, &xlRight);
-		EmitComplexPs(SzFrame("/wp$left %d def"), &xlLeft);
+		rgw[0] = xlLeft;
+		EmitComplexPs(SzFrame("/wp$left %d def"), rgw);
 		dxp = dop.xaPage / 20;
 		xlRight = dop.xaPage / 20 - xlRight;
-		EmitComplexPs(SzFrame("/wp$right %d def"), &xlRight);
+		rgw[0] = xlRight;
+		EmitComplexPs(SzFrame("/wp$right %d def"), rgw);
 
 		/* column stuff */
 		if ((pdod = PdodDoc(lr.doc))->fHdr)
@@ -1747,7 +1757,7 @@ LConvert:
 /* %%Function:EmitComplexPs %%Owner:davidbo */
 EmitComplexPs(psz, pw)
 char *psz;
-int *pw;
+LONG_PTR *pw;
 {
 /* an incredibly trivial printf -- converts a string with optional control
 	sequences into a PostScript command and emits it
@@ -1764,11 +1774,12 @@ int *pw;
 		else
 			{
 			if (*++pchIn == 'd')
-				CchIntToPpch(*pw++, &pchOut);
+				CchIntToPpch((int)*pw++, &pchOut);
 			else  if (*pchIn == 's')
 				{
-				cch = CchSz(*pw) - 1;
-				bltb(*pw++, pchOut, cch);
+				char *pch = (char *)*pw++;
+				cch = CchSz(pch) - 1;
+				bltb(pch, pchOut, cch);
 				pchOut += cch;
 				}
 			pchIn++;
@@ -1868,7 +1879,8 @@ struct RC *prc;
 	pdxp = &vfli.rgdxp[0];
 	ich = 0;
 	FreezeHp();
-	for (pchr = &(**vhgrpchr)[0]; ; (char *)pchr += CbFromChrm(chrm))
+	for (pchr = &(**vhgrpchr)[0]; ;
+			pchr = (struct CHR *)((char *)pchr + CbFromChrm(chrm)))
 		{
 		for (ichNext = pchr->ich; cpT < cpPic && ich < ichNext; ich++, cpT++)
 			xp += *pdxp++;
@@ -1922,5 +1934,3 @@ int *pdyp;
 	*pdyp = dyp;
 	return(dxp);
 }
-
-

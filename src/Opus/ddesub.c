@@ -20,6 +20,8 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "ddesub.cpt"
 #endif /* PROTOTYPE */
 
+extern void **PpvAllocCb();
+
 extern char szClsDdeChnl[];
 extern struct SEL      selCur;
 extern int             dclMac;
@@ -34,6 +36,7 @@ extern struct DCLD   **mpdclhdcld[];
 extern struct MERR     vmerr;
 extern CHAR            szApp[];
 extern IDF	       vidf;
+struct QUE **HInitQue();
 
 
 int             docDde = docNil;
@@ -127,7 +130,7 @@ DoDdeIdle ()
 	DdeRpt2(DdeDbgCommSz ("DoDdeIdle: completed"));
 	Debug( vdbs.fCkHeap ? CkHeap () : 0 );
 	Scribble (ispDdeIdle, '*');
-	return;
+	return 0;
 
 LInterrupt:
 	DdeDbgCommSz ("DoDdeIdle: interrupted");
@@ -140,7 +143,7 @@ LInterrupt:
 #endif
 	Debug( vdbs.fCkHeap ? CkHeap () : 0 );
 	Scribble (ispDdeIdle, '-');
-	return;
+	return 0;
 }
 
 
@@ -536,7 +539,7 @@ int dcl;
 		if (PdcldDcl(dcl)->fExecuting)
 			{
 			PdcldDcl(dcl)->fTermReceived = fTrue;
-			return;
+			return 0;
 			}
 		Assert (vddes.cDclServer > 0);
 		if (--vddes.cDclServer)
@@ -562,7 +565,7 @@ int dcl;
 			{
 			pdcld->fTermReceived = fTrue;
 			pdcld->fTerminating = fTrue;
-			return;
+			return 0;
 			}
 		Assert (vddes.cDclMacro > 0);
 		vddes.cDclMacro--;
@@ -570,6 +573,7 @@ int dcl;
 		}
 	DestroyWindow (PdcldDcl (dcl)->hwndUs);
 	FreeCls (clsDCLD, dcl);
+	return 0;
 }
 
 
@@ -603,7 +607,7 @@ int wLow, wHigh;
 		{
 		int cTries = 100;
 		MSG msg;
-		while (!PostMessage (hwnd, message, PdcldDcl (dcl)->hwndUs, 
+		while (!PostMessage (hwnd, message, (WPARAM)PdcldDcl (dcl)->hwndUs,
 				MAKELONG (wLow, wHigh)) && --cTries)
 			/*  their queue must be full, yield so they can empty it */
 			OurYield (fFalse);
@@ -839,7 +843,7 @@ ATOM atom;
 	if !vmerr.fMemFail (unless cb or iIncr large).
 */
 /*  %%Function:HInitQue %%Owner:peterj  */
-HInitQue (cb, iIncr)
+struct QUE **HInitQue (cb, iIncr)
 int cb, iIncr;
 
 {
@@ -1017,6 +1021,3 @@ CHAR *pch;
 
 	return fTrue;
 }
-
-
-
