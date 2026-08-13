@@ -200,13 +200,15 @@ returns only `windows.h` lines.
 ### 7. Decide `WCHAR` width before item 6 lands
 
 WORD1, the startup probe, the modern formats test and the UI test compile with
-`UNICODE;_UNICODE` (`src/CMakeLists.txt:1000`, `:1022`, `:1088`, `:1110`).
-`src/port/original/` holds 177 `L"..."` literals across 5 files and 47 `wchar_t`
-declarations, and calls `SendMessageW` 197 times, `PostMessageW` 24, `GetModuleHandleW`
-22, plus `wWinMain` entry points at `opus_product_entry.cpp:44` and
-`opus_original_startup_probe.cpp:399`. Windows `WCHAR` is 16-bit; clang, gcc and
-Emscripten default `wchar_t` to 32-bit. `std::wcsstr(command_line, L"--self-test")` at
-`opus_original_startup_probe.cpp:402` sits on the smoke-test path.
+`UNICODE;_UNICODE` (`src/CMakeLists.txt:1001`, `:1023`, `:1088`, `:1110`).
+`src/port/original/` still has live `L"..."` literals and `wchar_t` declarations, with
+the densest surface in `opus_win95_chrome.cpp`, `opus_modern_formats.cpp`,
+`opus_word1_ui_test.cpp` and `opus_original_startup_probe.cpp`. It also calls
+`SendMessageW`, `PostMessageW` and `GetModuleHandleW`, plus `wWinMain` entry points at
+`opus_product_entry.cpp:44` and `opus_original_startup_probe.cpp:399`. Windows `WCHAR`
+is 16-bit; clang, gcc and Emscripten default `wchar_t` to 32-bit.
+`std::wcsstr(command_line, L"--self-test")` at `opus_original_startup_probe.cpp:402`
+sits on the smoke-test path.
 
 This is jphonorato's fifth obstacle, the one he scoped to "~5 files in `src/port/`".
 
