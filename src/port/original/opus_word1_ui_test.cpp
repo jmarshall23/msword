@@ -3,7 +3,6 @@
 
 #include <array>
 #include <cstring>
-#include <cwchar>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -943,11 +942,11 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             return fail(process, 78, "DOCX open test could not open its document");
         }
         const ULONGLONG open_deadline = GetTickCount64() + 10000;
-        wchar_t document_caption[512]{};
+        WCHAR document_caption[512]{};
         do {
             GetWindowTextW(main_window, document_caption,
                            static_cast<int>(std::size(document_caption)));
-            if (std::wcsstr(document_caption, L"Document1") == nullptr) {
+            if (!wide_contains(document_caption, OPUSW("Document1"))) {
                 break;
             }
             Sleep(100);
@@ -960,7 +959,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
         pane = find_visible_descendant_by_class(main_window,
                                                 OPUSW("OpusWwd"));
         const bool reopened =
-            std::wcsstr(document_caption, L"Document1") == nullptr;
+            !wide_contains(document_caption, OPUSW("Document1"));
         const LRESULT imported_length = pane != nullptr ?
             SendMessageW(pane, kWmOpusX64QuerySelection, 41, 0) : 0;
         const LRESULT displayed_lines = pane != nullptr ?

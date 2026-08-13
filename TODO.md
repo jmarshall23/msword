@@ -278,6 +278,8 @@ Its test-mode argument parser, DOCX path conversion input, process command line,
 capture-path environment lookup now use `WCHAR`/`OPUSW` at `W` API boundaries.
 Its test runner now has a `WCHAR` argv core with `wmain` and non-Windows `main`
 adapters that feed it without changing the CRT entry signature.
+Its DOCX-open caption probe now reads `GetWindowTextW` into `WCHAR` storage and
+checks the fixed `Document1` text through `OPUSW`.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 `opus_original_startup_probe.cpp` now has a non-Windows `main` bridge that
