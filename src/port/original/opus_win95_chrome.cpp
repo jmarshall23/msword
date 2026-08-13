@@ -442,7 +442,7 @@ void configure_word95_menus(HWND window) {
             AppendMenuW(tools_menu, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(tools_menu, MF_POPUP | MF_STRING,
                         reinterpret_cast<UINT_PTR>(g_language_menu),
-                        L"&Language");
+                        OPUSW("&Language"));
         }
     }
 
@@ -480,7 +480,8 @@ void configure_word95_menus(HWND window) {
     if (g_table_menu != nullptr && window_index >= 0) {
         InsertMenuW(root, window_index,
                     MF_BYPOSITION | MF_POPUP | MF_STRING,
-                    reinterpret_cast<UINT_PTR>(g_table_menu), L"Ta&ble");
+                    reinterpret_cast<UINT_PTR>(g_table_menu),
+                    OPUSW("Ta&ble"));
     }
 
     if (g_toolbars_menu == nullptr || !IsMenu(g_toolbars_menu)) {
@@ -513,7 +514,7 @@ void configure_word95_menus(HWND window) {
         }
         AppendMenuW(view_menu, MF_POPUP | MF_STRING,
                     reinterpret_cast<UINT_PTR>(g_toolbars_menu),
-                    L"&Toolbars");
+                    OPUSW("&Toolbars"));
 
         if (GetMenuState(view_menu, bcmRibbon, MF_BYCOMMAND) !=
             static_cast<UINT>(-1)) {

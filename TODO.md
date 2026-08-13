@@ -222,9 +222,9 @@ names, pane-proc property name, and the `user32.dll`/`uxtheme.dll` dynamic-libra
 lookups.
 Its repeated fixed class names, font faces, default combo text, empty window captions,
 format-button glyph labels, text-color palette labels, language menu labels, toolbar
-popup and submenu labels, table-menu labels, document context-menu labels, the
-`dwmapi.dll` dynamic-library lookup and the zoom combo's fixed choice labels also use
-the same boundary.
+popup and submenu labels, table-menu labels, fixed submenu attachment labels, document
+context-menu labels, the `dwmapi.dll` dynamic-library lookup and the zoom combo's fixed
+choice labels also use the same boundary.
 `opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable
