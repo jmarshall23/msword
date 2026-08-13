@@ -60,11 +60,36 @@ int main() {
         GetWindowLongPtrA(window, 0) != kExtraData) {
         return 5;
     }
+    if (SetWindowLongA(window, 8, 0x11223344) != 0 ||
+        GetWindowLongA(window, 8) != 0x11223344 ||
+        SetWindowWord(window, 10, 0xabcd) != 0x1122 ||
+        GetWindowLongA(window, 8) != static_cast<LONG>(0xabcd3344u) ||
+        SetWindowWord(window, 12, 0x5566) != 0 ||
+        GetWindowWord(window, 12) != 0x5566 ||
+        GetWindowWord(window, 14) != 0) {
+        return 6;
+    }
+
+    char text[16]{};
+    WCHAR wide_text[16]{};
+    const WCHAR wide_title[] = {'w', 'i', 'd', 'e', 0};
+    if (!SetWindowTextA(window, "plain") ||
+        GetWindowTextLengthA(window) != 5 ||
+        GetWindowTextA(window, text, sizeof(text)) != 5 ||
+        text[0] != 'p' || text[4] != 'n' ||
+        GetWindowTextW(window, wide_text, 16) != 5 ||
+        wide_text[0] != 'p' || wide_text[4] != 'n' ||
+        !SetWindowTextW(window, wide_title) ||
+        GetWindowTextLengthW(window) != 4 ||
+        GetWindowTextA(window, text, sizeof(text)) != 4 ||
+        text[0] != 'w' || text[3] != 'e') {
+        return 7;
+    }
 
     HDC dc = GetDC(window);
-    if (dc == nullptr || ReleaseDC(window, dc) != 1) return 6;
+    if (dc == nullptr || ReleaseDC(window, dc) != 1) return 8;
     HDC screen = GetDC(nullptr);
-    if (screen == nullptr || ReleaseDC(nullptr, screen) != 1) return 7;
+    if (screen == nullptr || ReleaseDC(nullptr, screen) != 1) return 9;
 
     if (GetSystemMetrics(SM_CXSCREEN) != 640 ||
         GetSystemMetrics(SM_CYSCREEN) != 480 ||
@@ -73,7 +98,7 @@ int main() {
         GetSysColor(COLOR_WINDOW) != RGB(255, 255, 255) ||
         GetSysColor(COLOR_WINDOWTEXT) != RGB(0, 0, 0) ||
         GetSysColor(COLOR_BTNFACE) != RGB(192, 192, 192)) {
-        return 8;
+        return 10;
     }
 
     HWND child = CreateWindowExA(0, "STATIC", "child", WS_CHILD, 1, 2, 3, 4,
@@ -81,29 +106,30 @@ int main() {
     HWND popup = CreateWindowExA(0, "STATIC", "popup", WS_POPUP, 1, 2, 3, 4,
                                  window, nullptr, nullptr, nullptr);
     if (child == nullptr || popup == nullptr || GetParent(child) != window ||
-        GetWindow(popup, GW_OWNER) != window || !IsChild(window, child)) {
-        return 9;
+        GetWindow(popup, GW_OWNER) != window || GetTopWindow(window) != child ||
+        !IsChild(window, child)) {
+        return 11;
     }
-    if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 10;
-    if (SetFocus(window) != nullptr || GetFocus() != window) return 11;
+    if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 12;
+    if (SetFocus(window) != nullptr || GetFocus() != window) return 13;
 
     RECT adjusted{0, 0, 100, 50};
     if (!AdjustWindowRectEx(&adjusted, WS_CAPTION | WS_BORDER, FALSE,
                             WS_EX_DLGMODALFRAME) ||
         adjusted.left >= 0 || adjusted.top >= 0 || adjusted.right <= 100 ||
         adjusted.bottom <= 50) {
-        return 12;
+        return 14;
     }
     RECT work_area{};
     if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &work_area, 0) ||
         work_area.right != 640 || work_area.bottom != 480) {
-        return 13;
+        return 15;
     }
 
-    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 14;
+    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 16;
     if (SendMessageA(window, WM_USER + 1, 0, 35) != 42 ||
         g_user_message_count != 1) {
-        return 15;
+        return 17;
     }
 
     MSG message{};
@@ -114,28 +140,28 @@ int main() {
         !PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2,
                       PM_REMOVE) ||
         PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2, PM_REMOVE)) {
-        return 16;
+        return 18;
     }
     if (!PostMessageW(child, WM_USER + 3, 5, 6) ||
         PeekMessageA(&message, window, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
         !PeekMessageA(&message, child, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
         message.hwnd != child || message.wParam != 5 || message.lParam != 6) {
-        return 17;
+        return 19;
     }
 
     PostQuitMessage(23);
     if (GetMessageA(&message, nullptr, 0, 0) != 0 ||
         message.message != WM_QUIT || message.wParam != 23) {
-        return 18;
+        return 20;
     }
 
     if (!PostMessageA(child, WM_USER + 4, 0, 0) || !DestroyWindow(window) ||
         IsWindow(window) || IsWindow(child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 19;
+        return 21;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 20;
+    if (second == nullptr || second == window) return 22;
     return 0;
 }

@@ -247,6 +247,15 @@ Macro spellings for `SendMessage`, `GetMessage`, `PostMessage`, and
 `DefWindowProc` are routed through the shim with casts so old C call sites stay
 buildable and visible to the coverage gate.
 
+Window text and byte-width extra accessors are now in place. `GetWindowTextA/W`,
+`GetWindowTextLengthA/W`, `SetWindowTextW`, `GetWindowWord`, `SetWindowWord`, and
+`GetTopWindow` build through the original engine, and the coverage baseline no
+longer lists the implemented text APIs. `GetWindowWord`/`SetWindowWord` currently
+cover positive per-window extra-byte offsets; negative `GWW_*` slots stay out until
+the call-site audit proves this tree needs them. The final WORD1 link gate is still
+not flipped because the app target keeps macOS `dynamic_lookup` while many user32
+entries remain uncovered.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

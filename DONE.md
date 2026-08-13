@@ -483,3 +483,41 @@ Reviewed by agy and claude: both prioritized the message core before SDL,
 menus, caret, clipboard, or scrollbars. The `GetWindowWord`/`SetWindowWord`
 surface remains out of this slice because its 16-bit extra-byte model needs a
 separate pointer-width audit.
+
+## Add user32 text and extra accessors
+
+The non-Windows `user32.cpp` shim now handles byte-width extra-window access
+instead of treating every positive offset as a pointer-sized slot.
+`GetWindowLongA`/`SetWindowLongA` use four bytes, `GetWindowWord`/`SetWindowWord`
+use two bytes, and pointer-sized `GetWindowLongPtrA`/`SetWindowLongPtrA` keep their
+existing eight-byte behavior. `GetTopWindow` is declared and implemented because
+the original engine calls it before passing the result into typed window helpers.
+
+Window text is now available through `SetWindowTextW`, `GetWindowTextA/W`, and
+`GetWindowTextLengthA/W`, using the same stored caption string already owned by
+`SetWindowTextA` and `DefWindowProc`'s `WM_GETTEXT`/`WM_SETTEXT` handling. The
+Win32 coverage baseline no longer lists `GetWindowTextA`,
+`GetWindowTextLengthA`, `GetWindowTextLengthW`, `GetWindowTextW`, or
+`SetWindowTextW`.
+
+`opus_win32_user32_test` covers 32-bit and 16-bit extra-byte writes sharing the
+same byte array without clobbering adjacent slots, narrow and wide window text
+round trips, and `GetTopWindow` over a child window.
+
+Validated with `cmake --build build-item14c --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14c -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14c --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14c -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy for this slice; claude was asked and returned after implementation
+was underway with guidance for the next input-message slice and a warning that the
+final WORD1 link gate is still masked by macOS `dynamic_lookup`.

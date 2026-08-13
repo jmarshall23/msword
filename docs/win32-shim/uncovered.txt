@@ -53,10 +53,6 @@ GetSystemMenu
 GetTempFileNameA
 GetViewportExtEx
 GetViewportOrgEx
-GetWindowTextA
-GetWindowTextLengthA
-GetWindowTextLengthW
-GetWindowTextW
 GlobalMemoryStatusEx
 InsertMenuA
 InsertMenuW
@@ -106,7 +102,6 @@ SetViewportExtEx
 SetViewportOrgEx
 SetWindowExtEx
 SetWindowOrgEx
-SetWindowTextW
 TextOutW
 TrackPopupMenu
 WideCharToMultiByte

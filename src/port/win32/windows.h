@@ -2978,6 +2978,7 @@ HWND SetCapture(HWND window);
 HWND GetCapture(void);
 BOOL ReleaseCapture(void);
 HWND GetWindow(HWND window, UINT command);
+HWND GetTopWindow(HWND window);
 HWND GetParent(HWND window);
 HWND GetAncestor(HWND window, UINT flags);
 HWND GetFocus(void);
@@ -2999,6 +3000,8 @@ LONG_PTR SetWindowLongPtrW(HWND window, int index, LONG_PTR new_long);
 #endif
 LONG GetWindowLongA(HWND window, int index);
 LONG SetWindowLongA(HWND window, int index, LONG new_long);
+WORD GetWindowWord(HWND window, int index);
+WORD SetWindowWord(HWND window, int index, WORD new_word);
 int GetClassNameW(HWND window, LPWSTR class_name, int max_count);
 LPWSTR lstrcpyW(LPWSTR destination, LPCWSTR source);
 int lstrcmpW(LPCWSTR first, LPCWSTR second);
@@ -3192,6 +3195,13 @@ HLOCAL LocalReAlloc(HLOCAL memory, SIZE_T bytes, UINT flags);
 #endif
 #ifndef SetWindowLong
 #define SetWindowLong SetWindowLongA
+#endif
+#ifndef GetWindowText
+#define GetWindowText(window, text, max_count) \
+    GetWindowTextA((HWND)(window), (text), (max_count))
+#endif
+#ifndef GetWindowTextLength
+#define GetWindowTextLength(window) GetWindowTextLengthA((HWND)(window))
 #endif
 #ifndef SendMessage
 #define SendMessage(hwnd, message, wparam, lparam) \

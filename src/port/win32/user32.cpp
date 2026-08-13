@@ -157,25 +157,25 @@ COLORREF system_color(int index) {
     }
 }
 
-LONG_PTR get_window_extra(const WindowObject& window, int index) {
+LONG_PTR get_window_extra(const WindowObject& window, int index,
+                          std::size_t bytes) {
     if (index < 0 ||
-        index + static_cast<int>(sizeof(LONG_PTR)) >
-            static_cast<int>(window.extra.size())) {
+        static_cast<std::size_t>(index) + bytes > window.extra.size()) {
         return 0;
     }
     LONG_PTR value = 0;
-    std::memcpy(&value, window.extra.data() + index, sizeof(value));
+    std::memcpy(&value, window.extra.data() + index, bytes);
     return value;
 }
 
-LONG_PTR set_window_extra(WindowObject& window, int index, LONG_PTR value) {
+LONG_PTR set_window_extra(WindowObject& window, int index, LONG_PTR value,
+                          std::size_t bytes) {
     if (index < 0 ||
-        index + static_cast<int>(sizeof(LONG_PTR)) >
-            static_cast<int>(window.extra.size())) {
+        static_cast<std::size_t>(index) + bytes > window.extra.size()) {
         return 0;
     }
-    const LONG_PTR previous = get_window_extra(window, index);
-    std::memcpy(window.extra.data() + index, &value, sizeof(value));
+    const LONG_PTR previous = get_window_extra(window, index, bytes);
+    std::memcpy(window.extra.data() + index, &value, bytes);
     return previous;
 }
 
@@ -388,7 +388,7 @@ LONG_PTR GetWindowLongPtrA(HWND window, int index) {
         case GWLP_HINSTANCE:
             return reinterpret_cast<LONG_PTR>(object->instance);
         default:
-            return get_window_extra(*object, index);
+            return get_window_extra(*object, index, sizeof(LONG_PTR));
     }
 }
 
@@ -422,7 +422,7 @@ LONG_PTR SetWindowLongPtrA(HWND window, int index, LONG_PTR new_long) {
             return previous;
         }
         default:
-            return set_window_extra(*object, index, new_long);
+            return set_window_extra(*object, index, new_long, sizeof(LONG_PTR));
     }
 }
 
@@ -431,11 +431,48 @@ LONG_PTR SetWindowLongPtrW(HWND window, int index, LONG_PTR new_long) {
 }
 
 LONG GetWindowLongA(HWND window, int index) {
-    return static_cast<LONG>(GetWindowLongPtrA(window, index));
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    switch (index) {
+        case GWL_STYLE:
+        case GWL_EXSTYLE:
+        case GWLP_USERDATA:
+        case GWLP_WNDPROC:
+        case GWLP_HINSTANCE:
+            return static_cast<LONG>(GetWindowLongPtrA(window, index));
+        default:
+            return static_cast<LONG>(
+                get_window_extra(*object, index, sizeof(LONG)));
+    }
 }
 
 LONG SetWindowLongA(HWND window, int index, LONG new_long) {
-    return static_cast<LONG>(SetWindowLongPtrA(window, index, new_long));
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    switch (index) {
+        case GWL_STYLE:
+        case GWL_EXSTYLE:
+        case GWLP_USERDATA:
+        case GWLP_WNDPROC:
+        case GWLP_HINSTANCE:
+            return static_cast<LONG>(SetWindowLongPtrA(window, index, new_long));
+        default:
+            return static_cast<LONG>(
+                set_window_extra(*object, index, new_long, sizeof(LONG)));
+    }
+}
+
+WORD GetWindowWord(HWND window, int index) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    return static_cast<WORD>(get_window_extra(*object, index, sizeof(WORD)));
+}
+
+WORD SetWindowWord(HWND window, int index, WORD new_word) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    return static_cast<WORD>(
+        set_window_extra(*object, index, new_word, sizeof(WORD)));
 }
 
 LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,
@@ -533,6 +570,10 @@ HWND GetWindow(HWND window, UINT command) {
         case GW_HWNDNEXT: return handle_from_window(next_sibling(window));
         default: return nullptr;
     }
+}
+
+HWND GetTopWindow(HWND window) {
+    return handle_from_window(first_child(window));
 }
 
 BOOL GetWindowRect(HWND window, LPRECT rectangle) {
@@ -635,6 +676,38 @@ BOOL SetWindowTextA(HWND window, LPCSTR text) {
     if (object == nullptr) return FALSE;
     object->text = text != nullptr ? text : "";
     return TRUE;
+}
+
+BOOL SetWindowTextW(HWND window, LPCWSTR text) {
+    return SetWindowTextA(window, narrow_string(text).c_str());
+}
+
+int GetWindowTextLengthA(HWND window) {
+    auto* object = window_from_handle(window);
+    return object != nullptr ? static_cast<int>(object->text.size()) : 0;
+}
+
+int GetWindowTextLengthW(HWND window) {
+    return GetWindowTextLengthA(window);
+}
+
+int GetWindowTextA(HWND window, LPSTR text, int max_count) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || text == nullptr || max_count <= 0) return 0;
+    lstrcpynA(text, object->text.c_str(), max_count);
+    return static_cast<int>(std::strlen(text));
+}
+
+int GetWindowTextW(HWND window, LPWSTR text, int max_count) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || text == nullptr || max_count <= 0) return 0;
+    const std::size_t limit = static_cast<std::size_t>(max_count);
+    const std::size_t count = (std::min)(object->text.size(), limit - 1);
+    for (std::size_t index = 0; index < count; ++index) {
+        text[index] = static_cast<WCHAR>(object->text[index]);
+    }
+    text[count] = 0;
+    return static_cast<int>(count);
 }
 
 BOOL UpdateWindow(HWND window) {
