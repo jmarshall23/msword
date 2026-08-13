@@ -1,18 +1,12 @@
-/* ****************************************************************************
-**
-**      COPYRIGHT (C) 1987, 1988 MICROSOFT
-**
-** ****************************************************************************
-*
-*  Module: pic2.c ---- Misc picture routines
-*
-**
-** REVISIONS
-**
-** Date         Who    Rel Ver     Remarks
-** 11/16/87     bobz               split off from pic.c 
-**
-** ************************************************************************* */
+/*
+*      COPYRIGHT (C) 1987, 1988 MICROSOFT
+ *
+ * Module: pic2.c ---- Misc picture routines
+ *
+ * REVISIONS
+ *
+ * Date Who Rel Ver Remarks 11/16/87 bobz split off from pic.c
+ */
 
 
 #define NOGDICAPMASKS
@@ -74,7 +68,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "sdmparse.h"
 
 extern HDC CreateMetaFile();
-extern HANDLE CloseMetaFile();
+extern HMETAFILE CloseMetaFile();
 
 #include "pict.hs"
 #include "pict.sdm"
@@ -128,9 +122,9 @@ extern int          vdocFetch;
 #define szFPHeightDef   SzFrameKey(" H",FPHeight)
 
 
-/* brclNone is at the end rather than at 0 but the drop list wants
-	none at index 0
-*/
+/* brclNone is at the end rather than at 0 but the drop list wants none at index
+ * 0
+ */
 #define IFromPicBrcl(brcl) (((brcl) >= brclSingle && (brcl) < brclNone) ? \
 						(brcl + 1) : (brcl == brclNone ? 0 : brclInval))
 #define PicBrclFromI(i)  ((((unsigned) (i)) == 0) ? brclNone : \
@@ -138,9 +132,7 @@ extern int          vdocFetch;
 
 
 
-/***************************************/
-/* C m d  P i c t u r e */
-/*  %%Function:  CmdPicture  %%Owner:  bobz       */
+/* C m d P i c t u r e %%Function: CmdPicture %%Owner: bobz */
 
 CMD CmdPicture(pcmb)
 CMB * pcmb;
@@ -153,13 +145,12 @@ CMB * pcmb;
 	CP cpImport;
 	struct CA caT;
 
-	/* we assume that chp is for a picture. SelCur.chp
-		won't have the fSpec stuff though, so fetch
-		and use vchpFetch.
-	
-			In case of an import field, we have to get the cp
-			of the actual picture character.
-	*/
+	/* we assume that chp is for a picture. SelCur.chp won't have the fSpec
+	 * stuff though, so fetch and use vchpFetch.
+	 *
+	 * In case of an import field, we have to get the cp of the actual picture
+	 * character.
+	 */
 	AssertDo(FCaIsGraphics(&selCur.ca, selCur.ww, &cpImport));
 	if (cpImport != cpNil)  /* import field - use pic char for ca */
 		{
@@ -182,15 +173,13 @@ CMB * pcmb;
 		unsigned mxRemainder;
 		pcabFp = (CABFORMATPIC *) *pcmb->hcab;
 
-		/* Note:
-			FetchCp never sets fnPic since it is possible for
-			fnPic to change during the lifetime of the fetch.
-			All users of pic chps are required to set fnPic to
-			fnFetch. This is one case where it is acceptable to
-			modify vchpFetch without trashing the fetch. FetchPe
-			is the only real user of a pic chp, so it always sets
-			chp.fnPic to fnFetch    bz
-		*/
+		/* Note: FetchCp never sets fnPic since it is possible for fnPic to
+		 * change during the lifetime of the fetch. All users of pic chps are
+		 * required to set fnPic to fnFetch. This is one case where it is
+		 * acceptable to modify vchpFetch without trashing the fetch. FetchPe is
+		 * the only real user of a pic chp, so it always sets chp.fnPic to
+		 * fnFetch bz
+		 */
 
 
 		pcabFp = (CABFORMATPIC *) *pcmb->hcab;
@@ -276,9 +265,7 @@ CMB * pcmb;
 }
 
 
-/***************************************/
-/* C m d  I n s   P i c t u r e */
-/*  %%Function:  CmdInsPicture  %%Owner:  bobz       */
+/* C m d I n s P i c t u r e %%Function: CmdInsPicture %%Owner: bobz */
 
 CMD CmdInsPicture(pcmb)
 CMB * pcmb;
@@ -456,8 +443,9 @@ ErrRet:
 			return cmdError;
 			}
 
-		/* make document dirty. if it's a subdoc, FDirtyDoc will notice
-			and declare that the mother doc is dirty. */
+		/* make document dirty. if it's a subdoc, FDirtyDoc will notice and
+		 * declare that the mother doc is dirty.
+		 */
 
 		PdodDoc(selCur.doc)->fFormatted = fTrue;
 
@@ -472,14 +460,12 @@ ErrRet:
 }
 
 
-/********************************/
-/* D l g  f  F o r m a t  P i c */
-/* SDM dialog function for Format Picture dialog.
-	Special interactions:
-
-	o   when fInLine is ON, the ojc radio buttons are meaningless
-		and should be disabled.
-*/
+/* D l g f F o r m a t P i c SDM dialog function for Format Picture dialog.
+ * Special interactions:
+ *
+ * o when fInLine is ON, the ojc radio buttons are meaningless and should be
+ * disabled.
+ */
 
 csconst rgtmcPic[] =
 { 
@@ -548,9 +534,9 @@ struct CA *pca;
 	CABFORMATPIC *pcab;
 	unsigned mxRemainder;
 
-	/* Note vpicFetch must be set up for this to work. It may be different
-	   from pic
-	*/
+	/* Note vpicFetch must be set up for this to work. It may be different from
+	 * pic
+	 */
 	cab.wScaleMx = UDiv(ppic->mx, PctTomx100Pct, &mxRemainder);
 	cab.wScaleMy = UDiv(ppic->my, PctTomy100Pct, &mxRemainder);
 	cab.wCropTop = ppic->dyaCropTop;
@@ -574,12 +560,12 @@ CMB * pcmb;
 BOOL fDialog;
 {
 	/* Note vpicFetch must be the pic props are applied to for this to work.
-	   Since rtfin kind of hacks its way in here, we can't assert here
-	   anything about vchpFetch or vcpFetch. If pcmb->pv is not NULL,
-	   it is the ca for the picture. We can assure that fetching is set
-	   up properly in that case. It is currently NULL only for the rtfin
-	   call, which is made before the picture is put into the doc.
-	*/
+	 * Since rtfin kind of hacks its way in here, we can't assert here anything
+	 * about vchpFetch or vcpFetch. If pcmb->pv is not NULL, it is the ca for
+	 * the picture. We can assure that fetching is set up properly in that case.
+	 * It is currently NULL only for the rtfin call, which is made before the
+	 * picture is put into the doc.
+	 */
 	CABFORMATPIC * pcabFp;
 	int dxa, dya;
 	struct FTI *pfti = vfli.fFormatAsPrint ? &vftiDxt : &vfti;
@@ -601,21 +587,18 @@ BOOL fDialog;
 
 	pcabFp = (CABFORMATPIC *) *pcmb->hcab;
 
-	/* scaled / cropped dimensions must be > minimum size. Note
-		that cropping is based on the UNSCALED pic size
-		and scaling on cropped size    */
+	/* scaled / cropped dimensions must be > minimum size. Note that cropping is
+	 * based on the UNSCALED pic size and scaling on cropped size
+	 */
 
-	/* note that the mx, my are parsed items and so
-		already check for >=0.
-		Since we are comparing int values, any value > 32767
-		will show up as negative, so so be rejected as too
-		big, so this handles < min or > max. dzaPicMax is not
-		quite 32767, so add the test for  dzaMax < x <= 32767
-	
-		note also that the goal values are really za units, i.e.,
-		twips, not pixels (zp).
-		*/
-	/* cropped sizes */
+	/* note that the mx, my are parsed items and so already check for >=0. Since
+	 * we are comparing int values, any value > 32767 will show up as negative,
+	 * so so be rejected as too big, so this handles < min or > max. dzaPicMax
+	 * is not quite 32767, so add the test for dzaMax < x <= 32767
+	 *
+	 * note also that the goal values are really za units, i.e., twips, not
+	 * pixels (zp). cropped sizes
+	 */
 	dxa = (vpicFetch.dxaGoal - pcabFp->wCropLeft - pcabFp->wCropRight);
 	dya = (vpicFetch.dyaGoal - pcabFp->wCropTop - pcabFp->wCropBottom);
 
@@ -639,8 +622,9 @@ BOOL fDialog;
 
 	if ( pcabFp->wScaleMx != 100 || pcabFp->wScaleMy != 100)
 		{
-		/* don't have a parse funct available to add top range check
-			have to check or 10 x mx/my could overflow unsigned  */
+		/* don't have a parse funct available to add top range check have to
+		 * check or 10 x mx/my could overflow unsigned
+		 */
 
 		if ( pcabFp->wScaleMx > mzPicMax || pcabFp->wScaleMy > mzPicMax)
 			{
@@ -655,10 +639,9 @@ BOOL fDialog;
 			return fFalse;
 			}
 
-		/* test thse rects: the scaled/cropped rect,  the
-		scaled uncropped rect in twips, screen pixels
-		and printer pixels for overflow in an int.
-		*/
+		/* test thse rects: the scaled/cropped rect, the scaled uncropped rect
+		 * in twips, screen pixels and printer pixels for overflow in an int.
+		 */
 
 		/* scale the cropped rect */
 		if (!FScaleInRange(dxa, dya, pcabFp->wScaleMx,
@@ -680,9 +663,9 @@ BOOL fDialog;
 		else
 
 			/* use calculated goal size in main device units for metafiles.
-				Calculate in printer pixels, and compute xp's using nonrounding
-				mechanism for dispasprint so we avoid pageview screen pushout.
-			*/
+			 * Calculate in printer pixels, and compute xp's using nonrounding
+			 * mechanism for dispasprint so we avoid pageview screen pushout.
+			 */
 			{
 			Assert (vpicFetch.mfp.mm <= MM_META_MAX);
 			dxa = NMultDiv (vpicFetch.dxaGoal,
@@ -699,8 +682,7 @@ BOOL fDialog;
 				1, 32767, 1, 32767, fDialog))
 			return (fFalse);
 
-		/* convert to screen units */
-		/* for the dispas print case */
+		/* convert to screen units for the dispas print case */
 		if (vfli.fFormatAsPrint)
 			{
 			dxa = (int)((long)dxa * (long)vfti.dxpInch /
@@ -733,8 +715,7 @@ BOOL fDialog;
 
 	int dxScale, dyScale;
 
-	/* test various pic sizes for 22" (czaMax/dzaPicMax)limit
-	*/
+	/* test various pic sizes for 22" (czaMax/dzaPicMax)limit */
 
 	if ( (dxScale = NMultDiv (dx, wScaleMx, 100)) == 0x7FFF
 			|| dxScale < dxMin || dxScale > dxMax ||
@@ -758,16 +739,12 @@ BOOL fDialog;
 
 
 
-/* ****
-*
-	Function: FDlgInsPic
-*  Author:
-*  Copyright: Microsoft 1986
-*  Date: 3/10/86
-*
-*  Description: Dialog function 
-*
-** ***/
+/* Function: FDlgInsPic Author:
+ *  Copyright: Microsoft 1986
+ *  Date: 3/10/86
+ *
+ * Description: Dialog function
+ */
 
 /*  %%Function:  FDlgInsPic  %%Owner:  bobz       */
 
@@ -804,9 +781,9 @@ WORD wOld, wNew, wParam;
 	case dlmClick:
 		if  (tmc == tmcNewPic)
 			{
-			/* ugh - need to ignore filename field if empty, so
-				just fill the cab and bag out
-			*/
+			/* ugh - need to ignore filename field if empty, so just fill the
+			 * cab and bag out
+			 */
 			if ((hcab = HcabFromDlg(fFalse)) == hcabNotFilled)
 				return fFalse;
 			if (hcab != hcabNull)
@@ -820,9 +797,9 @@ WORD wOld, wNew, wParam;
 			return (fTrue);
 			}
 
-		/* non-atomic combos get no dlmChange on list box click.
-			if we get any non-nil entry, be sure OK is enabled
-		*/
+		/* non-atomic combos get no dlmChange on list box click. if we get any
+		 * non-nil entry, be sure OK is enabled
+		 */
 		if  (tmc == tmcIPList || tmc == tmcIPDir)
 			{
 			if (wNew != uNinchList)
