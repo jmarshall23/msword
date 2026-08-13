@@ -88,16 +88,18 @@ The non-Windows configure and SDL probe gates are complete. Item 5 is next.
 
 ### 5. CI on three platforms
 
-There is no `.github/` at all, which is why item 2 survived. Take
-`DONT-MERGE/bahree/.github/workflows/windows-release.yml` steps 1 through 5, Checkout
-through Test, and drop signing, WiX, MSI and artifact upload. Note that "first three
-steps" would stop at Configure and prove nothing.
+`.github/workflows/ci.yml` exists and omits the dead release metadata, signing, WiX, MSI
+and artifact upload steps from `DONT-MERGE/bahree/.github/workflows/windows-release.yml`.
+The Windows job keeps the useful Checkout, Configure, Build and Test shape.
 
-Add macOS and Linux jobs building whatever currently builds. The 8 UI tests at
-`src/CMakeLists.txt:976-1007` get a ctest label and are excluded until item 14 gives
-them a headless path; do not let that block the other 7.
+macOS and Linux jobs install SDL2, configure their Ninja presets, and build the current
+non-Windows gates: `opus-sdl-probe`, the native generator tools, and the generated
+command/resource targets. The 10 tests that run `opus_word1_ui_test` are labelled `ui`;
+CI excludes that label until item 14 gives them a headless path.
 
-Done when: three jobs green on a pull request.
+Do: open a pull request and confirm the Windows, macOS and Linux jobs are green.
+
+Done when: the three jobs are green on a pull request.
 
 ---
 

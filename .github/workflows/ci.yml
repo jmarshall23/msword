@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        shell: pwsh
+        working-directory: src
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          cmake --preset x64-release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Build
+        shell: pwsh
+        working-directory: src
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          cmake --build --preset x64-release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Test
+        shell: pwsh
+        working-directory: src
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          ctest --test-dir ..\out -C Release -LE ui --output-on-failure
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install ninja sdl2
+
+      - name: Configure
+        run: cmake -S src --preset macos-debug
+
+      - name: Build probes
+        run: >
+          cmake --build out/macos-debug --target
+          opus-sdl-probe
+          opus_mkcmd_tool
+          opus_mkdlg_tool
+          opus_mergeelx_tool
+          opus_bitapp_tool
+          opus_dibapp_tool
+          opus_cabi_tool
+          opus_generated_commands
+          opus_generated_cursors
+          opus_generated_embedded_resources
+          opus_generated_dib_resources
+          opus_generated_dlgcheck
+          opus_generated_elxinfo
+
+      - name: Test
+        run: |
+          SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
+          ctest --test-dir out/macos-debug -R opus_bitapp_8hdr_test --output-on-failure
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build libsdl2-dev
+
+      - name: Configure
+        run: cmake -S src --preset linux-debug
+
+      - name: Build probes
+        run: >
+          cmake --build out/linux-debug --target
+          opus-sdl-probe
+          opus_mkcmd_tool
+          opus_mkdlg_tool
+          opus_mergeelx_tool
+          opus_bitapp_tool
+          opus_dibapp_tool
+          opus_cabi_tool
+          opus_generated_commands
+          opus_generated_cursors
+          opus_generated_embedded_resources
+          opus_generated_dib_resources
+          opus_generated_dlgcheck
+          opus_generated_elxinfo
+
+      - name: Test
+        run: |
+          SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
+          ctest --test-dir out/linux-debug -R opus_bitapp_8hdr_test --output-on-failure

@@ -1173,3 +1173,17 @@ add_test(NAME opus_word1_pdf_export_test
     COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1> --pdf-export
 )
 set_tests_properties(opus_word1_pdf_export_test PROPERTIES TIMEOUT 25)
+
+set(OPUS_WORD1_UI_TESTS
+    opus_word1_ui_test
+    opus_word1_clipboard_shortcut_test
+    opus_word1_unicode_test
+    opus_word1_typing_test
+    opus_word1_interaction_test
+    opus_word1_selection_test
+    opus_word1_font_typing_test
+    opus_word1_about_test
+    opus_word1_save_as_test
+    opus_word1_pdf_export_test
+)
+set_tests_properties(${OPUS_WORD1_UI_TESTS} PROPERTIES LABELS ui)
