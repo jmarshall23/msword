@@ -881,7 +881,7 @@ struct CA *pcaRun;
 				if (vtapFetch.itcMac == 1)
 					{
 					pcaRun->cpLim += ccpEop;
-					return;
+					return 0;
 					}
 				caTapLocal = caTap;
 				InvalCp1(&caTapLocal);
@@ -1160,5 +1160,4 @@ WORD wOld, wNew, wParam;
 
 	return fTrue;
 }
-
 

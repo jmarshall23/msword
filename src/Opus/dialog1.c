@@ -717,7 +717,7 @@ LRet0:
 			bltbx((LPSTR)lParam, szBuf, cch);
 			szBuf [cch++] = '\0';
 			/* cch now includes null terminator */
-			if ((wParam = HAllocateCw(CwFromCch(cch))) == hNil)
+			if ((wParam = (WPARAM)HAllocateCw(CwFromCch(cch))) == hNil)
 				{
 				FedtNotifyParent(&hfedt, EN_ERRSPACE);
 				
@@ -995,7 +995,7 @@ BOOL fShow;
 	Debug(CheckFedt(hfedt));
 	fShowSel = (fShow != 0);
 	if (fShowSel == pfedt->fShowSel)
-		return;
+		return 0;
 	pfedt->fShowSel = fShowSel;
 	hwnd = pfedt->hwnd;
 	if (fShowSel)
@@ -1131,9 +1131,9 @@ BOOL fMinScroll;
 
 	Debug(CheckFedt(hfedt));
 	if (!pfedt->fShowSel)
-		return;
+		return 0;
 	if ((hrgn = CreateRectRgn(0,0,0,0)) == NULL)
-		return;
+		return 0;
 	LogGdiHandle(hrgn, 25000);
 	/* save old selection in hrgn/pt */
 	hrgnSwap = hrgn;
@@ -1185,7 +1185,7 @@ FEDT **hfedt;
 /* calculate Mic end-point of the selection */
 
 	if ((hrgnT = CreateRectRgn(0,0,0,0)) == NULL)
-		return;
+		return 0;
 	LogGdiHandle(hrgnT, 1004);
 	liFirst = liLast = pfedt->liCaret;
 	ichMicSel = pfedt->ichMicSel;
@@ -1329,7 +1329,7 @@ int ichMic, ichMac;
 
 	Debug(CheckFedt(hfedt));
 	if (!IsWindowVisible(pfedt->hwnd) || !FFedtValidateDC(hfedt))
-		return;
+		return 0;
 
 	pchText = PchFromHsz(pfedt->hszText);
 	li = LiFedtFromIch(hfedt, ichMic);
@@ -1780,15 +1780,15 @@ HRGN hrgnInv;
 	HRGN hrgnT;
 
 	if (!IsWindowVisible(pfedt->hwnd))
-		return;
+		return 0;
 	if ((hrgnT = CreateRectRgn(0,0,0,0)) == NULL)
-		return;
+		return 0;
 	LogGdiHandle(hrgnT, 1005);
 	if (!FFedtValidateDC(hfedt))
 		{
 		UnlogGdiHandle(hrgnT, 1005);
 		DeleteObject(hrgnT);
-		return;
+		return 0;
 		}
 	SetRectRgn(hrgnT, pfedt->rcView.xpLeft, pfedt->rcView.ypTop,
 			pfedt->rcView.xpRight, pfedt->rcView.ypBottom);

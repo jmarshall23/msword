@@ -820,7 +820,7 @@ int		dxpToXw, ywLine;
 				}
 			pchr = (struct CHR *)((char *)*vhgrpchr + bchrCur);
 			pchp = (struct CHP *)((char *)*vhgrpchr + bchpCur);
-			((struct CHRT *)pchr)++;
+			pchr = (struct CHR *)((struct CHRT *)pchr + 1);
 			}
 		else  if (chrm == chrmChp)
 			{
@@ -1092,8 +1092,8 @@ LDacNop:
 				bchrCur = (char *) pchr - (char *)*vhgrpchr;
 				bchpCur = (char *) pchp - (char *)*vhgrpchr;
 				ShowSpec(ww, ich, &ptPen, yp, pchp, &uls);
-				(char *) pchr = (char *)*vhgrpchr + bchrCur;
-				(char *) pchp = (char *)*vhgrpchr + bchpCur;
+				pchr = (struct CHR *)((char *)*vhgrpchr + bchrCur);
+				pchp = (struct CHP *)((char *)*vhgrpchr + bchpCur);
 
 				if (vfli.grpfvisi.fvisiShowAll && 
 						(chSpec == chFootnote 
@@ -1282,8 +1282,8 @@ LRealExtTextOut:
 #endif
 	 					}
                     vrf.fInExternalCall = fFalse;
-					(char *) pchr = (char *)*vhgrpchr + bchrCur;
-					(char *) pchp = (char *)*vhgrpchr + bchpCur;
+					pchr = (struct CHR *)((char *)*vhgrpchr + bchrCur);
+					pchp = (struct CHP *)((char *)*vhgrpchr + bchpCur);
 
 					if (!fErased && !fPrvwPrint)
 						rcOpaque.xpLeft = ptPen.xp;
@@ -1311,18 +1311,18 @@ LEnd:
 	printing and not the pass for drawing borders... 
 	*/
 	if (vfli.grpfBrc == 0)
-		return;
+		return 0;
 	if (vfli.fPrint)
 		{
 		if (vpri.fDPR)	/* can only use DRAWPATTERNRECT in fText pass */
 			{
 			if (!vpri.fText)
-				return;
+				return 0;
 			}
 		else
 			{
 			if (!vpri.fGraphics)
-				return;
+				return 0;
 			}
 		}
 
@@ -1340,7 +1340,7 @@ LEnd:
 		DrawBorders(dxpToXw, ywLine);
 		RestoreDC( hdc, ilevel );
 		}
-	return;
+	return 0;
 }
 
 
@@ -1683,7 +1683,7 @@ struct RC *prcwClip;
 				(vfli.omk == omkMinus) ?
 				idcbOtlMarkMinus : idcbOtlMarkBody,
 				xwT, ywT);
-		if (!vfli.grpfvisi.w) return; /* for speed */
+		if (!vfli.grpfvisi.w) return 0; /* for speed */
 		}
 
 	pchr = &(**vhgrpchr)[0];
@@ -1755,7 +1755,7 @@ struct RC *prcwClip;
 		else  if (chrm == chrmEnd)
 			break;
 		bchrCur += CbFromChrm(chrm);
-		(char *)pchr += CbFromChrm(chrm);
+		pchr = (struct CHR *)((char *)pchr + CbFromChrm(chrm));
 		}
 
 /* draw CRJ symbol if needed */
@@ -1786,7 +1786,7 @@ struct RC *prcwClip;
 
 
 	if ((pmdcd = PmdcdCacheIdrb( idrbChVis, hdc )) == NULL)
-		return;
+		return 0;
 
 	if (idcb == idcbChVisTab)
 		{
@@ -1813,7 +1813,7 @@ struct RC *prcwClip;
 	PrcSet(&rcT, xp, ywPos - dyp, dxp, dyp);
 	DrcToRc(&rcT, &rcT);
 	if (!FSectRc(&rcT, prcwClip, &rcwDest /*rcResult*/))
-		return;
+		return 0;
 
 	dxpSrc = NMultDiv(dxpChVisEach, rcwDest.xwRight-rcwDest.xwLeft, dxp);
 	dypSrc = NMultDiv(dypChVis, rcwDest.ywBottom-rcwDest.ywTop, dyp);
@@ -1987,7 +1987,7 @@ struct SEL *psel;
 	if (!FSectRc( &rcIns, &psel->rcwClip, &rcIns ))
 		{
 		selCur.fOn = fFalse;
-		return;
+		return 0;
 		}
 
 /* following line assumes we do not need to take responsibility for
@@ -2104,7 +2104,7 @@ WORD plt;
 		{
 		*pdzpBlt = dzp;
 		DrawPrvwLine(hdc, xpDest, ypDest, dxpBlt, dypBlt, colAuto);
-		return;
+		return 0;
 		}
 
 /* select pattern bitmap into an appropriate memory DC */
@@ -2225,13 +2225,13 @@ int		emk;
 			if (FSectRc(&rcw, &rcwClip,&rcw))
 				PatBltRc(hdc, &rcw, vsci.ropErase);
 			}
-		return;
+		return 0;
 	case emkSplat:
 		if (ypTop > 0)
 			rcw.ywTop--;
 		DrawPatternLine( hdc, rcw.xwLeft, rcw.ypTop, DxOfRc(&rcw),
 				ipatHorzGray, pltHorz );
-		return;
+		return 0;
 	case emkEndmark:
 		rcw.xwRight = max( rcw.xwLeft + vsci.dxpScrlBar,
 				pwwd->xwLimScroll );
@@ -2376,7 +2376,7 @@ int	*pdysMax;
 		dSty = min(dlMax / 4, dSty);
 		*pdysMin = vsci.dysMinAveLine * dSty;
 		*pdysMax = vsci.dysMacAveLine * dSty;
-		return;
+		return 0;
 		}
 	else  if (cScroll < (dlMax * 3) / 4)
 		{
@@ -2537,7 +2537,7 @@ totally covered by ribbon, status line, and desktop anyway. (cc) */
 		/* If we are in the process of shutting down, we DONT want to repaint,
 		but we DO want to erase the bkgrnd and validate the border */
 		PatBltRc( PwwdWw(ww)->hdc, &rcInval, vsci.ropErase );
-		return;
+		return 0;
 		}
 
 	/*  WINDOWS BUG: ValidateRect does not work for Iconic apps in Win 2.xx */
@@ -2546,14 +2546,14 @@ totally covered by ribbon, status line, and desktop anyway. (cc) */
 		PAINTSTRUCT ps;
 		BeginPaint(PwwdWw(ww)->hwnd, (LPPAINTSTRUCT) &ps);
 		EndPaint(PwwdWw(ww)->hwnd, (LPPAINTSTRUCT) &ps);
-		return;
+		return 0;
 		}
 
 	if (FWindowHidden(ww))
 		{
 		ValidateRect( PwwdWw(ww)->hwnd, (LPRECT) NULL );
 		/* cheaper than calling BeginPaint and EndPaint */
-		return;
+		return 0;
 		}
 
 	psel = PselActive();
@@ -2715,7 +2715,7 @@ int flm;
 	Debug(vdbs.fShakeHeap ? ShakeHeap() : 0);
 
 	if (flm == vflm)
-		return;
+		return 0;
 
 		{{ /* !NATIVE - SetFlm */
 		Assert( !(flm != flmIdle && vidf.fDead) ); /* For efficiency, shouldn't call SetFlm while exiting */
@@ -2812,7 +2812,7 @@ LDisplayCommon:
 			if (vmerr.fPrintEmerg)
 				{
 				Assert( vpri.hdc == NULL );
-				return;
+			return 0;
 				}
 
 /* preserve screen connection, if any, by saving it in vftiDxt; make use of
@@ -2878,7 +2878,7 @@ int fticm; /* Fti Connection Mode */
 	ppfti = (fPrinter ? &vpri.pfti : &vsci.pfti );
 	if (*ppfti == pfti && !(fPrinter && (vpri.hdc == NULL ||
 			(uns)fIC < (uns)vpri.fIC)))
-		return;
+		return 0;
 /* following assert means: if the requested device was not already
 	connected to pfti, then no device should be connected to pfti.
 	The case should have been taken care of by the higher level procs.
@@ -3086,7 +3086,8 @@ struct BMI *pbmi;
 				{
 				UnlogGdiHandle(pbmi->hbm, -1);
 				DeleteObject( pbmi->hbm );
-				pbmi->dxp = pbmi->dyp = pbmi->hbm = 0;
+				pbmi->hbm = 0;
+				pbmi->dxp = pbmi->dyp = 0;
 				}
 #ifdef BRYANL
 			else

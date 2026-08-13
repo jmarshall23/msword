@@ -207,14 +207,17 @@ accesses compile without rewriting `props.h`. The first `cmdwnd.c` window-tracki
 surface, `CursLeftRight`, the clipboard/metafile shim batch, and the first
 command/CMD3 legacy return cleanup now compile through the previous `CLIPBORD.C`,
 recorder-adapter, command, and edit-picture errors. The next filtered
-`opus_word1_ui_test` build now advances through the `CLIPBRD2.C` DIB/metafile
-surface, including the bitmap typedef guard, clipboard/global-memory pointer returns,
-Win16 DIB/metafile constants, and the local dynamic GDI call declarations. The next
-blockers are the remaining display lvalue-cast and bare-return cleanup in `disp1.c`,
-legacy return cleanup in `compare.c`, `EDIT.C`, `dialog1.c`, and `dialog2.c`,
-pointer-return/prototype cleanup in `create.c`, and the next dialog edit/region shim
-surface (`EM_GETSEL`, `EM_GETLINECOUNT`, `EM_REPLACESEL`, `EM_GETHANDLE`,
-`WM_CTLCOLOREDIT`, region/window creation pointer returns).
+`opus_word1_ui_test` build now advances through the display/create/edit dialog
+frontier, including the remaining `disp1.c` lvalue-cast resets, legacy early returns
+in display/edit/create/compare/dialog code, signed SDM parser range declarations, and
+the edit-control/region shim surface (`EM_GETSEL`, `EM_GETLINECOUNT`,
+`EM_REPLACESEL`, `EM_GETHANDLE`, `WM_CTLCOLOREDIT`, `GetParent`, `CreateRectRgn`).
+The next blockers are now spread across later dialog/catalog/search tabs work:
+`tabs.c` lvalue-cast, pointer-return, and legacy return cleanup; `dlgrec.c`
+recorder callback adapters plus `WS_MAXIMIZE`/`SC_ARRANGE`; legacy return cleanup in
+`dlglook1.c`, `dlgmisc.c`, `dlgdoc.c`, `replace.c`, `search.c`, `catalog.c`, and
+`edmacro.c`; and the next pointer-return/prototype fixes in `search.c`, `catalog.c`,
+`dlgmisc.c`, and `edmacro.c`.
 
 Build the first pass mechanically:
 

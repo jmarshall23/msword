@@ -768,6 +768,13 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef CBM_INIT
 #define CBM_INIT 0x04
 #endif
+#ifndef RGB
+#define RGB(r, g, b) \
+    ((DWORD)(((BYTE)(r) | ((WORD)(g) << 8)) | (((DWORD)(BYTE)(b)) << 16)))
+#endif
+#ifndef ASPECT_FILTERING
+#define ASPECT_FILTERING 0x00000001
+#endif
 #ifndef META_SETBKCOLOR
 #define META_SETBKCOLOR 0x0201
 #endif
@@ -1122,6 +1129,18 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef EM_SETSEL
 #define EM_SETSEL 0x00b1
 #endif
+#ifndef EM_GETSEL
+#define EM_GETSEL 0x00b0
+#endif
+#ifndef EM_GETLINECOUNT
+#define EM_GETLINECOUNT 0x00ba
+#endif
+#ifndef EM_GETHANDLE
+#define EM_GETHANDLE 0x00bd
+#endif
+#ifndef EM_REPLACESEL
+#define EM_REPLACESEL 0x00c2
+#endif
 #ifndef CB_ADDSTRING
 #define CB_ADDSTRING 0x0143
 #endif
@@ -1248,6 +1267,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef WM_CLEAR
 #define WM_CLEAR 0x0303
+#endif
+#ifndef WM_CTLCOLOREDIT
+#define WM_CTLCOLOREDIT 0x0133
 #endif
 #ifndef EN_ERRSPACE
 #define EN_ERRSPACE 0x0500
@@ -1482,11 +1504,14 @@ HWND SetFocus(HWND window);
 HWND SetCapture(HWND window);
 BOOL ReleaseCapture(void);
 HWND GetWindow(HWND window, UINT command);
+HWND GetParent(HWND window);
 int GetSystemMetrics(int index);
 BOOL SetWindowPos(HWND window, HWND insert_after, int x, int y, int cx, int cy,
                   UINT flags);
 LONG_PTR GetWindowLongPtrA(HWND window, int index);
 LONG_PTR SetWindowLongPtrA(HWND window, int index, LONG_PTR new_long);
+LONG GetWindowLongA(HWND window, int index);
+LONG SetWindowLongA(HWND window, int index, LONG new_long);
 LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,
                        LPARAM lparam);
 BOOL DestroyWindow(HWND window);
@@ -1512,6 +1537,7 @@ HBITMAP CreateBitmapIndirect(const BITMAP* bitmap);
 HBITMAP CreateBitmap(int width, int height, UINT planes, UINT bits_per_pixel,
                      LPCVOID bits);
 HDC CreateCompatibleDC(HDC device_context);
+HRGN CreateRectRgn(int left, int top, int right, int bottom);
 int GetObjectA(HANDLE object, int buffer_size, LPVOID object_data);
 LONG GetBitmapBits(HBITMAP bitmap, LONG count, LPVOID bits);
 DWORD GetBitmapDimension(HBITMAP bitmap);
@@ -1571,6 +1597,12 @@ SIZE_T GlobalSize(HANDLE memory);
 #endif
 #ifndef GetObject
 #define GetObject GetObjectA
+#endif
+#ifndef GetWindowLong
+#define GetWindowLong GetWindowLongA
+#endif
+#ifndef SetWindowLong
+#define SetWindowLong SetWindowLongA
 #endif
 #ifndef GetNextWindow
 #define GetNextWindow GetWindow

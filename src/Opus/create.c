@@ -1660,7 +1660,10 @@ int     cb;
 		FreeHplc(hplc);
 		return hNil;
 		}
+	{
+	extern struct PLC **ReadIntoExtPlc();
 	ReadIntoExtPlc(hplc, fn, fcFirst, cbTotal);
+	}
 	(*hplc)->iMac = iMax;
 	(*hplc)->icpAdjust = iMax+1;
 	return(hplc);
@@ -1668,7 +1671,7 @@ int     cb;
 
 
 /*  %%Function:ReadIntoExtPlc %%Owner:peterj  */
-ReadIntoExtPlc(hplc, fn, fcFirst, cbTotal)
+struct PLC **ReadIntoExtPlc(hplc, fn, fcFirst, cbTotal)
 struct PLC **hplc;
 int fn;
 FC fcFirst;
@@ -1768,7 +1771,7 @@ int	cbExtra;
 /* given a prm return a pointer to the list of sprm (pgrpprl) and return
 	the length of the grpprl */
 /* duplicate version local to this module for swap tuning purposes */
-PprlPrmFS(prm, pcb, grpprl)
+char *PprlPrmFS(prm, pcb, grpprl)
 struct PRM prm;
 int *pcb;
 char *grpprl; /* user provided buffer for unloading sprm from piece table */
@@ -1822,12 +1825,14 @@ int doc;
 	struct SEP sepStandard;
 	char grpprl[2];
 	char grpprlSep[cbMaxGrpprl];
+	struct PRM prmT;
 
 /* copy any section sprms applied to last piece of document to grpprlSep*/
 	pdod = PdodDoc(doc);
 	ipcdMac = IMacPlc(hplcpcd = pdod->hplcpcd);
 	GetPlc(hplcpcd, ipcdMac - 1, &pcd);
-	pgrpprl = PprlPrmFS(pcd.prm, &cb, grpprl);
+	prmT.prm = pcd.prm;
+	pgrpprl = PprlPrmFS(prmT, &cb, grpprl);
 	pchSep = grpprlSep;
 	while (cb > 0)
 		{
@@ -1866,8 +1871,6 @@ int doc;
 		}
 	return fTrue;
 }
-
-
 
 
 

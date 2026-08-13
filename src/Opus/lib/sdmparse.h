@@ -50,9 +50,9 @@ typedef int DPV;
 
 extern DPV DpvParseFdxa(int *, TMC, char *, int, int, DPV, int, int, int);
 extern DPV DpvPdxaSzTmcWLow(int *, char *, TMC, WORD);
-extern WORD WParseIntRange(TMM, char *, void **, WORD, TMC, WORD, WORD);
+extern WORD WParseIntRange(TMM, char *, void **, WORD, TMC, int, int);
 extern WORD WParsePosIntNZ(TMM, char *, void **, WORD, TMC, WORD);
 extern WORD WParseUnit(TMM, char *, void **, WORD, TMC, WORD);
 extern WORD WParseAnyInt(TMM, char *, void **, WORD, TMC, WORD);
 extern WORD WParseAutoUnit(TMM, char *, void **, WORD, TMC, WORD);
-extern WORD WParseOptRange(TMM, char *, void **, WORD, TMC, WORD, WORD, WORD);
+extern WORD WParseOptRange(TMM, char *, void **, WORD, TMC, WORD, int, int);

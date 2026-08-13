@@ -57,7 +57,6 @@ extern struct PREF vpref;
 extern int         wwCur;
 extern BOOL fElActive;
 
-
 /* For dialogs where the grayness of a button depends on more than one
 	edit control not being blank */
 /*  %%Function:  GrayRgtmcOnBlank  %%Owner:  bobz       */
@@ -1662,5 +1661,3 @@ int doc;
 			docDot == docGlobalDot ||
 			PdodDoc(docDot)->fLockForEdit);
 }
-
-

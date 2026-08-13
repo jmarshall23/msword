@@ -116,7 +116,7 @@ RangeError(wLow, wHigh, fZa, ut)
 int wLow, wHigh, ut;
 BOOL fZa;
 {
-	int rgw [2];
+	LONG_PTR rgw [2];
 	char szLow [ichMaxNum + 1];  /* leave room for null term */
 	char szHigh [ichMaxNum + 1];
 	char * pch;
@@ -148,8 +148,8 @@ BOOL fZa;
 		Assert (cch <= ichMaxNum + 1);
 
 		vpref.ut = utT;
-		rgw[0] = szLow;
-		rgw[1] = szHigh;
+		rgw[0] = (LONG_PTR)szLow;
+		rgw[1] = (LONG_PTR)szHigh;
 		}
 	else
 		{
@@ -1040,7 +1040,7 @@ BOOL fWordSel;
 	if (!fWordSel)
 		{
 		*pichMac = *pichMic;
-		return;
+		return 0;
 		}
 	pchText = PchFromHsz(pfedt->hszText);
 	pchHit = pchText + *pichMic;
@@ -1112,7 +1112,7 @@ int dx, dy;
 
 	Debug(CheckFedt(hfedt));
 	if (dx == 0 && dy == 0)
-		return;
+		return 0;
 	/* BUG!! - we really should use scrolling to do this */
 	OffsetRect( (LPRECT *)&pfedt->rcFmt, dx, dy );
 	if (pfedt->fSingleLine)
@@ -1487,5 +1487,3 @@ BOOL fBreak;
 		}
 	return(pch);
 }}
-
-

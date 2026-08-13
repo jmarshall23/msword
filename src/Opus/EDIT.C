@@ -1700,7 +1700,7 @@ when entering these loops docHdrDisp is initially docHdr.
 					if (PwwdWw(ww)->fHdr &&
 							PdrGalley(PwwdWw(ww))->doc == docHdrDisp)
 						{
-						PostTn(pxbc, tntCloseHdrWw, ww, 0);
+						PostTn(pxbc, tntCloseHdrWw, (void **)(long)ww, 0);
 						}
 				}
 			}
@@ -1801,7 +1801,7 @@ be deleted if necessary.
 						(cpLim = caSect.cpFirst) <= pca->cpFirst)
 					{
 					vdocHdrEdit = doc;
-					return; /* no hdd needs to be deleted, they are being
+					return 0; /* no hdd needs to be deleted, they are being
 					refered to by the new head of link */
 					}
 				}
@@ -1870,13 +1870,13 @@ struct CA *pcaSrc, *pcaDest;
 	hplcsed = PdodDoc(pcaSrc->doc)->hplcsed;
 	if ((csed = IInPlc(hplcsed, pcaSrc->cpLim)-IInPlc(hplcsed, pcaSrc->cpFirst))
 			<= 0)
-		return;
+		return 0;
 
 	docHdrDest = PdodDoc(docDest)->docHdr;
 	if (docHdrSrc == docNil)
 		{
 		if (docHdrDest == docNil || fPlan)
-			return;
+			return 0;
 		goto LCheckSects;
 		}
 
@@ -2046,7 +2046,7 @@ CP cp;
 		Assert(fPlan);
 LAbort:
 		PostTn(pxbc, tntAbort, NULL, 0);
-		return;
+		return 0;
 		}
 
 /* Now just add this sprm to the piece. */
@@ -2195,7 +2195,7 @@ BOOL fAll; /* if true an ins pt bkmk at cpFirst will be deleted */
 	Assert (!pdod->fShort);
 
 	if (hplcbkf == hNil || hplcbkl == hNil || hsttb == hNil)
-		return; /* no bookmarks to delete */
+		return 0; /* no bookmarks to delete */
 
 	if (fPlan)
 		{
@@ -2239,7 +2239,7 @@ BOOL fAll; /* if true an ins pt bkmk at cpFirst will be deleted */
 		PostTn(pxbc, tntHsttb, hsttb, -cbSttbDel);
 		PostTn(pxbc, tntHplc, hplcbkf, -cBkmkDel);
 		PostTn(pxbc, tntHplc, hplcbkl, -cBkmkDel);
-		PostTn(pxbc, tntDelBkmk, pca->doc, 0);
+		PostTn(pxbc, tntDelBkmk, (void **)(long)pca->doc, 0);
 		}
 }
 
@@ -2301,13 +2301,13 @@ struct CA *pcaSrc, *pcaDest;
 	Assert (caT.cpLim > caT.cpFirst);
 
 	if (caT.cpFirst >= CpMacDoc(caT.doc))
-		return;
+		return 0;
 
 	if (caT.cpLim > CpMacDoc(caT.doc))
 		caT.cpLim = CpMacDoc(caT.doc);
 
 	if (hplcbkf == hNil || hplcbkl == hNil || hsttb == hNil)
-		return; /* no bookmarks to copy */
+		return 0; /* no bookmarks to copy */
 
 	/* adjustment for starting cp in the different documents */
 	dcp = pcaDest->cpFirst - caT.cpFirst;
@@ -2315,7 +2315,7 @@ struct CA *pcaSrc, *pcaDest;
 	/* hplcbkf and hplcbkl are related plcs. they should have the same iMac */
 	Assert(IMacPlc(hplcbkf) == IMacPlc(hplcbkl));
 	if ((iMac = IMacPlc(hplcbkf)) == 0)
-		return;
+		return 0;
 
 	if (fPlan)
 		{
@@ -2332,7 +2332,7 @@ struct CA *pcaSrc, *pcaDest;
 				ibklLim++;
 			}
 		else
-			return; /* none fully enclosed */
+			return 0; /* none fully enclosed */
 
 		/*  ibkfLim is first ibkf st cp >= caT.cpLim */
 		if (CpPlc(hplcbkf, 0) < caT.cpLim)
@@ -2344,7 +2344,7 @@ struct CA *pcaSrc, *pcaDest;
 				ibkfLim++;
 			}
 		else
-			return; /* none fully enclosed */
+			return 0; /* none fully enclosed */
 
 		/*  ibkf is first ibkf st cp >= caT.cpFirst */
 		if (CpPlc(hplcbkf, 0) <= caT.cpFirst)
@@ -2381,7 +2381,7 @@ struct CA *pcaSrc, *pcaDest;
 					if (!FAssureBkmksForDoc(docDest))
 						{
 						PostTn(pxbc, tntAbort, NULL, 0);
-						return;
+						return 0;
 						}
 					else
 						{
@@ -2664,7 +2664,7 @@ int *pfUndoCancel;
 			if (!FSetUndoB1(ucmChangeBkmk, uccFormat, &caUndo))
 				{
 				*pfUndoCancel = fTrue;
-				return;
+				return 0;
 				}
 			}
 		}
