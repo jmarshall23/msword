@@ -532,22 +532,22 @@ void configure_word95_menus(HWND window) {
         if (GetMenuState(window_menu, imiNewWnd, MF_BYCOMMAND) ==
             static_cast<UINT>(-1)) {
             AppendMenuW(window_menu, MF_STRING, imiNewWnd,
-                        L"&New Window");
+                        OPUSW("&New Window"));
         }
         if (GetMenuState(window_menu, bcmArrangeWnd, MF_BYCOMMAND) ==
             static_cast<UINT>(-1)) {
             AppendMenuW(window_menu, MF_STRING, bcmArrangeWnd,
-                        L"&Arrange All");
+                        OPUSW("&Arrange All"));
         }
         if (GetMenuState(window_menu, bcmZoomWnd, MF_BYCOMMAND) ==
             static_cast<UINT>(-1)) {
             AppendMenuW(window_menu, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(window_menu, MF_STRING, bcmZoomWnd,
-                        L"Ma&ximize Document");
+                        OPUSW("Ma&ximize Document"));
             AppendMenuW(window_menu, MF_STRING, bcmRestoreWnd,
-                        L"&Restore Document");
+                        OPUSW("&Restore Document"));
             AppendMenuW(window_menu, MF_STRING, bcmCloseWnd,
-                        L"&Close Document");
+                        OPUSW("&Close Document"));
         }
     }
 }
