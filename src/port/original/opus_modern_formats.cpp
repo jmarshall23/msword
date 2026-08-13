@@ -6,7 +6,6 @@
 #include <wrl/client.h>
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <cctype>
 #include <charconv>
@@ -259,14 +258,21 @@ bool safe_file_path_syntax(std::wstring_view path) {
     return true;
 }
 
+std::vector<WCHAR> native_file_path(std::wstring_view path) {
+    std::vector<WCHAR> result;
+    result.reserve(path.size() + 1);
+    for (const wchar_t code_unit : path) {
+        result.push_back(
+            static_cast<WCHAR>(static_cast<std::uint16_t>(code_unit)));
+    }
+    result.push_back(WCHAR{});
+    return result;
+}
+
 bool regular_file_within_limit(const std::wstring& path,
                                const std::size_t maximum_size) {
     if (!safe_file_path_syntax(path)) return false;
-    std::array<WCHAR, 32768> native_path{};
-    for (std::size_t index = 0; index < path.size(); ++index) {
-        native_path[index] =
-            static_cast<WCHAR>(static_cast<std::uint16_t>(path[index]));
-    }
+    const std::vector<WCHAR> native_path = native_file_path(path);
     WIN32_FILE_ATTRIBUTE_DATA attributes{};
     if (!GetFileAttributesExW(native_path.data(), GetFileExInfoStandard,
                               &attributes) ||
@@ -1333,7 +1339,9 @@ bool reserve_sibling_temporary_file(const std::wstring& path,
         temporary = path + L".word1tmp-" +
             std::to_wstring(GetCurrentProcessId()) + L"-" +
             std::to_wstring(++sequence);
-        file = CreateFileW(temporary.c_str(), GENERIC_WRITE, 0, nullptr,
+        const std::vector<WCHAR> native_temporary =
+            native_file_path(temporary);
+        file = CreateFileW(native_temporary.data(), GENERIC_WRITE, 0, nullptr,
                            CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (file != INVALID_HANDLE_VALUE) return true;
         if (GetLastError() != ERROR_FILE_EXISTS &&
@@ -1344,24 +1352,26 @@ bool reserve_sibling_temporary_file(const std::wstring& path,
 
 bool commit_sibling_temporary_file(const std::wstring& temporary,
                                    const std::wstring& path) {
-    const DWORD attributes = GetFileAttributesW(path.c_str());
+    const std::vector<WCHAR> native_temporary = native_file_path(temporary);
+    const std::vector<WCHAR> native_path = native_file_path(path);
+    const DWORD attributes = GetFileAttributesW(native_path.data());
     bool replaced = false;
     if (attributes != INVALID_FILE_ATTRIBUTES &&
         (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-        replaced = ReplaceFileW(path.c_str(), temporary.c_str(), nullptr,
-                                REPLACEFILE_WRITE_THROUGH, nullptr, nullptr) !=
-                   FALSE;
+        replaced = ReplaceFileW(native_path.data(), native_temporary.data(),
+                                nullptr, REPLACEFILE_WRITE_THROUGH, nullptr,
+                                nullptr) != FALSE;
         if (!replaced) {
             replaced = MoveFileExW(
-                temporary.c_str(), path.c_str(),
+                native_temporary.data(), native_path.data(),
                 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE;
         }
     } else if (attributes == INVALID_FILE_ATTRIBUTES &&
                GetLastError() == ERROR_FILE_NOT_FOUND) {
-        replaced = MoveFileExW(temporary.c_str(), path.c_str(),
+        replaced = MoveFileExW(native_temporary.data(), native_path.data(),
                                MOVEFILE_WRITE_THROUGH) != FALSE;
     }
-    if (!replaced) DeleteFileW(temporary.c_str());
+    if (!replaced) DeleteFileW(native_temporary.data());
     return replaced;
 }
 
@@ -1387,7 +1397,9 @@ bool write_bytes(const std::wstring& path, std::string_view bytes) {
     if (ok) ok = FlushFileBuffers(file) != FALSE;
     CloseHandle(file);
     if (!ok) {
-        DeleteFileW(temporary.c_str());
+        const std::vector<WCHAR> native_temporary =
+            native_file_path(temporary);
+        DeleteFileW(native_temporary.data());
         return false;
     }
     return commit_sibling_temporary_file(temporary, path);
@@ -1396,7 +1408,8 @@ bool write_bytes(const std::wstring& path, std::string_view bytes) {
 bool read_bytes(const std::wstring& path, std::string& bytes,
                 const std::size_t maximum_size = kMaxRtfBytes) {
     if (!regular_file_within_limit(path, maximum_size)) return false;
-    HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ,
+    const std::vector<WCHAR> native_path = native_file_path(path);
+    HANDLE file = CreateFileW(native_path.data(), GENERIC_READ, FILE_SHARE_READ,
                               nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                               nullptr);
     if (file == INVALID_HANDLE_VALUE) return false;
