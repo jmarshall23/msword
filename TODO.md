@@ -100,10 +100,8 @@ CI excludes that label until item 14 gives them a headless path.
 Do: open a pull request and confirm the Windows, macOS and Linux jobs are green.
 
 Status: PR #12 is open at `https://github.com/jmarshall23/msword/pull/12` from
-`jserv:dev` at `aa2e18e`. The fork run
-`https://github.com/jserv/msword/actions/runs/31687286026` is green for Windows,
-macOS and Linux at that head SHA, but the upstream PR check rollup is empty because the
-upstream default branch has no Actions workflow yet.
+`jserv:dev`. Fork CI is green for Windows, macOS and Linux, but the upstream PR check
+rollup is empty because the upstream default branch has no Actions workflow yet.
 
 Done when: the three jobs are green on a pull request.
 
