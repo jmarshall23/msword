@@ -34,7 +34,6 @@ EndPaint
 EnumChildWindows
 EnumThreadWindows
 EnumWindows
-Escape
 ExcludeClipRect
 FillRect
 FindWindowA

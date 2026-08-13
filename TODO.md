@@ -160,14 +160,8 @@ in `wordtech/format.h`, so do not design the cache fill path from the dead Mac l
 The four startup font names also need an explicit substitution table before pagination
 can be trusted: `Tms Rmn`, `Symbol`, `Helv`, `Courier`.
 
-Printing (`Escape` at 26 sites, `StartDoc`/`EndDoc`/`EndPage`) is stubbed to failure.
-
-Split item 13 into executable subtasks:
-
-- 13d Printing stubs: `Escape`, `StartDoc`, `EndDoc`, `EndPage` fail predictably with
-  `TRACE`.
-
-Each subtask gets one assert or golden test before moving to the next.
+Printing through Word's live `Escape` path now fails at `STARTDOC`; the modern
+`StartDoc`/`EndDoc`/page APIs have no current call sites.
 
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup

@@ -383,3 +383,34 @@ surface only: `CreateWindowExA`, `RegisterClassExA`, `GetDC`, `ReleaseDC`,
 Reviewed by agy and claude: agy confirmed the minimal text-metrics surface and
 font substitution table; claude caught the hidden `GetDeviceCaps` and
 `GetCharWidthA` prerequisites and the reentrant `EnumFontsA` callback trap.
+
+## Add GDI print escape failure
+
+The non-Windows gdi32 shim now owns Word's live print surface: legacy
+`Escape`. The shim reports unsupported escapes through `OutputDebugStringA`,
+returns `SP_ERROR` for `STARTDOC`, returns zero for unsupported capability and
+driver-control escapes, and clears the `NEXTBAND` output rectangle before
+returning zero so a stale band cannot spin the print loop. The modern
+`StartDoc`/`EndDoc`/page APIs were left out because this tree does not call
+them.
+
+`opus_win32_print_test` covers the `STARTDOC` failure, unsupported
+`QUERYESCSUPPORT`, unchanged page-size output, zeroed `NEXTBAND`, and harmless
+zero returns for the abort/end/draft controls. The Win32 coverage baseline no
+longer lists `Escape`.
+
+Validated with `cmake -S src -B build-item13d -DCMAKE_C_FLAGS=-std=gnu89`,
+`cmake --build build-item13d --target opus_win32_print_test
+opus_original_engine opus_x64_runtime --parallel 8`, and `ctest --test-dir
+build-item13d -R
+'strtbl|sttb|plc|sdm_cab|command|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|win32_coverage'
+--output-on-failure`, which passed 12/12.
+
+`GETPHYSPAGESIZE` returning zero still leaves a printer-path landmine in
+`SCREEN2.C`: that path can read an uninitialized page point once printer DC
+creation exists. It is currently unreachable because printer DC creation is not
+implemented.
+
+Reviewed by agy and claude: agy outlined the predictable failure contract;
+claude narrowed the implementation to `Escape`, preserved its legacy prototype,
+and caught the `NEXTBAND` stale-output trap.

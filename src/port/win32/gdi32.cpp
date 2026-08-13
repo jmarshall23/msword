@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <optional>
 #include <mutex>
@@ -12,6 +13,9 @@ namespace {
 constexpr DWORD kGdiMagic = 0x47444932u;
 constexpr int kLogicalPixelsPerInch = 96;
 constexpr int kDesignUnitsPerEm = 1000;
+constexpr int kGetSetPaperBins = 29;
+constexpr int kEnumPaperBins = 31;
+constexpr int kSetCharset = 772;
 
 enum class GdiKind {
     Dc,
@@ -456,6 +460,14 @@ bool source_rop(DWORD rop) {
         default:
             return false;
     }
+}
+
+void trace_escape(int escape, int count) {
+    char message[96] = {};
+    std::snprintf(message, sizeof(message),
+                  "TRACE: Escape unsupported escape=%d count=%d\n", escape,
+                  count);
+    OutputDebugStringA(message);
 }
 
 }  // namespace
@@ -990,6 +1002,34 @@ int GetDeviceCaps(HDC device_context, int index) {
             return RC_BITBLT | RC_SCALING;
         case TEXTCAPS:
             return TC_SA_CONTIN | TC_RA_ABLE | TC_VA_ABLE;
+        default:
+            return 0;
+    }
+}
+
+int Escape(HDC, int escape, int count, LPSTR, LPSTR output) {
+    trace_escape(escape, count);
+    switch (escape) {
+        case STARTDOC:
+            return SP_ERROR;
+        case NEXTBAND:
+            if (output != nullptr) std::memset(output, 0, sizeof(RECT));
+            return 0;
+        case QUERYESCSUPPORT:
+        case GETPHYSPAGESIZE:
+        case GETPRINTINGOFFSET:
+        case GETSCALINGFACTOR:
+        case kSetCharset:
+        case kGetSetPaperBins:
+        case kEnumPaperBins:
+        case SETABORTPROC:
+        case ENDDOC:
+        case ABORTDOC:
+        case DRAFTMODE:
+        case BANDINFO:
+        case PASSTHROUGH:
+        case DRAWPATTERNRECT:
+            return 0;
         default:
             return 0;
     }
