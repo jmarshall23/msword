@@ -307,13 +307,28 @@ int main() {
         return 39;
     }
 
+    if (SetTimer(window, 77, 1, nullptr) != 77) return 40;
+    if (!WaitMessage() ||
+        !PeekMessageA(&message, window, WM_TIMER, WM_TIMER, PM_NOREMOVE) ||
+        message.hwnd != window || message.wParam != 77 ||
+        !GetMessageA(&message, window, WM_TIMER, WM_TIMER) ||
+        message.message != WM_TIMER || message.wParam != 77 ||
+        !KillTimer(window, 77)) {
+        return 41;
+    }
+    Sleep(2);
+    if (PeekMessageA(&message, window, WM_TIMER, WM_TIMER, PM_REMOVE) ||
+        KillTimer(window, 77)) {
+        return 42;
+    }
+
     if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
         !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 40;
+        return 43;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 41;
+    if (second == nullptr || second == window) return 44;
     return 0;
 }

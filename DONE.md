@@ -724,3 +724,36 @@ The exact reviewer commands to agy and claude were attempted before
 implementation, but both stalled without output and were stopped. This slice
 follows agy's prior review that identified the blocking pump seam, scripted
 input source, and quit-flag model as the next user32 step.
+
+## Add user32 timer queue
+
+The non-Windows user32 shim now implements `SetTimer` and `KillTimer` with a
+process-local periodic timer list. The pump posts one due `WM_TIMER` at a time,
+does not duplicate a timer message already queued for the same window/id, and
+removes timers when their window is destroyed. `GetMessageA` and `WaitMessage`
+can now sleep until the next timer deadline before preserving the existing
+fail-fast abort for a missing backend.
+
+`opus_win32_user32_test` covers timer creation, blocking `WaitMessage` delivery,
+`PM_NOREMOVE` observation, `GetMessageA` removal, cancellation, and the
+post-cancel no-delivery path. The Win32 coverage baseline no longer lists
+`SetTimer` or `KillTimer`.
+
+Validated with `cmake --build build-item14j --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14j -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14j --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14j -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+The exact reviewer commands to agy and claude were attempted before
+implementation, but both stalled without output and were stopped. This slice
+follows agy's prior warning that missing `WM_TIMER` delivery belongs in the
+user32 queue work because it can leave applications blocked in `GetMessage`.

@@ -57,7 +57,6 @@ IsClipboardFormatAvailable
 IsIconic
 IsMenu
 IsZoomed
-KillTimer
 LineTo
 MessageBeep
 ModifyMenuA
@@ -81,7 +80,6 @@ SetPropW
 SetScrollPos
 SetScrollRange
 SetTextColor
-SetTimer
 SetViewportExtEx
 SetViewportOrgEx
 SetWindowExtEx

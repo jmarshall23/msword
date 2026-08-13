@@ -37,12 +37,23 @@ struct WindowObject {
     std::vector<unsigned char> extra;
 };
 
+struct TimerObject {
+    HWND window = nullptr;
+    UINT_PTR id = 0;
+    UINT elapsed = 0;
+    ULONGLONG due = 0;
+    LPVOID callback = nullptr;
+    bool queued = false;
+};
+
 std::vector<RegisteredClass> g_classes;
 std::vector<WindowObject*> g_windows;
 std::deque<MSG> g_messages;
 std::deque<MSG> g_scripted_messages;
+std::vector<TimerObject> g_timers;
 SHORT g_key_state[256]{};
 ATOM g_next_atom = 1;
+UINT_PTR g_next_timer_id = 1;
 HWND g_active_window = nullptr;
 HWND g_focus_window = nullptr;
 HWND g_capture_window = nullptr;
@@ -152,13 +163,26 @@ bool message_matches(const MSG& message, HWND window, UINT filter_min,
     return true;
 }
 
+void clear_timer_queued(const MSG& message) {
+    if (message.message != WM_TIMER) return;
+    for (auto& timer : g_timers) {
+        if (timer.window == message.hwnd && timer.id == message.wParam) {
+            timer.queued = false;
+            return;
+        }
+    }
+}
+
 BOOL queue_take(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
                 UINT remove_message) {
     if (message == nullptr) return FALSE;
     for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
         if (!message_matches(*it, window, filter_min, filter_max)) continue;
         *message = *it;
-        if ((remove_message & PM_REMOVE) != 0) g_messages.erase(it);
+        if ((remove_message & PM_REMOVE) != 0) {
+            clear_timer_queued(*it);
+            g_messages.erase(it);
+        }
         return TRUE;
     }
     if (g_quit_posted) {
@@ -179,6 +203,25 @@ void queue_back(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     g_messages.push_back({window, message, wparam, lparam, 0, {0, 0}});
 }
 
+void remove_timer_messages(HWND window, UINT_PTR id) {
+    for (auto it = g_messages.begin(); it != g_messages.end();) {
+        if (it->hwnd == window && it->message == WM_TIMER && it->wParam == id) {
+            it = g_messages.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void remove_window_timers(HWND window) {
+    g_timers.erase(
+        std::remove_if(g_timers.begin(), g_timers.end(),
+                       [window](const TimerObject& timer) {
+                           return timer.window == window;
+                       }),
+        g_timers.end());
+}
+
 void update_key_state(UINT message, WPARAM wparam) {
     if (wparam > 255) return;
     auto& state = g_key_state[wparam];
@@ -194,8 +237,31 @@ void update_key_state(UINT message, WPARAM wparam) {
     }
 }
 
+bool pump_timer_once() {
+    const ULONGLONG now = GetTickCount64();
+    for (auto& timer : g_timers) {
+        if (timer.queued || timer.due > now) continue;
+        queue_back(timer.window, WM_TIMER, timer.id,
+                   reinterpret_cast<LPARAM>(timer.callback));
+        timer.queued = true;
+        timer.due = now + timer.elapsed;
+        return true;
+    }
+    return false;
+}
+
+bool next_timer_due(ULONGLONG* due) {
+    bool found = false;
+    for (const auto& timer : g_timers) {
+        if (timer.queued) continue;
+        if (!found || timer.due < *due) *due = timer.due;
+        found = true;
+    }
+    return found;
+}
+
 bool pump_once() {
-    if (g_scripted_messages.empty()) return false;
+    if (g_scripted_messages.empty()) return pump_timer_once();
     MSG message = g_scripted_messages.front();
     g_scripted_messages.pop_front();
     update_key_state(message.message, message.wParam);
@@ -221,6 +287,12 @@ UINT translated_char(WPARAM virtual_key) {
 
 void pump_block_until_message() {
     if (pump_once()) return;
+    ULONGLONG due = 0;
+    if (next_timer_due(&due)) {
+        const ULONGLONG now = GetTickCount64();
+        if (due > now) Sleep(static_cast<DWORD>(due - now));
+        if (pump_once()) return;
+    }
     OutputDebugStringA("user32 GetMessage/WaitMessage needs an event backend\n");
     std::abort();
 }
@@ -401,6 +473,7 @@ BOOL DestroyWindow(HWND window) {
     if (g_active_window == window) g_active_window = nullptr;
     if (g_focus_window == window) g_focus_window = nullptr;
     if (g_capture_window == window) g_capture_window = nullptr;
+    remove_window_timers(window);
     for (auto it = g_messages.begin(); it != g_messages.end();) {
         if (it->hwnd == window) {
             it = g_messages.erase(it);
@@ -1039,6 +1112,48 @@ BOOL PostMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 
 BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     return PostMessageA(window, message, wparam, lparam);
+}
+
+UINT_PTR SetTimer(HWND window, UINT_PTR event, UINT elapsed, LPVOID timer_func) {
+    if (window != nullptr && !IsWindow(window)) return 0;
+    UINT_PTR id = event;
+    if (id == 0) {
+        do {
+            id = g_next_timer_id++;
+            if (g_next_timer_id == 0) g_next_timer_id = 1;
+        } while (std::any_of(g_timers.begin(), g_timers.end(),
+                             [window, id](const TimerObject& timer) {
+                                 return timer.window == window &&
+                                        timer.id == id;
+                             }));
+    }
+    remove_timer_messages(window, id);
+    const auto interval = (std::max)(elapsed, 1u);
+    const ULONGLONG due = GetTickCount64() + interval;
+    for (auto& timer : g_timers) {
+        if (timer.window == window && timer.id == id) {
+            timer.elapsed = interval;
+            timer.due = due;
+            timer.callback = timer_func;
+            timer.queued = false;
+            return id;
+        }
+    }
+    g_timers.push_back({window, id, interval, due, timer_func, false});
+    return id;
+}
+
+BOOL KillTimer(HWND window, UINT_PTR event) {
+    const auto previous_size = g_timers.size();
+    g_timers.erase(
+        std::remove_if(g_timers.begin(), g_timers.end(),
+                       [window, event](const TimerObject& timer) {
+                           return timer.window == window && timer.id == event;
+                       }),
+        g_timers.end());
+    if (g_timers.size() == previous_size) return FALSE;
+    remove_timer_messages(window, event);
+    return TRUE;
 }
 
 VOID PostQuitMessage(int exit_code) {

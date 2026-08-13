@@ -295,6 +295,12 @@ existing queue, and `PostQuitMessage` is modeled as a quit flag so `PM_NOREMOVE`
 can observe it without consuming it. This is still not SDL input, timer
 delivery, or full mouse packing; those are the remaining event-source slices.
 
+Timer delivery is now in the same queue path: `SetTimer` and `KillTimer` keep
+process-local periodic timers, `GetMessageA` and `WaitMessage` can wait until
+the next timer deadline, and due timers enter the queue as `WM_TIMER` without
+duplicating an already queued timer message. SDL input and full mouse packing
+remain the event-source work before the headless keystroke gate.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so
