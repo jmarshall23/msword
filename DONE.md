@@ -1,5 +1,25 @@
 # DONE
 
+## Implement kernel32 shim tier
+
+`src/port/win32/kernel32.cpp` now provides the non-Windows kernel32 surface reached by
+the current non-UI tests: heap and global memory, local aliases, file/path operations,
+directory scanning, time, process/error stubs, SRW locks, command-line setup, and the
+small string helpers. `C:\...` paths map through `OPUS_C_DRIVE`, defaulting to the repo
+root, with backslash conversion and case-insensitive component retry.
+
+The `Global*` model keeps a registry from locked pointers back to their owning handles,
+returns the `GlobalHandle(ptr)` token in the high word for the live `HIWORD` caller,
+saturates `GlobalUnlock` at zero, and leaves freed metadata long enough to reject a
+double free. A focused `opus_win32_memory_test` covers zero-init, lock/write,
+`GlobalHandle(ptr)`, realloc zero extension, and double-free failure.
+
+The item-12 C tests now build on non-Windows without linking `user32`, with Apple using
+the existing dynamic-lookup pattern for unused static-runtime references. The coverage
+baseline was refreshed after the implemented kernel32 entries became reachable.
+
+Validated with `ctest --test-dir build-item12 -R 'strtbl|sttb|plc|sdm_cab|command|win32_memory|win32_coverage' --output-on-failure`.
+
 ## Make SDM controls state-owned again
 
 `opus_sdm_runtime.cpp` no longer creates Win32 child controls for SDM-owned buttons,

@@ -114,61 +114,9 @@ kept stable so citations elsewhere do not rot.
 
 ## Shim dependency order
 
-Execution order here is 12, 13, 14, 15b. Item 15 still finishes after item 14 because
+Execution order here is 13, 14, 15b. Item 15 still finishes after item 14 because
 SDM's own control drawing needs both the device context and the input loop.
 Numbering stays stable so citations do not rot.
-
-### 12. kernel32 tier, 84 entries, no SDL
-
-Memory (`GlobalAlloc`/`Lock`/`Unlock`/`ReAlloc`/`Free`/`Handle`/`Size`, the `Heap*`
-family, `LocalReAlloc`), files (`CreateFileA`, `OpenFile`, `WriteFile`,
-`FindFirstFileA`/`FindNextFileA`/`FindClose`, `GetFileAttributesA`, `GetFullPathNameA`,
-`GetTempPathA`, `MoveFileA`, `CopyFileA`, `DeleteFileA`, `CreateDirectoryA`,
-`RemoveDirectoryA`), time, and the error stubs.
-
-Path rule: map `C:\foo\bar` to `${OPUS_C_DRIVE}/foo/bar`, defaulting `OPUS_C_DRIVE` to
-the repo root. Convert `\` to `/`. On `ENOENT`, retry each path component with a
-case-insensitive directory scan. Reject other drive letters with `ERROR_PATH_NOT_FOUND`.
-macOS hides case mistakes; Linux and CI will not.
-
-The `Global*` family is the real work, not the file APIs: `GlobalUnlock` 99 sites,
-`GlobalFree` 70, `GlobalLock` 51 in `src/Opus` alone, and it must be written from
-scratch. An earlier draft claimed `opus_x64_heap.cpp` "already implements the
-double-indirect handle model, so it moves into the shim largely unchanged". It does not.
-That file implements Word's own `H*` family (`OpusHAllocateCb`, `OpusDerefH`,
-`OpusFChngSizeHCb`, declared `opus_x64_heap.h:9-22`) on top of `HeapAlloc`. It is a
-client of the shim's `Heap*`, not a provider of `Global*`, it contains no `Global*` code,
-and moving it inverts the dependency. Leave it where it is.
-
-Two Win16 behaviors the naive port gets wrong, both load-bearing here:
-
-- `GlobalLock` and `GlobalUnlock` are not balanced in this codebase, 51 against 99.
-  Win16 `GlobalUnlock` on a fixed or already-unlocked block is a no-op returning FALSE,
-  not an error. The lock count saturates at zero, never goes negative, and never frees.
-- `GlobalHandle` returned a packed DWORD with the handle in the high word, and
-  `ripaux.c:52` still does `HIWORD(GlobalHandle(ps))`. Return a bare pointer and that
-  site silently reads zero.
-
-Four entry points with live call sites that the earlier draft omitted: `GlobalCompact`
-(`elfile.c:196, 201`, `help.c:987, 996`, `wproc.c:2716`, where the result is divided, so
-returning 0 changes behavior), `GlobalWire` (`initwin.c:760`), `GlobalHandle`
-(`ripaux.c:52`), `GlobalSize`. Also state the clipboard rule: a handle passed to
-`SetClipboardData`, 14 sites in `src/Opus`, transfers ownership, and freeing it as well
-double-frees on `EmptyClipboard`.
-
-jphonorato's Qt memory contract is useful even though the Qt boundary is not. Keep a
-registry from locked pointer back to owning handle, because `GlobalHandle(ptr)` is live,
-and leave a freed marker long enough for tests to catch lock-after-free and double-free.
-Do not rewrite Word's own `HQ`/`HqAllocLcb` family into this layer; it already routes
-through `opus_x64_heap.h` and is a client of `Heap*`, not a Win16 `Global*` call.
-
-Done when: `ctest -R 'strtbl|sttb|plc|sdm_cab|command' --output-on-failure` is green on
-macOS. Note those are the only five of the seven non-UI tests reachable here:
-`opus_x64_runtime_test` links `gdi32` explicitly at `src/CMakeLists.txt:933` and belongs
-to item 13, and `word1_port_smoke_test` runs `WORD1 --self-test` (`:975`), which links
-the whole engine and belongs at the end of item 14. Add one assert-style memory test for
-`GlobalAlloc` -> `GlobalLock` -> write -> `GlobalHandle(ptr)` -> `GlobalUnlock` ->
-`GlobalFree`, plus a death/check-failure case for double-free.
 
 ### 13. gdi32 tier, 72 entries
 

@@ -91,6 +91,7 @@ typedef char OpusWcharMustBe16Bits[(sizeof(WCHAR) == 2) ? 1 : -1];
 #endif
 
 typedef void* HANDLE;
+typedef HANDLE HLOCAL;
 typedef HANDLE HINSTANCE;
 typedef HANDLE HMODULE;
 typedef HANDLE HWND;
@@ -2137,6 +2138,9 @@ typedef DWORD COLORREF;
 #ifndef GMEM_LOCKCOUNT
 #define GMEM_LOCKCOUNT 0x00FF
 #endif
+#ifndef GMEM_INVALID_HANDLE
+#define GMEM_INVALID_HANDLE 0x8000
+#endif
 #ifndef GHND
 #define GHND (GMEM_MOVEABLE | GMEM_ZEROINIT)
 #endif
@@ -2676,6 +2680,9 @@ typedef DWORD COLORREF;
 #ifndef ERROR_DISK_FULL
 #define ERROR_DISK_FULL 112
 #endif
+#ifndef ERROR_NOT_ENOUGH_MEMORY
+#define ERROR_NOT_ENOUGH_MEMORY 8
+#endif
 #ifndef ERROR_ALREADY_EXISTS
 #define ERROR_ALREADY_EXISTS 183
 #endif
@@ -2767,6 +2774,7 @@ BOOL GetStringTypeA(DWORD locale, DWORD type, LPCSTR source, int count,
                     WORD* char_type);
 int MulDiv(int number, int numerator, int denominator);
 LPSTR lstrcpynA(LPSTR destination, LPCSTR source, int count);
+LPSTR CharLowerA(LPSTR string);
 DWORD GetEnvironmentVariableA(LPCSTR name, LPSTR buffer, DWORD size);
 DWORD GetEnvironmentVariableW(LPCWSTR name, LPWSTR buffer, DWORD size);
 BOOL SetEnvironmentVariableA(LPCSTR name, LPCSTR value);
@@ -3035,6 +3043,13 @@ BOOL GlobalUnlock(HANDLE memory);
 HANDLE GlobalFree(HANDLE memory);
 HANDLE GlobalReAlloc(HANDLE memory, SIZE_T bytes, UINT flags);
 SIZE_T GlobalSize(HANDLE memory);
+DWORD GlobalHandle(LPCVOID memory);
+DWORD GlobalCompact(DWORD minimum_free);
+LPVOID GlobalWire(HANDLE memory);
+UINT GlobalFlags(HANDLE memory);
+HLOCAL LocalAlloc(UINT flags, SIZE_T bytes);
+HLOCAL LocalFree(HLOCAL memory);
+HLOCAL LocalReAlloc(HLOCAL memory, SIZE_T bytes, UINT flags);
 
 #ifndef CreateWindow
 #define CreateWindow(class_name, window_name, style, x, y, width, height,       \
