@@ -201,10 +201,14 @@ and SDM dialog/window declaration batches now compile through
 `opus_sdm_runtime.cpp`, including `WNDCLASSEXA`, child/window styles, native control
 messages, text/font structs, dialog message pump declarations, and related UI
 constants. The `SaveCabs(FRecordCab, ...)` callback mismatch now routes through a
-void adapter, and the first `VK_*` key constants are declared. The build now gets
-past `src/Opus/command2.c`; the next compile blockers are
-`src/Opus/annot.c` assuming `PAP.stc`, and `src/Opus/cmdwnd.c` needing `LPPOINT`,
-mouse/window tracking declarations, and a legacy non-void `return;` cleanup.
+void adapter, and the first `VK_*` key constants are declared. Clang now builds
+the original C engine with MS anonymous-struct extensions, so the legacy `PAP.stc`
+accesses compile without rewriting `props.h`. The first `cmdwnd.c` window-tracking
+surface, `CursLeftRight`, and the clipboard/metafile shim batch now compile through
+the previous `CLIPBORD.C` and recorder-adapter callback errors. The next filtered
+`opus_word1_ui_test` build blockers are legacy bare `return;` cleanups in
+`command.c`, `cmd.c`, `cmdcore.c`, `cmdwnd.c`, and `command2.c`, plus `CMD3.C`
+pointer-return/prototype cleanup around edit-picture/file-name helpers.
 
 Build the first pass mechanically:
 

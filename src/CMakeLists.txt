@@ -817,6 +817,7 @@ if(MSVC)
 else()
     target_compile_options(opus_original_engine PRIVATE
         $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
+        $<$<COMPILE_LANGUAGE:C>:-fms-extensions>
         $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
     )

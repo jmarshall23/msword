@@ -895,7 +895,7 @@ CMB * pcmb;
 		}
 
 	if (bcm == bcmRecordNext && cmd == cmdOK)
-		SaveCabs(RecordCabForSaveCabs, fFalse);
+		SaveCabs((PFN_SAVECAB)RecordCabForSaveCabs, fFalse);
 		
 #ifdef RSH
 	if (cmd != cmdOK)
@@ -2521,4 +2521,3 @@ uns atm;
 	/* Finally, run the macro */
 	return CmdExecBcmKc(bcm, kcNil);
 }
-

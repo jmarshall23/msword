@@ -88,6 +88,7 @@ extern struct FLI       vfli;
 extern BOOL             vfWaitForDraw;
 extern struct PREF      vpref;
 extern HANDLE           vhInstance;
+extern HWND             HwndCreateWindowRc();
 extern HWND             vhwndApp;          /* handle to parent's window */
 extern HWND             vhwndDeskTop;
 extern HWND             vhwndPgvCtl;
@@ -1133,7 +1134,7 @@ int fSetDxw;
 
 
 /* %%Function:TrackStyWndCursor %%Owner:chic */
-TrackStyWndCursor(pt)
+void TrackStyWndCursor(pt)
 struct PT pt;
 {
 	struct RC rcLim;
@@ -1510,5 +1511,3 @@ char * st;
 
 	vfFileCacheDirty = fTrue; /* so menu gets updated */
 }
-
-

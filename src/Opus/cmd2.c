@@ -251,7 +251,7 @@ BOOL fScrap;
 		{
 LBeep:
 		Beep();
-		return;
+		return 0;
 		}
 
 	/* Block Sel mode will have already been terminated, but there
@@ -569,7 +569,7 @@ int mw;
 	dfVert = vpref.fVertScrollBar - (*hmwd)->fVertScrollBar;
 	dfHorz = vpref.fHorzScrollBar - (*hmwd)->fHorzScrollBar;
 	if (dfVert == 0 && dfHorz == 0)
-		return;
+		return 0;
 
 /* destroy scroll bars if necessary */
 	if (dfVert == -1)
@@ -1414,5 +1414,4 @@ LDefaultVal:
 
 	return fTrue;
 }
-
 

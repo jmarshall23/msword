@@ -358,7 +358,7 @@ DestroyClip()
 	struct CA ca;
 
 	if (vsab.fDontDestroyClip)
-		return;
+		return 0;
 
 	vsab.fOwnClipboard = fFalse;
 
@@ -419,7 +419,7 @@ ChangeClipboard()
 		we are in an indeterminite state; better to wipe out contents
 		and be in a known state */
 		DestroyClip();
-		return;
+		return 0;
 		}
 
 /* We want to clear out previous data formats in the clipboard.
@@ -590,7 +590,7 @@ HANDLE hps;
 	if (vwwClipboard == wwNil)
 		{
 		ReportSz("Warning - PaintClipboard with vwwClipBoard nil ignored");
-		return;
+		return 0;
 		}
 
 /* Must set the scroll bar range each time we get a PAINT message;
@@ -652,7 +652,7 @@ HANDLE  hrc;
 	struct WWD *pwwd;
 
 	if ( (lprc = (LPRECT)GlobalLockClip( hrc )) == NULL )
-		return;
+		return 0;
 	rc.xpLeft = lprc->left;
 	rc.ypTop = lprc->top;
 	rc.xpRight = lprc->right;
@@ -699,14 +699,14 @@ int     posNew;
 	if (vwwClipboard == wwNil)
 		{
 		Assert( fFalse );
-		return;
+		return 0;
 		}
 
 	Assert( PwwdWw(vwwClipboard)->hwnd == hwnd );
 
 	if (!FGetClipboardDC())
 		/* Unable to create clipboard device context */
-		return;
+		return 0;
 
 	pwwd = PwwdWw(vwwClipboard);
 	switch ( sbMessage )
@@ -759,14 +759,14 @@ int     posNew;
 	if (vwwClipboard == wwNil)
 		{
 		Assert( fFalse );
-		return;
+		return 0;
 		}
 
 	Assert( PwwdWw(vwwClipboard)->hwnd == hwnd );
 
 	if (!FGetClipboardDC())
 		/* Unable to create clipboard device context */
-		return;
+		return 0;
 
 	pwwd = PwwdWw(vwwClipboard);
 	dxpWw = pwwd->xwMac - pwwd->xwMin;
@@ -898,4 +898,3 @@ HWND hwnd;
 	PwwdWw(vwwClipboard)->hwnd = hwnd;
 	return fTrue;
 }
-

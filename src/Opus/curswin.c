@@ -134,7 +134,7 @@ BOOL fDrag;
 
 		CursUpDown(styLine, dSty, fDrag);
 
-		return;
+		return 0;
 		}
 	else  if (fDrag && psel->fTable)
 		{
@@ -146,7 +146,7 @@ BOOL fDrag;
 		if (vfRecording && !fElActive)
 			RecordCursor(sty, dSty, fDrag);
 
-		return;
+		return 0;
 		}
 
 #ifdef DCURS
@@ -160,7 +160,7 @@ BOOL fDrag;
 		}
 #endif
 	if (fDrag && psel->fTable && (psel->sty == styRow || psel->sty == styWholeTable))
-		return;
+		return 0;
 
 	if (vfRecording && !fElActive)
 		RecordCursor(sty, dSty, fDrag);
@@ -249,7 +249,7 @@ BOOL fDrag;
 		SelectColumnTo(psel, cpExtend, itcExtend, &caTapAnchor, itcAnchor);
 		if (vhwndCBT)
 			CBTTblSelectPsel(&selCur);
-		return;
+		return 0;
 		}
 	else  if (!fDrag && psel->fTable)
 		{
@@ -1012,5 +1012,3 @@ CMB *pcmb;
 
 	return cmdOK;
 }
-
-

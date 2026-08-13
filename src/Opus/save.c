@@ -550,7 +550,7 @@ LSaveAs:
 			cmd = CmdDoSaveAsDlg(pcmb);
 
 			if (vfRecording) /* Restart recorder */
-				SaveCabs(RecordCabForSaveCabs, fFalse);
+				SaveCabs((PFN_SAVECAB)RecordCabForSaveCabs, fFalse);
 
 			if (cmd != cmdOK)
 				goto LCleanup;
