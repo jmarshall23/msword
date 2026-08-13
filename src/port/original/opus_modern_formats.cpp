@@ -42,6 +42,12 @@ constexpr std::size_t kMaxTableRows = 4096;
 constexpr std::size_t kMaxTableColumns = 256;
 constexpr std::size_t kMaxTableCells = 262144;
 constexpr WCHAR kMsfteditModule[] = OPUSW("Msftedit.dll");
+constexpr WCHAR kPdfFilter[] = OPUSW("PDF Files (*.pdf)\0*.pdf\0");
+constexpr WCHAR kPdfDialogTitle[] = OPUSW("Export as PDF");
+constexpr WCHAR kPdfDefaultExtension[] = OPUSW("pdf");
+constexpr WCHAR kPdfTestPathEnv[] = OPUSW("WORD1_TEST_PDF_PATH");
+constexpr WCHAR kPdfFailureMessage[] = OPUSW(
+    "Word could not create the PDF. Check that the selected folder is writable.");
 
 void require_parse_limit(const bool condition) {
     if (!condition) throw std::length_error("document exceeds import limits");
@@ -3362,26 +3368,25 @@ int export_paragraphs_to_pdf_dialog(
     HWND owner, const std::vector<Paragraph>& paragraphs,
     const DocumentSettings& settings = {}) {
     wchar_t path[32768] = L"Document.pdf";
-    static const wchar_t filter[] = L"PDF Files (*.pdf)\0*.pdf\0\0";
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = owner;
-    dialog.lpstrFilter = filter;
+    dialog.lpstrFilter = kPdfFilter;
     dialog.lpstrFile = path;
     dialog.nMaxFile = static_cast<DWORD>(std::size(path));
-    dialog.lpstrTitle = L"Export as PDF";
-    dialog.lpstrDefExt = L"pdf";
+    dialog.lpstrTitle = kPdfDialogTitle;
+    dialog.lpstrDefExt = kPdfDefaultExtension;
     dialog.Flags = OFN_EXPLORER | OFN_ENABLESIZING | OFN_LONGNAMES |
                    OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
     DWORD test_path_length = 0;
 #ifdef OPUS_TEST_HOOKS
     test_path_length = GetEnvironmentVariableW(
-        L"WORD1_TEST_PDF_PATH", path, static_cast<DWORD>(std::size(path)));
+        kPdfTestPathEnv, path, static_cast<DWORD>(std::size(path)));
 #endif
     const bool accepted =
         test_path_length > 0 && test_path_length < std::size(path) ?
 #ifdef OPUS_TEST_HOOKS
-            (SetEnvironmentVariableW(L"WORD1_TEST_PDF_PATH", nullptr), true) :
+            (SetEnvironmentVariableW(kPdfTestPathEnv, nullptr), true) :
 #else
             true :
 #endif
@@ -3390,9 +3395,8 @@ int export_paragraphs_to_pdf_dialog(
         return CommDlgExtendedError() == 0 ? -1 : false;
     }
     if (!write_pdf(path, paragraphs, settings)) {
-        MessageBoxW(owner,
-            L"Word could not create the PDF. Check that the selected folder is writable.",
-            L"Export as PDF", MB_OK | MB_ICONEXCLAMATION);
+        MessageBoxW(owner, kPdfFailureMessage, kPdfDialogTitle,
+                    MB_OK | MB_ICONEXCLAMATION);
         return false;
     }
     return true;
