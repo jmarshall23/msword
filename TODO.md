@@ -200,9 +200,11 @@ API surface: `DeleteFileA`, `RemoveDirectoryA`, `GetFileAttributesA`,
 and SDM dialog/window declaration batches now compile through
 `opus_sdm_runtime.cpp`, including `WNDCLASSEXA`, child/window styles, native control
 messages, text/font structs, dialog message pump declarations, and related UI
-constants. The next compile blockers are in `src/Opus/command2.c`: the
-`SaveCabs(FRecordCab, ...)` callback type mismatch and missing `VK_*` key constants
-from `src/Opus/keys.h`.
+constants. The `SaveCabs(FRecordCab, ...)` callback mismatch now routes through a
+void adapter, and the first `VK_*` key constants are declared. The build now gets
+past `src/Opus/command2.c`; the next compile blockers are
+`src/Opus/annot.c` assuming `PAP.stc`, and `src/Opus/cmdwnd.c` needing `LPPOINT`,
+mouse/window tracking declarations, and a legacy non-void `return;` cleanup.
 
 Build the first pass mechanically:
 

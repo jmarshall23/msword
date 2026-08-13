@@ -409,6 +409,19 @@ BOOL fDismiss; /* NOTE: doubles as bcm if no dialog is up */
 }
 
 
+/* R E C O R D  C A B  F O R  S A V E  C A B S */
+/* SaveCabs takes a VOID callback; FRecordCab keeps BOOL for direct callers. */
+/* %%Function:RecordCabForSaveCabs %%Owner:bradch */
+VOID RecordCabForSaveCabs(hcab, hid, tmc, fDismiss)
+HCAB hcab;
+WORD hid;
+TMC tmc;
+BOOL fDismiss;
+{
+	FRecordCab(hcab, hid, tmc, fDismiss);
+}
+
+
 
 /* G E N  S T A T E M E N T */
 /* Given a command index, and assuming the global CAB is set up, generate

@@ -317,6 +317,100 @@ typedef struct _WIN32_FIND_DATAA {
 #define IDC_ARROW MAKEINTRESOURCEA(32512)
 #endif
 
+#ifndef VK_LBUTTON
+#define VK_LBUTTON 0x01
+#endif
+#ifndef VK_RBUTTON
+#define VK_RBUTTON 0x02
+#endif
+#ifndef VK_BACK
+#define VK_BACK 0x08
+#endif
+#ifndef VK_TAB
+#define VK_TAB 0x09
+#endif
+#ifndef VK_CLEAR
+#define VK_CLEAR 0x0c
+#endif
+#ifndef VK_RETURN
+#define VK_RETURN 0x0d
+#endif
+#ifndef VK_SHIFT
+#define VK_SHIFT 0x10
+#endif
+#ifndef VK_ESCAPE
+#define VK_ESCAPE 0x1b
+#endif
+#ifndef VK_SPACE
+#define VK_SPACE 0x20
+#endif
+#ifndef VK_PRIOR
+#define VK_PRIOR 0x21
+#endif
+#ifndef VK_NEXT
+#define VK_NEXT 0x22
+#endif
+#ifndef VK_END
+#define VK_END 0x23
+#endif
+#ifndef VK_HOME
+#define VK_HOME 0x24
+#endif
+#ifndef VK_LEFT
+#define VK_LEFT 0x25
+#endif
+#ifndef VK_UP
+#define VK_UP 0x26
+#endif
+#ifndef VK_RIGHT
+#define VK_RIGHT 0x27
+#endif
+#ifndef VK_DOWN
+#define VK_DOWN 0x28
+#endif
+#ifndef VK_INSERT
+#define VK_INSERT 0x2d
+#endif
+#ifndef VK_DELETE
+#define VK_DELETE 0x2e
+#endif
+#ifndef VK_HELP
+#define VK_HELP 0x2f
+#endif
+#ifndef VK_NUMPAD5
+#define VK_NUMPAD5 0x65
+#endif
+#ifndef VK_MULTIPLY
+#define VK_MULTIPLY 0x6a
+#endif
+#ifndef VK_ADD
+#define VK_ADD 0x6b
+#endif
+#ifndef VK_SUBTRACT
+#define VK_SUBTRACT 0x6d
+#endif
+#ifndef VK_DIVIDE
+#define VK_DIVIDE 0x6f
+#endif
+#ifndef VK_F1
+#define VK_F1 0x70
+#endif
+#ifndef VK_F2
+#define VK_F2 0x71
+#endif
+#ifndef VK_F10
+#define VK_F10 0x79
+#endif
+#ifndef VK_F11
+#define VK_F11 0x7a
+#endif
+#ifndef VK_F12
+#define VK_F12 0x7b
+#endif
+#ifndef VK_F16
+#define VK_F16 0x7f
+#endif
+
 #ifndef COLOR_BTNFACE
 #define COLOR_BTNFACE 15
 #endif

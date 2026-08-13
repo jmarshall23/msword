@@ -63,6 +63,7 @@ KMP **          vhkmpUser;
 
 
 
+
 /* E X T E R N A L S */
 extern BOOL vfExtendSel;
 extern BOOL vfBlockSel;
@@ -894,7 +895,7 @@ CMB * pcmb;
 		}
 
 	if (bcm == bcmRecordNext && cmd == cmdOK)
-		SaveCabs(FRecordCab, fFalse);
+		SaveCabs(RecordCabForSaveCabs, fFalse);
 		
 #ifdef RSH
 	if (cmd != cmdOK)
@@ -2520,6 +2521,4 @@ uns atm;
 	/* Finally, run the macro */
 	return CmdExecBcmKc(bcm, kcNil);
 }
-
-
 

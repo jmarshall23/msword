@@ -208,6 +208,7 @@ BOOL fPromptSI;
 }
 
 
+
 /* C M D   S A V E */
 /* %%Function:CmdSave  %%Owner:peterj */
 CMD CmdSave(pcmb)
@@ -548,7 +549,7 @@ LSaveAs:
 			cmd = CmdDoSaveAsDlg(pcmb);
 
 			if (vfRecording) /* Restart recorder */
-				SaveCabs(FRecordCab, fFalse);
+				SaveCabs(RecordCabForSaveCabs, fFalse);
 
 			if (cmd != cmdOK)
 				goto LCleanup;
@@ -3422,5 +3423,3 @@ int doc;
 #endif
 
 }
-
-

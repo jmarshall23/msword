@@ -34,3 +34,4 @@ typedef struct _cmr
 
 #define cbCMR sizeof (CMR)
 
+VOID RecordCabForSaveCabs(HCAB, WORD, TMC, BOOL);

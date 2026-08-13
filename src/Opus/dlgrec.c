@@ -329,7 +329,7 @@ CMB * pcmb;
 		RecordSt(StSharedKey("Sub MAIN", SubMain));
 		RecordEop();
 		vrac.racop = racopNil;
-		SaveCabs(FRecordCab, fFalse);
+		SaveCabs(RecordCabForSaveCabs, fFalse);
 		}
 
 	return cmdOK;
@@ -429,7 +429,7 @@ CMB * pcmb;
 
 	if (vrf.fPauseRecorder)
 		{
-		SaveCabs(FRecordCab, fFalse);
+		SaveCabs(RecordCabForSaveCabs, fFalse);
 		}
 	else
 		{
@@ -567,7 +567,7 @@ BOOL fAskSave, fForceKill;
 
 			ErrorEid(eidNoMemRecord, "CmdStopRecorder");
 
-			SaveCabs(FRecordCab, fFalse);
+			SaveCabs(RecordCabForSaveCabs, fFalse);
 			return fFalse;
 			}
 		else
