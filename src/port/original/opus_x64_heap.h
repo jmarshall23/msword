@@ -3,6 +3,14 @@
 #include <stddef.h>
 
 #ifdef __cplusplus
+static_assert(sizeof(void*) == 8 || sizeof(void*) == 4,
+              "Opus handle layout requires 32-bit or 64-bit pointers");
+#else
+_Static_assert(sizeof(void*) == 8 || sizeof(void*) == 4,
+               "Opus handle layout requires 32-bit or 64-bit pointers");
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 

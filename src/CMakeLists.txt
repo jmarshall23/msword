@@ -4,14 +4,12 @@ project(MicrosoftWordX64Port VERSION 0.2.0 LANGUAGES C CXX)
 
 if(WIN32)
     enable_language(RC)
+elseif(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    find_package(SDL2 REQUIRED)
 endif()
 
-if(NOT WIN32)
-    message(FATAL_ERROR "The Microsoft Word x64 port currently targets Windows only.")
-endif()
-
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    message(FATAL_ERROR "This project must be configured for x64 (use: cmake --preset x64-debug).")
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+    message(FATAL_ERROR "This project must be configured for a 32-bit or 64-bit pointer target.")
 endif()
 
 set(MSWORD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -38,7 +36,7 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
     set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/pdb/${config}")
 endforeach()
 
-file(GLOB_RECURSE LEGACY_ASSEMBLY CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.asm")
+file(GLOB LEGACY_ASSEMBLY CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Opus/asm/*.asm")
 set(LEGACY_ASSEMBLY_RELATIVE)
 foreach(assembly_file IN LISTS LEGACY_ASSEMBLY)
     file(RELATIVE_PATH relative_path "${CMAKE_CURRENT_SOURCE_DIR}" "${assembly_file}")
@@ -48,23 +46,43 @@ endforeach()
 list(SORT LEGACY_ASSEMBLY_RELATIVE)
 
 list(LENGTH LEGACY_ASSEMBLY_RELATIVE LEGACY_ASSEMBLY_COUNT)
-if(NOT LEGACY_ASSEMBLY_COUNT EQUAL 59)
+if(NOT LEGACY_ASSEMBLY_COUNT EQUAL 52)
     message(FATAL_ERROR
         "The original assembly reference tree changed "
-        "(${LEGACY_ASSEMBLY_COUNT} modules found; expected 59). Review the x64 translations."
+        "(${LEGACY_ASSEMBLY_COUNT} modules found; expected 52). Review the x64 translations."
     )
 endif()
 
 add_custom_target(legacy_sources SOURCES ${LEGACY_ASSEMBLY})
 set_target_properties(legacy_sources PROPERTIES FOLDER "Legacy reference (not compiled)")
 
+if(NOT WIN32)
+    add_executable(opus-sdl-probe EXCLUDE_FROM_ALL
+        port/win32/sdl-probe.c
+    )
+    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        target_compile_options(opus-sdl-probe PRIVATE -sUSE_SDL=2)
+        target_link_options(opus-sdl-probe PRIVATE -sUSE_SDL=2)
+    else()
+        target_link_libraries(opus-sdl-probe PRIVATE SDL2::SDL2)
+    endif()
+    set_target_properties(opus-sdl-probe PROPERTIES
+        FOLDER "Port probes"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/probes"
+    )
+endif()
+
 # Start of the real product engine. Every source in this target is from the
 # original Opus tree; compatibility code supplies platform services only.
-set(OPUS_SDK_ROOT "$ENV{ProgramFiles\(x86\)}/Windows Kits/10")
-set(OPUS_WINDOWS_SDK_HEADER
-    "${OPUS_SDK_ROOT}/Include/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/um/Windows.h")
-if(NOT EXISTS "${OPUS_WINDOWS_SDK_HEADER}")
-    message(FATAL_ERROR "Could not locate the Windows SDK header: ${OPUS_WINDOWS_SDK_HEADER}")
+if(WIN32)
+    set(OPUS_SDK_ROOT "$ENV{ProgramFiles\(x86\)}/Windows Kits/10")
+    set(OPUS_WINDOWS_SDK_HEADER
+        "${OPUS_SDK_ROOT}/Include/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/um/Windows.h")
+    if(NOT EXISTS "${OPUS_WINDOWS_SDK_HEADER}")
+        message(FATAL_ERROR "Could not locate the Windows SDK header: ${OPUS_WINDOWS_SDK_HEADER}")
+    endif()
+else()
+    set(OPUS_WINDOWS_SDK_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/port/win32/windows.h")
 endif()
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated/original")
 configure_file(

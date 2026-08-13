@@ -141,10 +141,9 @@ Do:
   `opus_x64_heap.h`.
 - `src/CMakeLists.txt:59-64`, the hardcoded `$ENV{ProgramFiles(x86)}/Windows Kits/10`
   lookup becomes the Windows branch of item 6.
-- `src/CMakeLists.txt:37` globs `*.asm` across all of `src/` and `:47-52` hard-errors
-  unless the count is exactly 59. Correct today, but any `.asm` added anywhere, including
-  under a future `src/port/win32/`, breaks configure. Scope the glob to `Opus/asm/*.asm`
-  and keep the assertion.
+- `src/CMakeLists.txt:37` used to glob `*.asm` across all of `src/` and hard-error
+  unless the count was exactly 59. That included 7 `OpusEtAl/tools` assembly files.
+  Scope the glob to `Opus/asm/*.asm` and assert the product reference count, 52.
 
 Done when: `cmake --preset macos-debug` and `cmake --preset linux-debug` both configure.
 
@@ -176,11 +175,10 @@ kept stable so citations elsewhere do not rot.
 and that answer determines item 4's preset cache variables, item 5's CI install steps
 and item 18's version question.
 
-Do: choose SDL2 unless a probe proves SDL3 works on all three targets first. Add
-`src/port/win32/sdl_probe.c` with only `SDL_Init(SDL_INIT_VIDEO); SDL_Quit();`. Add
-`find_package(SDL2 REQUIRED)` for macOS/Linux and `-sUSE_SDL=2` for Emscripten. Record
-the exact configure commands tried in `docs/win32-shim/sdl.md`. This has to land before
-item 4's presets are written.
+Do: finish the SDL2 probe on Linux. macOS and WebAssembly already use
+`src/port/win32/sdl-probe.c`; native targets use `find_package(SDL2 REQUIRED)`, and
+Emscripten uses target-local `-sUSE_SDL=2`. Exact commands tried are recorded in
+`docs/win32-shim/sdl.md`.
 
 Done when: a two-line SDL program configures and links under all three non-Windows
 presets.

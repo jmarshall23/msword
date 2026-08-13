@@ -10,6 +10,11 @@
       "name": "x64",
       "hidden": true,
       "generator": "Visual Studio 17 2022",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
       "architecture": {
         "value": "x64",
         "strategy": "set"
@@ -28,6 +33,54 @@
       "name": "x64-release",
       "displayName": "Word x64 Release",
       "inherits": "x64"
+    },
+    {
+      "name": "ninja-debug",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/../out/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INTERMEDIATE_DIR_STRATEGY": "SHORT"
+      }
+    },
+    {
+      "name": "macos-debug",
+      "displayName": "Word macOS Debug",
+      "inherits": "ninja-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "linux-debug",
+      "displayName": "Word Linux Debug",
+      "inherits": "ninja-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "wasm-debug",
+      "displayName": "Word WebAssembly Debug",
+      "inherits": "ninja-debug",
+      "condition": {
+        "type": "inList",
+        "string": "${hostSystemName}",
+        "list": [
+          "Darwin",
+          "Linux"
+        ]
+      },
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "Emscripten",
+        "CMAKE_C_COMPILER": "emcc",
+        "CMAKE_CXX_COMPILER": "em++"
+      }
     }
   ],
   "buildPresets": [
@@ -40,6 +93,18 @@
       "name": "x64-release",
       "configurePreset": "x64-release",
       "configuration": "Release"
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-debug"
+    },
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug"
+    },
+    {
+      "name": "wasm-debug",
+      "configurePreset": "wasm-debug"
     }
   ]
 }

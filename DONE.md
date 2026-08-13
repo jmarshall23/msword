@@ -34,3 +34,14 @@ directly with AppleClang, then running `bitapp` on `src/Opus/resource/8hdr.bmp`.
 
 Reviewed by agy and claude: cross-build host-tool imports and the CTest reference remain
 open in `TODO.md`.
+
+## Add macOS and WebAssembly configure presets with SDL probe
+
+`macos-debug` and `wasm-debug` presets now configure with Ninja. SDL2 is the selected
+backend dependency: macOS uses CMake's SDL2 package, and WebAssembly links the probe with
+Emscripten's `-sUSE_SDL=2`.
+
+Validated by configuring `macos-debug` and `wasm-debug`, building `opus-sdl-probe` for
+both, and running the macOS probe with `SDL_VIDEODRIVER=dummy`.
+
+Linux configure/probe validation remains open in `TODO.md`.
