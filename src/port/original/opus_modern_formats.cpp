@@ -2946,10 +2946,17 @@ struct PdfUnicodeFont {
         face = requested;
         dc = CreateCompatibleDC(nullptr);
         if (dc == nullptr) return false;
+        std::basic_string<WCHAR> requested_face;
+        requested_face.reserve(face.size());
+        for (const wchar_t code_unit : face) {
+            requested_face.push_back(static_cast<WCHAR>(
+                static_cast<std::uint16_t>(code_unit)));
+        }
         font = CreateFontW(-1000, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                            DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS,
                            CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
-                           DEFAULT_PITCH | FF_DONTCARE, face.c_str());
+                           DEFAULT_PITCH | FF_DONTCARE,
+                           requested_face.c_str());
         if (font == nullptr) return false;
         previous = SelectObject(dc, font);
         if (previous == nullptr || !GetTextMetricsW(dc, &metrics)) return false;

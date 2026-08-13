@@ -252,6 +252,8 @@ Its RichEdit face-name extraction now reads `CHARFORMAT2W::szFaceName` as
 bounded `WCHAR` storage before updating the file's style model.
 Its PDF font face-name probe now reads the `GetTextFaceW` output into bounded
 `WCHAR` storage before copying back to the PDF font model.
+Its PDF font creation now copies the requested face name into `WCHAR` storage
+before calling `CreateFontW`.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 
