@@ -502,16 +502,18 @@ bool send_control_shift_key(const WORD virtual_key) {
                      sizeof(INPUT)) == input.size();
 }
 
-bool send_physical_text(const std::wstring& text) {
-    for (const wchar_t character : text) {
+bool send_physical_text(const std::basic_string<WCHAR>& text) {
+    for (const WCHAR character : text) {
         WORD virtual_key = 0;
-        if (character >= L'a' && character <= L'z') {
-            virtual_key = static_cast<WORD>(character - L'a' + L'A');
-        } else if (character >= L'0' && character <= L'9') {
+        if (character >= OPUSW("a")[0] && character <= OPUSW("z")[0]) {
+            virtual_key = static_cast<WORD>(character - OPUSW("a")[0] +
+                                            OPUSW("A")[0]);
+        } else if (character >= OPUSW("0")[0] &&
+                   character <= OPUSW("9")[0]) {
             virtual_key = static_cast<WORD>(character);
-        } else if (character == L' ') {
+        } else if (character == OPUSW(" ")[0]) {
             virtual_key = VK_SPACE;
-        } else if (character == L'\r') {
+        } else if (character == OPUSW("\r")[0]) {
             virtual_key = VK_RETURN;
         } else {
             return false;
@@ -519,7 +521,7 @@ bool send_physical_text(const std::wstring& text) {
         if (!send_virtual_key(virtual_key)) {
             return false;
         }
-        Sleep(character == L'\r' ? 300 : 50);
+        Sleep(character == OPUSW("\r")[0] ? 300 : 50);
     }
     return true;
 }
@@ -1283,7 +1285,8 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             SendMessageW(pane, kWmOpusX64QuerySelection, 50, 0);
         const LRESULT cp_before =
             SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
-        if (!send_physical_text(L"fonttest") || !send_virtual_key(VK_RIGHT)) {
+        if (!send_physical_text(OPUSW("fonttest")) ||
+            !send_virtual_key(VK_RIGHT)) {
             return fail(process, 52,
                         "font typing test could not type and commit text");
         }
@@ -1333,7 +1336,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             SendMessageW(pane, kWmOpusX64QuerySelection, 53, 0);
         const LRESULT second_cp =
             SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
-        if (!send_physical_text(L" secondfont") ||
+        if (!send_physical_text(OPUSW(" secondfont")) ||
             !send_virtual_key(VK_RIGHT)) {
             return fail(process, 57,
                         "font typing test could not type its second run");
@@ -1393,7 +1396,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
 
         const std::size_t mixed_line_pixels =
             count_dark_client_pixels(pane, 0, 300);
-        if (!send_physical_text(L"\r")) {
+        if (!send_physical_text(OPUSW("\r"))) {
             return fail(process, 59,
                         "font typing test could not start its next line");
         }
@@ -1439,7 +1442,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             count_dark_client_pixels(pane, 0, 300);
         const LRESULT large_cp =
             SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
-        if (!send_physical_text(L"largeline") ||
+        if (!send_physical_text(OPUSW("largeline")) ||
             !send_virtual_key(VK_RIGHT)) {
             return fail(process, 59,
                         "font typing test could not type its larger line");
@@ -1533,7 +1536,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
                   << selected_lim << '\n';
         if (selected_lim <= selected_first ||
             !make_foreground_and_focus(main_window, size_combo, thread_id) ||
-            !send_control_key('A') || !send_physical_text(L"48") ||
+            !send_control_key('A') || !send_physical_text(OPUSW("48")) ||
             !make_foreground_and_focus(main_window, pane, thread_id)) {
             return fail(process, 61,
                         "font typing test could not resize selected text");
@@ -1636,7 +1639,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             GetWindowThreadProcessId(main_window, &ignored_process_id);
         if (pane == nullptr ||
             !make_foreground_and_focus(main_window, pane, thread_id) ||
-            !send_physical_text(L"formatting selection")) {
+            !send_physical_text(OPUSW("formatting selection"))) {
             return fail(process, 43,
                         "formatting test could not type its selection");
         }
@@ -1685,7 +1688,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             GetWindowThreadProcessId(main_window, &ignored_process_id);
         if (pane == nullptr ||
             !make_foreground_and_focus(main_window, pane, thread_id) ||
-            !send_physical_text(L"testtest") ||
+            !send_physical_text(OPUSW("testtest")) ||
             !execute_control_shortcut(pane, 'A')) {
             return fail(process, 76,
                         "color test could not create its selection");
@@ -1789,7 +1792,7 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
         const LRESULT initial_y =
             SendMessageW(pane, kWmOpusX64QuerySelection, 7, 0);
         report("initial");
-        if (!send_physical_text(L"ab\rc")) {
+        if (!send_physical_text(OPUSW("ab\rc"))) {
             return fail(process, 41, "caret test could not send its keys");
         }
 
@@ -2000,9 +2003,9 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             return fail(process, 24,
                         "could not give real keyboard focus to the document");
         }
-        const std::wstring physical_text =
-            L"physical keyboard input line one\rphysical keyboard input "
-            L"line two\rphysical keyboard input line three";
+        const std::basic_string<WCHAR> physical_text =
+            OPUSW("physical keyboard input line one\rphysical keyboard input ")
+            OPUSW("line two\rphysical keyboard input line three");
         const LRESULT cp_before_typing =
             SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
         const LRESULT caret_x_before_typing =
@@ -2085,8 +2088,8 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
         const std::size_t dark_pixels_after = count_dark_client_pixels(pane);
         LRESULT expected_cp_after_typing =
             cp_before_typing + static_cast<LRESULT>(physical_text.size());
-        for (const wchar_t character : physical_text) {
-            if (character == L'\r') {
+        for (const WCHAR character : physical_text) {
+            if (character == OPUSW("\r")[0]) {
                 ++expected_cp_after_typing;
             }
         }
