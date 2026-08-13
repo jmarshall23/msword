@@ -90,14 +90,24 @@ BOOL CALLBACK log_window_callback(const HWND window, const LPARAM value) {
     DWORD process_id = 0;
     GetWindowThreadProcessId(window, &process_id);
     if (process_id == expected_process_id) {
-        wchar_t class_name[128] = {};
-        wchar_t caption[512] = {};
+        WCHAR class_name[128] = {};
+        WCHAR caption[512] = {};
         GetClassNameW(window, class_name,
                       static_cast<int>(std::size(class_name)));
         GetWindowTextW(window, caption, static_cast<int>(std::size(caption)));
-        std::wcerr << L"window class='" << class_name << L"' caption='"
-                   << caption << L"' visible=" << IsWindowVisible(window)
-                   << L" enabled=" << IsWindowEnabled(window) << L'\n';
+        const auto log_text = [](LPCWSTR text) {
+            for (; text != nullptr && *text != 0; ++text) {
+                std::cerr << static_cast<char>(*text >= 0x20 && *text <= 0x7e
+                                                   ? *text
+                                                   : OPUSW("?")[0]);
+            }
+        };
+        std::cerr << "window class='";
+        log_text(class_name);
+        std::cerr << "' caption='";
+        log_text(caption);
+        std::cerr << "' visible=" << IsWindowVisible(window)
+                  << " enabled=" << IsWindowEnabled(window) << '\n';
     }
     return TRUE;
 }

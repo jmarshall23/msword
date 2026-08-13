@@ -287,6 +287,8 @@ explicit casts at the remaining host `wchar_t` loop boundaries.
 Its `send_physical_text` helper and direct ASCII physical-key callers now use
 `WCHAR`/`OPUSW` storage, leaving the larger `std::wstring` test models for later
 reviewed slices.
+Its process-window diagnostic callback now reads `GetClassNameW` and `GetWindowTextW`
+into `WCHAR` buffers before narrowing printable ASCII for logs.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 `opus_original_startup_probe.cpp` now has a non-Windows `main` bridge that
