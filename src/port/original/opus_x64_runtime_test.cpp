@@ -88,6 +88,10 @@ extern "C" void EndDlg(TestWord);
 extern "C" void SetTmcText_sdm21(TestWord, char*);
 extern "C" void GetTmcText_sdm21(TestWord, char*, TestWord);
 
+extern "C" int OpusSaveDocumentAsDocx(int, const char*) {
+    return 0;
+}
+
 int modal_init_count = 0;
 int modal_exit_count = 0;
 int new_modal_init_count = 0;
