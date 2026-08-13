@@ -43,6 +43,7 @@ typedef uint16_t WORD;
 typedef uint32_t UINT;
 typedef int32_t LONG;
 typedef uint32_t DWORD;
+typedef uint64_t ULONGLONG;
 typedef uintptr_t DWORD_PTR;
 typedef uintptr_t UINT_PTR;
 typedef uintptr_t ULONG_PTR;
@@ -141,6 +142,33 @@ typedef struct tagBITMAP {
 #define MAX_PATH 260
 #endif
 
+typedef struct _FILETIME {
+    DWORD dwLowDateTime;
+    DWORD dwHighDateTime;
+} FILETIME;
+
+typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
+    DWORD dwFileAttributes;
+    FILETIME ftCreationTime;
+    FILETIME ftLastAccessTime;
+    FILETIME ftLastWriteTime;
+    DWORD nFileSizeHigh;
+    DWORD nFileSizeLow;
+} WIN32_FILE_ATTRIBUTE_DATA;
+
+typedef struct _WIN32_FIND_DATAA {
+    DWORD dwFileAttributes;
+    FILETIME ftCreationTime;
+    FILETIME ftLastAccessTime;
+    FILETIME ftLastWriteTime;
+    DWORD nFileSizeHigh;
+    DWORD nFileSizeLow;
+    DWORD dwReserved0;
+    DWORD dwReserved1;
+    CHAR cFileName[MAX_PATH];
+    CHAR cAlternateFileName[14];
+} WIN32_FIND_DATAA, *LPWIN32_FIND_DATAA;
+
 #ifndef LOWORD
 #define LOWORD(value) ((WORD)((DWORD_PTR)(value) & 0xffffu))
 #endif
@@ -231,11 +259,90 @@ typedef struct tagBITMAP {
 #ifndef FILE_ATTRIBUTE_NORMAL
 #define FILE_ATTRIBUTE_NORMAL 0x00000080
 #endif
+#ifndef FILE_ATTRIBUTE_READONLY
+#define FILE_ATTRIBUTE_READONLY 0x00000001
+#endif
+#ifndef FILE_ATTRIBUTE_HIDDEN
+#define FILE_ATTRIBUTE_HIDDEN 0x00000002
+#endif
+#ifndef FILE_ATTRIBUTE_SYSTEM
+#define FILE_ATTRIBUTE_SYSTEM 0x00000004
+#endif
+#ifndef FILE_ATTRIBUTE_DIRECTORY
+#define FILE_ATTRIBUTE_DIRECTORY 0x00000010
+#endif
+#ifndef FILE_ATTRIBUTE_ARCHIVE
+#define FILE_ATTRIBUTE_ARCHIVE 0x00000020
+#endif
+#ifndef FILE_ATTRIBUTE_REPARSE_POINT
+#define FILE_ATTRIBUTE_REPARSE_POINT 0x00000400
+#endif
+#ifndef INVALID_FILE_ATTRIBUTES
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#endif
 #ifndef FILE_BEGIN
 #define FILE_BEGIN 0
 #endif
+#ifndef GetFileExInfoStandard
+#define GetFileExInfoStandard 0
+#endif
+#ifndef REPLACEFILE_WRITE_THROUGH
+#define REPLACEFILE_WRITE_THROUGH 0x00000001
+#endif
+#ifndef MOVEFILE_REPLACE_EXISTING
+#define MOVEFILE_REPLACE_EXISTING 0x00000001
+#endif
+#ifndef MOVEFILE_WRITE_THROUGH
+#define MOVEFILE_WRITE_THROUGH 0x00000008
+#endif
 #ifndef INVALID_HANDLE_VALUE
 #define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
+#endif
+
+#ifndef ERROR_FILE_NOT_FOUND
+#define ERROR_FILE_NOT_FOUND 2
+#endif
+#ifndef ERROR_PATH_NOT_FOUND
+#define ERROR_PATH_NOT_FOUND 3
+#endif
+#ifndef ERROR_TOO_MANY_OPEN_FILES
+#define ERROR_TOO_MANY_OPEN_FILES 4
+#endif
+#ifndef ERROR_ACCESS_DENIED
+#define ERROR_ACCESS_DENIED 5
+#endif
+#ifndef ERROR_INVALID_HANDLE
+#define ERROR_INVALID_HANDLE 6
+#endif
+#ifndef ERROR_NO_MORE_FILES
+#define ERROR_NO_MORE_FILES 18
+#endif
+#ifndef ERROR_NOT_SAME_DEVICE
+#define ERROR_NOT_SAME_DEVICE 17
+#endif
+#ifndef ERROR_WRITE_PROTECT
+#define ERROR_WRITE_PROTECT 19
+#endif
+#ifndef ERROR_NOT_READY
+#define ERROR_NOT_READY 21
+#endif
+#ifndef ERROR_SHARING_VIOLATION
+#define ERROR_SHARING_VIOLATION 32
+#endif
+#ifndef ERROR_HANDLE_DISK_FULL
+#define ERROR_HANDLE_DISK_FULL 39
+#endif
+#ifndef ERROR_FILE_EXISTS
+#define ERROR_FILE_EXISTS 80
+#endif
+#ifndef ERROR_DISK_FULL
+#define ERROR_DISK_FULL 112
+#endif
+#ifndef ERROR_ALREADY_EXISTS
+#define ERROR_ALREADY_EXISTS 183
+#endif
+#ifndef ERROR_CLASS_ALREADY_EXISTS
+#define ERROR_CLASS_ALREADY_EXISTS 1410
 #endif
 
 #ifndef HEAP_ZERO_MEMORY
@@ -321,6 +428,23 @@ BOOL WriteFile(HANDLE file, LPCVOID buffer, DWORD bytes_to_write,
                DWORD* bytes_written, LPVOID overlapped);
 BOOL FlushFileBuffers(HANDLE file);
 BOOL CloseHandle(HANDLE object);
+DWORD GetLastError(void);
+DWORD GetFileAttributesA(LPCSTR file_name);
+BOOL GetFileAttributesExA(LPCSTR file_name, int info_level_id,
+                          LPVOID file_information);
+BOOL CreateDirectoryA(LPCSTR path_name, LPVOID security_attributes);
+BOOL RemoveDirectoryA(LPCSTR path_name);
+BOOL DeleteFileA(LPCSTR file_name);
+BOOL CopyFileA(LPCSTR existing_file_name, LPCSTR new_file_name,
+               BOOL fail_if_exists);
+BOOL ReplaceFileA(LPCSTR replaced_file_name, LPCSTR replacement_file_name,
+                  LPCSTR backup_file_name, DWORD replace_flags,
+                  LPVOID exclude, LPVOID reserved);
+BOOL MoveFileA(LPCSTR existing_file_name, LPCSTR new_file_name);
+BOOL MoveFileExA(LPCSTR existing_file_name, LPCSTR new_file_name, DWORD flags);
+HANDLE FindFirstFileA(LPCSTR file_name, LPWIN32_FIND_DATAA find_file_data);
+BOOL FindNextFileA(HANDLE find_file, LPWIN32_FIND_DATAA find_file_data);
+BOOL FindClose(HANDLE find_file);
 
 HANDLE GetProcessHeap(void);
 LPVOID HeapAlloc(HANDLE heap, DWORD flags, SIZE_T bytes);

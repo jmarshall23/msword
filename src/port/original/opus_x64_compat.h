@@ -19,6 +19,8 @@
 #include <wchar.h>
 #if defined(_MSC_VER)
 #include <malloc.h>
+#else
+#include <strings.h>
 #endif
 #include <string.h>
 
@@ -31,6 +33,9 @@
 #endif
 #ifndef __stdcall
 #define __stdcall
+#endif
+#ifndef _stricmp
+#define _stricmp strcasecmp
 #endif
 #ifndef _snprintf_s
 #define _snprintf_s(buffer, size, count, format, ...) \
