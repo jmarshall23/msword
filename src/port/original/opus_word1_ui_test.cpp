@@ -849,9 +849,9 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
             (make_foreground_and_focus(main_window, pane, thread_id) ||
              wait_for_focus(process.hProcess, thread_id, pane, 500));
         bool typed = focused;
-        for (const wchar_t character : std::wstring(L"pdf export text")) {
-            typed = typed &&
-                post_keyboard_character(pane, static_cast<WCHAR>(character));
+        for (const WCHAR character : std::basic_string<WCHAR>(
+                 OPUSW("pdf export text"))) {
+            typed = typed && post_keyboard_character(pane, character);
         }
         Sleep(750);
         const bool committed = typed &&
@@ -1839,10 +1839,10 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
         if (pane == nullptr) {
             return fail(process, 36, "selection test could not find OpusWwd");
         }
-        const std::wstring sentence = L"physical keyboard input line one";
-        for (const wchar_t character : sentence) {
-            if (!post_keyboard_character(
-                    pane, static_cast<WCHAR>(character))) {
+        const std::basic_string<WCHAR> sentence =
+            OPUSW("physical keyboard input line one");
+        for (const WCHAR character : sentence) {
+            if (!post_keyboard_character(pane, character)) {
                 return fail(process, 37,
                             "selection test could not post its sentence");
             }
