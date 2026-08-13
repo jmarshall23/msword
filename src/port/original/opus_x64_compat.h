@@ -35,7 +35,7 @@
     vswprintf((buffer), (size), (format), (args))
 #endif
 #endif
-#ifndef __assume
+#if !defined(_MSC_VER) && !defined(__assume)
 #define __assume(condition) \
     ((condition) ? (void)0 : __builtin_unreachable())
 #endif
