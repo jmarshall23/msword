@@ -204,11 +204,14 @@ constants. The `SaveCabs(FRecordCab, ...)` callback mismatch now routes through 
 void adapter, and the first `VK_*` key constants are declared. Clang now builds
 the original C engine with MS anonymous-struct extensions, so the legacy `PAP.stc`
 accesses compile without rewriting `props.h`. The first `cmdwnd.c` window-tracking
-surface, `CursLeftRight`, and the clipboard/metafile shim batch now compile through
-the previous `CLIPBORD.C` and recorder-adapter callback errors. The next filtered
-`opus_word1_ui_test` build blockers are legacy bare `return;` cleanups in
-`command.c`, `cmd.c`, `cmdcore.c`, `cmdwnd.c`, and `command2.c`, plus `CMD3.C`
-pointer-return/prototype cleanup around edit-picture/file-name helpers.
+surface, `CursLeftRight`, the clipboard/metafile shim batch, and the first
+command/CMD3 legacy return cleanup now compile through the previous `CLIPBORD.C`,
+recorder-adapter, command, and edit-picture errors. The next filtered
+`opus_word1_ui_test` build blockers are the bitmap typedef collision between
+`windows.h` and `opus_x64_compat.h`, display/create/clipboard2 shim constants and
+types (`DRAWPATTERNRECT`, `PATCOPY`, `TRANSPARENT`, `ETO_*`, `LOGFONT`,
+`TEXTMETRIC`, `GMEM_*`, `ANSI_CHARSET`), lvalue-cast cleanup in `disp1.c`, and the
+next legacy bare `return;` cleanups in display/create/edit modules.
 
 Build the first pass mechanically:
 

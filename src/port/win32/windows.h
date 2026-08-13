@@ -1268,6 +1268,10 @@ SHORT GetKeyState(int virtual_key);
 BOOL PatBlt(HDC device_context, int x, int y, int width, int height,
             DWORD raster_operation);
 BOOL SetCursorPos(int x, int y);
+HWND FindWindowA(LPCSTR class_name, LPCSTR window_name);
+BOOL IsIconic(HWND window);
+BOOL OpenIcon(HWND window);
+BOOL IsClipboardFormatAvailable(UINT format);
 HFILE OpenFile(LPSTR file_name, LPOFSTRUCT reopen_buffer, UINT style);
 HDC BeginPaint(HWND window, LPPAINTSTRUCT paint);
 VOID EndPaint(HWND window, LPPAINTSTRUCT paint);
@@ -1300,6 +1304,9 @@ int SetScrollPos(HWND window, int bar, int position, BOOL redraw);
 #endif
 #ifndef PostMessage
 #define PostMessage PostMessageW
+#endif
+#ifndef FindWindow
+#define FindWindow FindWindowA
 #endif
 
 HGDIOBJ GetCurrentObject(HDC device_context, UINT object_type);

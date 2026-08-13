@@ -84,6 +84,7 @@ extern int vmwClipboard;
 extern struct TCC vtcc;
 extern int vlm;
 extern struct PIC   vpicFetch;
+extern CHAR *PchParseNextFile();
 extern struct BMI mpidrbbmi [];
 extern struct MERR vmerr;
 extern HWND vhwndPgvCtl;
@@ -306,8 +307,8 @@ CMB *pcmb;
 	CmdCopy1(&selCur, &selCur.ca);
 
 	GetSzProfileIpst(ipstDrawName, szDrawApp, szDrawAppDef, 64, fFalse);
-	rgw[0] = szDrawApp;
-	rgw[1] = szApp;
+	rgw[0] = (int)(LONG_PTR)szDrawApp;
+	rgw[1] = (int)(LONG_PTR)szApp;
 	BuildStMstRgw(mstLaunchDraw, rgw, rgchCmdLine, cchMaxSz, hNil);
 	StToSzInPlace(rgchCmdLine);
 
@@ -347,7 +348,7 @@ DoEditPic2()
 	if ((hwnd = GetClipboardOwner()) == vhwndApp
 			|| (!IsClipboardFormatAvailable(CF_METAFILEPICT) &&
 			!IsClipboardFormatAvailable(CF_BITMAP)))
-		return;
+		return 0;
 
 	/* TIFF import field will be rejected, even though it should never get this far */
 	/* for a metafile import field, we will only replace the single
@@ -355,7 +356,7 @@ DoEditPic2()
 	*/
 
 	if (!FPicRenderable(selCur.doc, selCur.cpFirst, selCur.cpLim, &mm))
-		return;
+		return 0;
 
 /* get old formatting for merge FPicRenderable did a fetchpe, and
    set up vcpFetch as the chPic character, even for an import
@@ -377,17 +378,17 @@ DoEditPic2()
 	if ((hwnd != NULL && *szClassDraw && FNeNcSz(szClassOwner, szClassDraw))
 			|| !FReadExtScrap() || !vsab.fPict || 
 			CpMacDoc(docScrap) != 1+ccpEop)
-		return;
+		return 0;
 
 /* set up undo and kill the existing selection */
 	if (!FSetUndoBefore(bcmPaste, uccPaste))
-		return;
+		return 0;
 	TurnOffSel(&selCur);
 
 /* copy the new picture in */
 	if (!FReplaceCps(PcaSetDcp(&ca1, selCur.doc, cpPic, (CP)1), 
 			PcaSetDcp(&ca2, docScrap, cp0, (CP)1)))
-		return;
+		return 0;
 
 /* check table/dead field properties */
 	AssureNestedPropsCorrect(PcaSetDcp(&ca1, selCur.doc, cpPic, (CP)1), fTrue);
@@ -1162,7 +1163,7 @@ CHAR *pchSrc;
 */
 /*  %%Function: PchParseNextFile  %%Owner: peterj  */
 
-PchParseNextFile(pchList)
+CHAR *PchParseNextFile(pchList)
 CHAR *pchList;
 
 {

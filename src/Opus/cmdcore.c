@@ -458,7 +458,7 @@ HANDLE hParam;
 		{
 		/* bad look key or not implememted */
 		Beep();
-		return;
+		return 0;
 		}
 
 	/* valid looks key */
@@ -473,12 +473,12 @@ HANDLE hParam;
 	if (vfSearchRepl)
 		{
 		DoLooksSR(ilcd, sprm, val);
-		return;
+		return 0;
 		}
 	else  if (vfDefineStyle)
 		{
 		DoLooksDS(ilcd, sprm, val);
-		return;
+		return 0;
 		}
 
 	/* get updated properties for selection if needed */
@@ -613,7 +613,7 @@ HANDLE hParam;
 			if (!vmerr.fMemFail)
 				FSetAgainGrpprl(prl, cchPrl, bcmFormatting);
 			else
-				return;
+				return 0;
 			}
 		}
 
@@ -671,7 +671,7 @@ int ilcd, val;
 	switch (ilcd)
 		{
 	case ilcdVanish:
-		return;	/* not included in rrf stuff */
+		return 0;	/* not included in rrf stuff */
 	case ilcdBold:
 		rrf.fBold = !rrf.fBold;
 		break;
@@ -701,7 +701,7 @@ int ilcd, val;
 			}
 	default:
 		ClearRibbonRrf();
-		return;
+		return 0;
 		}
 	ClearRulerRrf();
 }
@@ -999,7 +999,7 @@ int ch;
 	if (cpFirst >= cpMac)
 		{
 		Beep();
-		return;
+		return 0;
 		}
 
 	FetchCpPccpVisible(doc, cpFirst, &ccpFetch, selCur.ww/*fvcScreen*/, fFalse);
@@ -1072,13 +1072,13 @@ ShrinkSelect()
 	if (selCur.fBlock)
 		{
 		TurnOffBlock(&selCur); /* turn into insertion pt */
-		return;  /* don't beep */
+		return 0;  /* don't beep */
 		}
 
 	if (selCur.fIns)
 		{
 		Beep();
-		return;
+		return 0;
 		}
 
 	for (isty = istyGrowWord; isty < istyGrowMax; isty++ )
@@ -1291,7 +1291,7 @@ int  fScrap;
 			{
 LBeep:
 			Beep();
-			return;
+			return 0;
 			}
 
 		/* Don't allow deleting a table cell mark */
@@ -1319,7 +1319,7 @@ LBeep:
 	else  if (selCur.fTable)
 		{
 		CmdCutTable(&selCur, fScrap ? docScrap : docNil, fTrue /* fSetUndo */);
-		return;
+		return 0;
 		}
 
 	if (!FSetUndoBefore(fScrap ? bcmCut : bcmClear, fScrap ? uccCut : uccDeleteSel))
@@ -1454,5 +1454,3 @@ CMB *pcmb;
 	Select( &selCur, cp0, CpMacDoc(selCur.doc));
 	return cmdOK;
 }
-
-

@@ -491,7 +491,7 @@ BCM bcm, bcmNew;
 		*pch++ = ' ';
 		*pch++ = ' ';
 		if (fHasKey && FEqNcSz(szKey, pch))
-			return;
+			return 0;
 
 		/* copy keyname to buffer */
 		CchCopySz(szKey, pch);
@@ -499,7 +499,7 @@ BCM bcm, bcmNew;
 	else
 		{
 		if (!fHasKey)
-			return;
+			return 0;
 
 		/* kill old key name */
 		*pch = '\0';

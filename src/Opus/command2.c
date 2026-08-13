@@ -490,7 +490,7 @@ BCM bcm;
 	HPSY hpsy;
 
 	if (bcm == vbcmFetch && cmm == cmmCache)
-		return;
+		return 0;
 	
 	cmmCache = cmm;
 
@@ -517,7 +517,7 @@ uns bsy;
 	HPSY hpsy;
 
 	if (bsy == vbcmFetch && cmmCache == 0)
-		return;
+		return 0;
 
 	cmmCache = 0;
 	/* FUTURE: is it worth it to cache the whole symbol? */

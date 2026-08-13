@@ -360,7 +360,7 @@ CHAR * szPoint;
 		if (!FApplyOneProp (sprmCFtc, ftc))
 			{
 			*pcmd = cmdCancelled;
-			return;
+			return 0;
 			}
 		rrf.ftc = ftc;
 		ClearRulerRrf();
@@ -383,7 +383,7 @@ CHAR * szPoint;
 			if (!FApplyOneProp(sprmCHps, hps))
 				{
 				*pcmd = cmdCancelled;
-				return;
+				return 0;
 				}
 			rrf.hps = hps;
 			ClearRulerRrf();
@@ -691,7 +691,7 @@ int val;
 
 	/* get search/replace formatting block */
 	if (!FGetSRFb(&pfb))
-		return;
+		return 0;
 
 	/* these cases should have been taken care of already */
 	Assert (ilcd != ilcdParaNormal && ilcd != ilcdPlainText);
@@ -752,7 +752,7 @@ int val;
 				{
 				pfb->papGray.jc = -1;
 				GenSRBanter(0, valNil, 0);
-				return;
+				return 0;
 				}
 
 			break;
@@ -763,7 +763,7 @@ int val;
 				{
 				pfb->papGray.dyaLine = -1;
 				GenSRBanter(0, valNil, 0);
-				return;
+				return 0;
 				}
 
 			break;
@@ -774,7 +774,7 @@ int val;
 				{
 				pfb->papGray.dyaBefore = -1;
 				GenSRBanter(0, valNil, 0);
-				return;
+				return 0;
 				}
 
 			break;
@@ -857,10 +857,10 @@ int val;
 LErrRet:
 			Assert (vmerr.fMemFail);
 			/* if true, dialog will be brought down by sdm or msg filter */
-			return;
+			return 0;
 			}
 		BanterToTmc(tmcDSBanter, vstcStyle, &stsh, hsttbChpe, hsttbPape);
-		return;
+		return 0;
 		}
 
 
@@ -1158,7 +1158,7 @@ CancelDyadic()
 	in CmdDoDyadic
 	*/
 	if (vssc == sscNil || vrf.fInDyadic)
-		return;
+		return 0;
 
 	CmdEndSsc(fFalse/*fDoIt*/, NULL /* pcmb */);
 	/* otherwise we will have repeat move or whatever... */
@@ -1393,7 +1393,7 @@ struct PAP   *ppap;
 	if (vfDefineStyle)
 		{
 		ApplyGrpprlToStshPrope(rgb, cb, fFalse, fTrue);
-		return;
+		return 0;
 		}
 
 	if (vrulss.caRulerSprm.doc != docNil
@@ -1467,5 +1467,3 @@ CmdAppRestore(pcmb)
 	ElWAppRestore();
 	return cmdOK;
 }
-
-

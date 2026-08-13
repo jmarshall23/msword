@@ -390,7 +390,7 @@ uns ac;
 	if (vcInMessageBox > 0) 
 		{
 		RtError(rerrCommandFailed); /* to stop the macro from continue */
-		return;
+		return 0;
 		}
 
 	/* Stop any recording while we are closing file */
