@@ -65,7 +65,11 @@ struct DDES /* DDE Status */
 	int     secTimeOut: 13;   /* how long to timeout (up to 136 mins) */
 	struct QUE      **hque;   /* dde message queue */
 	struct PL       **hplddli; /* server links */
-	SD sdResult;		      /* result of fSpecial REQUEST */
+#ifdef OPUS_X64
+	UINT_PTR sdResult;	      /* SD result of fSpecial REQUEST */
+#else
+	uns sdResult;		      /* SD result of fSpecial REQUEST */
+#endif
 	};
 
 
