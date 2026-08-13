@@ -1375,15 +1375,15 @@ void show_toolbar_context_menu(HWND toolbar, POINT screen_point) {
     AppendMenuW(popup,
                 MF_STRING |
                     (state->standard_visible ? MF_CHECKED : MF_UNCHECKED),
-                kCmdToggleStandardToolbar, L"&Standard");
+                kCmdToggleStandardToolbar, OPUSW("&Standard"));
     AppendMenuW(popup,
                 MF_STRING |
                     (state->formatting_visible ? MF_CHECKED : MF_UNCHECKED),
-                kCmdToggleFormattingToolbar, L"&Formatting");
-    AppendMenuW(popup, MF_STRING, bcmRuler, L"&Ruler");
-    AppendMenuW(popup, MF_STRING, bcmStatusArea, L"&Status Bar");
+                kCmdToggleFormattingToolbar, OPUSW("&Formatting"));
+    AppendMenuW(popup, MF_STRING, bcmRuler, OPUSW("&Ruler"));
+    AppendMenuW(popup, MF_STRING, bcmStatusArea, OPUSW("&Status Bar"));
     AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(popup, MF_STRING, bcmCustomize, L"&Customize...");
+    AppendMenuW(popup, MF_STRING, bcmCustomize, OPUSW("&Customize..."));
     style_menu_tree(popup);
     const UINT command = TrackPopupMenu(
         popup, TPM_RETURNCMD | TPM_RIGHTBUTTON,
