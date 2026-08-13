@@ -1269,6 +1269,27 @@ if(NOT WIN32)
         )
     endforeach()
 
+    add_executable(opus_win32_font_test
+        port/original/opus-win32-font-test.cpp
+    )
+    target_compile_features(opus_win32_font_test PRIVATE cxx_std_20)
+    target_compile_definitions(opus_win32_font_test PRIVATE
+        WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
+    )
+    target_include_directories(opus_win32_font_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+    target_link_libraries(opus_win32_font_test PRIVATE opus_x64_runtime)
+    set_target_properties(opus_win32_font_test PROPERTIES
+        FOLDER "Original Opus x64/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_win32_font_test PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        )
+    endforeach()
+
     add_executable(opus_win32_memory_test
         port/original/opus-win32-memory-test.cpp
     )
@@ -1391,6 +1412,7 @@ if(NOT WIN32)
     add_test(NAME opus_win32_resource_test COMMAND $<TARGET_FILE:opus_win32_resource_test>)
     add_test(NAME opus_win32_gdi_object_test COMMAND $<TARGET_FILE:opus_win32_gdi_object_test>)
     add_test(NAME opus_win32_gdi_raster_test COMMAND $<TARGET_FILE:opus_win32_gdi_raster_test>)
+    add_test(NAME opus_win32_font_test COMMAND $<TARGET_FILE:opus_win32_font_test>)
     add_test(NAME opus_win32_memory_test COMMAND $<TARGET_FILE:opus_win32_memory_test>)
 endif()
 if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")

@@ -10,6 +10,8 @@
 namespace {
 
 constexpr DWORD kGdiMagic = 0x47444932u;
+constexpr int kLogicalPixelsPerInch = 96;
+constexpr int kDesignUnitsPerEm = 1000;
 
 enum class GdiKind {
     Dc,
@@ -85,6 +87,20 @@ GdiObject g_white_pen{ kGdiMagic, GdiKind::Pen, true };
 GdiObject g_system_font{ kGdiMagic, GdiKind::Font, true };
 GdiObject g_default_gui_font{ kGdiMagic, GdiKind::Font, true };
 
+struct FontFace {
+    const char* name;
+    BYTE charset;
+    BYTE pitch_family;
+    bool fixed_pitch;
+};
+
+constexpr FontFace kFontFaces[] = {
+    {"Tms Rmn", ANSI_CHARSET, VARIABLE_PITCH | FF_ROMAN, false},
+    {"Helv", ANSI_CHARSET, VARIABLE_PITCH | FF_SWISS, false},
+    {"Courier", ANSI_CHARSET, FIXED_PITCH | FF_MODERN, true},
+    {"Symbol", SYMBOL_CHARSET, VARIABLE_PITCH | FF_DONTCARE, false},
+};
+
 GdiObject* object_from_handle(HGDIOBJ handle) {
     auto* object = static_cast<GdiObject*>(handle);
     return object != nullptr && object->magic == kGdiMagic ? object : nullptr;
@@ -97,6 +113,170 @@ GdiObject* dc_from_handle(HDC handle) {
 
 int bitmap_stride(int width, UINT bits_per_pixel) {
     return static_cast<int>(((width * bits_per_pixel + 31u) / 32u) * 4u);
+}
+
+int ascii_lower(int ch) {
+    return ch >= 'A' && ch <= 'Z' ? ch - 'A' + 'a' : ch;
+}
+
+bool equal_face_name(const char* left, const char* right) {
+    if (left == nullptr || right == nullptr) return false;
+    while (*left != '\0' && *right != '\0') {
+        if (ascii_lower(static_cast<unsigned char>(*left)) !=
+            ascii_lower(static_cast<unsigned char>(*right))) {
+            return false;
+        }
+        ++left;
+        ++right;
+    }
+    return *left == '\0' && *right == '\0';
+}
+
+void copy_face_name(char* destination, const char* source) {
+    std::size_t index = 0;
+    for (; index + 1 < LF_FACESIZE && source[index] != '\0'; ++index) {
+        destination[index] = source[index];
+    }
+    destination[index] = '\0';
+}
+
+void copy_face_name(WCHAR* destination, const char* source) {
+    std::size_t index = 0;
+    for (; index + 1 < LF_FACESIZE && source[index] != '\0'; ++index) {
+        destination[index] =
+            static_cast<WCHAR>(static_cast<unsigned char>(source[index]));
+    }
+    destination[index] = 0;
+}
+
+void narrow_face_name(const WCHAR* source, char* destination) {
+    std::size_t index = 0;
+    for (; index + 1 < LF_FACESIZE && source[index] != 0; ++index) {
+        destination[index] = static_cast<char>(source[index] & 0xff);
+    }
+    destination[index] = '\0';
+}
+
+const FontFace& face_for_name(const char* name, BYTE pitch_family) {
+    for (const auto& face : kFontFaces) {
+        if (equal_face_name(name, face.name)) return face;
+    }
+    if ((pitch_family & FIXED_PITCH) != 0) return kFontFaces[2];
+    return kFontFaces[1];
+}
+
+const FontFace& face_for_font(const GdiObject* font) {
+    if (font == nullptr || font->kind != GdiKind::Font) return kFontFaces[1];
+    char face_name[LF_FACESIZE] = {};
+    narrow_face_name(font->font.logical.lfFaceName, face_name);
+    return face_for_name(face_name, font->font.logical.lfPitchAndFamily);
+}
+
+int font_logical_height(const LOGFONTW& logical) {
+    return logical.lfHeight == 0 ? -16 : logical.lfHeight;
+}
+
+int font_em_pixels(const LOGFONTW& logical) {
+    const int height = font_logical_height(logical);
+    if (height < 0) return -height;
+    const int leading = (std::max)(1, height / 5);
+    return (std::max)(1, height - leading);
+}
+
+int advance_units(const FontFace& face, unsigned char ch) {
+    if (face.fixed_pitch) return 600;
+    if (ch == ' ') return 250;
+    if (ch >= '0' && ch <= '9') return 500;
+    switch (ch) {
+        case 'i':
+        case 'j':
+        case 'l':
+        case 'I':
+        case '.':
+        case ',':
+        case ':':
+        case ';':
+        case '!':
+        case '\'':
+            return 280;
+        case 'm':
+        case 'w':
+        case 'M':
+        case 'W':
+            return 900;
+        case 'f':
+        case 'r':
+        case 't':
+            return 360;
+        default:
+            return face.pitch_family == (VARIABLE_PITCH | FF_ROMAN) ? 520 : 560;
+    }
+}
+
+int scaled_advance(const FontFace& face, unsigned char ch, int em_pixels) {
+    return (advance_units(face, ch) * em_pixels + kDesignUnitsPerEm / 2) /
+           kDesignUnitsPerEm;
+}
+
+LOGFONTW selected_logical_font(HDC device_context) {
+    auto* dc = dc_from_handle(device_context);
+    auto* font = dc != nullptr ? object_from_handle(dc->dc.font) : nullptr;
+    return font != nullptr && font->kind == GdiKind::Font
+               ? font->font.logical
+               : g_default_gui_font.font.logical;
+}
+
+GdiObject* selected_font_object(HDC device_context) {
+    auto* dc = dc_from_handle(device_context);
+    auto* font = dc != nullptr ? object_from_handle(dc->dc.font) : nullptr;
+    return font != nullptr && font->kind == GdiKind::Font ? font : nullptr;
+}
+
+void fill_text_metric(const LOGFONTW& logical, const FontFace& face,
+                      TEXTMETRICA& metric) {
+    std::memset(&metric, 0, sizeof(metric));
+    const int requested_height = font_logical_height(logical);
+    const int em = font_em_pixels(logical);
+    const int leading = requested_height > 0
+                            ? (std::max)(0, requested_height - em)
+                            : (std::max)(1, em / 5);
+    metric.tmHeight = requested_height > 0 ? requested_height : em + leading;
+    metric.tmInternalLeading = leading;
+    metric.tmAscent = (metric.tmHeight * 4) / 5;
+    metric.tmDescent = metric.tmHeight - metric.tmAscent;
+    metric.tmAveCharWidth = scaled_advance(face, 'n', em);
+    metric.tmMaxCharWidth = scaled_advance(face, 'W', em);
+    metric.tmWeight = logical.lfWeight;
+    metric.tmItalic = logical.lfItalic;
+    metric.tmUnderlined = logical.lfUnderline;
+    metric.tmStruckOut = logical.lfStrikeOut;
+    metric.tmFirstChar = 32;
+    metric.tmLastChar = 255;
+    metric.tmDefaultChar = '?';
+    metric.tmBreakChar = ' ';
+    metric.tmPitchAndFamily =
+        static_cast<BYTE>((face.fixed_pitch ? 0 : TMPF_FIXED_PITCH) |
+                          TMPF_VECTOR | TMPF_TRUETYPE |
+                          (face.pitch_family & 0xf0));
+    metric.tmCharSet = face.charset;
+    metric.tmOverhang = 0;
+    metric.tmDigitizedAspectX = kLogicalPixelsPerInch;
+    metric.tmDigitizedAspectY = kLogicalPixelsPerInch;
+}
+
+void make_enum_font(const FontFace& face, LOGFONTA& logical,
+                    TEXTMETRICA& metric) {
+    std::memset(&logical, 0, sizeof(logical));
+    logical.lfHeight = -MulDiv(10, kLogicalPixelsPerInch, 72);
+    logical.lfCharSet = face.charset;
+    logical.lfPitchAndFamily = face.pitch_family;
+    copy_face_name(logical.lfFaceName, face.name);
+    LOGFONTW wide{};
+    wide.lfHeight = logical.lfHeight;
+    wide.lfCharSet = logical.lfCharSet;
+    wide.lfPitchAndFamily = logical.lfPitchAndFamily;
+    copy_face_name(wide.lfFaceName, face.name);
+    fill_text_metric(wide, face, metric);
 }
 
 HBITMAP create_bitmap(int width, int height, UINT planes, UINT bits_per_pixel,
@@ -157,6 +337,11 @@ void init_stock_objects() {
     g_black_brush.brush.color = RGB(0, 0, 0);
     g_black_pen.pen.color = RGB(0, 0, 0);
     g_white_pen.pen.color = RGB(255, 255, 255);
+    g_system_font.font.logical.lfHeight = -16;
+    g_system_font.font.logical.lfCharSet = ANSI_CHARSET;
+    g_system_font.font.logical.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
+    copy_face_name(g_system_font.font.logical.lfFaceName, "Helv");
+    g_default_gui_font.font.logical = g_system_font.font.logical;
 }
 
 std::optional<COLORREF> pixel_at(const BitmapData& bitmap, int x, int y) {
@@ -397,6 +582,10 @@ HFONT CreateFontIndirectW(const LOGFONTW* logical_font) {
     auto* object = new GdiObject();
     object->kind = GdiKind::Font;
     if (logical_font != nullptr) object->font.logical = *logical_font;
+    const FontFace& face = face_for_font(object);
+    copy_face_name(object->font.logical.lfFaceName, face.name);
+    object->font.logical.lfCharSet = face.charset;
+    object->font.logical.lfPitchAndFamily = face.pitch_family;
     return static_cast<HFONT>(object);
 }
 
@@ -422,6 +611,86 @@ HFONT CreateFontIndirectA(const LOGFONTA* logical_font) {
         }
     }
     return CreateFontIndirectW(&wide);
+}
+
+BOOL GetTextMetricsA(HDC device_context, LPTEXTMETRICA text_metric) {
+    if (dc_from_handle(device_context) == nullptr || text_metric == nullptr) {
+        return FALSE;
+    }
+    const LOGFONTW logical = selected_logical_font(device_context);
+    fill_text_metric(logical, face_for_font(selected_font_object(device_context)),
+                     *text_metric);
+    return TRUE;
+}
+
+BOOL GetTextMetricsW(HDC device_context, LPTEXTMETRICW text_metric) {
+    return GetTextMetricsA(device_context, text_metric);
+}
+
+BOOL GetTextExtentPoint32A(HDC device_context, LPCSTR text, int count,
+                           SIZE* size) {
+    if (dc_from_handle(device_context) == nullptr || text == nullptr || count < 0 ||
+        size == nullptr) {
+        return FALSE;
+    }
+    const LOGFONTW logical = selected_logical_font(device_context);
+    const FontFace& face = face_for_font(selected_font_object(device_context));
+    const int em = font_em_pixels(logical);
+    int width = 0;
+    for (int index = 0; index < count; ++index) {
+        width += scaled_advance(face, static_cast<unsigned char>(text[index]), em);
+    }
+    TEXTMETRICA metric{};
+    fill_text_metric(logical, face, metric);
+    size->cx = width;
+    size->cy = metric.tmHeight;
+    return TRUE;
+}
+
+BOOL GetCharWidthA(HDC device_context, UINT first_char, UINT last_char,
+                   LPINT buffer) {
+    if (dc_from_handle(device_context) == nullptr || buffer == nullptr ||
+        last_char < first_char) {
+        return FALSE;
+    }
+    const LOGFONTW logical = selected_logical_font(device_context);
+    const FontFace& face = face_for_font(selected_font_object(device_context));
+    const int em = font_em_pixels(logical);
+    for (UINT ch = first_char; ch <= last_char; ++ch) {
+        buffer[ch - first_char] =
+            scaled_advance(face, static_cast<unsigned char>(ch), em);
+    }
+    return TRUE;
+}
+
+int EnumFontsA(HDC, LPCSTR face_name, FONTENUMPROCA enum_font_proc,
+               LPARAM parameter) {
+    if (enum_font_proc == nullptr) return 0;
+    int count = 0;
+    for (const auto& face : kFontFaces) {
+        if (face_name != nullptr && face_name[0] != '\0' &&
+            !equal_face_name(face_name, face.name)) {
+            continue;
+        }
+        LOGFONTA logical{};
+        TEXTMETRICA metric{};
+        make_enum_font(face, logical, metric);
+        ++count;
+        if (enum_font_proc(&logical, &metric, TRUETYPE_FONTTYPE, parameter) == 0) {
+            break;
+        }
+    }
+    return count;
+}
+
+int EnumFontFamiliesExA(HDC device_context, LPLOGFONTA logfont,
+                        FONTENUMPROCA enum_font_proc, LPARAM parameter,
+                        DWORD) {
+    const char* face_name =
+        logfont != nullptr && logfont->lfFaceName[0] != '\0'
+            ? logfont->lfFaceName
+            : nullptr;
+    return EnumFontsA(device_context, face_name, enum_font_proc, parameter);
 }
 
 HGDIOBJ SelectObject(HDC device_context, HGDIOBJ object) {
@@ -695,6 +964,35 @@ int GetDIBits(HDC, HBITMAP bitmap_handle, UINT start_scan, UINT scan_lines,
     std::memcpy(bits, bitmap->bitmap.bits.data() + row_bytes * start_scan,
                 row_bytes * rows);
     return static_cast<int>(rows);
+}
+
+int GetDeviceCaps(HDC device_context, int index) {
+    if (dc_from_handle(device_context) == nullptr) return 0;
+    switch (index) {
+        case HORZRES:
+            return 640;
+        case VERTRES:
+            return 480;
+        case HORZSIZE:
+            return 169;
+        case VERTSIZE:
+            return 127;
+        case NUMCOLORS:
+            return 256;
+        case BITSPIXEL:
+            return 32;
+        case PLANES:
+            return 1;
+        case LOGPIXELSX:
+        case LOGPIXELSY:
+            return kLogicalPixelsPerInch;
+        case RASTERCAPS:
+            return RC_BITBLT | RC_SCALING;
+        case TEXTCAPS:
+            return TC_SA_CONTIN | TC_RA_ABLE | TC_VA_ABLE;
+        default:
+            return 0;
+    }
 }
 
 }  // extern "C"

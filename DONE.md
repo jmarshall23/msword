@@ -345,3 +345,41 @@ item 14 because startup SDM still reaches missing user32 metrics/color APIs.
 
 Reviewed by agy and claude: both kept this subtask to software raster operations
 inside the gdi32 shim, with text metrics and user32 left for their own items.
+
+## Add GDI text metrics
+
+The non-Windows gdi32 shim now supplies deterministic font metrics for the
+startup faces `Tms Rmn`, `Helv`, `Courier`, and `Symbol`. `CreateFontIndirectA/W`
+normalizes those names through the substitution table, selected fonts feed
+`GetTextMetricsA/W`, `GetTextExtentPoint32A`, and `GetCharWidthA`, and
+`EnumFontsA`/`EnumFontFamiliesExA` enumerate the same four faces without holding
+the GDI lock across callbacks. `GetDeviceCaps` now returns the live screen,
+bitmap, raster, text, and 96-DPI caps Word reads while building font caches.
+
+The metric data is a small built-in design-unit table, not captured Windows GDI
+oracle data. It locks additivity and pitch behavior for this shim and leaves
+exact Windows pagination fidelity as a data replacement task when oracle output
+is available.
+
+`opus_win32_font_test` covers whole-string versus per-character extent
+additivity, `GetCharWidthA`, metric height/internal-leading coherence, zero
+overhang, fixed versus variable pitch bits, font enumeration including early
+callback stop, filtered `EnumFontFamiliesExA`, and the live device caps. The
+Win32 coverage baseline no longer lists `EnumFontFamiliesExA`, `GetDeviceCaps`,
+`GetTextExtentPoint32A`, or `GetTextMetricsA`.
+
+Validated with `cmake -S src -B build-item13c -DCMAKE_C_FLAGS=-std=gnu89`,
+`cmake --build build-item13c --target opus_original_strtbl_test
+opus_original_sttb_test opus_original_plc_test opus_sdm_cab_test
+opus_original_command_test opus_win32_memory_test opus_win32_resource_test
+opus_win32_gdi_object_test opus_win32_gdi_raster_test opus_win32_font_test
+--parallel 8`, and `ctest --test-dir build-item13c -R
+'strtbl|sttb|plc|sdm_cab|command|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|win32_coverage'
+--output-on-failure`, which passed 11/11. `opus_x64_runtime_test` still builds
+but segfaults through a null call; unresolved imports are now user32 startup
+surface only: `CreateWindowExA`, `RegisterClassExA`, `GetDC`, `ReleaseDC`,
+`GetSystemMetrics`, and `GetSysColor`.
+
+Reviewed by agy and claude: agy confirmed the minimal text-metrics surface and
+font substitution table; claude caught the hidden `GetDeviceCaps` and
+`GetCharWidthA` prerequisites and the reentrant `EnumFontsA` callback trap.

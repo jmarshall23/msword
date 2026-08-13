@@ -1431,11 +1431,26 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef VARIABLE_PITCH
 #define VARIABLE_PITCH 2
 #endif
+#ifndef DEFAULT_PITCH
+#define DEFAULT_PITCH 0
+#endif
 #ifndef RASTER_FONTTYPE
 #define RASTER_FONTTYPE 0x0001
 #endif
 #ifndef DEVICE_FONTTYPE
 #define DEVICE_FONTTYPE 0x0002
+#endif
+#ifndef TRUETYPE_FONTTYPE
+#define TRUETYPE_FONTTYPE 0x0004
+#endif
+#ifndef TMPF_FIXED_PITCH
+#define TMPF_FIXED_PITCH 0x01
+#endif
+#ifndef TMPF_VECTOR
+#define TMPF_VECTOR 0x02
+#endif
+#ifndef TMPF_TRUETYPE
+#define TMPF_TRUETYPE 0x04
 #endif
 #ifndef FF_ROMAN
 #define FF_ROMAN (1 << 4)
@@ -1584,6 +1599,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef RASTERCAPS
 #define RASTERCAPS 38
 #endif
+#ifndef RC_BITBLT
+#define RC_BITBLT 1
+#endif
 #ifndef RC_SCALING
 #define RC_SCALING 4
 #endif
@@ -1598,6 +1616,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef TC_RA_ABLE
 #define TC_RA_ABLE 0x2000
+#endif
+#ifndef TC_VA_ABLE
+#define TC_VA_ABLE 0x4000
 #endif
 #ifndef MM_HIMETRIC
 #define MM_HIMETRIC 3
@@ -1631,6 +1652,9 @@ typedef struct _WIN32_FIND_DATAA {
 #endif
 #ifndef ANSI_CHARSET
 #define ANSI_CHARSET 0
+#endif
+#ifndef SYMBOL_CHARSET
+#define SYMBOL_CHARSET 2
 #endif
 #ifndef BI_RGB
 #define BI_RGB 0L
@@ -3005,6 +3029,8 @@ HFONT CreateFontIndirectA(const LOGFONTA* logical_font);
 HFONT CreateFontIndirectW(const LOGFONTW* logical_font);
 BOOL GetTextMetricsA(HDC device_context, LPTEXTMETRICA text_metric);
 BOOL GetTextMetricsW(HDC device_context, LPTEXTMETRICW text_metric);
+BOOL GetCharWidthA(HDC device_context, UINT first_char, UINT last_char,
+                   LPINT buffer);
 HBITMAP CreateBitmapIndirect(const BITMAP* bitmap);
 HBITMAP CreateBitmap(int width, int height, UINT planes, UINT bits_per_pixel,
                      LPCVOID bits);
@@ -3055,6 +3081,8 @@ int ReleaseDC(HWND window, HDC device_context);
 int EnumFontFamiliesExA(HDC device_context, LPLOGFONTA logfont,
                         FONTENUMPROCA enum_font_proc, LPARAM parameter,
                         DWORD flags);
+int EnumFontsA(HDC device_context, LPCSTR face_name,
+               FONTENUMPROCA enum_font_proc, LPARAM parameter);
 SHORT GetKeyState(int virtual_key);
 BOOL PatBlt(HDC device_context, int x, int y, int width, int height,
             DWORD raster_operation);
@@ -3153,6 +3181,12 @@ HLOCAL LocalReAlloc(HLOCAL memory, SIZE_T bytes, UINT flags);
 #endif
 #ifndef GetTextMetrics
 #define GetTextMetrics GetTextMetricsA
+#endif
+#ifndef GetCharWidth
+#define GetCharWidth GetCharWidthA
+#endif
+#ifndef EnumFonts
+#define EnumFonts EnumFontsA
 #endif
 
 HGDIOBJ GetCurrentObject(HDC device_context, UINT object_type);

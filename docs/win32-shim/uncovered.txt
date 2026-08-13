@@ -32,7 +32,6 @@ EmptyClipboard
 EnableWindow
 EndPaint
 EnumChildWindows
-EnumFontFamiliesExA
 EnumThreadWindows
 EnumWindows
 Escape
@@ -52,7 +51,6 @@ GetCurrentProcessId
 GetCurrentThreadId
 GetCursorPos
 GetDC
-GetDeviceCaps
 GetDlgCtrlID
 GetEnvironmentVariableA
 GetFocus
@@ -71,8 +69,6 @@ GetSysColorBrush
 GetSystemMenu
 GetSystemMetrics
 GetTempFileNameA
-GetTextExtentPoint32A
-GetTextMetricsA
 GetViewportExtEx
 GetViewportOrgEx
 GetWindow
