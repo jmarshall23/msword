@@ -217,12 +217,174 @@ std::shared_mutex* lock_from_srw(PSRWLOCK lock) {
     return static_cast<std::shared_mutex*>(lock->Ptr);
 }
 
+bool supported_code_page(UINT code_page) {
+    return code_page == CP_ACP || code_page == CP_UTF8 || code_page == 1252;
+}
+
+std::size_t narrow_count(LPCSTR text, int count) {
+    if (text == nullptr || count < -1) return 0;
+    return count == -1 ? std::strlen(text) + 1 : static_cast<std::size_t>(count);
+}
+
+std::size_t wide_count(LPCWSTR text, int count) {
+    if (text == nullptr || count < -1) return 0;
+    if (count != -1) return static_cast<std::size_t>(count);
+    std::size_t length = 0;
+    while (text[length] != 0) ++length;
+    return length + 1;
+}
+
+void append_utf8(std::vector<char>& output, DWORD code_point) {
+    if (code_point <= 0x7f) {
+        output.push_back(static_cast<char>(code_point));
+    } else if (code_point <= 0x7ff) {
+        output.push_back(static_cast<char>(0xc0 | (code_point >> 6u)));
+        output.push_back(static_cast<char>(0x80 | (code_point & 0x3fu)));
+    } else if (code_point <= 0xffff) {
+        output.push_back(static_cast<char>(0xe0 | (code_point >> 12u)));
+        output.push_back(static_cast<char>(0x80 | ((code_point >> 6u) & 0x3fu)));
+        output.push_back(static_cast<char>(0x80 | (code_point & 0x3fu)));
+    } else {
+        output.push_back(static_cast<char>(0xf0 | (code_point >> 18u)));
+        output.push_back(static_cast<char>(0x80 | ((code_point >> 12u) & 0x3fu)));
+        output.push_back(static_cast<char>(0x80 | ((code_point >> 6u) & 0x3fu)));
+        output.push_back(static_cast<char>(0x80 | (code_point & 0x3fu)));
+    }
+}
+
+void append_wide_utf8(std::vector<WCHAR>& output, DWORD code_point) {
+    if (code_point <= 0xffff) {
+        output.push_back(static_cast<WCHAR>(code_point));
+        return;
+    }
+    code_point -= 0x10000u;
+    output.push_back(static_cast<WCHAR>(0xd800u + (code_point >> 10u)));
+    output.push_back(static_cast<WCHAR>(0xdc00u + (code_point & 0x3ffu)));
+}
+
+std::vector<WCHAR> decode_utf8(LPCSTR text, std::size_t count) {
+    std::vector<WCHAR> output;
+    for (std::size_t index = 0; index < count;) {
+        const auto byte = static_cast<unsigned char>(text[index++]);
+        DWORD code_point = 0xfffdu;
+        unsigned extra = 0;
+        if (byte < 0x80) {
+            code_point = byte;
+        } else if ((byte & 0xe0u) == 0xc0u) {
+            code_point = byte & 0x1fu;
+            extra = 1;
+        } else if ((byte & 0xf0u) == 0xe0u) {
+            code_point = byte & 0x0fu;
+            extra = 2;
+        } else if ((byte & 0xf8u) == 0xf0u) {
+            code_point = byte & 0x07u;
+            extra = 3;
+        }
+        bool valid = extra != 0 || byte < 0x80;
+        for (unsigned part = 0; part < extra; ++part) {
+            if (index >= count ||
+                (static_cast<unsigned char>(text[index]) & 0xc0u) != 0x80u) {
+                valid = false;
+                break;
+            }
+            code_point =
+                (code_point << 6u) | (static_cast<unsigned char>(text[index++]) & 0x3fu);
+        }
+        append_wide_utf8(output, valid ? code_point : 0xfffdu);
+    }
+    return output;
+}
+
+std::vector<char> encode_utf8(LPCWSTR text, std::size_t count, BOOL* used_default) {
+    std::vector<char> output;
+    for (std::size_t index = 0; index < count; ++index) {
+        DWORD code_point = text[index];
+        if (code_point >= 0xd800u && code_point <= 0xdbffu && index + 1 < count &&
+            text[index + 1] >= 0xdc00u && text[index + 1] <= 0xdfffu) {
+            code_point = 0x10000u + (((code_point - 0xd800u) << 10u) |
+                                     (static_cast<DWORD>(text[++index]) - 0xdc00u));
+        } else if (code_point >= 0xd800u && code_point <= 0xdfffu) {
+            code_point = 0xfffdu;
+            if (used_default != nullptr) *used_default = TRUE;
+        }
+        append_utf8(output, code_point);
+    }
+    return output;
+}
+
 }  // namespace
 
 extern "C" {
 
 DWORD GetLastError(void) { return g_last_error; }
 VOID SetLastError(DWORD error) { g_last_error = error; }
+
+int MultiByteToWideChar(UINT code_page, DWORD, LPCSTR multi_byte,
+                        int multi_byte_count, LPWSTR wide_char,
+                        int wide_char_count) {
+    if (!supported_code_page(code_page) || multi_byte == nullptr ||
+        multi_byte_count < -1 || wide_char_count < 0) {
+        g_last_error = ERROR_INVALID_PARAMETER;
+        return 0;
+    }
+    std::vector<WCHAR> output;
+    const std::size_t count = narrow_count(multi_byte, multi_byte_count);
+    if (code_page == CP_UTF8) {
+        output = decode_utf8(multi_byte, count);
+    } else {
+        output.reserve(count);
+        for (std::size_t index = 0; index < count; ++index) {
+            output.push_back(static_cast<unsigned char>(multi_byte[index]));
+        }
+    }
+    if (wide_char == nullptr || wide_char_count == 0) {
+        return static_cast<int>(output.size());
+    }
+    if (static_cast<std::size_t>(wide_char_count) < output.size()) {
+        g_last_error = ERROR_INSUFFICIENT_BUFFER;
+        return 0;
+    }
+    std::copy(output.begin(), output.end(), wide_char);
+    return static_cast<int>(output.size());
+}
+
+int WideCharToMultiByte(UINT code_page, DWORD, LPCWSTR wide_char,
+                        int wide_char_count, LPSTR multi_byte,
+                        int multi_byte_count, LPCSTR default_char,
+                        BOOL* used_default_char) {
+    if (used_default_char != nullptr) *used_default_char = FALSE;
+    if (!supported_code_page(code_page) || wide_char == nullptr ||
+        wide_char_count < -1 || multi_byte_count < 0) {
+        g_last_error = ERROR_INVALID_PARAMETER;
+        return 0;
+    }
+    const std::size_t count = wide_count(wide_char, wide_char_count);
+    std::vector<char> output;
+    if (code_page == CP_UTF8) {
+        output = encode_utf8(wide_char, count, used_default_char);
+    } else {
+        const char fallback = default_char != nullptr ? default_char[0] : '?';
+        output.reserve(count);
+        for (std::size_t index = 0; index < count; ++index) {
+            const WCHAR value = wide_char[index];
+            if (value <= 0xffu) {
+                output.push_back(static_cast<char>(value));
+            } else {
+                output.push_back(fallback);
+                if (used_default_char != nullptr) *used_default_char = TRUE;
+            }
+        }
+    }
+    if (multi_byte == nullptr || multi_byte_count == 0) {
+        return static_cast<int>(output.size());
+    }
+    if (static_cast<std::size_t>(multi_byte_count) < output.size()) {
+        g_last_error = ERROR_INSUFFICIENT_BUFFER;
+        return 0;
+    }
+    std::copy(output.begin(), output.end(), multi_byte);
+    return static_cast<int>(output.size());
+}
 
 VOID OutputDebugStringA(LPCSTR text) {
     if (text != nullptr) std::fputs(text, stderr);

@@ -329,6 +329,12 @@ The small callback/string helpers `CallWindowProcW`, `lstrcmpW`, and
 units, with ASCII-only folding for the insensitive form; full NLS collation is
 not part of the shim until a non-ASCII call site proves it is needed.
 
+The kernel string conversion helpers `MultiByteToWideChar` and
+`WideCharToMultiByte` now cover the code pages this tree calls today:
+`CP_ACP`, `CP_UTF8`, and 1252. They handle sizing calls, `-1` terminator
+counts, truncation failure, UTF-8 round trips, and default-character fallback
+for wide characters that do not fit a byte code page.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

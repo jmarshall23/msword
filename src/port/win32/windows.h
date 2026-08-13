@@ -2630,6 +2630,12 @@ typedef DWORD COLORREF;
 #ifndef CP_ACP
 #define CP_ACP 0
 #endif
+#ifndef CP_UTF8
+#define CP_UTF8 65001
+#endif
+#ifndef WC_NO_BEST_FIT_CHARS
+#define WC_NO_BEST_FIT_CHARS 0x00000400
+#endif
 
 #ifndef WAIT_OBJECT_0
 #define WAIT_OBJECT_0 0
@@ -2761,6 +2767,9 @@ typedef DWORD COLORREF;
 #endif
 #ifndef ERROR_INVALID_PARAMETER
 #define ERROR_INVALID_PARAMETER 87
+#endif
+#ifndef ERROR_INSUFFICIENT_BUFFER
+#define ERROR_INSUFFICIENT_BUFFER 122
 #endif
 #ifndef HFILE_ERROR
 #define HFILE_ERROR ((HFILE)-1)

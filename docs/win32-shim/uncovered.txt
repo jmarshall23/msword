@@ -28,7 +28,6 @@ InvalidateRect
 IsClipboardFormatAvailable
 LineTo
 MoveToEx
-MultiByteToWideChar
 OpenClipboard
 Polygon
 Rectangle
@@ -45,4 +44,3 @@ SetViewportOrgEx
 SetWindowExtEx
 SetWindowOrgEx
 TextOutW
-WideCharToMultiByte
