@@ -1111,18 +1111,18 @@ void show_text_color_palette(HWND app, HWND toolbar) {
     struct Choice {
         int index;
         COLORREF color;
-        const wchar_t* name;
+        const WCHAR* name;
     };
     const std::array<Choice, 9> choices{{
-        {0, RGB(0, 0, 0), L"Automatic"},
-        {1, RGB(0, 0, 0), L"Black"},
-        {2, RGB(0, 0, 255), L"Blue"},
-        {3, RGB(0, 255, 255), L"Cyan"},
-        {4, RGB(0, 128, 0), L"Green"},
-        {5, RGB(255, 0, 255), L"Magenta"},
-        {6, RGB(255, 0, 0), L"Red"},
-        {7, RGB(255, 255, 0), L"Yellow"},
-        {8, RGB(255, 255, 255), L"White"},
+        {0, RGB(0, 0, 0), OPUSW("Automatic")},
+        {1, RGB(0, 0, 0), OPUSW("Black")},
+        {2, RGB(0, 0, 255), OPUSW("Blue")},
+        {3, RGB(0, 255, 255), OPUSW("Cyan")},
+        {4, RGB(0, 128, 0), OPUSW("Green")},
+        {5, RGB(255, 0, 255), OPUSW("Magenta")},
+        {6, RGB(255, 0, 0), OPUSW("Red")},
+        {7, RGB(255, 255, 0), OPUSW("Yellow")},
+        {8, RGB(255, 255, 255), OPUSW("White")},
     }};
 
     HMENU popup = CreatePopupMenu();
