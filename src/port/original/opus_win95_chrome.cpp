@@ -450,25 +450,25 @@ void configure_word95_menus(HWND window) {
         g_table_menu = CreatePopupMenu();
         if (g_table_menu != nullptr) {
             AppendMenuW(g_table_menu, MF_STRING, bcmInsTable,
-                        L"&Insert Table...");
+                        OPUSW("&Insert Table..."));
             AppendMenuW(g_table_menu, MF_STRING, imiEditTable,
-                        L"&Rows and Columns...");
+                        OPUSW("&Rows and Columns..."));
             AppendMenuW(g_table_menu, MF_STRING, bcmFormatTable,
-                        L"Table &Properties...");
+                        OPUSW("Table &Properties..."));
             AppendMenuW(g_table_menu, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(g_table_menu, MF_STRING, bcmSelectTable,
-                        L"&Select Table");
+                        OPUSW("&Select Table"));
             AppendMenuW(g_table_menu, MF_STRING, bcmNextCell,
-                        L"Move to &Next Cell");
+                        OPUSW("Move to &Next Cell"));
             AppendMenuW(g_table_menu, MF_STRING, bcmPrevCell,
-                        L"Move to Pre&vious Cell");
+                        OPUSW("Move to Pre&vious Cell"));
             AppendMenuW(g_table_menu, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(g_table_menu, MF_STRING, bcmTableToText,
-                        L"Convert Table to Te&xt...");
+                        OPUSW("Convert Table to Te&xt..."));
             AppendMenuW(g_table_menu, MF_STRING, imiSort,
-                        L"&Sort...");
+                        OPUSW("&Sort..."));
             AppendMenuW(g_table_menu, MF_STRING, imiCalculate,
-                        L"&Formula/Calculate");
+                        OPUSW("&Formula/Calculate"));
         }
     }
     for (int index = GetMenuItemCount(root) - 1; index >= 0; --index) {
