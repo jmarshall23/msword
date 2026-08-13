@@ -239,8 +239,9 @@ Its ruler tick labels now use `WCHAR` storage before passing text to `TextOutW`.
 Its IME result text buffer now uses `WCHAR` storage before parsing UTF-16 code units.
 `opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
-Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable
-default path buffer still follows the file's current `std::wstring` path model.
+Its PDF export dialog strings and writable default path buffer now also use
+`OPUSW`/`WCHAR`, with a boundary copy back to the file's current `std::wstring`
+path model.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 

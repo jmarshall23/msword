@@ -3367,7 +3367,7 @@ bool rtf_to_pdf(std::string_view rtf, const std::wstring& path) {
 int export_paragraphs_to_pdf_dialog(
     HWND owner, const std::vector<Paragraph>& paragraphs,
     const DocumentSettings& settings = {}) {
-    wchar_t path[32768] = L"Document.pdf";
+    WCHAR path[32768] = OPUSW("Document.pdf");
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = owner;
@@ -3394,7 +3394,11 @@ int export_paragraphs_to_pdf_dialog(
     if (!accepted) {
         return CommDlgExtendedError() == 0 ? -1 : false;
     }
-    if (!write_pdf(path, paragraphs, settings)) {
+    std::wstring selected_path;
+    for (const WCHAR* text = path; *text != 0; ++text) {
+        selected_path.push_back(static_cast<wchar_t>(*text));
+    }
+    if (!write_pdf(selected_path, paragraphs, settings)) {
         MessageBoxW(owner, kPdfFailureMessage, kPdfDialogTitle,
                     MB_OK | MB_ICONEXCLAMATION);
         return false;
