@@ -972,25 +972,25 @@ void locate_source_combos(HWND toolbar, ToolbarState& state) {
     }
 }
 
-std::wstring wide_from_ansi(const std::string& text) {
+std::basic_string<WCHAR> wide_from_ansi(const std::string& text) {
     if (text.empty()) {
         return {};
     }
     const int count = MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1,
                                           nullptr, 0);
-    std::vector<wchar_t> wide(static_cast<std::size_t>(count));
+    std::vector<WCHAR> wide(static_cast<std::size_t>(count));
     MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, wide.data(), count);
     return wide.data();
 }
 
-std::string ansi_from_wide(const std::wstring& text) {
-    if (text.empty()) {
+std::string ansi_from_wide(LPCWSTR text) {
+    if (text == nullptr || *text == 0) {
         return {};
     }
-    const int count = WideCharToMultiByte(CP_ACP, 0, text.c_str(), -1,
+    const int count = WideCharToMultiByte(CP_ACP, 0, text, -1,
                                           nullptr, 0, nullptr, nullptr);
     std::vector<char> ansi(static_cast<std::size_t>(count));
-    WideCharToMultiByte(CP_ACP, 0, text.c_str(), -1, ansi.data(), count,
+    WideCharToMultiByte(CP_ACP, 0, text, -1, ansi.data(), count,
                         nullptr, nullptr);
     return ansi.data();
 }
@@ -1006,13 +1006,14 @@ void sync_combo(HWND mirror, HWND source, int& copied_count) {
     }
     const int count = static_cast<int>(SendMessageA(source, CB_GETCOUNT, 0, 0));
     if (count >= 0 && count != copied_count) {
-        std::wstring mirror_text;
+        std::basic_string<WCHAR> mirror_text;
         const int mirror_length = GetWindowTextLengthW(mirror);
         mirror_text.resize(static_cast<std::size_t>(mirror_length) + 1);
         GetWindowTextW(mirror, &mirror_text[0], mirror_length + 1);
         SendMessageW(mirror, CB_RESETCONTENT, 0, 0);
         for (int index = 0; index < count; ++index) {
-            const std::wstring item = wide_from_ansi(combo_item(source, index));
+            const std::basic_string<WCHAR> item =
+                wide_from_ansi(combo_item(source, index));
             SendMessageW(mirror, CB_ADDSTRING, 0,
                          reinterpret_cast<LPARAM>(item.c_str()));
         }
@@ -1027,7 +1028,8 @@ void sync_combo(HWND mirror, HWND source, int& copied_count) {
             const int length = GetWindowTextLengthA(source);
             std::vector<char> text(static_cast<std::size_t>(length) + 1);
             GetWindowTextA(source, text.data(), static_cast<int>(text.size()));
-            const std::wstring source_text = wide_from_ansi(text.data());
+            const std::basic_string<WCHAR> source_text =
+                wide_from_ansi(text.data());
             if (!source_text.empty()) {
                 SetWindowTextW(mirror, source_text.c_str());
             }
@@ -1195,17 +1197,17 @@ void forward_combo(HWND mirror, HWND source, int notification,
     if (notification == CBN_SELCHANGE || notification == CBN_SELENDOK) {
         edit_dirty = false;
     }
-    std::wstring wide;
+    std::basic_string<WCHAR> wide;
     const LRESULT mirror_selection = SendMessageW(mirror, CB_GETCURSEL, 0, 0);
     if (mirror_selection != CB_ERR) {
         const LRESULT length = SendMessageW(
             mirror, CB_GETLBTEXTLEN, mirror_selection, 0);
-        wide.resize(static_cast<std::size_t>(length) + 1, L'\0');
+        wide.resize(static_cast<std::size_t>(length) + 1, 0);
         SendMessageW(mirror, CB_GETLBTEXT, mirror_selection,
                      reinterpret_cast<LPARAM>(&wide[0]));
     } else {
         const int length = GetWindowTextLengthW(mirror);
-        wide.resize(static_cast<std::size_t>(length) + 1, L'\0');
+        wide.resize(static_cast<std::size_t>(length) + 1, 0);
         GetWindowTextW(mirror, &wide[0], length + 1);
     }
     const std::string text = ansi_from_wide(wide.c_str());
