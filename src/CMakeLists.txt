@@ -851,7 +851,6 @@ add_library(opus_x64_runtime STATIC
     port/original/opus_asm_search.cpp
     port/original/opus_sdm_cab.cpp
     port/original/opus_sdm_runtime.cpp
-    port/original/opus_modern_formats.cpp
 )
 target_compile_features(opus_x64_runtime PRIVATE cxx_std_20)
 target_compile_definitions(opus_x64_runtime PRIVATE
@@ -865,8 +864,14 @@ target_compile_definitions(opus_x64_runtime PRIVATE
 )
 target_include_directories(opus_x64_runtime PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 target_link_libraries(opus_x64_runtime PUBLIC ole32 comdlg32 gdi32)
-if(NOT WIN32)
-    target_sources(opus_x64_runtime PRIVATE port/win32/commdlg.c)
+if(WIN32)
+    target_sources(opus_x64_runtime PRIVATE port/original/opus_modern_formats.cpp)
+else()
+    target_sources(opus_x64_runtime PRIVATE
+        port/original/modernformatsstub.cpp
+        port/win32/commdlg.c
+        port/win32/objbase.c
+    )
 endif()
 if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string

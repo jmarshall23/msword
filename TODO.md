@@ -192,7 +192,11 @@ that directory has the minimal `shellapi.h` surface needed by `opus_win16_platfo
 the Win16 adapter, startup diagnostics, RESN2 character typing, and x64 heap code. The
 current `opus_word1_ui_test` build now advances past the `commdlg.h`, non-MSVC
 `__declspec(dllimport)`, and `FILE_BEGIN` gaps. The next compile blockers are
-`objbase.h` in `opus_sdm_runtime.cpp` and `msopc.h` in `opus_modern_formats.cpp`.
+also past `objbase.h` in `opus_sdm_runtime.cpp` and the Windows-only OPC headers in
+`opus_modern_formats.cpp`; non-Windows uses a failing modern-format stub until item 14
+needs real import/export behavior. The next compile blockers are the SDM runtime file
+API surface: `DeleteFileA`, `RemoveDirectoryA`, `GetFileAttributesA`,
+`WIN32_FILE_ATTRIBUTE_DATA`, `_stricmp`, and related error constants.
 
 Build the first pass mechanically:
 
