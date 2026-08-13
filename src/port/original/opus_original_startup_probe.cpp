@@ -348,6 +348,7 @@ LONG WINAPI WriteCrashStack(EXCEPTION_POINTERS* exception) {
         }
     }
 
+#if defined(_WIN32)
     HANDLE process = GetCurrentProcess();
     SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
     if (SymInitialize(process, nullptr, TRUE)) {
@@ -406,6 +407,7 @@ LONG WINAPI WriteCrashStack(EXCEPTION_POINTERS* exception) {
         }
         SymCleanup(process);
     }
+#endif
 
     CloseHandle(file);
     return EXCEPTION_EXECUTE_HANDLER;
@@ -485,6 +487,6 @@ int main(const int argument_count, char** arguments) {
         }
     }
     command_line.push_back(0);
-    return wWinMain(GetModuleHandleW(nullptr), nullptr, command_line.data(), 0);
+    return wWinMain(nullptr, nullptr, command_line.data(), 0);
 }
 #endif

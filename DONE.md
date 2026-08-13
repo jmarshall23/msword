@@ -112,3 +112,28 @@ Validated with `commentflow` on the changed C/C++ headers and sources,
 
 Reviewed by agy and claude: no blocking findings after correcting the stale
 `direct.h` wording.
+
+## Decide `WCHAR` width
+
+Non-Windows `WCHAR` is fixed at 16 bits in `src/port/win32/windows.h`, with
+both C++ `static_assert(sizeof(WCHAR) == 2)` and a C typedef assertion. The
+port uses `OPUSW("")` and explicit `WCHAR` buffers at live non-Windows `W`
+API boundaries instead of relying on host `wchar_t` width.
+
+The live entry point is `opus_original_startup_probe.cpp`; `opus_product_entry.cpp`
+is still dead because no CMake target references it. The non-Windows `main`
+bridge widens `argv` bytes into `WCHAR` storage and enters `wWinMain` without
+calling unresolved Win32 shim bodies first. Windows keeps the DbgHelp stack
+walk; non-Windows crash logging avoids taking DbgHelp callback addresses so
+the dynamic loader no longer blocks the self-test before `wWinMain`.
+
+Validated with `commentflow src/port/original/opus_original_startup_probe.cpp`,
+`git diff --check`, `cmake --build out/macos-debug --target WORD1`,
+`cmake --build out/macos-debug --target opus_word1_ui_test`,
+`bin/WORD1 --self-test`, the `word1_port_smoke_test` CTest, `nm -u bin/WORD1`
+showing no unresolved
+`SymFunctionTableAccess64`, `SymGetModuleBase64` or `StackWalk64`, and raw
+wide-literal/`wchar_t` greps over the live item files.
+
+Reviewed by agy and claude: they identified the DbgHelp load-time binding as
+the only blocking proof gap; the follow-up patch removed that blocker.
