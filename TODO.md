@@ -112,53 +112,6 @@ Done when: the three jobs are green on a pull request.
 Execution order in this phase is 7, then 6, then 8, 9, 10, 11. The numbering is
 kept stable so citations elsewhere do not rot.
 
-### 9. Module resolution for everything item 8 does not cover
-
-Item 8 handles our own module. Word does dynamic loading in two other shapes:
-
-Win16 ordinal lookup into system DLLs, 11 sites, all
-`GetProcAddress(module, MAKEINTRESOURCE(ordinal))`: `eldde.c:1286`, `CLIPBRD2.C:607,
-1200`, `initwin.c:1158, 1704, 1724, 2231`, `quit.c:353`, `help.c:991`, `elfile.c:331`,
-`dlgmisc.c:2334`.
-
-Do not enumerate the ordinals from the call sites; the table is already in the tree at
-`src/Opus/RESOURCE.H:195-218`, under the comment "GetProcAddress ordinal values (taken
-from appropriate .DEF files)". It gives `idoVkKeyScan` 129, `idoSetSpeed` 7,
-`idoAllocSelector` 175, `idoFreeSelector` 176, `idoPrestoChangoSelector` 177,
-`idoGetFreeSpace` 169, `idoAllocDsToCsAlias` 171, `idoExtTextOut` 14, `idoDeviceMode` 13,
-`idoExitWindowsV3` 7, `idoSetDIBits` 440, `idoGetDIBits` 441, `idoCreateDIBitmap` 442.
-
-Three of the eleven sites are dead under `OPUS_X64` and should not drive the design:
-`initwin.c:1704` and `:1724` sit in the `#else`/`#ifndef` of an `OPUS_X64` guard, as does
-`help.c:991`. `KEYBOARD` still needs a sentinel, but on the strength of `dlgmisc.c:2334`
-alone. One site also evades an `ido` grep: `initwin.c:2231` writes the literal
-`MAKEINTRESOURCE(442)` with a comment noting 442 is `CreateDIBitmap` under Windows 3.
-
-`GetModuleHandleA(NULL)` must return our own image handle, not a system sentinel; items
-8 and 10 both depend on that. Note also that `GetProcAddress` is `#define`d to
-`OpusGetProcAddress` at `opus_x64_compat.h:30`, so the shim must sit behind that wrapper
-rather than replacing it.
-
-Real external DLLs: graphics filters through `HOurLoadLibrary` (`GRSPEC.C:1725`, called
-at `:1417` and `:1539`), the ET and spell libraries by ordinal (`etcmd.c:349` then
-`:362-374`, `SPELL.C:1144` then `:1156-1188`), file converters by name string
-(`filecvt.c:459-498`), printer drivers (`print2.c:1440-1483`).
-
-Do: (i) `GetModuleHandleA` returns sentinel handles for `KERNEL`, `USER`, `GDI`,
-`KEYBOARD`, and `GetProcAddress` with a `MAKEINTRESOURCE` low word maps ordinals to shim
-functions through a static table.
-(ii) `LoadLibrary` of any other name returns 0, which is below 32 and is the failure
-path the external call sites already test for. Read `GRSPEC.C:1417`, `etcmd.c:349` and
-`print2.c:1440` and confirm each degrades rather than crashes.
-
-Produce `docs/win32-shim/module-ordinal-map.tsv` with columns `dll`, `ordinal`,
-`function`, `source_file`, `source_line`, `live_under_OPUS_X64`. Seed it from
-`src/Opus/RESOURCE.H:195-218`, confirm each `MAKEINTRESOURCE` call site against the
-table, and implement only rows marked `live_under_OPUS_X64=yes`.
-
-Done when: a TRACE-only run of WORD1 shows every `LoadLibrary` returning 0 with no
-PANIC, and the spell and graphics-filter paths report unavailable rather than faulting.
-
 ### 10. Replace PE resources
 
 Item 1 stops compiling `word1.rc`, but its contents are not cosmetic.

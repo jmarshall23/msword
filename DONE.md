@@ -166,3 +166,34 @@ Reviewed by agy and claude: agy caught that compiling raw `opuscmd_native.inc`
 would leave forced exports in place; claude confirmed the generated filtered
 include and table approach and narrowed the proof away from an invalid
 zero-global-symbol `nm` check.
+
+## Resolve Win16 module ordinals
+
+Non-Windows builds now compile `port/win32/module.cpp` into the x64 runtime. It
+returns stable sentinel handles for the Win16 system module names `KERNEL`,
+`USER`, `GDI`, and `KEYBOARD`, keeps `GetModuleHandleA/W(NULL)` as the self
+module handle, returns `0` for external `LoadLibraryA` and `LoadLibraryExW`
+probes, and resolves only integer-resource ordinals on exact sentinel handles.
+
+The implemented live ordinal surface is documented in
+`docs/win32-shim/module-ordinal-map.tsv`. Live mappings cover `KERNEL`
+`GetFreeSpace` plus the flat selector no-ops, `USER` `ExitWindows` as a no-op,
+`KEYBOARD` `SetSpeed` as a no-op, and the GDI bitmap ordinals used by the
+clipboard/startup paths. Dead rows such as `GDI` ordinal `440` remain
+documented but unmapped.
+
+Validated with `cmake -S src --preset macos-debug`,
+`cmake --build out/macos-debug --target opus_win16_module_test`,
+`ctest --test-dir out/macos-debug -R opus_win16_module_test --output-on-failure`,
+`cmake --build out/macos-debug --target WORD1`,
+`ctest --test-dir out/macos-debug -R 'opus_win16_module_test|word1_port_smoke_test' --output-on-failure`,
+`bin/WORD1 --self-test`, `OPUS_TRACE=1 bin/WORD1 --self-test`,
+`cmake --build out/macos-debug --target opus_word1_ui_test`,
+`commentflow src/port/win32/module.cpp src/port/original/opus-win16-module-test.cpp`,
+`git diff --check`, and `nm -u bin/WORD1` showing no unresolved
+`GetModuleHandleA/W`, `GetProcAddress`, `LoadLibraryA`, `LoadLibraryExW`, or
+`FreeLibrary`.
+
+Reviewed by agy and claude: both required the shim to sit beneath the existing
+`OpusGetProcAddress` wrapper, to use exact sentinel handles, to omit the dead
+`GDI` 440 mapping, and to land the ordinal TSV with the code.

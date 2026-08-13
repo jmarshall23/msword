@@ -1,0 +1,17 @@
+dll	ordinal	function	source_file	source_line	live_under_OPUS_X64
+KEYBOARD	129	VkKeyScan	src/Opus/initwin.c	1704	no
+KEYBOARD	129	VkKeyScan	src/Opus/initwin.c	1724	no
+KEYBOARD	7	SetSpeed	src/Opus/dlgmisc.c	2335	yes
+KERNEL	169	GetFreeSpace	src/Opus/initwin.c	1158	yes
+KERNEL	169	GetFreeSpace	src/Opus/help.c	995	no
+KERNEL	169	GetFreeSpace	src/Opus/elfile.c	332	yes
+KERNEL	175	AllocSelector	src/Opus/eldde.c	1292	yes
+KERNEL	177	PrestoChangoSelector	src/Opus/eldde.c	1298	yes
+KERNEL	176	FreeSelector	src/Opus/eldde.c	1302	yes
+printer-driver	14	ExtTextOut	src/Opus/SYSCHG.C	1540	no
+printer-driver	13	DeviceMode	src/Opus/print2.c	1466	no
+USER	7	ExitWindows	src/Opus/quit.c	353	yes
+GDI	440	SetDIBits	src/Opus/RESOURCE.H	216	no
+GDI	441	GetDIBits	src/Opus/CLIPBRD2.C	1252	yes
+GDI	442	CreateDIBitmap	src/Opus/CLIPBRD2.C	637	yes
+GDI	442	CreateDIBitmap	src/Opus/initwin.c	2231	yes

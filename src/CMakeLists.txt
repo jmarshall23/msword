@@ -886,6 +886,7 @@ else()
     target_sources(opus_x64_runtime PRIVATE
         port/original/modernformatsstub.cpp
         port/win32/commdlg.c
+        port/win32/module.cpp
         port/win32/objbase.c
     )
 endif()
@@ -1095,6 +1096,29 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
     )
 endforeach()
 
+if(NOT WIN32)
+    add_executable(opus_win16_module_test
+        port/original/opus-win16-module-test.cpp
+    )
+    target_compile_features(opus_win16_module_test PRIVATE cxx_std_20)
+    target_compile_definitions(opus_win16_module_test PRIVATE
+        WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
+    )
+    target_include_directories(opus_win16_module_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+    target_link_libraries(opus_win16_module_test PRIVATE opus_x64_runtime)
+    set_target_properties(opus_win16_module_test PROPERTIES
+        FOLDER "Original Opus x64/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        VS_GLOBAL_VcpkgApplocalDeps "false"
+    )
+    foreach(config Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties(opus_win16_module_test PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        )
+    endforeach()
+endif()
+
 add_executable(opus_x64_runtime_test
     port/original/opus_x64_runtime_test.cpp
     port/original/opus_x64_layout_test_fixture.c
@@ -1180,6 +1204,9 @@ add_test(NAME opus_bitapp_8hdr_test
 )
 add_test(NAME opus_original_strtbl_test COMMAND $<TARGET_FILE:opus_original_strtbl_test>)
 add_test(NAME opus_x64_runtime_test COMMAND $<TARGET_FILE:opus_x64_runtime_test>)
+if(NOT WIN32)
+    add_test(NAME opus_win16_module_test COMMAND $<TARGET_FILE:opus_win16_module_test>)
+endif()
 add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
 add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_test>)
