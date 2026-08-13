@@ -2519,8 +2519,8 @@ std::string document_xml(const std::vector<Paragraph>& paragraphs,
     return xml;
 }
 
-bool add_part(IOpcFactory* factory, IOpcPartSet* parts, const wchar_t* name,
-              const wchar_t* content_type, std::string_view data,
+bool add_part(IOpcFactory* factory, IOpcPartSet* parts, const WCHAR* name,
+              const WCHAR* content_type, std::string_view data,
               IOpcPart** created = nullptr) {
     ComPtr<IOpcPartUri> uri;
     ComPtr<IOpcPart> part;
@@ -2538,7 +2538,7 @@ bool add_part(IOpcFactory* factory, IOpcPartSet* parts, const wchar_t* name,
 }
 
 bool add_relationship(IOpcRelationshipSet* set, IOpcFactory* factory,
-                      const wchar_t* target, const wchar_t* type) {
+                      const WCHAR* target, const WCHAR* type) {
     ComPtr<IOpcPartUri> uri;
     ComPtr<IOpcRelationship> relationship;
     return SUCCEEDED(factory->CreatePartUri(target, &uri)) &&
@@ -2562,8 +2562,8 @@ bool write_docx(const std::wstring& path, const std::vector<Paragraph>& paragrap
                                 CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory))) ||
         FAILED(factory->CreatePackage(&package)) ||
         FAILED(package->GetPartSet(&parts)) ||
-        !add_part(factory.Get(), parts.Get(), L"/word/document.xml",
-                  L"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
+        !add_part(factory.Get(), parts.Get(), OPUSW("/word/document.xml"),
+                  OPUSW("application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"),
                   document_xml(paragraphs, settings), &main_part)) return false;
 
     const std::string styles =
@@ -2583,31 +2583,31 @@ bool write_docx(const std::wstring& path, const std::vector<Paragraph>& paragrap
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
         "<Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\">"
         "<Application>Microsoft Word</Application></Properties>";
-    if (!add_part(factory.Get(), parts.Get(), L"/word/styles.xml",
-                  L"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml", styles) ||
-        !add_part(factory.Get(), parts.Get(), L"/word/settings.xml",
-                  L"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml", settings_xml) ||
-        !add_part(factory.Get(), parts.Get(), L"/docProps/core.xml",
-                  L"application/vnd.openxmlformats-package.core-properties+xml", core) ||
-        !add_part(factory.Get(), parts.Get(), L"/docProps/app.xml",
-                  L"application/vnd.openxmlformats-officedocument.extended-properties+xml", app) ||
+    if (!add_part(factory.Get(), parts.Get(), OPUSW("/word/styles.xml"),
+                  OPUSW("application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"), styles) ||
+        !add_part(factory.Get(), parts.Get(), OPUSW("/word/settings.xml"),
+                  OPUSW("application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"), settings_xml) ||
+        !add_part(factory.Get(), parts.Get(), OPUSW("/docProps/core.xml"),
+                  OPUSW("application/vnd.openxmlformats-package.core-properties+xml"), core) ||
+        !add_part(factory.Get(), parts.Get(), OPUSW("/docProps/app.xml"),
+                  OPUSW("application/vnd.openxmlformats-officedocument.extended-properties+xml"), app) ||
         FAILED(package->GetRelationshipSet(&package_relationships)) ||
         !add_relationship(package_relationships.Get(), factory.Get(),
-                          L"/word/document.xml",
-                          L"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument") ||
+                          OPUSW("/word/document.xml"),
+                          OPUSW("http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument")) ||
         !add_relationship(package_relationships.Get(), factory.Get(),
-                          L"/docProps/core.xml",
-                          L"http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties") ||
+                          OPUSW("/docProps/core.xml"),
+                          OPUSW("http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties")) ||
         !add_relationship(package_relationships.Get(), factory.Get(),
-                          L"/docProps/app.xml",
-                          L"http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties") ||
+                          OPUSW("/docProps/app.xml"),
+                          OPUSW("http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties")) ||
         FAILED(main_part->GetRelationshipSet(&document_relationships)) ||
         !add_relationship(document_relationships.Get(), factory.Get(),
-                          L"/word/styles.xml",
-                          L"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles") ||
+                          OPUSW("/word/styles.xml"),
+                          OPUSW("http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles")) ||
         !add_relationship(document_relationships.Get(), factory.Get(),
-                          L"/word/settings.xml",
-                          L"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings"))
+                          OPUSW("/word/settings.xml"),
+                          OPUSW("http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings")))
         return false;
     if (FAILED(CreateStreamOnHGlobal(nullptr, TRUE, &output)) ||
         FAILED(factory->WritePackageToStream(package.Get(),
