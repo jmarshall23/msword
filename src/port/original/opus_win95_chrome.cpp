@@ -487,16 +487,17 @@ void configure_word95_menus(HWND window) {
         g_toolbars_menu = CreatePopupMenu();
         if (g_toolbars_menu != nullptr) {
             AppendMenuW(g_toolbars_menu, MF_STRING,
-                        kCmdToggleStandardToolbar, L"&Standard");
+                        kCmdToggleStandardToolbar, OPUSW("&Standard"));
             AppendMenuW(g_toolbars_menu, MF_STRING,
-                        kCmdToggleFormattingToolbar, L"&Formatting");
+                        kCmdToggleFormattingToolbar, OPUSW("&Formatting"));
             AppendMenuW(g_toolbars_menu, MF_SEPARATOR, 0, nullptr);
-            AppendMenuW(g_toolbars_menu, MF_STRING, bcmRuler, L"&Ruler");
+            AppendMenuW(g_toolbars_menu, MF_STRING, bcmRuler,
+                        OPUSW("&Ruler"));
             AppendMenuW(g_toolbars_menu, MF_STRING, bcmStatusArea,
-                        L"&Status Bar");
+                        OPUSW("&Status Bar"));
             AppendMenuW(g_toolbars_menu, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(g_toolbars_menu, MF_STRING, bcmCustomize,
-                        L"&Customize...");
+                        OPUSW("&Customize..."));
         }
     }
 
