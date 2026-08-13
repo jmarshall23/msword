@@ -147,9 +147,76 @@ typedef struct tagBITMAP {
     ((LONG)(((WORD)(low)) | ((DWORD)((WORD)(high)) << 16u)))
 #endif
 
+#ifndef MB_OK
+#define MB_OK 0x0000
+#endif
+#ifndef MB_ICONEXCLAMATION
+#define MB_ICONEXCLAMATION 0x0030
+#endif
+
+#ifndef MF_CHANGE
+#define MF_CHANGE 0x0080
+#endif
+#ifndef MF_INSERT
+#define MF_INSERT 0x0000
+#endif
+#ifndef MF_APPEND
+#define MF_APPEND 0x0100
+#endif
+#ifndef MF_DELETE
+#define MF_DELETE 0x0200
+#endif
+#ifndef MF_BYPOSITION
+#define MF_BYPOSITION 0x0400
+#endif
+#ifndef MF_SEPARATOR
+#define MF_SEPARATOR 0x0800
+#endif
+#ifndef MF_REMOVE
+#define MF_REMOVE 0x1000
+#endif
+#ifndef MF_BYCOMMAND
+#define MF_BYCOMMAND 0x0000
+#endif
+#ifndef MF_STRING
+#define MF_STRING 0x0000
+#endif
+#ifndef MF_POPUP
+#define MF_POPUP 0x0010
+#endif
+
+#ifndef OBJ_FONT
+#define OBJ_FONT 6
+#endif
+
 FARPROC GetProcAddress(HMODULE module, LPCSTR name);
+HMODULE GetModuleHandleW(LPCWSTR module_name);
 DWORD GetTempPathA(DWORD buffer_length, LPSTR buffer);
 UINT GetTempFileNameA(LPCSTR path_name, LPCSTR prefix, UINT unique, LPSTR file_name);
+DWORD CharUpperBuffA(LPSTR text, DWORD length);
+UINT RegisterClipboardFormatA(LPCSTR name);
+BOOL MessageBeep(UINT type);
+
+BOOL AppendMenuA(HMENU menu, UINT flags, UINT_PTR new_item, LPCSTR new_item_text);
+BOOL DeleteMenu(HMENU menu, UINT position, UINT flags);
+BOOL RemoveMenu(HMENU menu, UINT position, UINT flags);
+BOOL ModifyMenuA(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
+                 LPCSTR new_item_text);
+BOOL InsertMenuA(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
+                 LPCSTR new_item_text);
+UINT GetMenuItemID(HMENU menu, int position);
+
+HGDIOBJ GetCurrentObject(HDC device_context, UINT object_type);
+BOOL GetBitmapDimensionEx(HBITMAP bitmap, SIZE* size);
+BOOL SetBitmapDimensionEx(HBITMAP bitmap, int width, int height, SIZE* previous);
+BOOL GetViewportExtEx(HDC device_context, SIZE* size);
+BOOL GetViewportOrgEx(HDC device_context, POINT* point);
+BOOL SetViewportExtEx(HDC device_context, int width, int height, SIZE* previous);
+BOOL SetViewportOrgEx(HDC device_context, int x, int y, POINT* previous);
+BOOL SetWindowExtEx(HDC device_context, int width, int height, SIZE* previous);
+BOOL SetWindowOrgEx(HDC device_context, int x, int y, POINT* previous);
+BOOL GetTextExtentPoint32A(HDC device_context, LPCSTR text, int count, SIZE* size);
+BOOL MoveToEx(HDC device_context, int x, int y, POINT* previous);
 
 #ifdef __cplusplus
 }
