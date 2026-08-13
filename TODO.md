@@ -90,7 +90,7 @@ into this one: item 5a's SDL decision has to be made before item 4 writes the pr
 because it sets their cache variables. It is numbered there because that is where its
 work lives, not because it can wait.
 
-### 3. Import native host tools for cross builds and add the BITAPP regression test
+### 3. Import native host tools for WebAssembly cross builds
 
 `mkcmd`, `mkdlg`, `mergeelx`, `bitapp` and `dibapp` (`src/CMakeLists.txt:98, 152, 265,
 374, 411`) are built and then executed during every build to generate headers. They must
@@ -99,30 +99,27 @@ compile and run under clang and gcc before anything else can be attempted.
 `src/port/tools/opus_cabi_tool.cpp` runs at build time too but is not one of the five and
 must not be treated as one; see the constraints below.
 
-The native clang/gcc fixes already landed: the legacy C tools have non-MSVC
-`-std=gnu89 -funsigned-char` flags, host CRT shims, guarded `mkcmd`/`mkdlg` fixes, and
-`BITAPP` keeps its serialized `BITMAP` at 14 bytes on LP64. Those guarded
-`src/OpusEtAl/tools/src/` edits are the explicit exception to the original-source rule
-for this item because the checked-in Microsoft host tools themselves are the broken
-build-machine programs.
+The native clang/gcc fixes and the macOS tool gate already landed. From `src/`,
+`cmake --build --preset macos-debug --target opus_mkcmd_tool opus_mkdlg_tool
+opus_mergeelx_tool opus_bitapp_tool opus_dibapp_tool opus_cabi_tool` succeeds, and CTest
+`opus_bitapp_8hdr_test` runs `opus_bitapp_tool` over `Opus/resource/8hdr.bmp` and
+byte-diffs the output against `port/tools/references/8hdr.hb`.
 
-Two constraints remain. First, `opus_cabi_tool` is not one of the host tools: it includes
+One constraint remains. `opus_cabi_tool` is not one of the host tools: it includes
 `windows.h` and measures the engine's own `sizeof` (`src/CMakeLists.txt:120-130`), so it
 stays on the target compiler, and `-std=gnu89` would be a hard error on it since it is
-`cxx_std_20` at `:123`. Second, under a cross toolchain `add_executable` produces
-artifacts the host cannot run, so for `wasm-debug` the five host tools must be imported
-from a native build directory rather than built. jphonorato split them for exactly this
-reason (`DONT-MERGE/jphonorato/src/CMakeLists.txt:129-140`).
+`cxx_std_20` at `:123`. Under a cross toolchain, `add_executable` produces artifacts the
+host cannot run, so for `wasm-debug` the five host tools must be imported from a native
+build directory rather than built. jphonorato split them for exactly this reason
+(`DONT-MERGE/jphonorato/src/CMakeLists.txt:129-140`).
 
-The earlier check naming `src/port/assets/word95-toolbar.bmp` was wrong: that file is a
-Windows 3.x BMP used by `word1.rc`, while `BITAPP` consumes the original resource format
-under `src/Opus/resource/`. Use a checked-in or generated reference from
-`src/Opus/resource/8hdr.bmp` until a real Windows-build header is available.
+Do: make `wasm-debug` use the five native tools from a native build directory, without
+trying to execute Emscripten-built `mkcmd`, `mkdlg`, `mergeelx`, `bitapp` or `dibapp`.
+Keep `opus_cabi_tool` on the target compiler.
 
-Done when: `cmake --build --preset macos-debug --target opus_mkcmd_tool opus_mkdlg_tool
-opus_mergeelx_tool opus_bitapp_tool opus_dibapp_tool opus_cabi_tool` succeeds, and a new
-CTest runs `opus_bitapp_tool` over `src/Opus/resource/8hdr.bmp` and byte-diffs its output
-against the reference header.
+Done when: `cmake --build --preset wasm-debug --target opus_generated_commands
+opus_generated_embedded_resources opus_generated_dib_resources` succeeds after
+`macos-debug` has built the native tools.
 
 ### 4. Non-Windows presets and the remaining gates
 

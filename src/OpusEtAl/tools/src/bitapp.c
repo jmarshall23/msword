@@ -134,9 +134,9 @@ CreateBitmapHeaderFile()
 
 	DumpBitmapParameters(&cRows, &cWordsWidth, &cSigBit, &cbTotal);
 
-	fprintf(fpDest, "\t{\t");
+	fprintf(fpDest, "\t{");
 	DumpBits(cRows, cWordsWidth, cSigBit);
-	fprintf(fpDest, " \n\t},\n");
+	fprintf(fpDest, "\n\t},\n");
 
 	fprintf(fpDest, "\t%u,\n",cbTotal);
 
@@ -159,7 +159,7 @@ int	wFigure;
 
 	fprintf(fpDest, "\t\t");
 	DumpBits(cRows, cWordsWidth, 0);
-	fprintf(fpDest, " \n\t},\n");
+	fprintf(fpDest, "\n\t},\n");
 
 	fprintf(fpDest, "\t%u, \n", 12+(4*cRows*cWordsWidth));
 
@@ -367,5 +367,4 @@ int error;
 
 	exit(1);
 }
-
 

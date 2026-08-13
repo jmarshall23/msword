@@ -1042,6 +1042,18 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 enable_testing()
+file(RELATIVE_PATH OPUS_BITAPP_TEST_OUTPUT
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/tests/8hdr.hb")
+add_test(NAME opus_bitapp_8hdr_test
+    COMMAND "${CMAKE_COMMAND}"
+        "-DBITAPP=$<TARGET_FILE:opus_bitapp_tool>"
+        "-DINPUT=Opus/resource/8hdr.bmp"
+        "-DOUTPUT=${OPUS_BITAPP_TEST_OUTPUT}"
+        "-DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/port/tools/references/8hdr.hb"
+        "-DWORKDIR=${CMAKE_CURRENT_SOURCE_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyBitapp.cmake"
+)
 add_test(NAME opus_original_strtbl_test COMMAND $<TARGET_FILE:opus_original_strtbl_test>)
 add_test(NAME opus_x64_runtime_test COMMAND $<TARGET_FILE:opus_x64_runtime_test>)
 add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)

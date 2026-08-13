@@ -16,7 +16,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#if defined(_MSC_VER)
 #include <malloc.h>
+#endif
 #include <string.h>
 
 /* A null Win16 module handle made GetProcAddress fail.  On current Windows,

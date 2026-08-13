@@ -45,3 +45,18 @@ Validated by configuring `macos-debug` and `wasm-debug`, building `opus-sdl-prob
 both, and running the macOS probe with `SDL_VIDEODRIVER=dummy`.
 
 Linux configure/probe validation remains open in `TODO.md`.
+
+## Add the BITAPP regression and finish the macOS tool gate
+
+The macOS native tool gate now builds `mkcmd`, `mkdlg`, `mergeelx`, `bitapp`, `dibapp`
+and `opus_cabi_tool` from the `macos-debug` preset. The non-Windows shim header has the
+minimal Win32 base types needed by `opus_cabi_tool`, and `opus_x64_compat.h` only includes
+`malloc.h` under MSVC.
+
+`opus_bitapp_8hdr_test` runs `opus_bitapp_tool` on `Opus/resource/8hdr.bmp` and compares
+the output to the checked-in `port/tools/references/8hdr.hb` oracle.
+
+Validated from `src` with the macOS tool build command, then from the repository root
+with `ctest --test-dir out/macos-debug -R opus_bitapp_8hdr_test --output-on-failure`.
+
+The WebAssembly host-tool import remains open in `TODO.md`.
