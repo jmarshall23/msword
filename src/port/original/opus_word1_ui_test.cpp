@@ -290,15 +290,17 @@ int longest_light_gap(const HWND window, const int x_first, const int x_limit,
     return longest;
 }
 
-bool post_keyboard_character(const HWND window, const wchar_t character) {
+bool post_keyboard_character(const HWND window, const WCHAR character) {
     UINT virtual_key = 0;
-    if (character >= L'a' && character <= L'z') {
-        virtual_key = static_cast<UINT>(character - L'a' + L'A');
-    } else if (character >= L'0' && character <= L'9') {
+    if (character >= OPUSW("a")[0] && character <= OPUSW("z")[0]) {
+        virtual_key = static_cast<UINT>(
+            character - OPUSW("a")[0] + OPUSW("A")[0]);
+    } else if (character >= OPUSW("0")[0] &&
+               character <= OPUSW("9")[0]) {
         virtual_key = static_cast<UINT>(character);
-    } else if (character == L' ') {
+    } else if (character == OPUSW(" ")[0]) {
         virtual_key = VK_SPACE;
-    } else if (character == L'\r') {
+    } else if (character == OPUSW("\r")[0]) {
         virtual_key = VK_RETURN;
     } else {
         return false;
@@ -836,7 +838,8 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
              wait_for_focus(process.hProcess, thread_id, pane, 500));
         bool typed = focused;
         for (const wchar_t character : std::wstring(L"pdf export text")) {
-            typed = typed && post_keyboard_character(pane, character);
+            typed = typed &&
+                post_keyboard_character(pane, static_cast<WCHAR>(character));
         }
         Sleep(750);
         const bool committed = typed &&
@@ -1825,7 +1828,8 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
         }
         const std::wstring sentence = L"physical keyboard input line one";
         for (const wchar_t character : sentence) {
-            if (!post_keyboard_character(pane, character)) {
+            if (!post_keyboard_character(
+                    pane, static_cast<WCHAR>(character))) {
                 return fail(process, 37,
                             "selection test could not post its sentence");
             }
@@ -1969,13 +1973,14 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
                         "dragging the caption did not move the WORD1 window");
         }
 
-        if (!PostMessageW(main_window, WM_SYSCOMMAND, SC_KEYMENU, L'f') ||
+        if (!PostMessageW(main_window, WM_SYSCOMMAND, SC_KEYMENU,
+                          OPUSW("f")[0]) ||
             !wait_for_gui_flag(process.hProcess, thread_id, GUI_INMENUMODE,
                                true, 3000)) {
             return fail(process, 20,
                         "the File menu did not enter native menu mode");
         }
-        if (!post_keyboard_character(main_window, L'n')) {
+        if (!post_keyboard_character(main_window, OPUSW("n")[0])) {
             return fail(process, 21, "could not choose File New by mnemonic");
         }
         const HWND new_dialog = wait_for_window(
@@ -2263,7 +2268,8 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
                     posted = GetGUIThreadInfo(thread_id, &current_gui) &&
                              current_gui.hwndFocus != nullptr &&
                              post_keyboard_character(current_gui.hwndFocus,
-                                                     character);
+                                                     static_cast<WCHAR>(
+                                                         character));
                     if (!posted) {
                         Sleep(50);
                     }
