@@ -1206,6 +1206,12 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef GA_ROOT
 #define GA_ROOT 2
 #endif
+#ifndef GA_PARENT
+#define GA_PARENT 1
+#endif
+#ifndef GA_ROOTOWNER
+#define GA_ROOTOWNER 3
+#endif
 
 #ifndef SW_HIDE
 #define SW_HIDE 0

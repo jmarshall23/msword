@@ -11,6 +11,8 @@ int g_create_count = 0;
 int g_user_message_count = 0;
 WPARAM g_last_char = 0;
 WPARAM g_last_keyup = 0;
+int g_enum_count = 0;
+HWND g_enum_windows[8]{};
 
 LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM wparam,
                                 LPARAM parameter) {
@@ -39,6 +41,18 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM wparam,
         return 0;
     }
     return DefWindowProcA(window, message, 0, parameter);
+}
+
+BOOL CALLBACK CollectWindow(HWND window, LPARAM) {
+    if (g_enum_count < 8) g_enum_windows[g_enum_count] = window;
+    ++g_enum_count;
+    return TRUE;
+}
+
+BOOL CALLBACK StopAfterFirstWindow(HWND window, LPARAM) {
+    if (g_enum_count < 8) g_enum_windows[g_enum_count] = window;
+    ++g_enum_count;
+    return FALSE;
 }
 
 }  // namespace
@@ -118,10 +132,53 @@ int main() {
                                  window, nullptr, nullptr, nullptr);
     HWND popup = CreateWindowExA(0, "STATIC", "popup", WS_POPUP, 1, 2, 3, 4,
                                  window, nullptr, nullptr, nullptr);
+    HWND id_child = CreateWindowExA(0, "STATIC", "id-child", WS_CHILD, 7, 8,
+                                    9, 10, window,
+                                    reinterpret_cast<HMENU>(123), nullptr,
+                                    nullptr);
+    HWND grandchild = CreateWindowExA(0, "STATIC", "grandchild", WS_CHILD, 1,
+                                      1, 2, 2, id_child, nullptr, nullptr,
+                                      nullptr);
+    WCHAR class_name[16]{};
+    const WCHAR static_class[] = {'S', 'T', 'A', 'T', 'I', 'C', 0};
+    const WCHAR id_child_text[] = {'i', 'd', '-', 'c', 'h', 'i', 'l', 'd', 0};
     if (child == nullptr || popup == nullptr || GetParent(child) != window ||
+        id_child == nullptr || grandchild == nullptr ||
         GetWindow(popup, GW_OWNER) != window || GetTopWindow(window) != child ||
-        !IsChild(window, child)) {
+        !IsChild(window, child) || GetAncestor(child, GA_PARENT) != window ||
+        GetAncestor(grandchild, GA_ROOT) != window ||
+        GetAncestor(child, GA_ROOTOWNER) != window ||
+        GetDlgCtrlID(id_child) != 123 ||
+        GetClassNameW(id_child, class_name, 16) != 6 ||
+        class_name[0] != 'S' || class_name[5] != 'C' ||
+        FindWindowA("OpusUser32Test", "wide") != window ||
+        FindWindowExW(window, child, static_class, id_child_text) != id_child ||
+        !MessageBeep(MB_OK)) {
         return 11;
+    }
+    g_enum_count = 0;
+    if (!EnumChildWindows(window, CollectWindow, 0) || g_enum_count != 3 ||
+        g_enum_windows[0] != child || g_enum_windows[1] != id_child ||
+        g_enum_windows[2] != grandchild) {
+        return 12;
+    }
+    g_enum_count = 0;
+    if (EnumWindows(StopAfterFirstWindow, 0) || g_enum_count != 1 ||
+        g_enum_windows[0] != window ||
+        !EnumThreadWindows(0, CollectWindow, 0) || g_enum_count < 2 ||
+        !BringWindowToTop(window) || GetActiveWindow() != window) {
+        return 13;
+    }
+    HWND iconic = CreateWindowExA(0, "STATIC", "iconic",
+                                  WS_POPUP | WS_MINIMIZE, 0, 0, 1, 1,
+                                  nullptr, nullptr, nullptr, nullptr);
+    HWND zoomed = CreateWindowExA(0, "STATIC", "zoomed",
+                                  WS_POPUP | WS_MAXIMIZE, 0, 0, 1, 1,
+                                  nullptr, nullptr, nullptr, nullptr);
+    if (iconic == nullptr || zoomed == nullptr || !IsIconic(iconic) ||
+        !OpenIcon(iconic) || IsIconic(iconic) || !IsWindowVisible(iconic) ||
+        !IsZoomed(zoomed)) {
+        return 14;
     }
 
     RECT client{};
@@ -164,11 +221,11 @@ int main() {
         window_rect.top != 25 || window_rect.right != 20 ||
         window_rect.bottom != 32 || !GetClientRect(child, &client) ||
         client.right != 6 || client.bottom != 7) {
-        return 12;
+        return 15;
     }
 
-    if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 13;
-    if (SetFocus(window) != nullptr || GetFocus() != window) return 14;
+    if (!EnableWindow(window, FALSE) || IsWindowEnabled(window)) return 16;
+    if (SetFocus(window) != nullptr || GetFocus() != window) return 17;
 
     HCURSOR cursor_a = reinterpret_cast<HCURSOR>(0x1010);
     HCURSOR cursor_b = reinterpret_cast<HCURSOR>(0x2020);
@@ -183,31 +240,31 @@ int main() {
         cursor_position.x != 31 || cursor_position.y != 41 ||
         GetCursorPos(nullptr) || SetCapture(child) != nullptr ||
         !DestroyWindow(child) || GetCapture() != nullptr) {
-        return 15;
+        return 18;
     }
 
     if (EnableWindow(window, TRUE) || !IsWindowEnabled(window) ||
         ShowWindow(window, SW_SHOW)) {
-        return 16;
+        return 19;
     }
     HWND hit_child = CreateWindowExA(0, "STATIC", "hit-child",
                                      WS_CHILD | WS_VISIBLE, 4, 5, 6, 7,
                                      window, nullptr, nullptr, nullptr);
-    if (hit_child == nullptr) return 17;
+    if (hit_child == nullptr) return 20;
     if (DefWindowProcA(window, WM_NCHITTEST, 0, MAKELPARAM(15, 26)) !=
         HTCLIENT) {
-        return 18;
+        return 21;
     }
     if (DefWindowProcA(window, WM_NCHITTEST, 0, MAKELPARAM(500, 500)) !=
         HTNOWHERE) {
-        return 19;
+        return 22;
     }
-    if (WindowFromPoint({15, 26}) != hit_child) return 20;
-    if (!EnableWindow(hit_child, FALSE)) return 21;
-    if (WindowFromPoint({15, 26}) != window) return 22;
-    if (EnableWindow(hit_child, TRUE) || !IsWindowEnabled(hit_child)) return 23;
-    if (WindowFromPoint({50, 50}) != window) return 24;
-    if (WindowFromPoint({500, 500}) != nullptr) return 25;
+    if (WindowFromPoint({15, 26}) != hit_child) return 23;
+    if (!EnableWindow(hit_child, FALSE)) return 24;
+    if (WindowFromPoint({15, 26}) != window) return 25;
+    if (EnableWindow(hit_child, TRUE) || !IsWindowEnabled(hit_child)) return 26;
+    if (WindowFromPoint({50, 50}) != window) return 27;
+    if (WindowFromPoint({500, 500}) != nullptr) return 28;
 
     RECT adjusted{0, 0, 100, 50};
     if (!AdjustWindowRectEx(&adjusted, WS_CAPTION | WS_BORDER, FALSE,

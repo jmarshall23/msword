@@ -307,6 +307,12 @@ messages update `VK_LBUTTON`/`VK_RBUTTON`, and `ShowCursor` maintains the
 cursor display counter reported by `SM_CURSORLEVEL`. SDL event translation is
 still needed to feed those states from real backend events.
 
+The in-memory window lookup helpers are now backed by the existing window list:
+enumeration, class/text lookup, ancestor lookup, control IDs, simple iconic and
+zoomed state, top-window activation, and `MessageBeep` no-op success. These
+close more declared surface for Word and the chrome bridge without adding
+backend behavior.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

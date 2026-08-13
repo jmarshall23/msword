@@ -789,3 +789,38 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14k -R
 Reviewed by agy before implementation; claude was asked for this exact slice but
 stalled without output and was stopped. The implementation includes agy's
 mouse-button state trap.
+
+## Add user32 window lookup helpers
+
+The non-Windows user32 shim now implements the window-list helpers that can be
+answered from existing in-memory state: `EnumWindows`, `EnumChildWindows`,
+`EnumThreadWindows`, `FindWindowA`, `FindWindowExW`, `GetAncestor`,
+`GetClassNameW`, `GetDlgCtrlID`, `BringWindowToTop`, `IsIconic`, `IsZoomed`,
+`OpenIcon`, and `MessageBeep`. Enumeration snapshots handles before callbacks
+so callback-side window mutation cannot invalidate the traversal, and
+`BringWindowToTop` keeps the existing convention that the back of `g_windows` is
+front-most.
+
+`opus_win32_user32_test` covers class/text lookup, recursive child
+enumeration, top-level enumeration stop behavior, thread-window enumeration,
+ancestor walking, control IDs, class names, activation through
+`BringWindowToTop`, simple minimized/maximized state, `OpenIcon`, and
+`MessageBeep`. The Win32 coverage baseline no longer lists those names.
+
+Validated with `cmake --build build-item14l --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14l -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14l --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14l -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this exact slice but
+stalled without output and was stopped. The implementation follows agy's
+snapshot-enumeration warning.

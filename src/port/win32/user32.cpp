@@ -107,6 +107,16 @@ HWND handle_from_window(WindowObject* window) {
     return static_cast<HWND>(window);
 }
 
+std::vector<HWND> window_snapshot() {
+    std::vector<HWND> handles;
+    handles.reserve(g_windows.size());
+    for (auto* window : g_windows) {
+        const HWND handle = handle_from_window(window);
+        if (window_from_handle(handle) != nullptr) handles.push_back(handle);
+    }
+    return handles;
+}
+
 WindowObject* first_child(HWND parent) {
     for (auto* window : g_windows) {
         if (window_from_handle(handle_from_window(window)) != nullptr &&
@@ -127,6 +137,29 @@ WindowObject* next_sibling(HWND window) {
         if (candidate == object) found = true;
     }
     return nullptr;
+}
+
+bool class_matches(const WindowObject& window, LPCSTR class_name) {
+    if (class_name == nullptr) return true;
+    if (class_name_is_atom(class_name)) {
+        return window.klass.atom ==
+               static_cast<ATOM>(reinterpret_cast<std::uintptr_t>(class_name));
+    }
+    return window.klass.name == class_name;
+}
+
+bool text_matches(const WindowObject& window, LPCSTR text) {
+    return text == nullptr || window.text == text;
+}
+
+bool enum_child_windows(HWND parent, WNDENUMPROC enum_func, LPARAM parameter) {
+    for (HWND handle : window_snapshot()) {
+        auto* object = window_from_handle(handle);
+        if (object == nullptr || object->parent != parent) continue;
+        if (!enum_func(handle, parameter)) return false;
+        if (!enum_child_windows(handle, enum_func, parameter)) return false;
+    }
+    return true;
 }
 
 POINT window_screen_origin(HWND window) {
@@ -474,6 +507,26 @@ HWND CreateWindowExW(DWORD extended_style, LPCWSTR class_name,
 
 BOOL IsWindow(HWND window) {
     return window_from_handle(window) != nullptr;
+}
+
+BOOL EnumWindows(WNDENUMPROC enum_func, LPARAM parameter) {
+    if (enum_func == nullptr) return FALSE;
+    for (HWND handle : window_snapshot()) {
+        auto* object = window_from_handle(handle);
+        if (object == nullptr || object->parent != nullptr) continue;
+        if (!enum_func(handle, parameter)) return FALSE;
+    }
+    return TRUE;
+}
+
+BOOL EnumChildWindows(HWND parent, WNDENUMPROC enum_func, LPARAM parameter) {
+    if (enum_func == nullptr) return FALSE;
+    if (parent != nullptr && !IsWindow(parent)) return FALSE;
+    return enum_child_windows(parent, enum_func, parameter) ? TRUE : FALSE;
+}
+
+BOOL EnumThreadWindows(DWORD, WNDENUMPROC enum_func, LPARAM parameter) {
+    return EnumWindows(enum_func, parameter);
 }
 
 BOOL DestroyWindow(HWND window) {
@@ -940,6 +993,26 @@ BOOL IsWindowVisible(HWND window) {
     return window_from_handle(window) != nullptr ? TRUE : FALSE;
 }
 
+HWND GetAncestor(HWND window, UINT flags) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return nullptr;
+    if (flags == GA_PARENT) return object->parent;
+    HWND current = window;
+    while (auto* current_object = window_from_handle(current)) {
+        if (current_object->parent == nullptr) break;
+        current = current_object->parent;
+    }
+    if (flags == GA_ROOT) return current;
+    if (flags == GA_ROOTOWNER) {
+        while (auto* current_object = window_from_handle(current)) {
+            if (current_object->owner == nullptr) break;
+            current = current_object->owner;
+        }
+        return current;
+    }
+    return nullptr;
+}
+
 HWND SetActiveWindow(HWND window) {
     if (window != nullptr && !IsWindow(window)) return nullptr;
     const HWND previous = g_active_window;
@@ -956,6 +1029,18 @@ HWND SetFocus(HWND window) {
 
 HWND GetFocus(void) {
     return g_focus_window;
+}
+
+BOOL BringWindowToTop(HWND window) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    auto it = std::find(g_windows.begin(), g_windows.end(), object);
+    if (it != g_windows.end()) {
+        g_windows.erase(it);
+        g_windows.push_back(object);
+    }
+    g_active_window = window;
+    return TRUE;
 }
 
 HCURSOR SetCursor(HCURSOR cursor) {
@@ -1007,6 +1092,75 @@ HWND WindowFromPoint(POINT point) {
         if (hit != HTNOWHERE && hit != HTTRANSPARENT) return window;
     }
     return nullptr;
+}
+
+HWND FindWindowA(LPCSTR class_name, LPCSTR window_name) {
+    for (HWND handle : window_snapshot()) {
+        auto* object = window_from_handle(handle);
+        if (object == nullptr || object->parent != nullptr) continue;
+        if (class_matches(*object, class_name) &&
+            text_matches(*object, window_name)) {
+            return handle;
+        }
+    }
+    return nullptr;
+}
+
+HWND FindWindowExW(HWND parent, HWND child_after, LPCWSTR class_name,
+                   LPCWSTR window_name) {
+    const std::string narrow_class = narrow_string(class_name);
+    const std::string narrow_text = narrow_string(window_name);
+    const LPCSTR class_filter = class_name != nullptr ? narrow_class.c_str() : nullptr;
+    const LPCSTR text_filter = window_name != nullptr ? narrow_text.c_str() : nullptr;
+    bool after_seen = child_after == nullptr;
+    for (HWND handle : window_snapshot()) {
+        auto* object = window_from_handle(handle);
+        if (object == nullptr || object->parent != parent) continue;
+        if (!after_seen) {
+            if (handle == child_after) after_seen = true;
+            continue;
+        }
+        if (class_matches(*object, class_filter) &&
+            text_matches(*object, text_filter)) {
+            return handle;
+        }
+    }
+    return nullptr;
+}
+
+int GetClassNameW(HWND window, LPWSTR class_name, int max_count) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || class_name == nullptr || max_count <= 0) return 0;
+    const auto limit = static_cast<std::size_t>(max_count);
+    const std::size_t count = (std::min)(object->klass.name.size(), limit - 1);
+    for (std::size_t index = 0; index < count; ++index) {
+        class_name[index] = static_cast<WCHAR>(object->klass.name[index]);
+    }
+    class_name[count] = 0;
+    return static_cast<int>(count);
+}
+
+int GetDlgCtrlID(HWND control) {
+    auto* object = window_from_handle(control);
+    if (object == nullptr) return 0;
+    return static_cast<int>(reinterpret_cast<INT_PTR>(object->menu));
+}
+
+BOOL IsIconic(HWND window) {
+    auto* object = window_from_handle(window);
+    return object != nullptr && (object->style & WS_MINIMIZE) != 0 ? TRUE : FALSE;
+}
+
+BOOL IsZoomed(HWND window) {
+    auto* object = window_from_handle(window);
+    return object != nullptr && (object->style & WS_MAXIMIZE) != 0 ? TRUE : FALSE;
+}
+
+BOOL OpenIcon(HWND window) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return FALSE;
+    object->style &= ~static_cast<DWORD>(WS_MINIMIZE);
+    return ShowWindow(window, SW_SHOW), TRUE;
 }
 
 BOOL SetWindowPos(HWND window, HWND, int x, int y, int cx, int cy, UINT flags) {
@@ -1075,6 +1229,10 @@ int GetWindowTextW(HWND window, LPWSTR text, int max_count) {
 
 BOOL UpdateWindow(HWND window) {
     return IsWindow(window);
+}
+
+BOOL MessageBeep(UINT) {
+    return TRUE;
 }
 
 BOOL IsDialogMessageA(HWND, LPMSG) {
