@@ -1,5 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "opus_x64_compat.h"
 #include <windowsx.h>
 #include <imm.h>
 
@@ -49,8 +49,8 @@ extern "C" int OpusQueueUnicodeWmChar(HWND pane, unsigned int code_unit);
 
 namespace {
 
-constexpr wchar_t kToolbarClass[] = L"OpusWin95Toolbar";
-constexpr wchar_t kRulerOverlayClass[] = L"OpusWin95RulerOverlay";
+constexpr WCHAR kToolbarClass[] = OPUSW("OpusWin95Toolbar");
+constexpr WCHAR kRulerOverlayClass[] = OPUSW("OpusWin95RulerOverlay");
 constexpr int kToolbarBitmap = 201;
 constexpr int kSpriteCell = 20;
 constexpr COLORREF kButtonFace = RGB(192, 192, 192);
@@ -71,7 +71,7 @@ constexpr UINT kCmdLanguageBase = 0x7300;
 constexpr UINT_PTR kSyncTimer = 0x951;
 constexpr UINT kWmCommitUnicodeScalar = WM_APP + 0x452;
 constexpr std::size_t kMaxPendingUnicodeInput = 0xffff;
-constexpr wchar_t kOriginalPaneProcProperty[] = L"OpusWord95OriginalPaneProc";
+constexpr WCHAR kOriginalPaneProcProperty[] = OPUSW("OpusWord95OriginalPaneProc");
 
 enum class FormatGlyph {
     bold,
@@ -267,7 +267,8 @@ std::vector<PageSnapshot> g_page_snapshots;
 int dpi_for_window(HWND window) {
     using GetDpiForWindowProc = UINT(WINAPI*)(HWND);
     static const auto get_dpi = reinterpret_cast<GetDpiForWindowProc>(
-        GetProcAddress(GetModuleHandleW(L"user32.dll"), "GetDpiForWindow"));
+        GetProcAddress(GetModuleHandleW(OPUSW("user32.dll")),
+                       "GetDpiForWindow"));
     return get_dpi != nullptr && window != nullptr ?
                static_cast<int>(get_dpi(window)) :
                96;
@@ -280,12 +281,12 @@ int scale(HWND window, int value) {
 void set_window_classic(HWND window) {
     using SetWindowThemeProc = HRESULT(WINAPI*)(HWND, LPCWSTR, LPCWSTR);
     static HMODULE theme_module = LoadLibraryExW(
-        L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        OPUSW("uxtheme.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     static const auto set_theme = theme_module != nullptr ?
         reinterpret_cast<SetWindowThemeProc>(
             GetProcAddress(theme_module, "SetWindowTheme")) : nullptr;
     if (set_theme != nullptr && window != nullptr) {
-        set_theme(window, L"", L"");
+        set_theme(window, OPUSW(""), OPUSW(""));
     }
 }
 
@@ -364,8 +365,8 @@ void configure_word95_menus(HWND window) {
         return -1;
     };
 
-    // Word's menu loader can finish replacing the startup menu after this
-    // layer is created, so normalize by label every time we resync.
+    // Word's menu loader can finish replacing the startup menu after this layer
+    // is created, so normalize by label every time we resync.
     const int file_index = find_named(L"File");
     if (file_index >= 0 && GetMenuItemCount(root) > file_index + 4) {
         HMENU insert = GetSubMenu(root, file_index + 3);
@@ -1198,9 +1199,9 @@ void forward_combo(HWND mirror, HWND source, int notification,
                      reinterpret_cast<LPARAM>(source));
         restore_document_focus(source);
     } else if (notification == CBN_EDITCHANGE) {
-        // A dropdown selection can emit EDITCHANGE too; only free-form text
-        // (no selected list item) needs the legacy control's focus-loss
-        // commit path.
+        // A dropdown selection can emit EDITCHANGE too; only free-form text (no
+        // selected list item) needs the legacy control's focus-loss commit
+        // path.
         edit_dirty = SendMessageW(mirror, CB_GETCURSEL, 0, 0) == CB_ERR;
         SendMessageW(parent, WM_COMMAND,
                      MAKEWPARAM(control_id, CBN_EDITCHANGE),
@@ -1219,6 +1220,7 @@ void forward_combo(HWND mirror, HWND source, int notification,
 
 void position_combos(HWND toolbar, ToolbarState& state) {
     const int y = formatting_row_top(toolbar, state) + scale(toolbar, 1);
+
     // For CBS_DROPDOWN the window height also reserves the popup list. The
     // visible, closed control still uses its system edit-field height.
     const int height = scale(toolbar, 220);
@@ -1684,11 +1686,12 @@ void draw_continuous_page_workspace(HWND pane, HDC dc) {
         return;
     }
 
-    /* The original Page View eraser assumes that the page consumes the
-       window width.  In the continuous-page shell that can leave white
-       invalidation bands across the gray inter-page gap.  Restore the
-       workspace after the legacy paint, excluding only real sheets, before
-       drawing cached neighbor pages. */
+    /* The original Page View eraser assumes that the page consumes the window
+     * width. In the continuous-page shell that can leave white invalidation
+     * bands across the gray inter-page gap. Restore the workspace after the
+     * legacy paint, excluding only real sheets, before drawing cached neighbor
+     * pages.
+     */
     const int saved = SaveDC(dc);
     IntersectClipRect(dc, client.left, client.top,
                      client.right, client.bottom);
@@ -1710,8 +1713,9 @@ void draw_continuous_page_workspace(HWND pane, HDC dc) {
     RestoreDC(dc, saved);
 
     /* Rebuild the current sheet's shadow after cleaning the surrounding
-       workspace.  Clip the shadow away from the page so it cannot cover
-       document pixels that the legacy formatter just drew. */
+     * workspace. Clip the shadow away from the page so it cannot cover document
+     * pixels that the legacy formatter just drew.
+     */
     const RECT current{page_left, page_top, page_right, page_bottom};
     RECT shadow = current;
     OffsetRect(&shadow, 3, 3);
@@ -1937,8 +1941,10 @@ bool horizontal_margin_boundary_at(HWND overlay, POINT point,
     HWND ruler = GetParent(overlay);
     RECT client{};
     GetClientRect(overlay, &client);
+
     /* Keep the lower marker lane transparent so native indent/tab dragging
-       continues to use the original ruler implementation. */
+     * continues to use the original ruler implementation.
+     */
     if (point.y < client.top ||
         point.y >= client.bottom - scale(ruler, 7)) {
         return false;
@@ -2509,9 +2515,11 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         insert_unicode_scalar(pane, static_cast<std::uint32_t>(w_param));
         return 0;
     }
-    /* The original message loop marks already-translated byte input by
-       setting bit 15 (0x80xx).  That is an internal Word flag, not a Unicode
-       code point, and must reach the legacy pane procedure unchanged. */
+
+    /* The original message loop marks already-translated byte input by setting
+     * bit 15 (0x80xx). That is an internal Word flag, not a Unicode code point,
+     * and must reach the legacy pane procedure unchanged.
+     */
     if (message == WM_CHAR && (w_param & 0xff00) != 0x8000 &&
         w_param >= 0x80) {
         OpusQueueUnicodeWmChar(
@@ -2800,9 +2808,10 @@ LRESULT CALLBACK app_window_proc(HWND app, UINT message,
         const UINT command = LOWORD(w_param);
         HWND toolbar = FindWindowExW(app, nullptr, kToolbarClass, nullptr);
         if (command == bcmPageView) {
-            /* CmdPageView is a legacy toggle.  The restored shell treats the
-               startup Page View choice as a stable document mode, so repeated
-               selections do not accidentally drop back to flush galley view. */
+            /* CmdPageView is a legacy toggle. The restored shell treats the
+             * startup Page View choice as a stable document mode, so repeated
+             * selections do not accidentally drop back to flush galley view.
+             */
             if (g_word95_page_view_active) {
                 return 0;
             }
@@ -2840,10 +2849,12 @@ LRESULT CALLBACK app_window_proc(HWND app, UINT message,
         if (state != nullptr) {
             update_toolbar_menu_checks(app, *state);
         }
-        /* On current Windows versions a popup using a classic background
-           brush can receive its initial erase before the menu items have
-           been invalidated.  Repaint once the #32768 popup exists so the
-           complete File menu is visible without requiring mouse hover. */
+
+        /* On current Windows versions a popup using a classic background brush
+         * can receive its initial erase before the menu items have been
+         * invalidated. Repaint once the #32768 popup exists so the complete
+         * File menu is visible without requiring mouse hover.
+         */
         SetTimer(app, kMenuRepaintTimer, 15, nullptr);
     } else if (message == WM_TIMER && w_param == kMenuRepaintTimer) {
         KillTimer(app, kMenuRepaintTimer);
