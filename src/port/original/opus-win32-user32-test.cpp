@@ -441,13 +441,37 @@ int main() {
         return 44;
     }
 
+    const WCHAR prop_name[] = {'W', 'o', 'r', 'd', 0};
+    const WCHAR prop_lookup[] = {'w', 'O', 'R', 'D', 0};
+    const auto prop_value = reinterpret_cast<HANDLE>(static_cast<UINT_PTR>(0x1234));
+    const auto prop_replacement =
+        reinterpret_cast<HANDLE>(static_cast<UINT_PTR>(0x5678));
+    const auto atom_prop = reinterpret_cast<LPCWSTR>(static_cast<UINT_PTR>(9));
+    const auto atom_value = reinterpret_cast<HANDLE>(static_cast<UINT_PTR>(0x9abc));
+    if (!SetPropW(window, prop_name, prop_value) ||
+        GetPropW(window, prop_lookup) != prop_value ||
+        GetPropA(window, "word") != prop_value ||
+        !SetPropW(window, prop_lookup, prop_replacement) ||
+        GetPropW(window, prop_name) != prop_replacement ||
+        RemovePropW(window, prop_name) != prop_replacement ||
+        GetPropW(window, prop_name) != nullptr ||
+        !SetPropW(window, atom_prop, atom_value) ||
+        GetPropW(window, atom_prop) != atom_value ||
+        RemovePropW(window, atom_prop) != atom_value ||
+        SetPropW(nullptr, prop_name, prop_value) ||
+        SetPropW(window, nullptr, prop_value) ||
+        GetPropW(nullptr, prop_name) != nullptr ||
+        RemovePropW(window, prop_name) != nullptr) {
+        return 45;
+    }
+
     if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
         !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 45;
+        return 46;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 46;
+    if (second == nullptr || second == window) return 47;
     return 0;
 }

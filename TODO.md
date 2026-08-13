@@ -319,6 +319,11 @@ check/radio state, window menu attachment, and no-op draw/track calls. This is
 still not a popup UI or menu rendering path; it gives Word's startup/menu
 mutation code a real menu tree to maintain.
 
+Window properties are now backed by per-window state for `SetPropW`,
+`GetPropA/W`, and `RemovePropW`. String keys are matched case-insensitively and
+integer atom keys are accepted as raw 16-bit ids; property enumeration and a
+global atom table remain out of scope until real call sites require them.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

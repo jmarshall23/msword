@@ -22,6 +22,13 @@ struct RegisteredClass {
     HINSTANCE instance = nullptr;
 };
 
+struct WindowProperty {
+    bool atom = false;
+    WORD atom_value = 0;
+    std::string name;
+    HANDLE data = nullptr;
+};
+
 struct WindowObject {
     DWORD magic = kWindowMagic;
     RegisteredClass klass;
@@ -37,6 +44,7 @@ struct WindowObject {
     bool enabled = true;
     bool visible = false;
     std::vector<unsigned char> extra;
+    std::vector<WindowProperty> properties;
 };
 
 struct TimerObject {
@@ -99,6 +107,69 @@ std::string narrow_string(LPCWSTR text) {
 
 bool class_name_is_atom(LPCSTR name) {
     return (reinterpret_cast<std::uintptr_t>(name) >> 16u) == 0;
+}
+
+bool property_name_is_atom(const void* name) {
+    return (reinterpret_cast<std::uintptr_t>(name) >> 16u) == 0;
+}
+
+char fold_property_char(char value) {
+    return value >= 'A' && value <= 'Z' ? static_cast<char>(value + ('a' - 'A'))
+                                        : value;
+}
+
+std::string property_name_key(LPCWSTR name) {
+    std::string result;
+    if (name == nullptr || property_name_is_atom(name)) return result;
+    while (*name != 0) {
+        result.push_back(fold_property_char(static_cast<char>(*name & 0xff)));
+        ++name;
+    }
+    return result;
+}
+
+std::string property_name_key(LPCSTR name) {
+    std::string result;
+    if (name == nullptr || property_name_is_atom(name)) return result;
+    while (*name != 0) {
+        result.push_back(fold_property_char(*name));
+        ++name;
+    }
+    return result;
+}
+
+template <typename Name>
+std::size_t property_index(WindowObject& window, Name name) {
+    if (name == nullptr) return window.properties.size();
+    if (property_name_is_atom(name)) {
+        const auto atom =
+            static_cast<WORD>(reinterpret_cast<std::uintptr_t>(name));
+        if (atom == 0) return window.properties.size();
+        for (std::size_t index = 0; index < window.properties.size(); ++index) {
+            const auto& property = window.properties[index];
+            if (property.atom && property.atom_value == atom) return index;
+        }
+        return window.properties.size();
+    }
+    const std::string key = property_name_key(name);
+    for (std::size_t index = 0; index < window.properties.size(); ++index) {
+        const auto& property = window.properties[index];
+        if (!property.atom && property.name == key) return index;
+    }
+    return window.properties.size();
+}
+
+WindowProperty make_property(LPCWSTR name, HANDLE data) {
+    WindowProperty property{};
+    property.data = data;
+    if (property_name_is_atom(name)) {
+        property.atom = true;
+        property.atom_value =
+            static_cast<WORD>(reinterpret_cast<std::uintptr_t>(name));
+    } else {
+        property.name = property_name_key(name);
+    }
+    return property;
 }
 
 RegisteredClass* find_class(LPCSTR name) {
@@ -978,6 +1049,49 @@ WORD SetWindowWord(HWND window, int index, WORD new_word) {
     if (object == nullptr) return 0;
     return static_cast<WORD>(
         set_window_extra(*object, index, new_word, sizeof(WORD)));
+}
+
+HANDLE GetPropA(HWND window, LPCSTR string) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return nullptr;
+    const std::size_t index = property_index(*object, string);
+    return index < object->properties.size() ? object->properties[index].data
+                                             : nullptr;
+}
+
+HANDLE GetPropW(HWND window, LPCWSTR string) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return nullptr;
+    const std::size_t index = property_index(*object, string);
+    return index < object->properties.size() ? object->properties[index].data
+                                             : nullptr;
+}
+
+BOOL SetPropW(HWND window, LPCWSTR string, HANDLE data) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || string == nullptr ||
+        (property_name_is_atom(string) &&
+         reinterpret_cast<std::uintptr_t>(string) == 0)) {
+        return FALSE;
+    }
+    const std::size_t index = property_index(*object, string);
+    if (index < object->properties.size()) {
+        object->properties[index].data = data;
+    } else {
+        object->properties.push_back(make_property(string, data));
+    }
+    return TRUE;
+}
+
+HANDLE RemovePropW(HWND window, LPCWSTR string) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return nullptr;
+    const std::size_t index = property_index(*object, string);
+    if (index >= object->properties.size()) return nullptr;
+    const HANDLE data = object->properties[index].data;
+    object->properties.erase(object->properties.begin() +
+                             static_cast<std::ptrdiff_t>(index));
+    return data;
 }
 
 LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,

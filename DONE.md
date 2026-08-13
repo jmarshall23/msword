@@ -866,3 +866,37 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14m -R
 
 Reviewed by agy before implementation; claude was asked for this exact slice but
 stalled without output and was stopped.
+
+## Add user32 window properties
+
+The non-Windows user32 shim now stores per-window properties for `SetPropW`,
+`GetPropA`, `GetPropW`, and `RemovePropW`. String property keys are matched
+case-insensitively, integer atom keys are accepted as raw 16-bit ids, `SetPropW`
+replaces existing values, and `RemovePropW` returns the previous handle without
+owning or freeing the payload.
+
+`opus_win32_user32_test` covers string-key lookup through A and W APIs,
+case-insensitive replacement, atom-key lookup and removal, missing-property
+returns, and invalid window/name handling. The Win32 coverage baseline no longer
+lists the implemented W property names.
+
+Validated with `cmake -S src -B build-item14n -DCMAKE_BUILD_TYPE=Debug`,
+`cmake --build build-item14n --target opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine --parallel 8`, and `ctest --test-dir
+build-item14n -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3.
+Also validated with `cmake --build build-item14n --target
+opus_original_strtbl_test opus_original_sttb_test opus_original_plc_test
+opus_sdm_cab_test opus_original_command_test opus_win32_memory_test
+opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14n -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this exact slice but
+stalled without output and was stopped. agy's review called out atom keys,
+case-insensitive matching, replacement semantics, caller-owned payloads, and
+keeping property enumeration/global atom behavior out of scope.

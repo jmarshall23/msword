@@ -18,7 +18,6 @@ FrameRect
 GetClipboardData
 GetClipboardOwner
 GetCurrentThreadId
-GetPropW
 GetSysColorBrush
 GetSystemMenu
 GetTempFileNameA
@@ -36,11 +35,9 @@ Polygon
 Rectangle
 RedrawWindow
 RegisterClipboardFormatA
-RemovePropW
 SetBkMode
 SetClipboardData
 SetMapMode
-SetPropW
 SetScrollPos
 SetScrollRange
 SetTextColor
