@@ -529,10 +529,16 @@ char legacy_byte_for_scalar(const std::uint32_t scalar,
                             const LanguageProfile& profile) {
     if (scalar == 0) return '?';
     const std::wstring wide = scalar_to_wide(scalar);
+    WCHAR wide_native[2]{};
+    for (std::size_t index = 0; index < wide.size() &&
+                                index < std::size(wide_native); ++index) {
+        wide_native[index] = static_cast<WCHAR>(static_cast<std::uint16_t>(
+            wide[index]));
+    }
     char bytes[4]{};
     BOOL used_default = FALSE;
     const int count = WideCharToMultiByte(
-        profile.code_page, WC_NO_BEST_FIT_CHARS, wide.data(),
+        profile.code_page, WC_NO_BEST_FIT_CHARS, wide_native,
         static_cast<int>(wide.size()), bytes, static_cast<int>(sizeof(bytes)),
         "?", &used_default);
     if (count == 1 && !used_default && bytes[0] != '\0') return bytes[0];
@@ -3105,7 +3111,9 @@ std::string pdf_encoded_text(std::wstring_view text) {
         char byte = '?';
         BOOL used_default = FALSE;
         if (character >= 0x20) {
-            WideCharToMultiByte(1252, WC_NO_BEST_FIT_CHARS, &character, 1,
+            const WCHAR native = static_cast<WCHAR>(
+                static_cast<std::uint16_t>(character));
+            WideCharToMultiByte(1252, WC_NO_BEST_FIT_CHARS, &native, 1,
                                 &byte, 1, "?", &used_default);
         } else {
             continue;
@@ -3862,11 +3870,12 @@ int code_page_for_charset(const int charset) {
 
 std::uint32_t decode_legacy_byte(const unsigned char byte,
                                  const int code_page) {
-    wchar_t decoded = 0;
+    WCHAR decoded = 0;
     if (byte < 0x80) return byte;
     if (MultiByteToWideChar(code_page, 0,
                             reinterpret_cast<const char*>(&byte), 1,
-                            &decoded, 1) == 1) return decoded;
+                            &decoded, 1) == 1)
+        return static_cast<wchar_t>(decoded);
     return 0xfffd;
 }
 

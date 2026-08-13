@@ -270,6 +270,8 @@ part lookup API.
 Its top-level modern format text/path conversion helpers now use `WCHAR`
 buffers at Win32 conversion API boundaries while preserving the file's current
 `std::wstring` model.
+Its remaining small modern format scalar/byte conversion API calls now use
+`WCHAR` storage at their Win32 boundaries too.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 `opus_original_startup_probe.cpp` now has a non-Windows `main` bridge that
