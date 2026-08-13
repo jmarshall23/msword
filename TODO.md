@@ -265,6 +265,8 @@ Its OPC package read path now copies the source document path into `WCHAR`
 storage before calling `IOpcFactory::CreateStreamOnFile`.
 Its DOCX package write helpers now pass `WCHAR` part names, content types,
 relationship targets, and relationship types into the OPC COM write APIs.
+Its DOCX package read helper now passes `WCHAR` part names into the OPC COM
+part lookup API.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 

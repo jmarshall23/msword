@@ -303,7 +303,7 @@ bool read_stream(IStream* stream, std::string& data,
                                    &read)) && read == data.size());
 }
 
-bool read_opc_part(const std::wstring& path, const wchar_t* part_name,
+bool read_opc_part(const std::wstring& path, const WCHAR* part_name,
                    std::string& data, const std::size_t maximum_size) {
     if (!regular_file_within_limit(path, kMaxGeneratedBytes)) return false;
     ComApartment apartment;
@@ -1176,10 +1176,10 @@ bool load_docx_paragraphs(const char* path,
     std::string styles;
     const std::wstring document_path = wide_path(path);
     if (document_path.empty() ||
-        !read_opc_part(document_path, L"/word/document.xml", document,
+        !read_opc_part(document_path, OPUSW("/word/document.xml"), document,
                        kMaxDocumentXmlBytes))
         return false;
-    read_opc_part(document_path, L"/word/styles.xml", styles,
+    read_opc_part(document_path, OPUSW("/word/styles.xml"), styles,
                   kMaxStylesXmlBytes);
     paragraphs = parse_document_xml(document, parse_style_catalog(styles),
                                     tables);
