@@ -269,6 +269,8 @@ Its DOCX package read helper now passes `WCHAR` part names into the OPC COM
 part lookup API.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
+`opus_original_startup_probe.cpp` now has a non-Windows `main` bridge that
+widens `argv` bytes into `WCHAR` storage before entering `wWinMain`.
 
 Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
 or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit

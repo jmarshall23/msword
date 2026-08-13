@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
+#include <vector>
 
 extern "C" int WINAPI OpusOriginalWinMain(HINSTANCE instance,
                                              HINSTANCE previous,
@@ -456,3 +457,20 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     return OpusOriginalWinMain(instance, previous, command_line_ansi,
                                show_command);
 }
+
+#ifndef _WIN32
+int main(const int argument_count, char** arguments) {
+    std::vector<WCHAR> command_line;
+    for (int argument = 1; argument < argument_count; ++argument) {
+        if (argument > 1) command_line.push_back(OPUSW(" ")[0]);
+        if (arguments[argument] == nullptr) continue;
+        for (const unsigned char* text =
+                 reinterpret_cast<const unsigned char*>(arguments[argument]);
+             *text != 0; ++text) {
+            command_line.push_back(static_cast<WCHAR>(*text));
+        }
+    }
+    command_line.push_back(0);
+    return wWinMain(GetModuleHandleW(nullptr), nullptr, command_line.data(), 0);
+}
+#endif
