@@ -122,11 +122,25 @@ int main() {
     RECT rect_a{0, 0, 10, 10};
     RECT rect_b{5, 6, 12, 7};
     RECT rect_out{1, 1, 1, 1};
-    RECT rect_empty{20, 20, 21, 21};
+    RECT rect_empty{20, 20, 20, 21};
+    RECT rect_union{0, 0, 0, 0};
     if (!GetClientRect(child, &client) || client.left != 0 ||
         client.top != 0 || client.right != 3 || client.bottom != 4 ||
         !ClientToScreen(child, &point) || point.x != 13 || point.y != 25 ||
         !ScreenToClient(child, &point) || point.x != 2 || point.y != 3 ||
+        !SetRect(&rect_out, -1, 2, 3, 4) || rect_out.left != -1 ||
+        rect_out.top != 2 || rect_out.right != 3 || rect_out.bottom != 4 ||
+        !InflateRect(&rect_out, 2, -1) || rect_out.left != -3 ||
+        rect_out.top != 3 || rect_out.right != 5 || rect_out.bottom != 3 ||
+        !UnionRect(&rect_union, &rect_a, &rect_b) ||
+        rect_union.left != 0 || rect_union.top != 0 ||
+        rect_union.right != 12 || rect_union.bottom != 10 ||
+        !UnionRect(&rect_union, &rect_empty, &rect_b) ||
+        rect_union.left != 5 || rect_union.top != 6 ||
+        rect_union.right != 12 || rect_union.bottom != 7 ||
+        UnionRect(&rect_union, &rect_empty, &rect_empty) ||
+        rect_union.left != 0 || rect_union.top != 0 ||
+        rect_union.right != 0 || rect_union.bottom != 0 ||
         !PtInRect(&rect_a, {9, 9}) || PtInRect(&rect_a, {10, 9}) ||
         !IntersectRect(&rect_out, &rect_a, &rect_b) ||
         rect_out.left != 5 || rect_out.top != 6 || rect_out.right != 10 ||

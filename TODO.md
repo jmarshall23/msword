@@ -272,6 +272,11 @@ lists those names. Undeclared rect helpers such as `SetRect`, `InflateRect`, and
 `UnionRect` remain hidden from `win32_coverage` until they are declared and
 implemented together.
 
+The pure rect-helper blind spot has been closed for `SetRect`, `InflateRect`, and
+`UnionRect`: all three are now declared and implemented together, so the coverage
+gate can see them without adding stale uncovered entries. Paint/update-region rect
+helpers remain out of scope until the paint slice.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

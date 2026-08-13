@@ -669,6 +669,21 @@ BOOL ScreenToClient(HWND window, LPPOINT point) {
     return TRUE;
 }
 
+BOOL SetRect(LPRECT rectangle, int left, int top, int right, int bottom) {
+    if (rectangle == nullptr) return FALSE;
+    *rectangle = {left, top, right, bottom};
+    return TRUE;
+}
+
+BOOL InflateRect(LPRECT rectangle, int dx, int dy) {
+    if (rectangle == nullptr) return FALSE;
+    rectangle->left -= dx;
+    rectangle->right += dx;
+    rectangle->top -= dy;
+    rectangle->bottom += dy;
+    return TRUE;
+}
+
 BOOL IntersectRect(LPRECT destination, const RECT* source1,
                    const RECT* source2) {
     if (destination == nullptr || source1 == nullptr || source2 == nullptr) {
@@ -693,6 +708,31 @@ BOOL OffsetRect(LPRECT rectangle, int dx, int dy) {
     rectangle->right += dx;
     rectangle->top += dy;
     rectangle->bottom += dy;
+    return TRUE;
+}
+
+BOOL UnionRect(LPRECT destination, const RECT* source1, const RECT* source2) {
+    if (destination == nullptr || source1 == nullptr || source2 == nullptr) {
+        return FALSE;
+    }
+    const bool empty1 = rect_empty(*source1);
+    const bool empty2 = rect_empty(*source2);
+    if (empty1 && empty2) {
+        *destination = {0, 0, 0, 0};
+        return FALSE;
+    }
+    if (empty1) {
+        *destination = *source2;
+        return TRUE;
+    }
+    if (empty2) {
+        *destination = *source1;
+        return TRUE;
+    }
+    *destination = {(std::min)(source1->left, source2->left),
+                    (std::min)(source1->top, source2->top),
+                    (std::max)(source1->right, source2->right),
+                    (std::max)(source1->bottom, source2->bottom)};
     return TRUE;
 }
 

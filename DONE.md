@@ -592,3 +592,34 @@ Reviewed by agy before implementation; claude was asked again but had not
 returned before implementation, so this slice used claude's prior geometry review
 for the child-coordinate conversion, visibility inheritance, and hidden
 undeclared rect-helper traps.
+
+## Add user32 pure rect helpers
+
+The non-Windows user32 shim now declares and implements the pure rect helpers that
+the engine calls but the coverage gate could not previously see: `SetRect`,
+`InflateRect`, and `UnionRect`. `UnionRect` ignores empty inputs, zeroes the
+destination and returns `FALSE` when both inputs are empty, and tolerates aliased
+destination/source use through local emptiness checks.
+
+`opus_win32_user32_test` extends the existing geometry block with set, inflate,
+non-empty union, union with one empty input, and all-empty union assertions. No
+coverage baseline edit was needed because the declarations and implementations
+land in the same commit.
+
+Validated with `cmake --build build-item14f --target
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine --parallel 8`
+and `ctest --test-dir build-item14f -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item14f --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14f -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this slice but had not
+returned before implementation, so the prechecks followed claude's prior warning
+about declaring and defining hidden rect helpers in the same commit.
