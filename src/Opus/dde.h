@@ -1,6 +1,10 @@
-/* D D E . H */
-/*  include file for dde support */
+/*
+ * D D E . H include file for dde support
+ */
 
+#ifndef NATIVE
+#define NATIVE
+#endif
 
 #ifdef DEBUG
 #ifdef PCJ
@@ -61,7 +65,7 @@ struct DDES /* DDE Status */
 	int     secTimeOut: 13;   /* how long to timeout (up to 136 mins) */
 	struct QUE      **hque;   /* dde message queue */
 	struct PL       **hplddli; /* server links */
-	uns/*SD*/ sdResult;	      /* result of fSpecial REQUEST */
+	SD sdResult;		      /* result of fSpecial REQUEST */
 	};
 
 
@@ -148,8 +152,7 @@ struct DCLD     /* Dde ChanneL Descriptor */
 		int fTermReceived:1;/* WM_DDE_TERMINATE received */
 		int fExecuting : 1; /* server: performing EXECUTE */
 		int :4;             /* spares */
-		/* for macro/special only */
-		/* if fResponse & !fAck & !fBusy then NACK */
+		/* for macro/special only if fResponse & !fAck & !fBusy then NACK */
 		int fResponse : 1;  /* a response has been received */
 		int fAck : 1;       /* response was ACK */
 		int fBusy : 1;      /* response was BUSY */
@@ -252,8 +255,9 @@ LONG UsecDdeTimeOut ();
 #endif /* DEBUG */
 
 
-/*  DRIVE code from Excel */
-/* WARNING: don't change these without also changing eldden.asm */
+/* DRIVE code from Excel WARNING: don't change these without also changing
+ * eldden.asm
+ */
 
 /* Event structure - same as the SysMsg structure in USER.H */
 typedef struct
@@ -270,13 +274,12 @@ typedef struct
 	unsigned vk;
 }	EVENT;
 
-/*----------------------------------------------------------------------------
-|	EVT structure 
+/* |	EVT structure
 |
 |		This is an element in the keyboard event queue, to be fed
 |		to windows through the playback hook.
 |
-|		Fields:
+ * | Fields:
 |			hevtNext	Handle to next evt
 |			event		event structure
 |
