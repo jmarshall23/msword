@@ -79,7 +79,6 @@ MultiByteToWideChar
 OffsetRect
 OpenClipboard
 OpenIcon
-PeekMessageA
 Polygon
 PtInRect
 Rectangle
@@ -89,8 +88,6 @@ ReleaseCapture
 RemoveMenu
 RemovePropW
 ScreenToClient
-SendMessageA
-SendMessageW
 SetBkMode
 SetCapture
 SetClipboardData

@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <deque>
-#include <mutex>
 #include <string>
 #include <vector>
 
@@ -37,7 +37,6 @@ struct WindowObject {
     std::vector<unsigned char> extra;
 };
 
-std::mutex g_user_lock;
 std::vector<RegisteredClass> g_classes;
 std::vector<WindowObject*> g_windows;
 std::deque<MSG> g_messages;
@@ -122,6 +121,23 @@ bool message_matches(const MSG& message, HWND window, UINT filter_min,
     return true;
 }
 
+BOOL queue_take(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
+                UINT remove_message) {
+    if (message == nullptr) return FALSE;
+    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
+        if (!message_matches(*it, window, filter_min, filter_max)) continue;
+        *message = *it;
+        if ((remove_message & PM_REMOVE) != 0) g_messages.erase(it);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void pump_block_until_message() {
+    OutputDebugStringA("user32 GetMessage/WaitMessage needs an event backend\n");
+    std::abort();
+}
+
 COLORREF system_color(int index) {
     switch (index) {
         case COLOR_WINDOW: return RGB(255, 255, 255);
@@ -172,7 +188,6 @@ ATOM RegisterClassExA(const WNDCLASSEXA* window_class) {
         SetLastError(ERROR_INVALID_PARAMETER);
         return 0;
     }
-    std::lock_guard<std::mutex> guard(g_user_lock);
     if (find_class(window_class->lpszClassName) != nullptr) {
         SetLastError(ERROR_CLASS_ALREADY_EXISTS);
         return 0;
@@ -227,13 +242,10 @@ HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
                      int height, HWND parent, HMENU menu, HINSTANCE instance,
                      LPVOID parameter) {
     RegisteredClass klass{};
-    {
-        std::lock_guard<std::mutex> guard(g_user_lock);
-        if (auto* registered = find_class(class_name)) {
-            klass = *registered;
-        } else {
-            klass = builtin_class(class_name);
-        }
+    if (auto* registered = find_class(class_name)) {
+        klass = *registered;
+    } else {
+        klass = builtin_class(class_name);
     }
     auto* window = new WindowObject();
     window->klass = klass;
@@ -296,9 +308,17 @@ BOOL DestroyWindow(HWND window) {
     }
     if (object->klass.procedure != nullptr) {
         object->klass.procedure(window, WM_DESTROY, 0, 0);
+        object->klass.procedure(window, WM_NCDESTROY, 0, 0);
     }
     if (g_active_window == window) g_active_window = nullptr;
     if (g_focus_window == window) g_focus_window = nullptr;
+    for (auto it = g_messages.begin(); it != g_messages.end();) {
+        if (it->hwnd == window) {
+            it = g_messages.erase(it);
+        } else {
+            ++it;
+        }
+    }
     object->magic = 0;
 
     // ponytail: leak tiny destroyed window records; replace with generation
@@ -418,12 +438,65 @@ LONG SetWindowLongA(HWND window, int index, LONG new_long) {
     return static_cast<LONG>(SetWindowLongPtrA(window, index, new_long));
 }
 
-LRESULT DefWindowProcA(HWND, UINT, WPARAM, LPARAM) {
-    return 1;
+LRESULT DefWindowProcA(HWND window, UINT message, WPARAM wparam,
+                       LPARAM lparam) {
+    auto* object = window_from_handle(window);
+    switch (message) {
+        case WM_NCCREATE:
+            return 1;
+        case WM_CLOSE:
+            return DestroyWindow(window);
+        case WM_SETTEXT:
+            if (object == nullptr) return FALSE;
+            object->text = lparam != 0 ? reinterpret_cast<LPCSTR>(lparam) : "";
+            return TRUE;
+        case WM_GETTEXT:
+            if (object == nullptr || lparam == 0 || wparam == 0) return 0;
+            lstrcpynA(reinterpret_cast<LPSTR>(lparam), object->text.c_str(),
+                      static_cast<int>(wparam));
+            return static_cast<LRESULT>(
+                std::strlen(reinterpret_cast<LPCSTR>(lparam)));
+        case WM_GETTEXTLENGTH:
+            return object != nullptr ? static_cast<LRESULT>(object->text.size())
+                                     : 0;
+        default:
+            return 0;
+    }
 }
 
-LRESULT DefWindowProcW(HWND, UINT, WPARAM, LPARAM) {
-    return 1;
+LRESULT DefWindowProcW(HWND window, UINT message, WPARAM wparam,
+                       LPARAM lparam) {
+    auto* object = window_from_handle(window);
+    switch (message) {
+        case WM_NCCREATE:
+            return 1;
+        case WM_CLOSE:
+            return DestroyWindow(window);
+        case WM_SETTEXT:
+            if (object == nullptr) return FALSE;
+            object->text =
+                lparam != 0 ? narrow_string(reinterpret_cast<LPCWSTR>(lparam))
+                             : "";
+            return TRUE;
+        case WM_GETTEXT:
+            if (object == nullptr || lparam == 0 || wparam == 0) return 0;
+            {
+                auto* output = reinterpret_cast<LPWSTR>(lparam);
+                const std::size_t limit = static_cast<std::size_t>(wparam);
+                const std::size_t count =
+                    (std::min)(object->text.size(), limit - 1);
+                for (std::size_t index = 0; index < count; ++index) {
+                    output[index] = static_cast<WCHAR>(object->text[index]);
+                }
+                output[count] = 0;
+                return static_cast<LRESULT>(count);
+            }
+        case WM_GETTEXTLENGTH:
+            return object != nullptr ? static_cast<LRESULT>(object->text.size())
+                                     : 0;
+        default:
+            return 0;
+    }
 }
 
 HCURSOR LoadCursorA(HINSTANCE, LPCSTR cursor_name) {
@@ -576,21 +649,38 @@ BOOL TranslateMessage(const MSG*) {
     return FALSE;
 }
 
-LRESULT DispatchMessageA(const MSG* message) {
-    if (message == nullptr) return 0;
-    auto* object = window_from_handle(message->hwnd);
-    if (object == nullptr || object->klass.procedure == nullptr) {
-        return DefWindowProcA(message->hwnd, message->message, message->wParam,
-                              message->lParam);
+LRESULT SendMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    if (object->klass.procedure == nullptr) {
+        return DefWindowProcA(window, message, wparam, lparam);
     }
-    return object->klass.procedure(message->hwnd, message->message,
-                                   message->wParam, message->lParam);
+    return object->klass.procedure(window, message, wparam, lparam);
 }
 
-BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+LRESULT SendMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr) return 0;
+    if (object->klass.procedure == nullptr) {
+        return DefWindowProcW(window, message, wparam, lparam);
+    }
+    return object->klass.procedure(window, message, wparam, lparam);
+}
+
+LRESULT DispatchMessageA(const MSG* message) {
+    if (message == nullptr) return 0;
+    return SendMessageA(message->hwnd, message->message, message->wParam,
+                        message->lParam);
+}
+
+BOOL PostMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     if (window != nullptr && !IsWindow(window)) return FALSE;
     g_messages.push_back({window, message, wparam, lparam, 0, {0, 0}});
     return TRUE;
+}
+
+BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+    return PostMessageA(window, message, wparam, lparam);
 }
 
 VOID PostQuitMessage(int exit_code) {
@@ -600,12 +690,22 @@ VOID PostQuitMessage(int exit_code) {
 
 BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max) {
     if (message == nullptr) return FALSE;
-    for (auto it = g_messages.begin(); it != g_messages.end(); ++it) {
-        if (!message_matches(*it, window, filter_min, filter_max)) continue;
-        *message = *it;
-        g_messages.erase(it);
-        return message->message == WM_QUIT ? 0 : 1;
+    for (;;) {
+        if (queue_take(message, window, filter_min, filter_max, PM_REMOVE)) {
+            return message->message == WM_QUIT ? FALSE : TRUE;
+        }
+        pump_block_until_message();
     }
+}
+
+BOOL PeekMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
+                  UINT remove_message) {
+    return queue_take(message, window, filter_min, filter_max, remove_message);
+}
+
+BOOL WaitMessage(void) {
+    if (!g_messages.empty()) return TRUE;
+    pump_block_until_message();
     return FALSE;
 }
 

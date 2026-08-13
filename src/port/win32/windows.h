@@ -3038,6 +3038,7 @@ LRESULT SendMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 LRESULT SendMessageTimeoutW(HWND window, UINT message, WPARAM wparam,
                             LPARAM lparam, UINT flags, UINT timeout,
                             DWORD_PTR* result);
+BOOL PostMessageA(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 BOOL TranslateMessage(const MSG* message);
 LRESULT DispatchMessageA(const MSG* message);
@@ -3046,6 +3047,7 @@ BOOL PeekMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max,
 BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max);
 BOOL IsDialogMessageA(HWND dialog, LPMSG message);
 VOID PostQuitMessage(int exit_code);
+BOOL WaitMessage(void);
 BOOL EnumChildWindows(HWND parent, WNDENUMPROC enum_func, LPARAM parameter);
 BOOL EnumThreadWindows(DWORD thread_id, WNDENUMPROC enum_func, LPARAM parameter);
 UINT_PTR SetTimer(HWND window, UINT_PTR event, UINT elapsed, LPVOID timer_func);
@@ -3191,6 +3193,18 @@ HLOCAL LocalReAlloc(HLOCAL memory, SIZE_T bytes, UINT flags);
 #ifndef SetWindowLong
 #define SetWindowLong SetWindowLongA
 #endif
+#ifndef SendMessage
+#define SendMessage(hwnd, message, wparam, lparam) \
+    SendMessageA((HWND)(hwnd), (message), (WPARAM)(wparam), (LPARAM)(lparam))
+#endif
+#ifndef GetMessage
+#define GetMessage(message, window, filter_min, filter_max) \
+    GetMessageA((message), (HWND)(window), (filter_min), (filter_max))
+#endif
+#ifndef DefWindowProc
+#define DefWindowProc(window, message, wparam, lparam) \
+    DefWindowProcA((HWND)(window), (message), (WPARAM)(wparam), (LPARAM)(lparam))
+#endif
 #ifndef GetNextWindow
 #define GetNextWindow GetWindow
 #endif
@@ -3201,7 +3215,8 @@ HLOCAL LocalReAlloc(HLOCAL memory, SIZE_T bytes, UINT flags);
 #define PeekMessage PeekMessageA
 #endif
 #ifndef PostMessage
-#define PostMessage PostMessageW
+#define PostMessage(window, message, wparam, lparam) \
+    PostMessageA((HWND)(window), (message), (WPARAM)(wparam), (LPARAM)(lparam))
 #endif
 #ifndef FindWindow
 #define FindWindow FindWindowA

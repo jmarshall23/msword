@@ -447,3 +447,39 @@ then `ctest --test-dir build-item14a -R
 Reviewed by agy and claude: agy identified the minimal startup API set, and
 claude caught that `dynamic_lookup` was hiding the real link gate and narrowed the
 message pump to no-work stubs for this runtime path.
+
+## Add user32 message core
+
+The non-Windows `user32.cpp` shim now owns the in-memory message core:
+`SendMessageA/W` dispatch synchronously to the window procedure, `PostMessageA/W`
+queue messages, `PeekMessageA` honors filter and remove flags, `GetMessageA`
+returns queued messages and only quits on `WM_QUIT`, and `WaitMessage` fails fast
+until an event backend exists. `DefWindowProcA/W` now defaults to zero, keeps
+`WM_NCCREATE` successful, handles `WM_CLOSE`, and owns basic text
+get/set/length messages.
+
+`windows.h` now routes macro spellings for `SendMessage`, `GetMessage`,
+`PostMessage`, and `DefWindowProc` through typed shim entry points with casts for
+the historical C call sites. That makes macro-spelled engine calls visible to
+`win32_coverage` without breaking old pointer/integer argument patterns.
+
+`opus_win32_user32_test` now covers synchronous send dispatch, default return,
+peek no-remove versus remove, hwnd/message filtering, `PostQuitMessage`,
+`GetMessageA` quit return, and queued-message purge through `DestroyWindow`.
+The Win32 coverage baseline no longer lists `PeekMessageA`, `SendMessageA`, or
+`SendMessageW`.
+
+Validated with `cmake --build build-item14b --target
+opus_original_strtbl_test opus_original_sttb_test opus_original_plc_test
+opus_sdm_cab_test opus_original_command_test opus_win32_memory_test
+opus_win32_resource_test opus_win32_gdi_object_test opus_win32_gdi_raster_test
+opus_win32_font_test opus_win32_print_test opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine opus_x64_runtime --parallel 8`,
+then `ctest --test-dir build-item14b -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy and claude: both prioritized the message core before SDL,
+menus, caret, clipboard, or scrollbars. The `GetWindowWord`/`SetWindowWord`
+surface remains out of this slice because its 16-bit extra-byte model needs a
+separate pointer-width audit.

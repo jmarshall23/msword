@@ -240,6 +240,13 @@ used by the runtime harness, and honest no-work message stubs. The runtime test 
 longer uses macOS `dynamic_lookup`, so missing imports fail at link time instead of
 as null calls.
 
+The message core now handles direct `SendMessageA/W`, queued `PostMessageA/W`,
+`PeekMessageA` removal semantics, `GetMessageA` over queued messages, `WaitMessage`
+as a backend-required fail-fast, `WM_CLOSE`, and default window text messages.
+Macro spellings for `SendMessage`, `GetMessage`, `PostMessage`, and
+`DefWindowProc` are routed through the shim with casts so old C call sites stay
+buildable and visible to the coverage gate.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so

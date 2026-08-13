@@ -6,6 +6,7 @@ constexpr LONG_PTR kUserData = 0x12345678;
 constexpr LONG_PTR kExtraData = 0x123456789;
 int g_nc_create_count = 0;
 int g_create_count = 0;
+int g_user_message_count = 0;
 
 LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM,
                                 LPARAM parameter) {
@@ -19,6 +20,10 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM,
     if (message == WM_CREATE) {
         ++g_create_count;
         return 0;
+    }
+    if (message == WM_USER + 1) {
+        ++g_user_message_count;
+        return static_cast<LRESULT>(parameter + 7);
     }
     return DefWindowProcA(window, message, 0, parameter);
 }
@@ -95,9 +100,42 @@ int main() {
         return 13;
     }
 
-    if (!DestroyWindow(window) || IsWindow(window) || IsWindow(child)) return 14;
+    if (DefWindowProcA(window, WM_USER + 99, 0, 0) != 0) return 14;
+    if (SendMessageA(window, WM_USER + 1, 0, 35) != 42 ||
+        g_user_message_count != 1) {
+        return 15;
+    }
+
+    MSG message{};
+    if (!PostMessageA(window, WM_USER + 2, 3, 4) ||
+        !PeekMessageA(&message, nullptr, WM_USER + 2, WM_USER + 2,
+                      PM_NOREMOVE) ||
+        message.hwnd != window || message.wParam != 3 || message.lParam != 4 ||
+        !PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2,
+                      PM_REMOVE) ||
+        PeekMessageA(&message, window, WM_USER + 2, WM_USER + 2, PM_REMOVE)) {
+        return 16;
+    }
+    if (!PostMessageW(child, WM_USER + 3, 5, 6) ||
+        PeekMessageA(&message, window, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
+        !PeekMessageA(&message, child, WM_USER + 3, WM_USER + 3, PM_REMOVE) ||
+        message.hwnd != child || message.wParam != 5 || message.lParam != 6) {
+        return 17;
+    }
+
+    PostQuitMessage(23);
+    if (GetMessageA(&message, nullptr, 0, 0) != 0 ||
+        message.message != WM_QUIT || message.wParam != 23) {
+        return 18;
+    }
+
+    if (!PostMessageA(child, WM_USER + 4, 0, 0) || !DestroyWindow(window) ||
+        IsWindow(window) || IsWindow(child) ||
+        PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
+        return 19;
+    }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 15;
+    if (second == nullptr || second == window) return 20;
     return 0;
 }
