@@ -2505,7 +2505,7 @@ bool insert_unicode_scalar(HWND pane, const std::uint32_t scalar) {
     return scalar >= 0x20 && queue_unicode_input(pane, scalar);
 }
 
-void insert_unicode_text(HWND pane, const std::wstring& text) {
+void insert_unicode_text(HWND pane, const std::basic_string<WCHAR>& text) {
     for (std::size_t index = 0; index < text.size();) {
         std::uint32_t scalar = static_cast<std::uint16_t>(text[index++]);
         if (scalar >= 0xd800 && scalar <= 0xdbff && index < text.size()) {
@@ -2516,7 +2516,8 @@ void insert_unicode_text(HWND pane, const std::wstring& text) {
                          (low - 0xdc00);
             }
         }
-        if (scalar == L'\r' || scalar == L'\n' || scalar == L'\t')
+        if (scalar == OPUSW("\r")[0] || scalar == OPUSW("\n")[0] ||
+            scalar == OPUSW("\t")[0])
             queue_unicode_input(pane, scalar);
         else
             insert_unicode_scalar(pane, scalar);
@@ -2577,10 +2578,10 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
             const LONG byte_count = ImmGetCompositionStringW(
                 context, GCS_RESULTSTR, nullptr, 0);
             if (byte_count > 0 && byte_count <= 1024 * 1024 &&
-                (byte_count % sizeof(wchar_t)) == 0) {
-                std::wstring result(
-                    static_cast<std::size_t>(byte_count) / sizeof(wchar_t),
-                    L'\0');
+                (byte_count % sizeof(WCHAR)) == 0) {
+                std::basic_string<WCHAR> result(
+                    static_cast<std::size_t>(byte_count) / sizeof(WCHAR),
+                    WCHAR{});
                 if (ImmGetCompositionStringW(context, GCS_RESULTSTR,
                         &result[0], static_cast<DWORD>(byte_count)) ==
                     byte_count) {
