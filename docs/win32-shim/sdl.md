@@ -34,10 +34,29 @@ Results:
 - `cmake -S src --preset wasm-debug` configured with Emscripten.
 - `opus-sdl-probe.js` linked with `-sUSE_SDL=2`.
 
-Linux remains to be run on a Linux host:
+Local Linux evidence:
+
+The Lima Ubuntu aarch64 VM mounted `/Users` read-only, so validation copied the tree to
+`/tmp/msword-linux-validate` first.
 
 ```sh
+sudo apt-get update
+sudo apt-get install -y cmake
+cmake --version | head -n1
+pkg-config --modversion sdl2
+rm -rf /tmp/msword-linux-validate
+mkdir -p /tmp/msword-linux-validate
+tar -C /Users/jserv/playground/msword --exclude=.git --exclude=build --exclude=out --exclude=bin -cf - . | tar -C /tmp/msword-linux-validate -xf -
+cd /tmp/msword-linux-validate
 cmake -S src --preset linux-debug
 cmake --build out/linux-debug --target opus-sdl-probe
 SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
 ```
+
+Results:
+
+- `cmake --version | head -n1` reported `cmake version 3.31.6`.
+- `pkg-config --modversion sdl2` reported `2.32.4`.
+- `cmake -S src --preset linux-debug` configured.
+- `opus-sdl-probe` linked to `/tmp/msword-linux-validate/bin/opus-sdl-probe`.
+- `SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe` exited 0.

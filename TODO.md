@@ -84,33 +84,7 @@ unsupported. That is precisely the half of gdi32 a word processor is made of.
 
 ## Configure off Windows
 
-Item 4 is the remaining configure gate. Item 5 lands once item 4 gives it something to
-run. One item from the next phase reaches back into this one: item 5a's SDL decision has
-to be made before item 4 writes the presets, because it sets their cache variables. It is
-numbered there because that is where its work lives, not because it can wait.
-
-### 4. Non-Windows presets and the remaining gates
-
-`src/CMakePresets.json` has only `x64-debug` and `x64-release`, both pinned to
-`"generator": "Visual Studio 17 2022"`. There is no non-Windows entry point at all, so
-every command in the README and every CI invocation below fails off Windows.
-
-Do:
-
-- Add `macos-debug`, `linux-debug`, `wasm-debug` configure presets on Ninja, each with a
-  `condition` on `hostSystemName`, and mark the VS presets Windows-only.
-- `src/CMakeLists.txt:6`, drop the `if(NOT WIN32) FATAL_ERROR`.
-- `src/CMakeLists.txt:9`, the `CMAKE_SIZEOF_VOID_P EQUAL 8` check rejects wasm32.
-  Replace with `if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)`
-  and move the real constraint, handle layout, into a `static_assert` in
-  `opus_x64_heap.h`.
-- `src/CMakeLists.txt:59-64`, the hardcoded `$ENV{ProgramFiles(x86)}/Windows Kits/10`
-  lookup becomes the Windows branch of item 6.
-- `src/CMakeLists.txt:37` used to glob `*.asm` across all of `src/` and hard-error
-  unless the count was exactly 59. That included 7 `OpusEtAl/tools` assembly files.
-  Scope the glob to `Opus/asm/*.asm` and assert the product reference count, 52.
-
-Done when: `cmake --preset macos-debug` and `cmake --preset linux-debug` both configure.
+The non-Windows configure and SDL probe gates are complete. Item 5 is next.
 
 ### 5. CI on three platforms
 
@@ -129,24 +103,8 @@ Done when: three jobs green on a pull request.
 
 ## Cut the seam
 
-Execution order in this phase is 7, then 6, then 5a, 8, 9, 10, 11. The numbering is
+Execution order in this phase is 7, then 6, then 8, 9, 10, 11. The numbering is
 kept stable so citations elsewhere do not rot.
-
-### 5a. Acquire SDL
-
-`src/CMakeLists.txt` contains zero occurrences of `SDL`, yet items 4, 13, 14, 16, 17 and
-18 all assume `backend_sdl.c` compiles and links. Nothing says whether SDL arrives via
-`find_package`, `FetchContent`, vcpkg, a submodule, or `-sUSE_SDL=2` under Emscripten,
-and that answer determines item 4's preset cache variables, item 5's CI install steps
-and item 18's version question.
-
-Do: finish the SDL2 probe on Linux. macOS and WebAssembly already use
-`src/port/win32/sdl-probe.c`; native targets use `find_package(SDL2 REQUIRED)`, and
-Emscripten uses target-local `-sUSE_SDL=2`. Exact commands tried are recorded in
-`docs/win32-shim/sdl.md`.
-
-Done when: a two-line SDL program configures and links under all three non-Windows
-presets.
 
 ### 6. Swap `opus_windows_sdk.h`, and close the seven leaks
 

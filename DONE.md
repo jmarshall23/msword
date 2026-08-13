@@ -44,8 +44,6 @@ Emscripten's `-sUSE_SDL=2`.
 Validated by configuring `macos-debug` and `wasm-debug`, building `opus-sdl-probe` for
 both, and running the macOS probe with `SDL_VIDEODRIVER=dummy`.
 
-Linux configure/probe validation remains open in `TODO.md`.
-
 ## Add the BITAPP regression and finish the macOS tool gate
 
 The macOS native tool gate now builds `mkcmd`, `mkdlg`, `mergeelx`, `bitapp`, `dibapp`
@@ -73,3 +71,15 @@ generated command directory instead of relying on a hardcoded depth.
 Validated by first building the native tools with `macos-debug`, then building
 `opus_generated_commands`, `opus_generated_embedded_resources` and
 `opus_generated_dib_resources` from `wasm-debug`.
+
+## Complete Linux configure and SDL probe validation
+
+`linux-debug` now configures on a case-sensitive Linux filesystem. The original engine
+source list uses `Opus/CMD3.C`, matching the checked-in filename instead of relying on
+macOS case folding.
+
+Validated `cmake -S src --preset macos-debug` on macOS. In a Lima Ubuntu aarch64 VM,
+installed CMake 3.31.6 with apt, copied the repository to `/tmp/msword-linux-validate`
+because `/Users` was read-only, then ran `cmake -S src --preset linux-debug`,
+`cmake --build out/linux-debug --target opus-sdl-probe`, and
+`SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe`.

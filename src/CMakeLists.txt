@@ -556,7 +556,7 @@ add_library(opus_original_engine STATIC
     Opus/annot.c
     Opus/cmd.c
     Opus/cmd2.c
-    Opus/cmd3.c
+    Opus/CMD3.C
     Opus/cmdcore.c
     Opus/cmdwnd.c
     Opus/curswin.c
@@ -788,7 +788,7 @@ set_source_files_properties(Opus/wordtech/disptbl.c PROPERTIES
 set_source_files_properties(Opus/disp1.c PROPERTIES
     COMPILE_DEFINITIONS "NOASM;OPUS_X64_DISPLAY_C"
 )
-set_source_files_properties(Opus/CLIPBORD.C Opus/CLIPBRD2.C Opus/CREATE2.C Opus/DDESRVR.C Opus/DLBENUM.C Opus/EDIT.C Opus/FIELDCMD.C Opus/FILE2.C Opus/GRSPEC.C Opus/LOADFONT.C Opus/PIC2.C Opus/RTFIN.C Opus/RTFOUT.C Opus/RTFRARE.C Opus/SCREEN2.C Opus/SPELL.C Opus/SYSCHG.C PROPERTIES LANGUAGE C)
+set_source_files_properties(Opus/CLIPBORD.C Opus/CLIPBRD2.C Opus/CMD3.C Opus/CREATE2.C Opus/DDESRVR.C Opus/DLBENUM.C Opus/EDIT.C Opus/FIELDCMD.C Opus/FILE2.C Opus/GRSPEC.C Opus/LOADFONT.C Opus/PIC2.C Opus/RTFIN.C Opus/RTFOUT.C Opus/RTFRARE.C Opus/SCREEN2.C Opus/SPELL.C Opus/SYSCHG.C PROPERTIES LANGUAGE C)
 set(OPUS_ORIGINAL_INCLUDE_DIRS
     "${CMAKE_CURRENT_BINARY_DIR}/generated/original"
     "${CMAKE_CURRENT_SOURCE_DIR}/port/original"
