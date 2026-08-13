@@ -1,9 +1,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include "opus_x64_compat.h"
-#include <commdlg.h>
-#include <msopc.h>
-#include <richedit.h>
-#include <wrl/client.h>
+#include "commdlg.h"
+#include "msopc.h"
+#include "richedit.h"
+#include "wrl/client.h"
 
 #include <algorithm>
 #include <array>

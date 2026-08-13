@@ -17,9 +17,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <wchar.h>
-#if defined(_MSC_VER)
-#include <malloc.h>
-#else
+#if !defined(_MSC_VER)
 #include <strings.h>
 #endif
 #include <string.h>

@@ -1,6 +1,8 @@
-#include <Windows.h>
-#include <DbgHelp.h>
-#include <rtcapi.h>
+#include "DbgHelp.h"
+#include "windows.h"
+#if defined(_MSC_VER)
+#include "rtcapi.h"
+#endif
 #include "opus_x64_compat.h"
 #include <algorithm>
 #include <cstdarg>
@@ -446,7 +448,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
 
     SetUnhandledExceptionFilter(WriteCrashStack);
     AddVectoredExceptionHandler(1, ObserveVectoredException);
+#if defined(_MSC_VER)
     _RTC_SetErrorFuncW(WriteRtcFailure);
+#endif
     ResetRibbonTrace();
 
     /* The native SDM shim owns the controls, while Microsoft's original

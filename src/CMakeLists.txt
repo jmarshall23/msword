@@ -799,7 +799,12 @@ set(OPUS_ORIGINAL_INCLUDE_DIRS
     "${CMAKE_CURRENT_SOURCE_DIR}/Opus"
 )
 if(NOT WIN32)
-    list(INSERT OPUS_ORIGINAL_INCLUDE_DIRS 2 "${CMAKE_CURRENT_SOURCE_DIR}/port/win32")
+    list(INSERT OPUS_ORIGINAL_INCLUDE_DIRS 2
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/win32"
+    )
+    list(INSERT OPUS_ORIGINAL_INCLUDE_DIRS 3
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/win32/case"
+    )
 endif()
 target_compile_definitions(opus_original_engine PRIVATE
     WIN

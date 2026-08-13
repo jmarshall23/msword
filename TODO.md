@@ -230,8 +230,12 @@ On macOS, `WORD1` and `opus_word1_ui_test` now compile and link with a deliberat
 Darwin-only dynamic-loader handoff for unresolved Win32 shim bodies. The smoke test
 now reaches runtime loading and aborts on missing `_SymFunctionTableAccess64`, a
 DbgHelp shim body, not on a missing type, macro, prototype, or C++ linkage error.
-Reviewers agreed this is only a declaration-frontier handoff; it is not real
-all-symbol link closure, and the include-cleanup done check below remains open.
+The include-cleanup check now returns only the intended `windows.h` routes in
+`opus_x64_compat.h`, `opus_x64_heap.cpp`, `opus_modern_formats_test.cpp` and
+`opus_asm_wproc.cpp`. Reviewers agreed this is only a declaration-frontier handoff;
+it is not real all-symbol link closure, and their include-cleanup follow-up found
+the same SDK leaks plus an extra `rtcapi` correction: `rtcapi` is now MSVC-only
+instead of a non-Windows shim header.
 
 Build the first pass mechanically:
 
@@ -242,7 +246,7 @@ Build the first pass mechanically:
   type, macro or prototype.
 - Do not add declarations without a cited call site.
 
-Done when: `grep -rn '#include *<' src/port/original/ | grep -vE '<(c?std|string|vector|array|algorithm|limits|utility|mutex|atomic|type_traits|unordered_map|map|memory|iostream|cmath|cctype|cwchar|cstdarg|cstdio|cstdlib|cstddef|cstdint|cstring|optional|functional|new)'`
+Done when: `grep -rn '#include *<' src/port/original/ | grep -vE '<(c?std|string|vector|array|algorithm|limits|utility|mutex|atomic|type_traits|unordered_map|map|memory|iostream|cmath|cctype|cwchar|cwctype|cstdarg|cstdio|cstdlib|cstddef|cstdint|cstring|optional|functional|new|deque|iterator|charconv|set|stdexcept|string_view|climits|fstream|stddef.h|stdint.h|stdio.h|string.h|strings.h|wchar.h|unistd.h)'`
 returns only `windows.h` lines.
 
 ### 7. Decide `WCHAR` width before item 6 lands

@@ -3,11 +3,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <shellapi.h>
+#include "shellapi.h"
 
 /* Win16 exported several helpers that disappeared when code segments and GDI
- * packed-coordinate APIs went away.  These adapters preserve the contracts
- * used by the original Word C sources on the flat Win64 process model. */
+ * packed-coordinate APIs went away. These adapters preserve the contracts used
+ * by the original Word C sources on the flat Win64 process model.
+ */
 
 #ifdef RegisterClipboardFormat
 #undef RegisterClipboardFormat
@@ -173,8 +174,9 @@ int ShellExec(char* file, char* arguments) {
 int FSetFirstLbx(void**, WORD) { return true; }
 
 /* Word's Win16 thunk used this only after the legacy EXITWINDOWS export could
- * not be dynamically loaded.  Ending the Word process must not implicitly
- * log off the modern desktop session. */
+ * not be dynamically loaded. Ending the Word process must not implicitly log
+ * off the modern desktop session.
+ */
 void EXITWINDOWS(char*) {
 }
 

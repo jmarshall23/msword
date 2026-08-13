@@ -1,7 +1,7 @@
 #include "opus_x64_compat.h"
 #include "opus_x64_heap.h"
-#include <commdlg.h>
-#include <objbase.h>
+#include "commdlg.h"
+#include "objbase.h"
 extern "C" {
 #include "dac.h"
 }

@@ -1,7 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include "opus_x64_compat.h"
-#include <windowsx.h>
-#include <imm.h>
+#include "imm.h"
+#include "windowsx.h"
 
 #include <algorithm>
 #include <array>

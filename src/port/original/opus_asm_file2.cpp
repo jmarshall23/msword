@@ -1,7 +1,8 @@
 #include "opus_x64_compat.h"
 
 #if defined(_MSC_VER)
-#include <direct.h>
+extern "C" int _chdir(const char* path);
+extern "C" char* _getdcwd(int drive, char* buffer, int maxlen);
 #else
 #include <unistd.h>
 #define _chdir chdir
