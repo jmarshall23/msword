@@ -231,6 +231,8 @@ the `dwmapi.dll` dynamic-library lookup and the zoom combo's fixed choice labels
 use the same boundary. Its dynamic zoom-percent text now uses `WCHAR` storage too.
 Its menu lookup helpers now use `WCHAR` buffers, `std::basic_string<WCHAR>` and
 `LPCWSTR` lookup keys instead of host `wchar_t` storage.
+Its toolbar numbered-button glyph buffer and pending `WM_CHAR` surrogate storage now
+also use `WCHAR`/`OPUSW` instead of host `wchar_t`/raw `L` literals.
 `opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
 and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 Its read-only PDF export dialog strings now also use `OPUSW`/`WCHAR`; the writable

@@ -202,7 +202,7 @@ HMENU g_toolbars_menu = nullptr;
 HMENU g_language_menu = nullptr;
 WNDPROC g_original_app_proc = nullptr;
 bool g_word95_page_view_active = false;
-wchar_t g_pending_high_surrogate = 0;
+WCHAR g_pending_high_surrogate = 0;
 
 struct LanguageChoice {
     UINT command;
@@ -783,7 +783,8 @@ void draw_format_glyph(HWND toolbar, HDC dc, const FormatButton& spec,
         spec.glyph == FormatGlyph::bullets) {
         for (int row = 0; row < 3; ++row) {
             if (spec.glyph == FormatGlyph::numbered) {
-                wchar_t number[2]{static_cast<wchar_t>(L'1' + row), L'\0'};
+                WCHAR number[2]{
+                    static_cast<WCHAR>(OPUSW("1")[0] + row), 0};
                 TextOutW(dc, area.left, area.top + row * 5 - 1, number, 1);
             } else {
                 HBRUSH old_brush = static_cast<HBRUSH>(SelectObject(
@@ -3149,7 +3150,7 @@ bool register_ruler_overlay_class() {
 extern "C" int OpusQueueUnicodeWmChar(
     HWND pane, const unsigned int code_unit) {
     if (code_unit >= 0xd800 && code_unit <= 0xdbff) {
-        g_pending_high_surrogate = static_cast<wchar_t>(code_unit);
+        g_pending_high_surrogate = static_cast<WCHAR>(code_unit);
         return TRUE;
     }
     std::uint32_t scalar = code_unit;
