@@ -112,42 +112,6 @@ Done when: the three jobs are green on a pull request.
 Execution order in this phase is 7, then 6, then 8, 9, 10, 11. The numbering is
 kept stable so citations elsewhere do not rot.
 
-### 11. Coverage gate over the inventory
-
-Make `src/port/win32/windows.h` the single source of truth: the check scans for every
-identifier declared there that appears followed by `(` anywhere in `src/Opus` or
-`src/port`, and diffs against what the shim defines. That makes the check
-self-consistent, unlike a scan against an external name list.
-
-The scanner must expand the header's own `#define NAME NAMEA` aliases before scanning,
-or it reproduces the exact bug that made the Scope section a lower bound: searching for
-`SendMessageA(` finds zero hits in `src/Opus` and the gate reports full coverage of a
-function with 343 live callers. Collect both the declared names and the alias mappings,
-and grep for both spellings. Better still, once the shim links, make the real check
-`nm` on the archive against the undefined symbols in the engine, which is the only
-authority that cannot be fooled by a macro.
-
-Cross-reference `docs/win32-shim/api-inventory.tsv` for priority order and for
-Win32Emu's implemented/stub/none column as a second opinion on how much behavior each
-entry point needs.
-
-Adopt free-api's scope rule verbatim (`free-api/docs/scope.md`): every public entry
-point must cite a real usage site as `file:line`, and anything without one does not
-belong, "no matter how common or obviously useful it seems". That is rule 4 of this
-document with an enforcement mechanism, and `api-inventory.tsv` is already the citation
-table it requires. free-api's exceptions are worth copying too: compile-only stubs that
-fail safely, and test-only symbols, both documented as such rather than silently
-present.
-
-Pair with winmine-port's discipline: every shim entry logs under `TRACE()`, anything
-unimplemented calls `PANIC()` with its own name. Running the binary then gives the real
-call order, which beats guessing from static analysis.
-
-Done when: `ctest -R win32_coverage` fails with a named list when an entry point is
-called but not defined.
-
----
-
 ## Shim dependency order
 
 Execution order here is 15a, 12, 13, 14, 15b. Item 15 splits: the decision and the

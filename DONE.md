@@ -228,3 +228,29 @@ Reviewed by agy and claude: both rejected adding narrow GDI/User32 shims here
 and agreed that the original visual-render criterion depended on later
 device-context and windowing work. Claude also caught that the resource test
 should link without Darwin dynamic lookup, which now passes.
+
+## Add the Win32 coverage gate
+
+Non-Windows native CTest now has `win32_coverage`, a CMake script test that runs
+`nm` over `libopus_original_engine.a` and `libopus_x64_runtime.a`. It uses
+`src/port/win32/windows.h` as the Win32 name filter, so macro spellings such as
+`SendMessage` are checked after compilation as their real undefined symbols
+rather than by source grep.
+
+The current uncovered set is checked in as
+`docs/win32-shim/uncovered.txt`. The gate fails if a new declared Win32 symbol is
+undefined and absent from that baseline, and it also fails when a baseline entry
+has become covered but was not removed. That keeps the list monotonic as shim
+work lands.
+
+Validated with `cmake -S src --preset macos-debug`,
+`cmake --build out/macos-debug --target WORD1 opus_win32_resource_test`,
+`ctest --test-dir out/macos-debug -R win32_coverage --output-on-failure`, and
+a temporary-baseline failure proof where removing `AcquireSRWLockExclusive` from
+the baseline made `CheckWin32Coverage.cmake` fail with that exact name under
+`New uncovered entry points`.
+
+Reviewed by agy and claude: both recommended the `nm`-over-archives path, a pure
+CMake script, and a burn-down baseline instead of a source grep or compiled
+scanner. Claude also called out the Mach-O leading-underscore trap, which the
+script strips before matching.

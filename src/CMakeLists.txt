@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.25)
 
 project(MicrosoftWordX64Port VERSION 0.2.0 LANGUAGES C CXX)
 
+if(NOT CMAKE_NM)
+    find_program(CMAKE_NM NAMES llvm-nm nm)
+endif()
+
 if(WIN32)
     enable_language(RC)
 elseif(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
@@ -1259,6 +1263,16 @@ add_test(NAME opus_x64_runtime_test COMMAND $<TARGET_FILE:opus_x64_runtime_test>
 if(NOT WIN32)
     add_test(NAME opus_win16_module_test COMMAND $<TARGET_FILE:opus_win16_module_test>)
     add_test(NAME opus_win32_resource_test COMMAND $<TARGET_FILE:opus_win32_resource_test>)
+endif()
+if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    add_test(NAME win32_coverage
+        COMMAND "${CMAKE_COMMAND}"
+            "-DNM=${CMAKE_NM}"
+            "-DARCHIVES=$<TARGET_FILE:opus_original_engine>;$<TARGET_FILE:opus_x64_runtime>"
+            "-DHEADER=${CMAKE_CURRENT_SOURCE_DIR}/port/win32/windows.h"
+            "-DBASELINE=${MSWORD_ROOT}/docs/win32-shim/uncovered.txt"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckWin32Coverage.cmake"
+    )
 endif()
 add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
