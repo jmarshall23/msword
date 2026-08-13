@@ -2318,7 +2318,15 @@ RunStyle rich_style_at(HWND rich, LONG position) {
         (std::max)(2L, format.yHeight / 10) : 20;
     style.auto_color = (format.dwEffects & CFE_AUTOCOLOR) != 0;
     style.color = format.crTextColor;
-    if (format.szFaceName[0] != L'\0') style.font = format.szFaceName;
+    if ((format.dwMask & CFM_FACE) != 0 && format.szFaceName[0] != WCHAR{}) {
+        style.font.clear();
+        for (std::size_t index = 0;
+             index < std::size(format.szFaceName) &&
+             format.szFaceName[index] != WCHAR{}; ++index) {
+            style.font.push_back(
+                static_cast<wchar_t>(format.szFaceName[index]));
+        }
+    }
     if (format.lcid != 0) {
         const LanguageProfile& profile = profile_for_language_id(
             LANGIDFROMLCID(format.lcid));

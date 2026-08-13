@@ -248,6 +248,8 @@ Its `CF_UNICODETEXT` clipboard boundary now uses `WCHAR` code units instead of
 host `wchar_t` sizing and storage.
 Its `ExtTextOutW` bridge now copies generated UTF-16 code units into `WCHAR`
 storage before drawing.
+Its RichEdit face-name extraction now reads `CHARFORMAT2W::szFaceName` as
+bounded `WCHAR` storage before updating the file's style model.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 
