@@ -64,6 +64,7 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "prompt.h"
 #include "message.h"
 #include "cmdtbl.h"
+#include "recorder.h"
 #include "dlbenum.h"
 #include "dmdefs.h"
 #include "core.h"
