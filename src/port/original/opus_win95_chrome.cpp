@@ -51,6 +51,15 @@ namespace {
 
 constexpr WCHAR kToolbarClass[] = OPUSW("OpusWin95Toolbar");
 constexpr WCHAR kRulerOverlayClass[] = OPUSW("OpusWin95RulerOverlay");
+constexpr WCHAR kComboBoxClass[] = OPUSW("ComboBox");
+constexpr WCHAR kComboBoxWindowClass[] = OPUSW("COMBOBOX");
+constexpr WCHAR kDocumentPaneClass[] = OPUSW("OpusWwd");
+constexpr WCHAR kRulerClass[] = OPUSW("OpusRul");
+constexpr WCHAR kMenuPopupClass[] = OPUSW("#32768");
+constexpr WCHAR kArialFace[] = OPUSW("Arial");
+constexpr WCHAR kToolbarFace[] = OPUSW("MS Sans Serif");
+constexpr WCHAR kNormalStyle[] = OPUSW("Normal");
+constexpr WCHAR kDefaultSize[] = OPUSW("10");
 constexpr int kToolbarBitmap = 201;
 constexpr int kSpriteCell = 20;
 constexpr COLORREF kButtonFace = RGB(192, 192, 192);
@@ -306,10 +315,10 @@ void style_menu_tree(HMENU menu) {
 }
 
 BOOL CALLBACK repaint_menu_popup(HWND window, LPARAM) {
-    wchar_t class_name[32]{};
+    WCHAR class_name[32]{};
     GetClassNameW(window, class_name,
                   static_cast<int>(std::size(class_name)));
-    if (lstrcmpW(class_name, L"#32768") == 0 && IsWindowVisible(window)) {
+    if (lstrcmpW(class_name, kMenuPopupClass) == 0 && IsWindowVisible(window)) {
         RedrawWindow(window, nullptr, nullptr,
                      RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW |
                          RDW_ALLCHILDREN | RDW_FRAME);
@@ -715,7 +724,7 @@ void draw_format_glyph(HWND toolbar, HDC dc, const FormatButton& spec,
     HFONT old_font = nullptr;
     LOGFONTW logical{};
     logical.lfHeight = -(area.bottom - area.top);
-    lstrcpyW(logical.lfFaceName, L"Arial");
+    lstrcpyW(logical.lfFaceName, kArialFace);
     if (spec.glyph == FormatGlyph::bold) {
         logical.lfWeight = FW_BOLD;
     } else if (spec.glyph == FormatGlyph::italic) {
@@ -916,10 +925,10 @@ BOOL CALLBACK collect_original_combos(HWND candidate, LPARAM parameter) {
     if (is_toolbar_descendant(enumeration.toolbar, candidate)) {
         return TRUE;
     }
-    wchar_t class_name[64]{};
+    WCHAR class_name[64]{};
     GetClassNameW(candidate, class_name,
                   static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
-    if (lstrcmpiW(class_name, L"ComboBox") == 0) {
+    if (lstrcmpiW(class_name, kComboBoxClass) == 0) {
         enumeration.combos.push_back(candidate);
     }
     return TRUE;
@@ -1020,10 +1029,10 @@ void sync_mirrors(HWND toolbar, ToolbarState& state) {
 }
 
 BOOL CALLBACK find_document_pane(HWND candidate, LPARAM parameter) {
-    wchar_t class_name[64]{};
+    WCHAR class_name[64]{};
     GetClassNameW(candidate, class_name,
                   static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
-    if (lstrcmpiW(class_name, L"OpusWwd") == 0) {
+    if (lstrcmpiW(class_name, kDocumentPaneClass) == 0) {
         *reinterpret_cast<HWND*>(parameter) = candidate;
         return FALSE;
     }
@@ -1250,7 +1259,7 @@ void position_combos(HWND toolbar, ToolbarState& state) {
 
 HWND create_combo(HWND toolbar, UINT id) {
     HWND combo = CreateWindowExW(
-        0, L"COMBOBOX", L"",
+        0, kComboBoxWindowClass, nullptr,
         WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL |
             CBS_DROPDOWN | CBS_AUTOHSCROLL,
         0, 0, 10, 200, toolbar,
@@ -1262,7 +1271,7 @@ HWND create_combo(HWND toolbar, UINT id) {
 
 HWND create_zoom_combo(HWND toolbar) {
     HWND combo = CreateWindowExW(
-        0, L"COMBOBOX", L"",
+        0, kComboBoxWindowClass, nullptr,
         WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL |
             CBS_DROPDOWN | CBS_AUTOHSCROLL,
         0, 0, 10, 200, toolbar,
@@ -2352,7 +2361,7 @@ void ensure_horizontal_ruler_overlay(HWND ruler) {
         }
         overlay = CreateWindowExW(
             WS_EX_NOACTIVATE,
-            kRulerOverlayClass, L"", WS_CHILD | WS_VISIBLE,
+            kRulerOverlayClass, nullptr, WS_CHILD | WS_VISIBLE,
             0, 0, client.right - client.left, client.bottom - client.top,
             ruler, nullptr, GetModuleHandleW(nullptr), nullptr);
     }
@@ -2756,10 +2765,10 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
 }
 
 BOOL CALLBACK subclass_document_pane(HWND candidate, LPARAM) {
-    wchar_t class_name[64]{};
+    WCHAR class_name[64]{};
     GetClassNameW(candidate, class_name,
                   static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
-    if (lstrcmpiW(class_name, L"OpusWwd") == 0 &&
+    if (lstrcmpiW(class_name, kDocumentPaneClass) == 0 &&
         original_pane_proc(candidate) == nullptr) {
         SetLastError(0);
         WNDPROC original = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(
@@ -2776,11 +2785,11 @@ BOOL CALLBACK subclass_document_pane(HWND candidate, LPARAM) {
 }
 
 BOOL CALLBACK redraw_word95_ruler_window(HWND candidate, LPARAM) {
-    wchar_t class_name[64]{};
+    WCHAR class_name[64]{};
     GetClassNameW(candidate, class_name,
                   static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
-    if (lstrcmpiW(class_name, L"OpusRul") == 0 ||
-        lstrcmpiW(class_name, L"OpusWwd") == 0) {
+    if (lstrcmpiW(class_name, kRulerClass) == 0 ||
+        lstrcmpiW(class_name, kDocumentPaneClass) == 0) {
         RedrawWindow(candidate, nullptr, nullptr,
                      RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
     }
@@ -2788,10 +2797,10 @@ BOOL CALLBACK redraw_word95_ruler_window(HWND candidate, LPARAM) {
 }
 
 BOOL CALLBACK paint_word95_horizontal_ruler(HWND candidate, LPARAM) {
-    wchar_t class_name[64]{};
+    WCHAR class_name[64]{};
     GetClassNameW(candidate, class_name,
                   static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
-    if (lstrcmpiW(class_name, L"OpusRul") == 0) {
+    if (lstrcmpiW(class_name, kRulerClass) == 0) {
         ensure_horizontal_ruler_overlay(candidate);
     }
     return TRUE;
@@ -2902,15 +2911,15 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
         logical.lfHeight = -MulDiv(8, dpi_for_window(window), 72);
         logical.lfWeight = FW_NORMAL;
         logical.lfCharSet = DEFAULT_CHARSET;
-        lstrcpyW(logical.lfFaceName, L"MS Sans Serif");
+        lstrcpyW(logical.lfFaceName, kToolbarFace);
         created->font = CreateFontIndirectW(&logical);
         created->style_combo = create_combo(window, kComboStyle);
         created->font_combo = create_combo(window, kComboFont);
         created->size_combo = create_combo(window, kComboSize);
         created->zoom_combo = create_zoom_combo(window);
-        SetWindowTextW(created->style_combo, L"Normal");
-        SetWindowTextW(created->font_combo, L"Arial");
-        SetWindowTextW(created->size_combo, L"10");
+        SetWindowTextW(created->style_combo, kNormalStyle);
+        SetWindowTextW(created->font_combo, kArialFace);
+        SetWindowTextW(created->size_combo, kDefaultSize);
         SendMessageW(created->style_combo, WM_SETFONT,
                      reinterpret_cast<WPARAM>(created->font), FALSE);
         SendMessageW(created->font_combo, WM_SETFONT,
@@ -3196,7 +3205,7 @@ extern "C" int OpusCreateWin95Chrome(HWND parent) {
     set_window_classic(parent);
 
     vhwndWin95Toolbar = CreateWindowExW(
-        0, kToolbarClass, L"",
+        0, kToolbarClass, nullptr,
         WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
         0, 0, 1, scale(parent, 64), parent, nullptr,
         GetModuleHandleW(nullptr), nullptr);
