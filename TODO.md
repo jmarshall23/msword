@@ -223,6 +223,8 @@ lookups.
 Its repeated fixed class names, font faces, default combo text, empty window captions,
 format-button glyph labels, the `dwmapi.dll` dynamic-library lookup and the zoom
 combo's fixed choice labels also use the same boundary.
+`opus_modern_formats.cpp` uses the same boundary for its `Msftedit.dll` RichEdit load
+and no longer passes a host `wchar_t` empty title to the hidden RichEdit window.
 
 Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
 or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit

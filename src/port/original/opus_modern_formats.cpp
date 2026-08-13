@@ -1,5 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "opus_x64_compat.h"
 #include <commdlg.h>
 #include <msopc.h>
 #include <richedit.h>
@@ -41,6 +41,7 @@ constexpr std::size_t kMaxRuns = 1000000;
 constexpr std::size_t kMaxTableRows = 4096;
 constexpr std::size_t kMaxTableColumns = 256;
 constexpr std::size_t kMaxTableCells = 262144;
+constexpr WCHAR kMsfteditModule[] = OPUSW("Msftedit.dll");
 
 void require_parse_limit(const bool condition) {
     if (!condition) throw std::length_error("document exceeds import limits");
@@ -2255,11 +2256,12 @@ public:
     bool load(std::string_view rtf) {
         if (rtf.size() > kMaxRtfBytes ||
             rtf.size() > static_cast<std::size_t>(LONG_MAX)) return false;
-        module_ = LoadLibraryExW(L"Msftedit.dll", nullptr,
+        module_ = LoadLibraryExW(kMsfteditModule, nullptr,
                                  LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (module_ == nullptr) return false;
-        window_ = CreateWindowExW(0, MSFTEDIT_CLASS, L"", WS_POPUP | ES_MULTILINE,
-                                  0, 0, 100, 100, nullptr, nullptr,
+        window_ = CreateWindowExW(0, MSFTEDIT_CLASS, nullptr,
+                                  WS_POPUP | ES_MULTILINE, 0, 0, 100, 100,
+                                  nullptr, nullptr,
                                   GetModuleHandleW(nullptr), nullptr);
         if (window_ == nullptr) return false;
         SendMessageW(window_, EM_EXLIMITTEXT, 0, 0x7ffffffe);
@@ -3998,10 +4000,12 @@ extern "C" int OpusPdfSnapshotAddParagraph(
     const int keep_together, const int keep_with_next,
     const int page_break_before, const int bottom_border) try {
     if (pending_pdf_export.paragraphs.size() >= kMaxParagraphs) return false;
-    /* These values come from the original PAP: indentation and line spacing
-       are signed 16-bit fields, while before/after spacing are unsigned.
-       Validate their real storage domains instead of rejecting legitimate
-       exact-line-spacing and legacy sentinel values. */
+
+    /* These values come from the original PAP: indentation and line spacing are
+     * signed 16-bit fields, while before/after spacing are unsigned. Validate
+     * their real storage domains instead of rejecting legitimate
+     * exact-line-spacing and legacy sentinel values.
+     */
     if (left_indent < INT16_MIN || left_indent > INT16_MAX ||
         right_indent < INT16_MIN || right_indent > INT16_MAX ||
         first_line_indent < INT16_MIN || first_line_indent > INT16_MAX ||
