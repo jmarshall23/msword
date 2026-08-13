@@ -261,6 +261,8 @@ before calling `GetFileAttributesExW`.
 Its atomic file read/write helpers now share that path copy for their
 `CreateFileW`, `GetFileAttributesW`, `ReplaceFileW`, `MoveFileExW`, and
 `DeleteFileW` boundaries.
+Its OPC package read path now copies the source document path into `WCHAR`
+storage before calling `IOpcFactory::CreateStreamOnFile`.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 

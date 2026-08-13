@@ -315,10 +315,11 @@ bool read_opc_part(const std::wstring& path, const wchar_t* part_name,
     ComPtr<IOpcPartUri> uri;
     ComPtr<IOpcPart> part;
     ComPtr<IStream> content;
+    const std::vector<WCHAR> native_path = native_file_path(path);
     return SUCCEEDED(CoCreateInstance(__uuidof(OpcFactory), nullptr,
                                       CLSCTX_INPROC_SERVER,
                                       IID_PPV_ARGS(&factory))) &&
-           SUCCEEDED(factory->CreateStreamOnFile(path.c_str(),
+           SUCCEEDED(factory->CreateStreamOnFile(native_path.data(),
                                                  OPC_STREAM_IO_READ, nullptr,
                                                  FILE_ATTRIBUTE_NORMAL,
                                                  &file)) &&
