@@ -3988,8 +3988,14 @@ extern "C" BOOL OpusUnicodeExtTextOut(
             if (encoded.size() == 2) wide_advances.push_back(0);
         }
     }
-    return ExtTextOutW(dc, x, y, options, rectangle, wide.data(),
-                       static_cast<UINT>(wide.size()),
+    std::basic_string<WCHAR> output;
+    output.reserve(wide.size());
+    for (const wchar_t code_unit : wide) {
+        output.push_back(static_cast<WCHAR>(
+            static_cast<std::uint16_t>(code_unit)));
+    }
+    return ExtTextOutW(dc, x, y, options, rectangle, output.data(),
+                       static_cast<UINT>(output.size()),
                        advances != nullptr ? wide_advances.data() : nullptr);
 } catch (...) {
     return ExtTextOutA(dc, x, y, options, rectangle, bytes, length, advances);

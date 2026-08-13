@@ -246,6 +246,8 @@ Its hidden RichEdit text extraction now reads `GetWindowTextW` into `WCHAR`
 storage before copying back to the file's current `std::wstring` text model.
 Its `CF_UNICODETEXT` clipboard boundary now uses `WCHAR` code units instead of
 host `wchar_t` sizing and storage.
+Its `ExtTextOutW` bridge now copies generated UTF-16 code units into `WCHAR`
+storage before drawing.
 `opus_sdm_runtime.cpp` now uses a `WCHAR` buffer for the refresh-font text read through
 `GetWindowTextW` before converting it back to the dialog's ANSI state.
 
