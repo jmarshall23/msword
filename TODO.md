@@ -199,8 +199,9 @@ returns only `windows.h` lines.
 
 ### 7. Decide `WCHAR` width before item 6 lands
 
-WORD1 and the UI test compile with `UNICODE;_UNICODE` (`src/CMakeLists.txt:863, 885,
-951`). `src/port/original/` holds 177 `L"..."` literals across 5 files and 47 `wchar_t`
+WORD1, the startup probe, the modern formats test and the UI test compile with
+`UNICODE;_UNICODE` (`src/CMakeLists.txt:1000`, `:1022`, `:1088`, `:1110`).
+`src/port/original/` holds 177 `L"..."` literals across 5 files and 47 `wchar_t`
 declarations, and calls `SendMessageW` 197 times, `PostMessageW` 24, `GetModuleHandleW`
 22, plus `wWinMain` entry points at `opus_product_entry.cpp:44` and
 `opus_original_startup_probe.cpp:399`. Windows `WCHAR` is 16-bit; clang, gcc and
@@ -209,9 +210,17 @@ Emscripten default `wchar_t` to 32-bit. `std::wcsstr(command_line, L"--self-test
 
 This is jphonorato's fifth obstacle, the one he scoped to "~5 files in `src/port/`".
 
-Do: define `WCHAR`/`LPWSTR` as 16-bit types in `src/port/win32/windows.h`; do not use
-`-fshort-wchar`. Convert owned port literals through an `OPUSW("")` macro in the five
-files under `src/port/original/`; do not touch `src/Opus` for this.
+Status: `src/port/win32/windows.h` defines `WCHAR`, `LPWSTR`, `LPCWSTR`, `PWSTR` and
+`PCWSTR` as 16-bit shim types, and asserts `sizeof(WCHAR) == 2`. `opus_x64_compat.h`
+defines `OPUSW("")` for C++ port code so non-Windows literals can use UTF-16 storage
+instead of host `wchar_t`.
+
+Do: do not use `-fshort-wchar`. Convert owned live port literals through `OPUSW("")`
+or explicit UTF-16 buffers; do not touch `src/Opus` for this. The live files to audit
+before claiming this done are `opus_original_startup_probe.cpp`, `opus_win95_chrome.cpp`,
+`opus_sdm_runtime.cpp`, `opus_modern_formats.cpp`, `opus_asm_resn2_sttb.cpp` and
+`opus_asm_movecmds.c`. `opus_word1_ui_test.cpp` is test-only but must follow the same
+rule before non-Windows UI tests run.
 
 The entry point is the other half of this, and there is only one live site, not two.
 `opus_product_entry.cpp` appears nowhere in `src/CMakeLists.txt`; it is in no target and
@@ -223,8 +232,10 @@ is never compiled, so treat it as dead until a CMake target references it. Its
 `main` at `:504` converting `argv` into a command line. Ours additionally has to build a
 wide command line, which is item 7's decision again.
 
-Done when: `static_assert(sizeof(WCHAR) == 2, "")` compiles in
-`src/port/win32/windows.h` on all four targets, and WORD1 reaches `wWinMain` on macOS.
+Done when: a non-Windows compile check proves `sizeof(WCHAR) == 2`, no live
+non-Windows port code passes raw `L""` or `wchar_t*` values to `W` APIs, `WORD1
+--self-test` reaches `wWinMain` on macOS, and any remaining failure is a missing shim
+header, declaration, or function body from item 6 rather than a wide-character boundary.
 
 ### 8. Replace `GetProcAddress` on our own module with a generated table
 

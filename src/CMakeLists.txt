@@ -811,6 +811,12 @@ if(MSVC)
     # /J preserves the original compiler's unsigned-char default. Do not use
     # the C++ compiler for K&R-era original C translation units.
     target_compile_options(opus_original_engine PRIVATE /J /W3 /wd4005 /Gy /guard:cf)
+else()
+    target_compile_options(opus_original_engine PRIVATE
+        $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
+        $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
+        $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
+    )
 endif()
 set_target_properties(opus_original_engine PROPERTIES
     FOLDER "Original Opus x64"
@@ -860,6 +866,12 @@ if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string
     # and international-character assembly routines depend on that behavior.
     target_compile_options(opus_x64_runtime PRIVATE /J /W4 /permissive- /guard:cf /sdl)
+else()
+    target_compile_options(opus_x64_runtime PRIVATE
+        $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
+        $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
+        $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
+    )
 endif()
 set_target_properties(opus_x64_runtime PROPERTIES
     FOLDER "Original Opus x64/runtime"

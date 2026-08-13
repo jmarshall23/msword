@@ -21,6 +21,14 @@
 #endif
 #include <string.h>
 
+#ifndef OPUSW
+#if defined(_WIN32)
+#define OPUSW(text) L##text
+#elif defined(__cplusplus)
+#define OPUSW(text) u##text
+#endif
+#endif
+
 /* A null Win16 module handle made GetProcAddress fail.  On current Windows,
  * passing that invalid handle can instead search the process image.  Opus
  * probes retired modules such as KERNEL, GDI, and USER by ordinal, so an
@@ -134,8 +142,10 @@ typedef struct tagBITMAP
 #ifndef huge
 #define huge
 #endif
+#ifndef __cplusplus
 #ifndef native
 #define native
+#endif
 #endif
 #ifndef __cplusplus
 #ifndef export

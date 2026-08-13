@@ -53,9 +53,21 @@ typedef void* LPVOID;
 typedef const void* LPCVOID;
 typedef char* LPSTR;
 typedef const char* LPCSTR;
+#ifdef __cplusplus
+typedef char16_t WCHAR;
+#else
 typedef uint16_t WCHAR;
+#endif
 typedef WCHAR* LPWSTR;
 typedef const WCHAR* LPCWSTR;
+typedef WCHAR* PWSTR;
+typedef const WCHAR* PCWSTR;
+
+#ifdef __cplusplus
+static_assert(sizeof(WCHAR) == 2, "");
+#else
+typedef char OpusWcharMustBe16Bits[(sizeof(WCHAR) == 2) ? 1 : -1];
+#endif
 
 typedef void* HANDLE;
 typedef HANDLE HINSTANCE;
