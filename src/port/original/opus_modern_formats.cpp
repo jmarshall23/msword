@@ -3838,13 +3838,14 @@ extern "C" int OpusUnicodeClipboardToLegacy(
     pending_clipboard_cells.clear();
     if (unicode_handle == nullptr) return false;
     const SIZE_T bytes = GlobalSize(unicode_handle);
-    if (bytes < sizeof(wchar_t) || bytes > kMaxTextBytes * sizeof(wchar_t))
+    if (bytes < sizeof(WCHAR) || bytes > kMaxTextBytes * sizeof(WCHAR) ||
+        (bytes % sizeof(WCHAR)) != 0)
         return false;
-    const auto* source = static_cast<const wchar_t*>(GlobalLock(unicode_handle));
+    const auto* source = static_cast<const WCHAR*>(GlobalLock(unicode_handle));
     if (source == nullptr) return false;
-    const std::size_t capacity = bytes / sizeof(wchar_t);
+    const std::size_t capacity = bytes / sizeof(WCHAR);
     std::size_t length = 0;
-    while (length < capacity && source[length] != L'\0') ++length;
+    while (length < capacity && source[length] != WCHAR{}) ++length;
     if (length == capacity) {
         GlobalUnlock(unicode_handle);
         return false;
@@ -3852,7 +3853,11 @@ extern "C" int OpusUnicodeClipboardToLegacy(
     std::string legacy;
     legacy.reserve(length + 1);
     pending_clipboard_cells.reserve(length);
-    const std::wstring_view text(source, length);
+    std::wstring text;
+    text.reserve(length);
+    for (std::size_t index = 0; index < length; ++index) {
+        text.push_back(static_cast<wchar_t>(source[index]));
+    }
     for (std::size_t index = 0; index < text.size();) {
         const std::uint32_t scalar = scalar_at(text, index);
         const LanguageProfile& profile = input_language == "auto" ?
@@ -3909,17 +3914,25 @@ extern "C" HANDLE OpusUnicodeCreateClipboardHandle(
         wide += scalar_to_wide(scalar);
     }
     GlobalUnlock(legacy_handle);
-    if (wide.size() > (kMaxTextBytes / sizeof(wchar_t)) - 1) return nullptr;
+    std::basic_string<WCHAR> clipboard;
+    clipboard.reserve(wide.size());
+    for (const wchar_t code_unit : wide) {
+        clipboard.push_back(static_cast<WCHAR>(
+            static_cast<std::uint16_t>(code_unit)));
+    }
+    if (clipboard.size() > (kMaxTextBytes / sizeof(WCHAR)) - 1)
+        return nullptr;
     HANDLE result = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT,
-                                (wide.size() + 1) * sizeof(wchar_t));
+                                (clipboard.size() + 1) * sizeof(WCHAR));
     if (result == nullptr) return nullptr;
     void* destination = GlobalLock(result);
     if (destination == nullptr) {
         GlobalFree(result);
         return nullptr;
     }
-    if (!wide.empty())
-        std::memcpy(destination, wide.data(), wide.size() * sizeof(wchar_t));
+    if (!clipboard.empty())
+        std::memcpy(destination, clipboard.data(),
+                    clipboard.size() * sizeof(WCHAR));
     GlobalUnlock(result);
     return result;
 } catch (...) {
