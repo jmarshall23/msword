@@ -2263,36 +2263,35 @@ int run_ui_test(const int argument_count, WCHAR** arguments) {
 
         // Cross the original 32-byte quick-insert boundary and fill enough
         // display lines to exercise idle normalization and the SCC-above PLC.
-        std::wstring text;
+        std::basic_string<WCHAR> text;
         for (int line = 0; line != 40; ++line) {
-            text += L"original line ";
+            text += OPUSW("original line ");
             if (line < 10) {
-                text += L'0';
+                text += OPUSW("0")[0];
+            } else {
+                text += static_cast<WCHAR>(OPUSW("0")[0] + line / 10);
             }
-            text += std::to_wstring(line);
-            text += L'\r';
+            text += static_cast<WCHAR>(OPUSW("0")[0] + line % 10);
+            text += OPUSW("\r")[0];
         }
-        for (const wchar_t character : text) {
-            if (character != L'\0') {
-                bool posted = false;
-                for (int attempt = 0; attempt != 20 && !posted; ++attempt) {
-                    GUITHREADINFO current_gui{};
-                    current_gui.cbSize = sizeof(current_gui);
-                    posted = GetGUIThreadInfo(thread_id, &current_gui) &&
-                             current_gui.hwndFocus != nullptr &&
-                             post_keyboard_character(current_gui.hwndFocus,
-                                                     static_cast<WCHAR>(
-                                                         character));
-                    if (!posted) {
-                        Sleep(50);
-                    }
-                }
+        for (const WCHAR character : text) {
+            bool posted = false;
+            for (int attempt = 0; attempt != 20 && !posted; ++attempt) {
+                GUITHREADINFO current_gui{};
+                current_gui.cbSize = sizeof(current_gui);
+                posted = GetGUIThreadInfo(thread_id, &current_gui) &&
+                         current_gui.hwndFocus != nullptr &&
+                         post_keyboard_character(current_gui.hwndFocus,
+                                                 character);
                 if (!posted) {
-                    return fail(process, 15,
-                                "could not post a character to the document");
+                    Sleep(50);
                 }
-                Sleep(10);
             }
+            if (!posted) {
+                return fail(process, 15,
+                            "could not post a character to the document");
+            }
+            Sleep(10);
         }
         Sleep(4000);
         if (!window_is_responsive(process.hProcess, main_window)) {
