@@ -390,13 +390,64 @@ int main() {
         return 42;
     }
 
+    HMENU menu = CreateMenu();
+    HMENU popup_menu = CreatePopupMenu();
+    HMENU detached_menu = CreatePopupMenu();
+    HMENU holder_menu = CreateMenu();
+    const WCHAR item_two[] = {'T', 'w', 'o', 0};
+    WCHAR menu_text[16]{};
+    if (menu == nullptr || popup_menu == nullptr || detached_menu == nullptr ||
+        holder_menu == nullptr || !IsMenu(menu) || !IsMenu(popup_menu) ||
+        GetMenuItemCount(popup_menu) != 0 ||
+        !AppendMenuA(popup_menu, MF_STRING, 101, "One") ||
+        !AppendMenuW(popup_menu, MF_STRING, 102, item_two) ||
+        !InsertMenuA(popup_menu, 0, MF_BYPOSITION | MF_STRING, 100, "Zero") ||
+        GetMenuItemCount(popup_menu) != 3 ||
+        GetMenuItemID(popup_menu, 0) != 100 ||
+        !ModifyMenuA(popup_menu, 101, MF_BYCOMMAND | MF_STRING, 111,
+                     "OneOne") ||
+        GetMenuStringW(popup_menu, 111, menu_text, 16, MF_BYCOMMAND) != 6 ||
+        menu_text[0] != 'O' || menu_text[5] != 'e' ||
+        CheckMenuItem(popup_menu, 111, MF_BYCOMMAND | MF_CHECKED) !=
+            MF_UNCHECKED ||
+        (GetMenuState(popup_menu, 111, MF_BYCOMMAND) & MF_CHECKED) == 0 ||
+        !CheckMenuRadioItem(popup_menu, 100, 111, 100, MF_BYCOMMAND) ||
+        (GetMenuState(popup_menu, 100, MF_BYCOMMAND) & MF_CHECKED) == 0 ||
+        (GetMenuState(popup_menu, 111, MF_BYCOMMAND) & MF_CHECKED) != 0 ||
+        !AppendMenuA(popup_menu, MF_SEPARATOR, 0, nullptr) ||
+        !DeleteMenu(popup_menu, 3, MF_BYPOSITION) ||
+        !RemoveMenu(popup_menu, 100, MF_BYCOMMAND) ||
+        GetMenuItemCount(popup_menu) != 2 ||
+        !AppendMenuA(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(popup_menu),
+                     "Popup") ||
+        GetSubMenu(menu, 0) != popup_menu ||
+        GetMenuItemID(menu, 0) != static_cast<UINT>(-1) ||
+        ((GetMenuState(menu, 0, MF_BYPOSITION) >> 8u) & 0xffu) != 2 ||
+        !SetMenuInfo(menu, nullptr) ||
+        !SetMenuItemBitmaps(popup_menu, 0, MF_BYPOSITION, nullptr, nullptr) ||
+        !SetMenu(window, menu) || GetMenu(window) != menu ||
+        !DrawMenuBar(window) ||
+        TrackPopupMenu(popup_menu, TPM_RETURNCMD, 0, 0, 0, window, nullptr) !=
+            0) {
+        return 43;
+    }
+    if (!AppendMenuA(detached_menu, MF_STRING, 201, "Detached") ||
+        !AppendMenuA(holder_menu, MF_POPUP,
+                     reinterpret_cast<UINT_PTR>(detached_menu), "Holder") ||
+        !RemoveMenu(holder_menu, 0, MF_BYPOSITION) ||
+        !DestroyMenu(holder_menu) || !IsMenu(detached_menu) ||
+        !DestroyMenu(detached_menu) || !DestroyMenu(menu) || IsMenu(menu) ||
+        IsMenu(popup_menu) || GetMenu(window) != nullptr) {
+        return 44;
+    }
+
     if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
         !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 43;
+        return 45;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 44;
+    if (second == nullptr || second == window) return 46;
     return 0;
 }

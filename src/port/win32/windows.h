@@ -2947,6 +2947,7 @@ HMENU CreateMenu(void);
 HMENU CreatePopupMenu(void);
 BOOL IsMenu(HMENU menu);
 BOOL DestroyMenu(HMENU menu);
+BOOL SetMenu(HWND window, HMENU menu);
 BOOL SetMenuItemBitmaps(HMENU menu, UINT position, UINT flags,
                         HBITMAP unchecked_bitmap, HBITMAP checked_bitmap);
 DWORD CheckMenuItem(HMENU menu, UINT id_check_item, UINT check);

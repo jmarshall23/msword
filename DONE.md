@@ -824,3 +824,45 @@ opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14l -R
 Reviewed by agy before implementation; claude was asked for this exact slice but
 stalled without output and was stopped. The implementation follows agy's
 snapshot-enumeration warning.
+
+## Add user32 menu core
+
+The non-Windows user32 shim now owns a small in-memory menu tree. It implements
+`CreateMenu`, `CreatePopupMenu`, `IsMenu`, `DestroyMenu`, `AppendMenuA/W`,
+`InsertMenuA/W`, `ModifyMenuA/W`, `DeleteMenu`, `RemoveMenu`,
+`GetMenuItemCount`, `GetMenuItemID`, `GetSubMenu`, `GetMenuState`,
+`GetMenuStringW`, `CheckMenuItem`, `CheckMenuRadioItem`, `SetMenuInfo`,
+`SetMenuItemBitmaps`, `GetMenu`, `SetMenu`, `DrawMenuBar`, and
+`TrackPopupMenu`. It deliberately leaves popup UI/rendering out;
+`TrackPopupMenu` reports no selection.
+
+`OpusChangeMenu` already adapts legacy `ChangeMenu` to the primitive APIs, so
+`ChangeMenu` itself was not reimplemented. Popup submenu handles are stored as
+`UINT_PTR` to avoid pointer truncation, and `DestroyMenu` recursively
+invalidates submenus still attached to the destroyed tree while `RemoveMenu` and
+`DeleteMenu` only detach items.
+
+`opus_win32_user32_test` covers popup/string/separator mutation,
+by-position/by-command lookup, text retrieval, checked/radio state, window menu
+attachment, no-op draw/track APIs, detached submenu lifetime, recursive
+`DestroyMenu` invalidation, and invalid handle behavior. The Win32 coverage
+baseline no longer lists those menu names.
+
+Validated with `cmake -S src -B build-item14m -DCMAKE_BUILD_TYPE=Debug`,
+`cmake --build build-item14m --target opus_win32_user32_test
+opus_x64_runtime_test opus_original_engine --parallel 8`, and `ctest --test-dir
+build-item14m -R
+'opus_win32_user32_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3.
+Also validated with `cmake --build build-item14m --target
+opus_original_strtbl_test opus_original_sttb_test opus_original_plc_test
+opus_sdm_cab_test opus_original_command_test opus_win32_memory_test
+opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item14m -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy before implementation; claude was asked for this exact slice but
+stalled without output and was stopped.

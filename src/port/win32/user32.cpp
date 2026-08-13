@@ -1,6 +1,7 @@
 #include "windows.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -11,6 +12,7 @@
 namespace {
 
 constexpr DWORD kWindowMagic = 0x55533232u;
+constexpr DWORD kMenuMagic = 0x4d454e55u;
 
 struct RegisteredClass {
     ATOM atom = 0;
@@ -46,6 +48,18 @@ struct TimerObject {
     bool queued = false;
 };
 
+struct MenuItem {
+    UINT_PTR id_or_submenu = 0;
+    UINT flags = MF_STRING;
+    std::string text;
+};
+
+struct MenuObject {
+    DWORD magic = kMenuMagic;
+    bool popup = false;
+    std::vector<MenuItem> items;
+};
+
 std::vector<RegisteredClass> g_classes;
 std::vector<WindowObject*> g_windows;
 std::deque<MSG> g_messages;
@@ -66,6 +80,11 @@ int g_quit_code = 0;
 WindowObject* window_from_handle(HWND handle) {
     auto* window = static_cast<WindowObject*>(handle);
     return window != nullptr && window->magic == kWindowMagic ? window : nullptr;
+}
+
+MenuObject* menu_from_handle(HMENU handle) {
+    auto* menu = static_cast<MenuObject*>(handle);
+    return menu != nullptr && menu->magic == kMenuMagic ? menu : nullptr;
 }
 
 std::string narrow_string(LPCWSTR text) {
@@ -150,6 +169,86 @@ bool class_matches(const WindowObject& window, LPCSTR class_name) {
 
 bool text_matches(const WindowObject& window, LPCSTR text) {
     return text == nullptr || window.text == text;
+}
+
+std::size_t menu_item_index(MenuObject& menu, UINT item, UINT flags) {
+    if ((flags & MF_BYPOSITION) != 0) {
+        return item < menu.items.size() ? item : menu.items.size();
+    }
+    for (std::size_t index = 0; index < menu.items.size(); ++index) {
+        const auto& candidate = menu.items[index];
+        if ((candidate.flags & MF_POPUP) == 0 && candidate.id_or_submenu == item) {
+            return index;
+        }
+    }
+    return menu.items.size();
+}
+
+UINT menu_item_flags(UINT flags) {
+    return flags & ~(MF_APPEND | MF_CHANGE | MF_DELETE | MF_INSERT | MF_REMOVE |
+                     MF_BYPOSITION);
+}
+
+BOOL insert_menu_item(HMENU handle, UINT position, UINT flags, UINT_PTR new_item,
+                      LPCSTR text) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return FALSE;
+    MenuItem item{};
+    item.flags = menu_item_flags(flags);
+    if ((item.flags & MF_SEPARATOR) != 0) {
+        item.id_or_submenu = 0;
+    } else {
+        item.id_or_submenu = new_item;
+        item.text = text != nullptr ? text : "";
+    }
+    const std::size_t index =
+        (flags & MF_APPEND) != 0 ? menu->items.size()
+                                 : menu_item_index(*menu, position, flags);
+    if (index > menu->items.size()) return FALSE;
+    menu->items.insert(menu->items.begin() + static_cast<std::ptrdiff_t>(index),
+                       item);
+    return TRUE;
+}
+
+BOOL change_menu_item(HMENU handle, UINT position, UINT flags, UINT_PTR new_item,
+                      LPCSTR text) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return FALSE;
+    const std::size_t index = menu_item_index(*menu, position, flags);
+    if (index >= menu->items.size()) return FALSE;
+    MenuItem& item = menu->items[index];
+    item.flags = menu_item_flags(flags);
+    item.id_or_submenu = (item.flags & MF_SEPARATOR) != 0 ? 0 : new_item;
+    item.text = (item.flags & MF_SEPARATOR) != 0 || text == nullptr ? "" : text;
+    return TRUE;
+}
+
+BOOL remove_menu_item(HMENU handle, UINT position, UINT flags) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return FALSE;
+    const std::size_t index = menu_item_index(*menu, position, flags);
+    if (index >= menu->items.size()) return FALSE;
+    menu->items.erase(menu->items.begin() + static_cast<std::ptrdiff_t>(index));
+    return TRUE;
+}
+
+void destroy_menu_tree(HMENU handle) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return;
+    std::vector<HMENU> submenus;
+    for (const auto& item : menu->items) {
+        if ((item.flags & MF_POPUP) != 0) {
+            submenus.push_back(reinterpret_cast<HMENU>(item.id_or_submenu));
+        }
+    }
+    menu->magic = 0;
+    for (auto* window : g_windows) {
+        if (window_from_handle(handle_from_window(window)) != nullptr &&
+            window->menu == handle) {
+            window->menu = nullptr;
+        }
+    }
+    for (HMENU submenu : submenus) destroy_menu_tree(submenu);
 }
 
 bool enum_child_windows(HWND parent, WNDENUMPROC enum_func, LPARAM parameter) {
@@ -557,6 +656,181 @@ BOOL DestroyWindow(HWND window) {
     return TRUE;
 }
 
+HMENU CreateMenu(void) {
+    return static_cast<HMENU>(new MenuObject());
+}
+
+HMENU CreatePopupMenu(void) {
+    auto* menu = new MenuObject();
+    menu->popup = true;
+    return static_cast<HMENU>(menu);
+}
+
+BOOL IsMenu(HMENU menu) {
+    return menu_from_handle(menu) != nullptr ? TRUE : FALSE;
+}
+
+BOOL DestroyMenu(HMENU menu) {
+    if (!IsMenu(menu)) return FALSE;
+    destroy_menu_tree(menu);
+    return TRUE;
+}
+
+BOOL AppendMenuA(HMENU menu, UINT flags, UINT_PTR new_item,
+                 LPCSTR new_item_text) {
+    return insert_menu_item(menu, 0, flags | MF_APPEND, new_item, new_item_text);
+}
+
+BOOL AppendMenuW(HMENU menu, UINT flags, UINT_PTR new_item,
+                 LPCWSTR new_item_text) {
+    const std::string text = narrow_string(new_item_text);
+    return AppendMenuA(menu, flags, new_item,
+                       new_item_text != nullptr ? text.c_str() : nullptr);
+}
+
+BOOL InsertMenuA(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
+                 LPCSTR new_item_text) {
+    return insert_menu_item(menu, position, flags, new_item, new_item_text);
+}
+
+BOOL InsertMenuW(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
+                 LPCWSTR new_item_text) {
+    const std::string text = narrow_string(new_item_text);
+    return InsertMenuA(menu, position, flags, new_item,
+                       new_item_text != nullptr ? text.c_str() : nullptr);
+}
+
+BOOL ModifyMenuA(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
+                 LPCSTR new_item_text) {
+    return change_menu_item(menu, position, flags, new_item, new_item_text);
+}
+
+BOOL ModifyMenuW(HMENU menu, UINT position, UINT flags, UINT_PTR new_item,
+                 LPCWSTR new_item_text) {
+    const std::string text = narrow_string(new_item_text);
+    return ModifyMenuA(menu, position, flags, new_item,
+                       new_item_text != nullptr ? text.c_str() : nullptr);
+}
+
+BOOL DeleteMenu(HMENU menu, UINT position, UINT flags) {
+    return remove_menu_item(menu, position, flags);
+}
+
+BOOL RemoveMenu(HMENU menu, UINT position, UINT flags) {
+    return remove_menu_item(menu, position, flags);
+}
+
+int GetMenuItemCount(HMENU handle) {
+    auto* menu = menu_from_handle(handle);
+    return menu != nullptr ? static_cast<int>(menu->items.size()) : -1;
+}
+
+UINT GetMenuItemID(HMENU handle, int position) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr || position < 0 ||
+        static_cast<std::size_t>(position) >= menu->items.size()) {
+        return static_cast<UINT>(-1);
+    }
+    const auto& item = menu->items[static_cast<std::size_t>(position)];
+    return (item.flags & MF_POPUP) != 0 ? static_cast<UINT>(-1)
+                                        : static_cast<UINT>(item.id_or_submenu);
+}
+
+HMENU GetSubMenu(HMENU handle, int position) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr || position < 0 ||
+        static_cast<std::size_t>(position) >= menu->items.size()) {
+        return nullptr;
+    }
+    const auto& item = menu->items[static_cast<std::size_t>(position)];
+    return (item.flags & MF_POPUP) != 0
+               ? reinterpret_cast<HMENU>(item.id_or_submenu)
+               : nullptr;
+}
+
+UINT GetMenuState(HMENU handle, UINT id, UINT flags) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return static_cast<UINT>(-1);
+    const std::size_t index = menu_item_index(*menu, id, flags);
+    if (index >= menu->items.size()) return static_cast<UINT>(-1);
+    const auto& item = menu->items[index];
+    if ((item.flags & MF_POPUP) != 0) {
+        const auto* submenu =
+            menu_from_handle(reinterpret_cast<HMENU>(item.id_or_submenu));
+        const UINT count =
+            submenu != nullptr ? static_cast<UINT>(submenu->items.size()) : 0;
+        return (count << 8u) | (item.flags & 0xffu);
+    }
+    return item.flags;
+}
+
+int GetMenuStringW(HMENU handle, UINT item_id, LPWSTR string, int max_count,
+                   UINT flags) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return 0;
+    const std::size_t index = menu_item_index(*menu, item_id, flags);
+    if (index >= menu->items.size()) return 0;
+    const std::string& text = menu->items[index].text;
+    if (string == nullptr || max_count <= 0) return static_cast<int>(text.size());
+    const std::size_t limit = static_cast<std::size_t>(max_count);
+    const std::size_t count = (std::min)(text.size(), limit - 1);
+    for (std::size_t i = 0; i < count; ++i) {
+        string[i] = static_cast<WCHAR>(text[i]);
+    }
+    string[count] = 0;
+    return static_cast<int>(count);
+}
+
+DWORD CheckMenuItem(HMENU handle, UINT item_id, UINT check) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return static_cast<DWORD>(-1);
+    const std::size_t index = menu_item_index(*menu, item_id, check);
+    if (index >= menu->items.size()) return static_cast<DWORD>(-1);
+    auto& item = menu->items[index];
+    const DWORD previous =
+        (item.flags & MF_CHECKED) != 0 ? MF_CHECKED : MF_UNCHECKED;
+    if ((check & MF_CHECKED) != 0) {
+        item.flags |= MF_CHECKED;
+    } else {
+        item.flags &= ~static_cast<UINT>(MF_CHECKED);
+    }
+    return previous;
+}
+
+BOOL CheckMenuRadioItem(HMENU handle, UINT first, UINT last, UINT check,
+                        UINT flags) {
+    auto* menu = menu_from_handle(handle);
+    if (menu == nullptr) return FALSE;
+    bool checked = false;
+    for (std::size_t index = 0; index < menu->items.size(); ++index) {
+        auto& item = menu->items[index];
+        const UINT key = (flags & MF_BYPOSITION) != 0
+                             ? static_cast<UINT>(index)
+                             : static_cast<UINT>(item.id_or_submenu);
+        if (key < first || key > last) continue;
+        if (key == check) {
+            item.flags |= MF_CHECKED;
+            checked = true;
+        } else {
+            item.flags &= ~static_cast<UINT>(MF_CHECKED);
+        }
+    }
+    return checked ? TRUE : FALSE;
+}
+
+BOOL SetMenuInfo(HMENU menu, const MENUINFO*) {
+    return IsMenu(menu);
+}
+
+BOOL SetMenuItemBitmaps(HMENU handle, UINT position, UINT flags, HBITMAP,
+                        HBITMAP) {
+    auto* menu = menu_from_handle(handle);
+    return menu != nullptr && menu_item_index(*menu, position, flags) <
+                                  menu->items.size()
+               ? TRUE
+               : FALSE;
+}
+
 HDC GetDC(HWND window) {
     if (window != nullptr && !IsWindow(window)) return nullptr;
     return CreateCompatibleDC(nullptr);
@@ -813,6 +1087,18 @@ HWND GetWindow(HWND window, UINT command) {
     }
 }
 
+HMENU GetMenu(HWND window) {
+    auto* object = window_from_handle(window);
+    return object != nullptr ? object->menu : nullptr;
+}
+
+BOOL SetMenu(HWND window, HMENU menu) {
+    auto* object = window_from_handle(window);
+    if (object == nullptr || (menu != nullptr && !IsMenu(menu))) return FALSE;
+    object->menu = menu;
+    return TRUE;
+}
+
 HWND GetTopWindow(HWND window) {
     return handle_from_window(first_child(window));
 }
@@ -1043,6 +1329,10 @@ BOOL BringWindowToTop(HWND window) {
     return TRUE;
 }
 
+BOOL DrawMenuBar(HWND window) {
+    return IsWindow(window);
+}
+
 HCURSOR SetCursor(HCURSOR cursor) {
     const HCURSOR previous = g_current_cursor;
     g_current_cursor = cursor;
@@ -1233,6 +1523,10 @@ BOOL UpdateWindow(HWND window) {
 
 BOOL MessageBeep(UINT) {
     return TRUE;
+}
+
+UINT TrackPopupMenu(HMENU, UINT, int, int, int, HWND, const RECT*) {
+    return 0;
 }
 
 BOOL IsDialogMessageA(HWND, LPMSG) {
