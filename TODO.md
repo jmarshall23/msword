@@ -100,17 +100,19 @@ Real defects in the current x64 build. All line numbers below were re-derived ag
 this tree; an earlier draft carried jphonorato's post-patch numbers, which are offset by
 roughly 18 lines in `exp.c` and 29 in `CLIPBRD2.C`.
 
-### 21. Extend `dktDouble` dispatch beyond six typed parameters
+### 21a. Fix pure `dktLong` Declare dispatch on LP64
 
-`LPushMacroArgsTyped` now has wasm-safe exact typed dispatch for one through six
-declared parameters whenever any parameter is `Double`. `celpMax` is still 16,
-so declarations with `Double` in parameters seven through sixteen fail closed
-instead of taking the old integer-register path.
+The `Declare` argument bridge already counts `dktLong` as a multi-slot typed
+argument in `NativeSlotsForDkt`, but `exp.c` does not set `fTypedArgs` for a
+pure `Long` declaration. A declaration that mixes `Long` with `String` or
+`Double` reaches `LPushMacroArgsTyped`; a declaration with only `Long` arguments
+still falls through to `LPushMacroArgs`, which passes integer slots rather than
+an LP64 `long`.
 
-Done when: `opus_x64_runtime_test` covers a declaration-shaped call with
-`Double` in at least the seventh parameter position, the wasm test passes without
-an indirect-call signature trap, and the fallback no longer rejects
-double-bearing declarations with seven to sixteen typed parameters.
+Done when: `opus_x64_runtime_test` covers a pure `Long` declaration-shaped call
+on the native macro bridge, mixed `Long` plus existing typed arguments still
+passes, and the typed path is selected for `dktLong` without changing the
+string-only or integer-only fallback behavior.
 
 ### 22. Bare `long` in serialized structures
 

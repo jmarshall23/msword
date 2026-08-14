@@ -269,6 +269,15 @@ static long __cdecl TestMacroWideDouble(int first, int second, int third,
                : 0;
 }
 
+static long __cdecl TestMacroSeventhDouble(int first, int second, int third,
+                                           int fourth, int fifth, int sixth,
+                                           double value) {
+    return first == 1 && second == 2 && third == 3 && fourth == 4 &&
+                   fifth == 5 && sixth == 6 && value == 14.5
+               ? 71
+               : 0;
+}
+
 static void SetMacroPointerArguments(int *arguments, const void *pointer_value) {
     uintptr_t pointer = (uintptr_t)pointer_value;
     arguments[0] = (int)(pointer & UINT32_MAX);
@@ -296,6 +305,12 @@ static int RunMacroTypedBridgeTest(void) {
     int wide_arguments[8];
     int wide_types[6] = {testDktInt, testDktInt,    testDktInt,
                          testDktInt, testDktDouble, testDktString};
+    double seventh_value = 14.5;
+    int seventh_arguments[8];
+    int seventh_types[7] = {testDktInt, testDktInt,    testDktInt,
+                            testDktInt, testDktInt,    testDktInt,
+                            testDktDouble};
+    int i;
 
     SetMacroPointerArguments(string_arguments, text);
     if (LPushMacroArgsTyped((void *)TestMacroString, string_arguments, 2,
@@ -330,8 +345,21 @@ static int RunMacroTypedBridgeTest(void) {
     memcpy(wide_arguments + 4, &wide_value, sizeof(wide_value));
     wide_arguments[6] = string_arguments[0];
     wide_arguments[7] = string_arguments[1];
-    return LPushMacroArgsTyped((void *)TestMacroWideDouble, wide_arguments, 8,
-                               wide_types, 6) == 67;
+    if (LPushMacroArgsTyped((void *)TestMacroWideDouble, wide_arguments, 8,
+                            wide_types, 6) != 67) {
+        return 0;
+    }
+
+    for (i = 0; i < 6; ++i) {
+        seventh_arguments[i] = i + 1;
+    }
+    memcpy(seventh_arguments + 6, &seventh_value, sizeof(seventh_value));
+    if (LPushMacroArgsTyped((void *)TestMacroSeventhDouble,
+                            seventh_arguments, 8, seventh_types, 7) != 71) {
+        return 0;
+    }
+
+    return 1;
 }
 
 static int RunElxDispatchTest(void) {

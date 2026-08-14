@@ -1,5 +1,32 @@
 # DONE
 
+## Extend Double macro dispatch to the Declare arity ceiling
+
+`LPushMacroArgsTyped` now supports the next reachable WordBasic `Declare`
+shape: seven declared parameters with one `Double`, using exact native C
+signatures so wasm indirect calls keep matching the callee type. Higher declared
+arity was not expanded because `DKD.idktMacParam` is a 4-bit signed field in
+`el.h`; normal `Declare` calls with eight or more parameters fail before this
+bridge.
+
+The seven-parameter extension is limited to single-slot non-`Double` arguments.
+Multi-slot `Long` and `String` combinations above six still fail closed instead
+of taking the integer-slot fallback.
+
+`opus_x64_runtime_test` now covers a declaration-shaped call with `Double` in
+the seventh parameter position. Validated with `cmake --build out/macos-debug
+--target opus_x64_runtime_test -j2`, direct execution of
+`./build/tests/Debug/opus_x64_runtime_test`, `ctest --test-dir out/macos-debug
+-R '^opus_x64_runtime_test$' --output-on-failure`, `cmake --build
+out/wasm-debug --target opus_x64_runtime_test -j2`, `ctest --test-dir
+out/wasm-debug -R '^opus_x64_runtime_test$' --output-on-failure`, `cmake
+--build out/macos-debug --target WORD1 -j2`, `cmake --build out/wasm-debug
+--target WORD1 -j2`, `git diff --check`, and a C++-suffix grep over `src/port`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude initially stalled and, when stopped, returned the
+arity-ceiling finding used to shrink this batch.
+
 ## Complete six-parameter Double macro dispatch
 
 `LPushMacroArgsTyped` now uses exact typed C call signatures for one through six

@@ -1344,6 +1344,92 @@ static long CallMacroArgsTyped6(void* procedure,
         return 0;
     }
 }
+
+static long CallMacroArgsOneDouble7(
+    void* procedure, const struct NativeMacroArgument* native_arguments,
+    const unsigned int double_mask) {
+    switch (double_mask & 127u) {
+    case 1u: {
+        typedef long(__cdecl *Proc)(double, int, int, int, int, int, int);
+        return ((Proc)procedure)(
+            native_arguments[0].number,
+            native_arguments[1].integer,
+            native_arguments[2].integer,
+            native_arguments[3].integer,
+            native_arguments[4].integer,
+            native_arguments[5].integer,
+            native_arguments[6].integer);
+    }
+    case 2u: {
+        typedef long(__cdecl *Proc)(int, double, int, int, int, int, int);
+        return ((Proc)procedure)(
+            native_arguments[0].integer,
+            native_arguments[1].number,
+            native_arguments[2].integer,
+            native_arguments[3].integer,
+            native_arguments[4].integer,
+            native_arguments[5].integer,
+            native_arguments[6].integer);
+    }
+    case 4u: {
+        typedef long(__cdecl *Proc)(int, int, double, int, int, int, int);
+        return ((Proc)procedure)(
+            native_arguments[0].integer,
+            native_arguments[1].integer,
+            native_arguments[2].number,
+            native_arguments[3].integer,
+            native_arguments[4].integer,
+            native_arguments[5].integer,
+            native_arguments[6].integer);
+    }
+    case 8u: {
+        typedef long(__cdecl *Proc)(int, int, int, double, int, int, int);
+        return ((Proc)procedure)(
+            native_arguments[0].integer,
+            native_arguments[1].integer,
+            native_arguments[2].integer,
+            native_arguments[3].number,
+            native_arguments[4].integer,
+            native_arguments[5].integer,
+            native_arguments[6].integer);
+    }
+    case 16u: {
+        typedef long(__cdecl *Proc)(int, int, int, int, double, int, int);
+        return ((Proc)procedure)(
+            native_arguments[0].integer,
+            native_arguments[1].integer,
+            native_arguments[2].integer,
+            native_arguments[3].integer,
+            native_arguments[4].number,
+            native_arguments[5].integer,
+            native_arguments[6].integer);
+    }
+    case 32u: {
+        typedef long(__cdecl *Proc)(int, int, int, int, int, double, int);
+        return ((Proc)procedure)(
+            native_arguments[0].integer,
+            native_arguments[1].integer,
+            native_arguments[2].integer,
+            native_arguments[3].integer,
+            native_arguments[4].integer,
+            native_arguments[5].number,
+            native_arguments[6].integer);
+    }
+    case 64u: {
+        typedef long(__cdecl *Proc)(int, int, int, int, int, int, double);
+        return ((Proc)procedure)(
+            native_arguments[0].integer,
+            native_arguments[1].integer,
+            native_arguments[2].integer,
+            native_arguments[3].integer,
+            native_arguments[4].integer,
+            native_arguments[5].integer,
+            native_arguments[6].number);
+    }
+    default:
+        return 0;
+    }
+}
 long LPushMacroArgsTyped(void* procedure, const int* arguments,
                          const int argument_count, const int* types,
                          const int type_count) {
@@ -1351,6 +1437,7 @@ long LPushMacroArgsTyped(void* procedure, const int* arguments,
     struct NativeMacroArgument native_arguments[16] = {{0}};
     int argument_index = 0;
     int double_count = 0;
+    int single_slot_non_doubles = 1;
     unsigned int double_mask = 0;
     int slot_index = 0;
 
@@ -1364,6 +1451,9 @@ long LPushMacroArgsTyped(void* procedure, const int* arguments,
         int slots = NativeSlotsForDkt(types[argument_index]);
         if (slot_index + slots > argument_count) {
             return 0;
+        }
+        if (types[argument_index] != dktDoubleBridge && slots != 1) {
+            single_slot_non_doubles = 0;
         }
         if (types[argument_index] == dktStringBridge) {
             uint32_t low = (uint32_t)arguments[slot_index];
@@ -1396,8 +1486,16 @@ long LPushMacroArgsTyped(void* procedure, const int* arguments,
         return 0;
     }
     if (double_count != 0) {
-        return CallMacroArgsTyped6(procedure, native_arguments, type_count,
-                                   double_mask);
+        if (type_count <= 6) {
+            return CallMacroArgsTyped6(procedure, native_arguments, type_count,
+                                       double_mask);
+        }
+        if (double_count == 1 && single_slot_non_doubles &&
+            type_count == 7) {
+            return CallMacroArgsOneDouble7(procedure, native_arguments,
+                                           double_mask);
+        }
+        return 0;
     }
     switch (type_count) {
     case 0: {
