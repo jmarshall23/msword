@@ -5,6 +5,12 @@
 int OpusSdmRenderDialogPreview(unsigned short hid, unsigned int *pixels,
                                int width, int height);
 
+int OpusSaveDocumentAsDocx(int doc, const char *path) {
+    (void)doc;
+    (void)path;
+    return 0;
+}
+
 enum {
     kIddSaveAs = 4,
     kIddAbout = 44,
