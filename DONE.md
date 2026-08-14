@@ -1,5 +1,19 @@
 # DONE
 
+## Keep release packaging deferred
+
+Release packaging remains deliberately deferred until macOS, Linux, and WebAssembly
+are green. No packaging task or tracked CPack/WiX/MSI configuration was added before
+those platform items are complete.
+
+Validated with searches for `MSI`, `WiX`, `installer`, `package`, `packaging`,
+`CPack`, and `cpack` across the tracked project areas. The only WiX packaging tree
+found is the rejected reference under `DONT-MERGE/bahree/packaging/wix`; items 16, 17,
+and 18 remain in `TODO.md`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Refresh README build and test commands
 
 `README.md` no longer describes the project as Windows-only, no longer lists

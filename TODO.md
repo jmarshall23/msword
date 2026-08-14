@@ -569,11 +569,3 @@ Wine.
 
 Done when: nobody has to re-read the Spanish Fedora notes to know which debugging paths
 were already dead ends and which observations may still inform the native shim.
-
-### 30. Release packaging is premature
-
-bahree's MSI installs one file with no dependency handling. Revisit when there are three
-platforms to package behind a green suite.
-
-Done when: this remains a note only; no packaging task exists before items 16, 17 and 18
-are green.
