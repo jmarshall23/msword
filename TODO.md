@@ -83,32 +83,7 @@ unsupported. That is precisely the half of gdi32 a word processor is made of.
 
 ## Configure off Windows
 
-The non-Windows configure and SDL probe gates are complete. Item 5 is next.
-
-### 5. CI on three platforms
-
-`.github/workflows/ci.yml` exists and omits the dead release metadata, signing, WiX, MSI
-and artifact upload steps from `DONT-MERGE/bahree/.github/workflows/windows-release.yml`.
-The Windows job keeps the useful Checkout, Configure, Build and Test shape.
-
-macOS and Linux jobs install SDL2, configure their Ninja presets, and build the current
-non-Windows gates: `opus-sdl-probe`, the native generator tools, and the generated
-command/resource targets. The former WORD1 UI-labelled tests now run through
-headless scripted `WORD1` modes, while `ctest -L ui` now runs the headless
-SDM render reference-image test.
-
-Do: check PR #12's status rollup with `gh pr view 12 --repo
-jmarshall23/msword --json statusCheckRollup`, then confirm that the Windows,
-macOS, and Linux jobs are attached to the PR and green.
-
-Status: PR #12 is open at `https://github.com/jmarshall23/msword/pull/12` from
-`jserv:dev` and is not a draft. As of 2026-08-14 08:11 UTC, fork CI run
-`31782754896` is green for Windows, macOS, and Linux at PR head
-`848e82cf295d03ec83c1e05fbd0ac9920ccb0007`, but `statusCheckRollup` on the
-upstream PR is still empty. The remaining check is to make the upstream PR show
-the three green jobs, not just the fork-side run for the same head SHA.
-
-Done when: the three jobs are green on a pull request.
+The non-Windows configure, SDL probe, and three-platform CI gates are complete.
 
 ---
 

@@ -1,5 +1,34 @@
 # DONE
 
+## Confirm CI on Three Platforms
+
+PR #12 remains open at `https://github.com/jmarshall23/msword/pull/12` from
+`jserv:dev` and is not a draft. Fork-side CI run `31793750969` completed
+successfully for PR head `debefc30a0f3feb21700e3c6620437f3d893ad64`, with
+green `windows`, `macos`, and `linux` jobs. The upstream PR
+`statusCheckRollup` is still empty, so the fork Actions run is the current
+authoritative job evidence for this head.
+
+The CI follow-up fixed the C11 port fallout that blocked the green run:
+`opus-sdm-runtime.c` now uses enum constants where C requires integer constant
+expressions, `opus-modern-formats.c` opts out of MSVC secure CRT deprecation
+diagnostics, and `opus_x64_runtime` enables MSVC C11 atomics for
+`opus-x64-heap.c`.
+
+Validated with `gh run watch 31793750969 --repo jserv/msword --exit-status`,
+`gh run view 31793750969 --repo jserv/msword --json
+conclusion,status,jobs,url,headSha,createdAt,updatedAt`, `gh pr view 12 --repo
+jmarshall23/msword --json headRefOid,statusCheckRollup,url`, local
+`cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test opus_modern_formats_test WORD1 -j2`, local `ctest
+--test-dir out/macos-debug -R
+'^opus_modern_formats_test$|^opus_x64_runtime_test$' --output-on-failure`,
+local `ctest --test-dir out/macos-debug -L ui --output-on-failure`, and `git
+diff --check`.
+
+Reviewed before verification: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert port modern formats to C11
 
 The last `src/port` C++ source is gone. `opus_x64_runtime` now builds the
