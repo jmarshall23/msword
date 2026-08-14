@@ -457,8 +457,8 @@ static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
     if (pane == NULL) {
         if (!g_scripted_save_as_new_dispatched) {
             g_scripted_save_as_new_dispatched = true;
+            PostMessageW(app, WM_COMMAND, kFileNew, 0);
             OpusUser32PushScriptedInput(NULL, WM_COMMAND, 1, 0);
-            SendMessageW(app, WM_COMMAND, kFileNew, 0);
         }
         return false;
     }
