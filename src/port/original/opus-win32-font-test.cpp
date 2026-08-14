@@ -2,6 +2,10 @@
 
 #include <array>
 #include <cstring>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 struct EnumState {
     int count = 0;
@@ -42,7 +46,55 @@ bool SelectFace(HDC dc, const char* face, int points) {
     return font != nullptr && SelectObject(dc, font) != nullptr;
 }
 
-int main() {
+std::vector<std::string> Split(const std::string& text, char delimiter) {
+    std::vector<std::string> parts;
+    std::stringstream stream(text);
+    std::string part;
+    while (std::getline(stream, part, delimiter)) parts.push_back(part);
+    return parts;
+}
+
+bool CheckGoldenMetrics(HDC dc, const char* path) {
+    std::ifstream input(path);
+    if (!input) return false;
+
+    std::string line;
+    if (!std::getline(input, line)) return false;
+    int rows = 0;
+    while (std::getline(input, line)) {
+        if (line.empty()) continue;
+        const std::vector<std::string> fields = Split(line, '\t');
+        if (fields.size() != 6) return false;
+        const std::vector<std::string> widths = Split(fields[5], ',');
+        if (widths.size() != 95) return false;
+
+        const std::string& face = fields[0];
+        const int points = std::stoi(fields[1]);
+        const int ascent = std::stoi(fields[2]);
+        const int descent = std::stoi(fields[3]);
+        const int overhang = std::stoi(fields[4]);
+
+        if (!SelectFace(dc, face.c_str(), points)) return false;
+        TEXTMETRICA metric{};
+        if (!GetTextMetricsA(dc, &metric) || metric.tmAscent != ascent ||
+            metric.tmDescent != descent || metric.tmOverhang != overhang) {
+            return false;
+        }
+
+        for (int ch = 32; ch < 127; ++ch) {
+            const char text = static_cast<char>(ch);
+            SIZE size{};
+            if (!GetTextExtentPoint32A(dc, &text, 1, &size)) return false;
+            if (size.cx - metric.tmOverhang != std::stoi(widths[ch - 32])) {
+                return false;
+            }
+        }
+        ++rows;
+    }
+    return rows == 28;
+}
+
+int main(int argc, char** argv) {
     HDC dc = CreateCompatibleDC(nullptr);
     if (dc == nullptr) return 1;
 
@@ -119,6 +171,8 @@ int main() {
         (GetDeviceCaps(dc, TEXTCAPS) & TC_SA_CONTIN) == 0) {
         return 17;
     }
+
+    if (argc > 1 && !CheckGoldenMetrics(dc, argv[1])) return 18;
 
     DeleteDC(dc);
     return 0;

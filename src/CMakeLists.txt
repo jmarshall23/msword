@@ -1460,7 +1460,10 @@ if(NOT WIN32)
     add_test(NAME opus_win32_resource_test COMMAND $<TARGET_FILE:opus_win32_resource_test>)
     add_test(NAME opus_win32_gdi_object_test COMMAND $<TARGET_FILE:opus_win32_gdi_object_test>)
     add_test(NAME opus_win32_gdi_raster_test COMMAND $<TARGET_FILE:opus_win32_gdi_raster_test>)
-    add_test(NAME opus_win32_font_test COMMAND $<TARGET_FILE:opus_win32_font_test>)
+    add_test(NAME opus_win32_font_test
+        COMMAND $<TARGET_FILE:opus_win32_font_test>
+                "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-win32-font-golden.tsv"
+    )
     add_test(NAME opus_win32_print_test COMMAND $<TARGET_FILE:opus_win32_print_test>)
     add_test(NAME opus_win32_user32_test COMMAND $<TARGET_FILE:opus_win32_user32_test>)
     add_test(NAME opus_win32_memory_test COMMAND $<TARGET_FILE:opus_win32_memory_test>)

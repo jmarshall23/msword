@@ -1,5 +1,28 @@
 # DONE
 
+## Complete gdi32 shim tier
+
+`src/port/win32/gdi32.c` now covers the checked Win32 GDI surface used by the
+current port, and `docs/win32-shim/uncovered.txt` is empty.
+
+`opus_win32_font_test` now reads `src/port/original/opus-win32-font-golden.tsv`
+and checks the captured oracle advances for printable ASCII across `Tms Rmn`,
+`Symbol`, `Helv`, and `Courier` at 8, 10, 12, 14, 18, 24, and 36 pt. The shim
+uses the same captured rows for those startup face/size combinations and keeps
+the old heuristic for uncaptured fonts.
+
+Validated with `cmake --build build-chrstride --target opus_win32_font_test -j2`,
+`ctest --test-dir build-chrstride -R '^opus_win32_font_test$' --output-on-failure`,
+`cmake --build build-chrstride --target opus_x64_runtime_test -j2`, and
+`ctest --test-dir build-chrstride -R '^opus_x64_runtime_test$' --output-on-failure`.
+The broader regression sweep
+`ctest --test-dir build-chrstride -R 'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure` passed after building the missing test executables, and
+`git diff --check` passed.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Add gdi32 excluded clip rectangles
 
 `src/port/win32/gdi32.c` now implements `ExcludeClipRect` as exclusion state

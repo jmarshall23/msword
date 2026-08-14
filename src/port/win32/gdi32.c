@@ -117,6 +117,8 @@ static const struct FontFace kFontFaces[] = {
     {"Symbol", SYMBOL_CHARSET, VARIABLE_PITCH | FF_DONTCARE, FALSE},
 };
 
+#include "font-golden.inc"
+
 static int max_int(int left, int right) {
     return left > right ? left : right;
 }
@@ -346,6 +348,33 @@ static int scaled_advance(const struct FontFace* face, unsigned char ch,
            OPUS_DESIGN_UNITS_PER_EM;
 }
 
+static int font_point_size(const LOGFONTW* logical) {
+    const int em = font_em_pixels(logical);
+    return (em * 72 + OPUS_LOGICAL_PIXELS_PER_INCH / 2) /
+           OPUS_LOGICAL_PIXELS_PER_INCH;
+}
+
+static const struct FontMetricRow* font_metric_row(
+    const struct FontFace* face, const LOGFONTW* logical) {
+    const int points = font_point_size(logical);
+    size_t index;
+    for (index = 0; index < sizeof(kFontMetricRows) / sizeof(kFontMetricRows[0]);
+         ++index) {
+        if (kFontMetricRows[index].points == points &&
+            equal_face_name(kFontMetricRows[index].face, face->name)) {
+            return &kFontMetricRows[index];
+        }
+    }
+    return NULL;
+}
+
+static int font_advance(const struct FontFace* face, const LOGFONTW* logical,
+                        unsigned char ch) {
+    const struct FontMetricRow* row = font_metric_row(face, logical);
+    if (row != NULL && ch >= 32 && ch < 127) return row->widths[ch - 32];
+    return scaled_advance(face, ch, font_em_pixels(logical));
+}
+
 static LOGFONTW selected_logical_font(HDC device_context) {
     struct GdiObject* dc = dc_from_handle(device_context);
     struct GdiObject* font = dc != NULL ? object_from_handle(dc->dc.font) : NULL;
@@ -368,12 +397,16 @@ static void fill_text_metric(const LOGFONTW* logical,
     const int em = font_em_pixels(logical);
     const int leading = requested_height > 0 ? max_int(0, requested_height - em)
                                              : max_int(1, em / 5);
-    metric->tmHeight = requested_height > 0 ? requested_height : em + leading;
+    const struct FontMetricRow* row = font_metric_row(face, logical);
+    metric->tmHeight =
+        row != NULL ? row->ascent + row->descent
+                    : (requested_height > 0 ? requested_height : em + leading);
     metric->tmInternalLeading = leading;
-    metric->tmAscent = (metric->tmHeight * 4) / 5;
-    metric->tmDescent = metric->tmHeight - metric->tmAscent;
-    metric->tmAveCharWidth = scaled_advance(face, 'n', em);
-    metric->tmMaxCharWidth = scaled_advance(face, 'W', em);
+    metric->tmAscent = row != NULL ? row->ascent : (metric->tmHeight * 4) / 5;
+    metric->tmDescent =
+        row != NULL ? row->descent : metric->tmHeight - metric->tmAscent;
+    metric->tmAveCharWidth = font_advance(face, logical, 'n');
+    metric->tmMaxCharWidth = font_advance(face, logical, 'W');
     metric->tmWeight = logical->lfWeight;
     metric->tmItalic = logical->lfItalic;
     metric->tmUnderlined = logical->lfUnderline;
@@ -386,7 +419,7 @@ static void fill_text_metric(const LOGFONTW* logical,
         (BYTE)((face->fixed_pitch ? 0 : TMPF_FIXED_PITCH) | TMPF_VECTOR |
                TMPF_TRUETYPE | (face->pitch_family & 0xf0));
     metric->tmCharSet = face->charset;
-    metric->tmOverhang = 0;
+    metric->tmOverhang = row != NULL ? row->overhang : 0;
     metric->tmDigitizedAspectX = OPUS_LOGICAL_PIXELS_PER_INCH;
     metric->tmDigitizedAspectY = OPUS_LOGICAL_PIXELS_PER_INCH;
 }
@@ -904,11 +937,10 @@ BOOL GetTextExtentPoint32A(HDC device_context, LPCSTR text, int count,
     }
     const LOGFONTW logical = selected_logical_font(device_context);
     const struct FontFace* face = face_for_font(selected_font_object(device_context));
-    const int em = font_em_pixels(&logical);
     int width = 0;
     int index;
     for (index = 0; index < count; ++index) {
-        width += scaled_advance(face, (unsigned char)text[index], em);
+        width += font_advance(face, &logical, (unsigned char)text[index]);
     }
     TEXTMETRICA metric;
     fill_text_metric(&logical, face, &metric);
@@ -933,11 +965,11 @@ static BOOL text_extent_w(HDC device_context, LPCWSTR text, int count,
     const LOGFONTW logical = selected_logical_font(device_context);
     const struct FontFace* face =
         face_for_font(selected_font_object(device_context));
-    const int em = font_em_pixels(&logical);
     int width = 0;
     int index;
     for (index = 0; index < count; ++index) {
-        width += scaled_advance(face, (unsigned char)(text[index] & 0xff), em);
+        width += font_advance(face, &logical,
+                              (unsigned char)(text[index] & 0xff));
     }
     TEXTMETRICA metric;
     fill_text_metric(&logical, face, &metric);
@@ -994,12 +1026,11 @@ BOOL TextOutW(HDC device_context, int x, int y, LPCWSTR text, int count) {
     const LOGFONTW logical = selected_logical_font(device_context);
     const struct FontFace* face =
         face_for_font(selected_font_object(device_context));
-    const int em = font_em_pixels(&logical);
     int cursor = x;
     int index;
     for (index = 0; index < count; ++index) {
         const int ch = (int)(text[index] & 0xff);
-        const int advance = scaled_advance(face, (unsigned char)ch, em);
+        const int advance = font_advance(face, &logical, (unsigned char)ch);
         if (ch != ' ' && ch != '\t') {
             draw_text_cell(dc, bitmap, cursor, y, advance, size.cy,
                            dc->dc.text_color);
@@ -1034,11 +1065,9 @@ BOOL GetCharWidthA(HDC device_context, UINT first_char, UINT last_char,
     }
     const LOGFONTW logical = selected_logical_font(device_context);
     const struct FontFace* face = face_for_font(selected_font_object(device_context));
-    const int em = font_em_pixels(&logical);
     UINT ch;
     for (ch = first_char; ch <= last_char; ++ch) {
-        buffer[ch - first_char] =
-            scaled_advance(face, (unsigned char)ch, em);
+        buffer[ch - first_char] = font_advance(face, &logical, (unsigned char)ch);
     }
     return TRUE;
 }
