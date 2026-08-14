@@ -1314,9 +1314,9 @@ if(NOT WIN32)
     endforeach()
 
     add_executable(opus_win32_user32_test
-        port/original/opus-win32-user32-test.cpp
+        port/original/opus-win32-user32-test.c
     )
-    target_compile_features(opus_win32_user32_test PRIVATE cxx_std_20)
+    target_compile_features(opus_win32_user32_test PRIVATE c_std_11)
     target_compile_definitions(opus_win32_user32_test PRIVATE
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
