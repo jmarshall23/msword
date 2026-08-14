@@ -76,6 +76,7 @@ static BOOL g_last_scripted_save_opus_dialog_open;
 static BOOL g_last_scripted_save_win_dialog_open;
 static BOOL g_last_scripted_save_header;
 static DWORD g_last_scripted_save_error;
+static int g_last_scripted_save_direct_result;
 static BOOL g_last_scripted_save_file_open;
 static DWORD g_last_scripted_save_file_error;
 static DWORD g_last_scripted_save_file_size;
@@ -408,7 +409,9 @@ static bool PollScriptedSaveStatus(HWND app, const char *doc_path) {
         !g_last_scripted_save_win_dialog_open &&
         !g_scripted_save_as_direct_attempted) {
         g_scripted_save_as_direct_attempted = true;
-        if (OpusSaveCurrentDocumentNative(doc_path)) {
+        g_last_scripted_save_direct_result =
+            OpusSaveCurrentDocumentNative(doc_path);
+        if (g_last_scripted_save_direct_result == 1) {
             header = FileHasNativeDocHeader(doc_path);
         }
     }
@@ -559,7 +562,7 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
     fprintf(stderr,
             "WORD1 x64: scripted Save As timed out attempts=%u app=%d pane=%d "
             "stage=%lld app_alive=%d opus_dialog=%d win_dialog=%d header=%d "
-            "last_error=%lu file_open=%d file_error=%lu file_size=%lu "
+            "last_error=%lu direct=%d file_open=%d file_error=%lu file_size=%lu "
             "file_read=%lu h0=%08lx h4=%08lx h24=%08lx h48=%08lx "
             "output=\"%s\"\n",
             g_scripted_save_as_attempts, g_last_scripted_save_has_app,
@@ -570,6 +573,7 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
             g_last_scripted_save_win_dialog_open,
             g_last_scripted_save_header,
             (unsigned long)g_last_scripted_save_error,
+            g_last_scripted_save_direct_result,
             g_last_scripted_save_file_open,
             (unsigned long)g_last_scripted_save_file_error,
             (unsigned long)g_last_scripted_save_file_size,
@@ -604,6 +608,7 @@ static void ScheduleScriptedSaveAsTimer(void) {
     g_last_scripted_save_win_dialog_open = false;
     g_last_scripted_save_header = false;
     g_last_scripted_save_error = 0;
+    g_last_scripted_save_direct_result = 0;
     g_last_scripted_save_file_open = false;
     g_last_scripted_save_file_error = 0;
     g_last_scripted_save_file_size = 0;

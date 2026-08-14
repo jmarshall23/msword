@@ -1863,13 +1863,16 @@ const char *szPath;
 	CHAR stFile [ichMaxFile];
 	int cch;
 
-	if (szPath == NULL || *szPath == 0 || selCur.doc == docNil)
-		return fFalse;
+	if (szPath == NULL || *szPath == 0)
+		return -1;
+	if (selCur.doc == docNil)
+		return -2;
 	cch = CchSz(szPath);
 	if (cch <= 1 || cch > ichMaxFile)
-		return fFalse;
+		return -3;
 	SzToSt(szPath, stFile);
-	return FFlushDoc(DocMother(selCur.doc), stFile, dffSaveNative, fFalse);
+	return FFlushDoc(DocMother(selCur.doc), stFile, dffSaveNative, fFalse) ?
+			1 : -4;
 }
 #endif
 
