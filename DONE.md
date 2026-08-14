@@ -1,5 +1,26 @@
 # DONE
 
+## Add gdi32 UTF-16 text output
+
+`src/port/win32/gdi32.c` now implements `TextOutW` and `DrawTextW` as a
+minimal visible text path using the selected font advances, text color, and
+opaque background mode. `DrawTextW` handles null-terminated input and the
+single-line center/vertical-center flags used by the shim chrome.
+
+`opus-win32-gdi-raster-test` now covers visible UTF-16 text strokes, opaque
+background fill, and `DrawTextW` count handling. The implemented symbols were
+removed from `docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_gdi_raster_test
+-j2`, `ctest --test-dir build-chrstride -R 'opus_win32_gdi_raster_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep, searches proving `TextOutW` and `DrawTextW` are gone
+from `uncovered.txt`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Add gdi32 filled shapes
 
 `src/port/win32/gdi32.c` now implements `Ellipse` and `Polygon` against the

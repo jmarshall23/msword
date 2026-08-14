@@ -175,6 +175,10 @@ The filled shape slice now covers `Ellipse` and `Polygon` with selected pen/brus
 drawing under the current rectangular clip. `ExcludeClipRect` still needs a real
 region model before holes can be represented.
 
+The UTF-16 text output slice now covers `TextOutW` and `DrawTextW` with a minimal
+visible raster path driven by the existing font advances and text color. Exact glyph
+shapes, wrapping, and pagination-quality text still belong to the font renderer work.
+
 The rectangular clip slice now covers `CreateRectRgn` and `IntersectClipRect` for the
 existing single-rectangle DC clip. `ExcludeClipRect` still needs real region handling
 before it can model cut-outs without lying to callers.

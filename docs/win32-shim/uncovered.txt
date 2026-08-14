@@ -1,3 +1,1 @@
-DrawTextW
 ExcludeClipRect
-TextOutW

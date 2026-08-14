@@ -103,6 +103,15 @@ int main() {
         return 16;
     }
 
+    RECT text_rect{0, 0, 4, 4};
+    if (!PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
+        !TextOutW(destination, 0, 0, u"A", 1) ||
+        !PixelIs(destination, 0, 1, RGB(4, 5, 6)) ||
+        !PixelIs(destination, 2, 2, RGB(255, 255, 255)) ||
+        DrawTextW(destination, u"B", -1, &text_rect, DT_SINGLELINE) <= 0) {
+        return 17;
+    }
+
     SIZE size{};
     POINT point{};
     POINT previous_point{};
@@ -118,7 +127,7 @@ int main() {
         size.cx != 1 || size.cy != 1 ||
         !SetWindowOrgEx(destination, 4, 5, &previous_point) ||
         previous_point.x != 0 || previous_point.y != 0) {
-        return 17;
+        return 18;
     }
 
     HPEN blue = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
@@ -135,7 +144,7 @@ int main() {
         !LineTo(destination, 1, 4) ||
         !PixelIs(destination, 1, 0, RGB(0, 0, 255)) ||
         !PixelIs(destination, 1, 3, RGB(0, 0, 255))) {
-        return 18;
+        return 19;
     }
 
     HBRUSH green = CreateSolidBrush(RGB(0, 255, 0));
@@ -155,7 +164,7 @@ int main() {
         !PixelIs(destination, 0, 0, RGB(0, 0, 255)) ||
         !PixelIs(destination, 3, 3, RGB(0, 0, 255)) ||
         !PixelIs(destination, 1, 1, RGB(255, 0, 0))) {
-        return 19;
+        return 20;
     }
 
     RECT edge_rect{0, 0, 4, 4};
@@ -169,7 +178,7 @@ int main() {
         !PixelIs(destination, 0, 0, RGB(128, 128, 128)) ||
         !PixelIs(destination, 3, 3, RGB(255, 255, 255)) ||
         !PixelIs(destination, 3, 0, RGB(0, 0, 0))) {
-        return 20;
+        return 21;
     }
 
     POINT polygon_points[]{{0, 0}, {4, 0}, {4, 4}, {0, 4}};
@@ -181,7 +190,7 @@ int main() {
         !Polygon(destination, polygon_points, 4) ||
         !PixelIs(destination, 0, 0, RGB(0, 0, 255)) ||
         !PixelIs(destination, 1, 1, RGB(255, 0, 0))) {
-        return 21;
+        return 22;
     }
 
     HRGN region = CreateRectRgn(1, 1, 3, 3);
@@ -196,7 +205,7 @@ int main() {
         IntersectClipRect(destination, 3, 3, 4, 4) != NULLREGION ||
         !PatBlt(destination, 1, 1, 1, 1, WHITENESS) ||
         !PixelIs(destination, 1, 1, RGB(0, 0, 0))) {
-        return 22;
+        return 23;
     }
 
     SelectObject(destination, old_brush);

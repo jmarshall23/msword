@@ -878,6 +878,115 @@ BOOL GetTextExtentPoint32A(HDC device_context, LPCSTR text, int count,
     return TRUE;
 }
 
+static int wide_text_count(LPCWSTR text, int count) {
+    if (count >= 0) return count;
+    int length = 0;
+    while (text[length] != 0) ++length;
+    return length;
+}
+
+static BOOL text_extent_w(HDC device_context, LPCWSTR text, int count,
+                          SIZE* size) {
+    if (dc_from_handle(device_context) == NULL || text == NULL || count < 0 ||
+        size == NULL) {
+        return FALSE;
+    }
+    const LOGFONTW logical = selected_logical_font(device_context);
+    const struct FontFace* face =
+        face_for_font(selected_font_object(device_context));
+    const int em = font_em_pixels(&logical);
+    int width = 0;
+    int index;
+    for (index = 0; index < count; ++index) {
+        width += scaled_advance(face, (unsigned char)(text[index] & 0xff), em);
+    }
+    TEXTMETRICA metric;
+    fill_text_metric(&logical, face, &metric);
+    size->cx = width;
+    size->cy = metric.tmHeight;
+    return TRUE;
+}
+
+static void fill_text_background(struct GdiObject* dc, struct GdiObject* bitmap,
+                                 int x, int y, SIZE size) {
+    const int left = max_int(x, dc->dc.clip.left);
+    const int top = max_int(y, dc->dc.clip.top);
+    const int right =
+        min_int(min_int(x + size.cx, dc->dc.clip.right), bitmap->bitmap.width);
+    const int bottom =
+        min_int(min_int(y + size.cy, dc->dc.clip.bottom), bitmap->bitmap.height);
+    int py;
+    for (py = top; py < bottom; ++py) {
+        int px;
+        for (px = left; px < right; ++px) {
+            put_pixel(&bitmap->bitmap, px, py, dc->dc.background_color);
+        }
+    }
+}
+
+static void draw_text_cell(struct GdiObject* dc, struct GdiObject* bitmap,
+                           int x, int y, int advance, int height,
+                           COLORREF color) {
+    if (advance <= 0 || height <= 0) return;
+    const int stroke_right = x + max_int(1, advance - 1);
+    const int stroke_bottom = y + max_int(1, height - 1);
+    int py;
+    for (py = y + 1; py < stroke_bottom; ++py) {
+        put_pixel_clipped(dc, bitmap, x, py, color);
+        put_pixel_clipped(dc, bitmap, stroke_right - 1, py, color);
+    }
+    int px;
+    for (px = x; px < stroke_right; ++px) {
+        put_pixel_clipped(dc, bitmap, px, y + 1, color);
+        put_pixel_clipped(dc, bitmap, px, stroke_bottom - 1, color);
+    }
+}
+
+BOOL TextOutW(HDC device_context, int x, int y, LPCWSTR text, int count) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL || text == NULL || count < 0) return FALSE;
+    SIZE size;
+    if (!text_extent_w(device_context, text, count, &size)) return FALSE;
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    if (bitmap == NULL) return TRUE;
+    if (dc->dc.background_mode == OPAQUE) {
+        fill_text_background(dc, bitmap, x, y, size);
+    }
+    const LOGFONTW logical = selected_logical_font(device_context);
+    const struct FontFace* face =
+        face_for_font(selected_font_object(device_context));
+    const int em = font_em_pixels(&logical);
+    int cursor = x;
+    int index;
+    for (index = 0; index < count; ++index) {
+        const int ch = (int)(text[index] & 0xff);
+        const int advance = scaled_advance(face, (unsigned char)ch, em);
+        if (ch != ' ' && ch != '\t') {
+            draw_text_cell(dc, bitmap, cursor, y, advance, size.cy,
+                           dc->dc.text_color);
+        }
+        cursor += advance;
+    }
+    return TRUE;
+}
+
+int DrawTextW(HDC device_context, LPCWSTR text, int count, RECT* rect,
+              UINT format) {
+    if (rect == NULL || text == NULL) return 0;
+    const int length = wide_text_count(text, count);
+    SIZE size;
+    if (!text_extent_w(device_context, text, length, &size)) return 0;
+    int x = rect->left;
+    int y = rect->top;
+    if ((format & DT_CENTER) != 0) {
+        x = rect->left + (rect->right - rect->left - size.cx) / 2;
+    }
+    if ((format & DT_VCENTER) != 0) {
+        y = rect->top + (rect->bottom - rect->top - size.cy) / 2;
+    }
+    return TextOutW(device_context, x, y, text, length) ? size.cy : 0;
+}
+
 BOOL GetCharWidthA(HDC device_context, UINT first_char, UINT last_char,
                    LPINT buffer) {
     if (dc_from_handle(device_context) == NULL || buffer == NULL ||
