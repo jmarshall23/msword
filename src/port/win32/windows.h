@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#if !defined(_MSC_VER)
+#include <alloca.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -2878,6 +2881,15 @@ typedef DWORD COLORREF;
 #endif
 #ifndef SRWLOCK_INIT
 #define SRWLOCK_INIT { NULL }
+#endif
+#if !defined(_MSC_VER) && !defined(_alloca)
+#define _alloca alloca
+#endif
+#ifndef LOBYTE
+#define LOBYTE(word) ((BYTE)((word) & 0xff))
+#endif
+#ifndef HIBYTE
+#define HIBYTE(word) ((BYTE)(((WORD)(word) >> 8) & 0xff))
 #endif
 
 #ifndef LOCALE_USER_DEFAULT
