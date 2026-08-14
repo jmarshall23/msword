@@ -50,6 +50,7 @@ constexpr LRESULT kEditCut = 2252;
 constexpr LRESULT kEditCopy = 2274;
 constexpr LRESULT kEditPaste = 2297;
 constexpr LRESULT kEditSelectAll = 5106;
+constexpr WPARAM kHelpAbout = 182;
 
 bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
     if (text == nullptr || needle == nullptr || *needle == 0) {
@@ -161,6 +162,16 @@ bool ScriptedUnicodeMatched() {
         }
     }
     return true;
+}
+
+bool ScriptedAboutMatched() {
+    const HWND app = FindWindowA("OpusApp", nullptr);
+    if (app == nullptr) {
+        return false;
+    }
+    OpusUser32PushScriptedInput(nullptr, WM_COMMAND, 1, 0);
+    SendMessageW(app, WM_COMMAND, kHelpAbout, 0);
+    return IsWindow(app) && FindWindowA("OpusSdmDialog", nullptr) == nullptr;
 }
 
 void WriteCrashText(HANDLE file, const char* text) {
@@ -540,6 +551,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const LPCWSTR scripted_typing_test = OPUSW("--scripted-typing-test");
     const LPCWSTR scripted_clipboard_test = OPUSW("--scripted-clipboard-test");
     const LPCWSTR scripted_unicode_test = OPUSW("--scripted-unicode-test");
+    const LPCWSTR scripted_about_test = OPUSW("--scripted-about-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -556,6 +568,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_unicode_test =
         OpusWideContains(command_line, scripted_unicode_test) ||
         OpusWideContains(GetCommandLineW(), scripted_unicode_test);
+    const bool run_scripted_about_test =
+        OpusWideContains(command_line, scripted_about_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_about_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -605,7 +620,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 5);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 6);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
-    } else if (run_scripted_unicode_test) {
+    } else if (run_scripted_unicode_test || run_scripted_about_test) {
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
@@ -621,6 +636,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     }
     if (run_scripted_clipboard_test && !ScriptedClipboardMatched()) return 4;
     if (run_scripted_unicode_test && !ScriptedUnicodeMatched()) return 5;
+    if (run_scripted_about_test && !ScriptedAboutMatched()) return 6;
     return result;
 }
 
