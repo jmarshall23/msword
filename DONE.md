@@ -1,5 +1,27 @@
 # DONE
 
+## Add gdi32 DC state and line drawing
+
+`src/port/win32/gdi32.c` now keeps DC background mode, text color, map mode,
+viewport/window origin and extent, and current pen position. It implements the declared
+gdi32 state APIs for those fields and draws simple clipped one-pixel `LineTo` strokes
+with the selected pen color.
+
+`opus-win32-gdi-raster-test` now covers previous-value returns for text/background/map
+state, viewport/window state accessors, `MoveToEx`, horizontal and vertical `LineTo`,
+and selected-pen color. The implemented symbols were removed from
+`docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_gdi_raster_test -j2`,
+`ctest --test-dir build-chrstride -R 'opus_win32_gdi_raster_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep after building the missing executables, searches proving the
+implemented names are gone from `uncovered.txt`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Import Linux reconnaissance notes
 
 `docs/win32-shim/linux-reconnaissance.md` now condenses

@@ -94,7 +94,53 @@ int main() {
         return 15;
     }
 
+    if (SetBkMode(destination, TRANSPARENT) != OPAQUE ||
+        SetBkMode(destination, OPAQUE) != TRANSPARENT ||
+        SetTextColor(destination, RGB(1, 2, 3)) != RGB(0, 0, 0) ||
+        SetTextColor(destination, RGB(4, 5, 6)) != RGB(1, 2, 3) ||
+        SetMapMode(destination, MM_ANISOTROPIC) != MM_TEXT ||
+        SetMapMode(destination, MM_TEXT) != MM_ANISOTROPIC) {
+        return 16;
+    }
+
+    SIZE size{};
+    POINT point{};
+    POINT previous_point{};
+    if (!GetViewportExtEx(destination, &size) || size.cx != 1 || size.cy != 1 ||
+        !SetViewportExtEx(destination, 7, 8, &size) ||
+        size.cx != 1 || size.cy != 1 ||
+        !GetViewportExtEx(destination, &size) || size.cx != 7 || size.cy != 8 ||
+        !GetViewportOrgEx(destination, &point) || point.x != 0 || point.y != 0 ||
+        !SetViewportOrgEx(destination, 2, 3, &previous_point) ||
+        previous_point.x != 0 || previous_point.y != 0 ||
+        !GetViewportOrgEx(destination, &point) || point.x != 2 || point.y != 3 ||
+        !SetWindowExtEx(destination, 9, 10, &size) ||
+        size.cx != 1 || size.cy != 1 ||
+        !SetWindowOrgEx(destination, 4, 5, &previous_point) ||
+        previous_point.x != 0 || previous_point.y != 0) {
+        return 17;
+    }
+
+    HPEN blue = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
+    HGDIOBJ old_pen = SelectObject(destination, blue);
+    if (blue == nullptr || old_pen == nullptr ||
+        !MoveToEx(destination, 0, 0, &previous_point) ||
+        previous_point.x != 0 || previous_point.y != 0 ||
+        !LineTo(destination, 4, 0) ||
+        !PixelIs(destination, 0, 0, RGB(0, 0, 255)) ||
+        !PixelIs(destination, 3, 0, RGB(0, 0, 255)) ||
+        PixelIs(destination, 3, 1, RGB(0, 0, 255)) ||
+        !MoveToEx(destination, 1, 0, &previous_point) ||
+        previous_point.x != 4 || previous_point.y != 0 ||
+        !LineTo(destination, 1, 4) ||
+        !PixelIs(destination, 1, 0, RGB(0, 0, 255)) ||
+        !PixelIs(destination, 1, 3, RGB(0, 0, 255))) {
+        return 18;
+    }
+
     SelectObject(destination, old_brush);
+    SelectObject(destination, old_pen);
+    DeleteObject(blue);
     DeleteObject(red);
     DeleteDC(source);
     DeleteDC(destination);

@@ -163,6 +163,11 @@ can be trusted: `Tms Rmn`, `Symbol`, `Helv`, `Courier`.
 Printing through Word's live `Escape` path now fails at `STARTDOC`; the modern
 `StartDoc`/`EndDoc`/page APIs have no current call sites.
 
+The DC state slice now covers `SetBkMode`, `SetTextColor`, `SetMapMode`, viewport and
+window origin/extent accessors, `MoveToEx`, and simple clipped `LineTo` drawing through
+the selected pen. The remaining work is still the higher-value paint, region, shape,
+text, and font behavior needed by real document rendering.
+
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
 font names and diffs against output captured from the Windows build.

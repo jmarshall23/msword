@@ -54,9 +54,11 @@ struct DcState {
     COLORREF text_color;
     COLORREF background_color;
     int background_mode;
+    int map_mode;
     int raster_operation;
     int stretch_mode;
     RECT clip;
+    POINT current_position;
     POINT viewport_origin;
     SIZE viewport_extent;
     POINT window_origin;
@@ -128,6 +130,7 @@ static void init_dc_state(struct DcState* state) {
     state->text_color = RGB(0, 0, 0);
     state->background_color = RGB(255, 255, 255);
     state->background_mode = OPAQUE;
+    state->map_mode = MM_TEXT;
     state->raster_operation = R2_COPYPEN;
     state->stretch_mode = COLORONCOLOR;
     state->viewport_extent.cx = 1;
@@ -510,6 +513,37 @@ static COLORREF pattern_color(struct GdiObject* dc, int x, int y) {
         if (pixel_at(&pattern->bitmap, px, py, &color)) return color;
     }
     return brush->brush.color;
+}
+
+static COLORREF pen_color(struct GdiObject* dc) {
+    struct GdiObject* pen = object_from_handle(dc->dc.pen);
+    return pen != NULL && pen->kind == kGdiKindPen ? pen->pen.color
+                                                   : RGB(0, 0, 0);
+}
+
+static BOOL put_pixel_clipped(struct GdiObject* dc, struct GdiObject* bitmap,
+                              int x, int y, COLORREF color) {
+    if (x < dc->dc.clip.left || y < dc->dc.clip.top ||
+        x >= dc->dc.clip.right || y >= dc->dc.clip.bottom) {
+        return FALSE;
+    }
+    return put_pixel(&bitmap->bitmap, x, y, color);
+}
+
+static int valid_map_mode(int map_mode) {
+    switch (map_mode) {
+        case MM_TEXT:
+        case MM_LOMETRIC:
+        case MM_HIMETRIC:
+        case MM_LOENGLISH:
+        case MM_HIENGLISH:
+        case MM_TWIPS:
+        case MM_ISOTROPIC:
+        case MM_ANISOTROPIC:
+            return TRUE;
+        default:
+            return FALSE;
+    }
 }
 
 static COLORREF eval_rop(DWORD rop, COLORREF destination, COLORREF source,
@@ -995,6 +1029,115 @@ int SetROP2(HDC device_context, int draw_mode) {
     const int previous = dc->dc.raster_operation;
     dc->dc.raster_operation = draw_mode;
     return previous;
+}
+
+int SetBkMode(HDC device_context, int background_mode) {
+    if (background_mode != OPAQUE && background_mode != TRANSPARENT) return 0;
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return 0;
+    const int previous = dc->dc.background_mode;
+    dc->dc.background_mode = background_mode;
+    return previous;
+}
+
+COLORREF SetTextColor(HDC device_context, COLORREF color) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return CLR_INVALID;
+    const COLORREF previous = dc->dc.text_color;
+    dc->dc.text_color = color & 0x00ffffffu;
+    return previous;
+}
+
+int SetMapMode(HDC device_context, int map_mode) {
+    if (!valid_map_mode(map_mode)) return 0;
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return 0;
+    const int previous = dc->dc.map_mode;
+    dc->dc.map_mode = map_mode;
+    return previous;
+}
+
+BOOL GetViewportExtEx(HDC device_context, SIZE* size) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL || size == NULL) return FALSE;
+    *size = dc->dc.viewport_extent;
+    return TRUE;
+}
+
+BOOL GetViewportOrgEx(HDC device_context, POINT* point) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL || point == NULL) return FALSE;
+    *point = dc->dc.viewport_origin;
+    return TRUE;
+}
+
+BOOL SetViewportExtEx(HDC device_context, int width, int height,
+                      SIZE* previous) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    if (previous != NULL) *previous = dc->dc.viewport_extent;
+    dc->dc.viewport_extent.cx = width;
+    dc->dc.viewport_extent.cy = height;
+    return TRUE;
+}
+
+BOOL SetViewportOrgEx(HDC device_context, int x, int y, POINT* previous) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    if (previous != NULL) *previous = dc->dc.viewport_origin;
+    dc->dc.viewport_origin.x = x;
+    dc->dc.viewport_origin.y = y;
+    return TRUE;
+}
+
+BOOL SetWindowExtEx(HDC device_context, int width, int height, SIZE* previous) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    if (previous != NULL) *previous = dc->dc.window_extent;
+    dc->dc.window_extent.cx = width;
+    dc->dc.window_extent.cy = height;
+    return TRUE;
+}
+
+BOOL SetWindowOrgEx(HDC device_context, int x, int y, POINT* previous) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    if (previous != NULL) *previous = dc->dc.window_origin;
+    dc->dc.window_origin.x = x;
+    dc->dc.window_origin.y = y;
+    return TRUE;
+}
+
+BOOL MoveToEx(HDC device_context, int x, int y, POINT* previous) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    if (previous != NULL) *previous = dc->dc.current_position;
+    dc->dc.current_position.x = x;
+    dc->dc.current_position.y = y;
+    return TRUE;
+}
+
+BOOL LineTo(HDC device_context, int x, int y) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    if (dc == NULL) return FALSE;
+    const POINT start = dc->dc.current_position;
+    dc->dc.current_position.x = x;
+    dc->dc.current_position.y = y;
+    if (bitmap == NULL) return TRUE;
+
+    const int dx = x - start.x;
+    const int dy = y - start.y;
+    const int steps = max_int(abs(dx), abs(dy));
+    if (steps == 0) return TRUE;
+    const COLORREF color = pen_color(dc);
+    int step;
+    for (step = 0; step < steps; ++step) {
+        const int px = start.x + (dx * step) / steps;
+        const int py = start.y + (dy * step) / steps;
+        put_pixel_clipped(dc, bitmap, px, py, color);
+    }
+    return TRUE;
 }
 
 COLORREF GetPixel(HDC device_context, int x, int y) {
