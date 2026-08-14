@@ -52,11 +52,11 @@ and `IsZoomed` are Word's own routines, not imports, so their high call counts a
 noise; and the shim must be a static library so Word's definitions win at link.
 
 Two things not in the way: zero SEH and zero inline assembly across the whole tree.
-The MSVC-only constructs are confined to four files, `opus_asm_resn2_sttb.cpp`
+The MSVC-only constructs are confined to three files, `opus_asm_resn2_sttb.cpp`
 (`__declspec(dllimport)`), `opus_original_startup_probe.cpp` (`<rtcapi.h>`, `wWinMain`),
-`opus_product_entry.cpp` (`wWinMain`), and `opus_win95_chrome.cpp` (`<windowsx.h>`,
-`uxtheme.dll`). Only three of those are live: `opus_product_entry.cpp` is in no CMake
-target and is never compiled, which item 7 picks up.
+and `opus_win95_chrome.cpp` (`<windowsx.h>`, `uxtheme.dll`). The dead
+`opus_product_entry.cpp` stub is gone; every file named here is compiled by a
+live target.
 
 ## What the five reference trees were worth
 

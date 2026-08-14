@@ -1,5 +1,23 @@
 # DONE
 
+## Remove dead product entry stub
+
+`src/port/original/opus_product_entry.cpp` is gone. It carried an obsolete
+message-box `wWinMain` path, was not referenced by any CMake target, and had
+already been superseded by the live `opus_original_startup_probe.cpp` entry
+bridge.
+
+Validated with `cmake --build build-chrstride --target WORD1 -j2`,
+`ctest --test-dir build-chrstride -R '^word1_port_smoke_test$'
+--output-on-failure`, the broader `ctest --test-dir build-chrstride -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test|opus_word1_about_test|opus_word1_selection_test|opus_word1_interaction_test|opus_word1_save_as_test|opus_word1_pdf_export_test|opus_word1_font_typing_test'
+--output-on-failure` sweep, `rg -n 'opus_product_entry' src/CMakeLists.txt
+src/port/original` returning no matches, and `git diff --check`.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Convert user32 test to C11
 
 `opus_win32_user32_test` now compiles from a C11 source instead of C++20. The
