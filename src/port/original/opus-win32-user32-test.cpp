@@ -404,6 +404,12 @@ int main() {
         adjusted.bottom <= 50) {
         return 26;
     }
+    adjusted = {0, 0, 100, 50};
+    if (!AdjustWindowRect(&adjusted, WS_CAPTION | WS_BORDER, FALSE) ||
+        adjusted.left >= 0 || adjusted.top >= 0 || adjusted.right <= 100 ||
+        adjusted.bottom <= 50) {
+        return 26;
+    }
     RECT work_area{};
     if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &work_area, 0) ||
         work_area.right != 640 || work_area.bottom != 480) {
@@ -565,6 +571,11 @@ int main() {
         (GetMenuState(popup_menu, 100, MF_BYCOMMAND) & MF_CHECKED) == 0 ||
         (GetMenuState(popup_menu, 111, MF_BYCOMMAND) & MF_CHECKED) != 0 ||
         !AppendMenuA(popup_menu, MF_SEPARATOR, 0, nullptr) ||
+        !ModifyMenuA(popup_menu, 0, MF_BYCOMMAND | MF_SEPARATOR,
+                     static_cast<UINT_PTR>(-1), nullptr) ||
+        ModifyMenuA(popup_menu, 0, MF_BYCOMMAND | MF_SEPARATOR,
+                    static_cast<UINT_PTR>(-1), nullptr) ||
+        GetMenuItemID(popup_menu, 3) != static_cast<UINT>(-1) ||
         !DeleteMenu(popup_menu, 3, MF_BYPOSITION) ||
         !RemoveMenu(popup_menu, 100, MF_BYCOMMAND) ||
         GetMenuItemCount(popup_menu) != 2 ||

@@ -96,18 +96,29 @@ int main() {
 
     if (SetBkMode(destination, TRANSPARENT) != OPAQUE ||
         SetBkMode(destination, OPAQUE) != TRANSPARENT ||
+        GetBkColor(destination) != RGB(255, 255, 255) ||
+        SetBkColor(destination, RGB(7, 8, 9)) != RGB(255, 255, 255) ||
+        GetBkColor(destination) != RGB(7, 8, 9) ||
+        GetTextColor(destination) != RGB(0, 0, 0) ||
         SetTextColor(destination, RGB(1, 2, 3)) != RGB(0, 0, 0) ||
+        GetTextColor(destination) != RGB(1, 2, 3) ||
         SetTextColor(destination, RGB(4, 5, 6)) != RGB(1, 2, 3) ||
+        SetBkColor(destination, RGB(255, 255, 255)) != RGB(7, 8, 9) ||
         SetMapMode(destination, MM_ANISOTROPIC) != MM_TEXT ||
         SetMapMode(destination, MM_TEXT) != MM_ANISOTROPIC) {
         return 16;
     }
 
     RECT text_rect{0, 0, 4, 4};
+    RECT opaque_rect{0, 0, 4, 4};
     if (!PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
         !TextOutW(destination, 0, 0, u"A", 1) ||
         !PixelIs(destination, 0, 1, RGB(4, 5, 6)) ||
         !PixelIs(destination, 2, 2, RGB(255, 255, 255)) ||
+        !SetBkColor(destination, RGB(7, 8, 9)) ||
+        !ExtTextOut(destination, 0, 0, ETO_OPAQUE, &opaque_rect, "C", 1,
+                    nullptr) ||
+        !PixelIs(destination, 3, 3, RGB(7, 8, 9)) ||
         DrawTextW(destination, u"B", -1, &text_rect, DT_SINGLELINE) <= 0) {
         return 17;
     }

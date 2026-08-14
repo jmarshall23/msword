@@ -409,8 +409,8 @@ static BOOL insert_menu_item(HMENU handle, UINT position, UINT flags,
     struct MenuItem* item = &menu->items[index];
     memset(item, 0, sizeof(*item));
     item->flags = menu_item_flags(flags);
+    item->id_or_submenu = new_item;
     if ((item->flags & MF_SEPARATOR) == 0) {
-        item->id_or_submenu = new_item;
         item->text = dup_string(text != NULL ? text : "");
         if (item->text == NULL) return FALSE;
     }
@@ -426,7 +426,7 @@ static BOOL change_menu_item(HMENU handle, UINT position, UINT flags,
     if (index >= menu->item_count) return FALSE;
     struct MenuItem* item = &menu->items[index];
     item->flags = menu_item_flags(flags);
-    item->id_or_submenu = (item->flags & MF_SEPARATOR) != 0 ? 0 : new_item;
+    item->id_or_submenu = new_item;
     item->text = dup_string((item->flags & MF_SEPARATOR) != 0 || text == NULL
                                 ? ""
                                 : text);
@@ -1810,6 +1810,10 @@ BOOL AdjustWindowRectEx(LPRECT rectangle, DWORD style, BOOL menu,
     rectangle->top -= y;
     rectangle->bottom += y;
     return TRUE;
+}
+
+BOOL AdjustWindowRect(LPRECT rectangle, DWORD style, BOOL menu) {
+    return AdjustWindowRectEx(rectangle, style, menu, 0);
 }
 
 BOOL SystemParametersInfoA(UINT action, UINT parameter, LPVOID data, UINT flags) {

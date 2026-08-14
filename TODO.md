@@ -189,13 +189,11 @@ separate process-local shim state. Replace this with an in-process scripted typi
 test that drives the same queue `PostMessage`/`GetMessage` use.
 
 Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
-quit messages before entering Microsoft's `OpusOriginalWinMain`, and the shim can
-retarget scripted messages with no explicit HWND to the active/focused window. Do not
-enable a CTest for it yet: it now gets past `FInitScreenConstants` and startup menu
-setup, then times out in the main-loop/scripted-quit path (`timeout 15 env
-OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy ./bin/WORD1 --scripted-key-test` exits 124).
-The next blocker is message-loop/scripted-quit delivery, not the old out-of-process UI
-harness.
+quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets
+scripted messages with no explicit HWND to the active/focused window, reaches the
+startup paint path, and exits cleanly under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`.
+The next small slice is promoting this manual gate into CTest coverage and then
+turning the scripted input from startup/quit into a typed-character assertion.
 
 Message ordering is where ports like this actually fail. Word assumes Windows 2/3
 delivery order around focus, capture and paint. Expect more time there than on any

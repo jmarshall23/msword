@@ -1,5 +1,16 @@
 # DONE
 
+## Advance WORD1 scripted startup paint
+
+`WORD1 --scripted-key-test` now reaches startup paint and exits cleanly under
+`OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. The shim fixes were the minimal missing
+pieces on that path: separator menu ids survive `ModifyMenu`, plain
+`GetModuleFileName` and `AdjustWindowRect` resolve to the existing shim behavior,
+and the GDI path exposes background/text colors plus ANSI/plain `TextOut` and
+`ExtTextOut`.
+
+Regression coverage landed in the existing module, user32, and GDI raster tests.
+
 ## Complete gdi32 shim tier
 
 `src/port/win32/gdi32.c` now covers the checked Win32 GDI surface used by the

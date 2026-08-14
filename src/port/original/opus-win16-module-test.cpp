@@ -23,6 +23,11 @@ int main() {
         LoadLibraryExW(OPUSW("msftedit.dll"), nullptr, 0) != nullptr) {
         return 3;
     }
+    char module_path[MAX_PATH]{};
+    if (GetModuleFileName(nullptr, module_path, sizeof(module_path)) == 0 ||
+        module_path[0] == '\0') {
+        return 8;
+    }
 
     HMODULE kernel = GetModuleHandleA("KERNEL");
     HMODULE user = GetModuleHandleA("USER");

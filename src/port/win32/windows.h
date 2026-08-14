@@ -2936,6 +2936,9 @@ DWORD FormatMessageA(DWORD flags, LPCVOID source, DWORD message_id,
                      DWORD language_id, LPSTR buffer, DWORD size,
                      LPVOID arguments);
 DWORD GetModuleFileNameA(HMODULE module, LPSTR file_name, DWORD size);
+#ifndef GetModuleFileName
+#define GetModuleFileName GetModuleFileNameA
+#endif
 UINT GetProfileIntA(LPCSTR application_name, LPCSTR key_name,
                     int default_value);
 DWORD GetProfileStringA(LPCSTR application_name, LPCSTR key_name,
@@ -3029,6 +3032,7 @@ BOOL IsChild(HWND parent, HWND window);
 HWND GetActiveWindow(void);
 BOOL AdjustWindowRectEx(LPRECT rectangle, DWORD style, BOOL menu,
                         DWORD extended_style);
+BOOL AdjustWindowRect(LPRECT rectangle, DWORD style, BOOL menu);
 BOOL GetWindowRect(HWND window, LPRECT rectangle);
 BOOL GetClientRect(HWND window, LPRECT rectangle);
 BOOL ClientToScreen(HWND window, LPPOINT point);
@@ -3378,10 +3382,19 @@ BOOL BitBlt(HDC destination, int x_destination, int y_destination, int width,
             int height, HDC source, int x_source, int y_source,
             DWORD raster_operation);
 int SetBkMode(HDC device_context, int background_mode);
+COLORREF GetBkColor(HDC device_context);
+COLORREF SetBkColor(HDC device_context, COLORREF color);
+COLORREF GetTextColor(HDC device_context);
 COLORREF SetTextColor(HDC device_context, COLORREF color);
 int DrawTextW(HDC device_context, LPCWSTR text, int count, RECT* rect,
               UINT format);
 BOOL TextOutW(HDC device_context, int x, int y, LPCWSTR text, int count);
+BOOL TextOutA(HDC device_context, int x, int y, LPCSTR text, int count);
+BOOL TextOut(HDC device_context, int x, int y, LPCSTR text, int count);
+BOOL ExtTextOutA(HDC device_context, int x, int y, UINT options,
+                 const RECT* rect, LPCSTR text, UINT count, const int* dx);
+BOOL ExtTextOut(HDC device_context, int x, int y, UINT options,
+                const RECT* rect, LPCSTR text, UINT count, const int* dx);
 int FillRect(HDC device_context, const RECT* rect, HBRUSH brush);
 int FrameRect(HDC device_context, const RECT* rect, HBRUSH brush);
 BOOL Rectangle(HDC device_context, int left, int top, int right, int bottom);

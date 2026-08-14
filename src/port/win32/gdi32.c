@@ -962,6 +962,23 @@ static int wide_text_count(LPCWSTR text, int count) {
     return length;
 }
 
+static int narrow_text_count(LPCSTR text, int count) {
+    if (count >= 0) return count;
+    int length = 0;
+    while (text[length] != 0) ++length;
+    return length;
+}
+
+static WCHAR* widen_text(LPCSTR text, int count) {
+    WCHAR* wide = (WCHAR*)calloc((size_t)count, sizeof(wide[0]));
+    if (wide == NULL) return NULL;
+    int index;
+    for (index = 0; index < count; ++index) {
+        wide[index] = (unsigned char)text[index];
+    }
+    return wide;
+}
+
 static BOOL text_extent_w(HDC device_context, LPCWSTR text, int count,
                           SIZE* size) {
     if (dc_from_handle(device_context) == NULL || text == NULL || count < 0 ||
@@ -1019,6 +1036,23 @@ static void draw_text_cell(struct GdiObject* dc, struct GdiObject* bitmap,
     }
 }
 
+static void fill_color_rect(struct GdiObject* dc, struct GdiObject* bitmap,
+                            const RECT* rect, COLORREF color) {
+    const int left = max_int(rect->left, dc->dc.clip.left);
+    const int top = max_int(rect->top, dc->dc.clip.top);
+    const int right = min_int(min_int(rect->right, dc->dc.clip.right),
+                              bitmap->bitmap.width);
+    const int bottom = min_int(min_int(rect->bottom, dc->dc.clip.bottom),
+                               bitmap->bitmap.height);
+    int py;
+    for (py = top; py < bottom; ++py) {
+        int px;
+        for (px = left; px < right; ++px) {
+            put_pixel_clipped(dc, bitmap, px, py, color);
+        }
+    }
+}
+
 BOOL TextOutW(HDC device_context, int x, int y, LPCWSTR text, int count) {
     struct GdiObject* dc = dc_from_handle(device_context);
     if (dc == NULL || text == NULL || count < 0) return FALSE;
@@ -1044,6 +1078,38 @@ BOOL TextOutW(HDC device_context, int x, int y, LPCWSTR text, int count) {
         cursor += advance;
     }
     return TRUE;
+}
+
+BOOL TextOutA(HDC device_context, int x, int y, LPCSTR text, int count) {
+    if (text == NULL) return FALSE;
+    const int length = narrow_text_count(text, count);
+    if (length == 0) return dc_from_handle(device_context) != NULL;
+    WCHAR* wide = widen_text(text, length);
+    if (wide == NULL) return FALSE;
+    const BOOL result = TextOutW(device_context, x, y, wide, length);
+    free(wide);
+    return result;
+}
+
+BOOL TextOut(HDC device_context, int x, int y, LPCSTR text, int count) {
+    return TextOutA(device_context, x, y, text, count);
+}
+
+BOOL ExtTextOutA(HDC device_context, int x, int y, UINT options,
+                 const RECT* rect, LPCSTR text, UINT count, const int* dx) {
+    (void)dx;
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL || text == NULL) return FALSE;
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    if (bitmap != NULL && (options & ETO_OPAQUE) != 0 && rect != NULL) {
+        fill_color_rect(dc, bitmap, rect, dc->dc.background_color);
+    }
+    return TextOutA(device_context, x, y, text, (int)count);
+}
+
+BOOL ExtTextOut(HDC device_context, int x, int y, UINT options,
+                const RECT* rect, LPCSTR text, UINT count, const int* dx) {
+    return ExtTextOutA(device_context, x, y, options, rect, text, count, dx);
 }
 
 int DrawTextW(HDC device_context, LPCWSTR text, int count, RECT* rect,
@@ -1288,6 +1354,24 @@ int SetBkMode(HDC device_context, int background_mode) {
     const int previous = dc->dc.background_mode;
     dc->dc.background_mode = background_mode;
     return previous;
+}
+
+COLORREF GetBkColor(HDC device_context) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    return dc != NULL ? dc->dc.background_color : CLR_INVALID;
+}
+
+COLORREF SetBkColor(HDC device_context, COLORREF color) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return CLR_INVALID;
+    const COLORREF previous = dc->dc.background_color;
+    dc->dc.background_color = color & 0x00ffffffu;
+    return previous;
+}
+
+COLORREF GetTextColor(HDC device_context) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    return dc != NULL ? dc->dc.text_color : CLR_INVALID;
 }
 
 COLORREF SetTextColor(HDC device_context, COLORREF color) {
