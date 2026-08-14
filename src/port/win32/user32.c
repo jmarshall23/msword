@@ -67,6 +67,16 @@ struct MenuObject {
     size_t item_capacity;
 };
 
+struct ClipboardFormat {
+    UINT id;
+    char* name;
+};
+
+struct ClipboardItem {
+    UINT format;
+    HANDLE data;
+};
+
 static struct RegisteredClass* g_classes;
 static size_t g_class_count;
 static size_t g_class_capacity;
@@ -94,6 +104,15 @@ static int g_cursor_show_count;
 static BOOL g_quit_posted;
 static int g_quit_code;
 static HBRUSH g_system_color_brushes[32];
+static struct ClipboardFormat* g_clipboard_formats;
+static size_t g_clipboard_format_count;
+static size_t g_clipboard_format_capacity;
+static UINT g_next_clipboard_format = 0xc000;
+static struct ClipboardItem* g_clipboard_items;
+static size_t g_clipboard_item_count;
+static size_t g_clipboard_item_capacity;
+static BOOL g_clipboard_open;
+static HWND g_clipboard_owner;
 
 static int max_int(int left, int right) {
     return left > right ? left : right;
@@ -722,6 +741,26 @@ static HBRUSH stock_brush_for_color(COLORREF color) {
     }
 }
 
+static struct ClipboardFormat* find_clipboard_format(const char* name) {
+    size_t index;
+    for (index = 0; index < g_clipboard_format_count; ++index) {
+        if (strcmp(g_clipboard_formats[index].name, name) == 0) {
+            return &g_clipboard_formats[index];
+        }
+    }
+    return NULL;
+}
+
+static struct ClipboardItem* find_clipboard_item(UINT format) {
+    size_t index;
+    for (index = 0; index < g_clipboard_item_count; ++index) {
+        if (g_clipboard_items[index].format == format) {
+            return &g_clipboard_items[index];
+        }
+    }
+    return NULL;
+}
+
 static LONG_PTR get_window_extra(const struct WindowObject* window, int index,
                                  size_t bytes) {
     if (index < 0 || (size_t)index + bytes > window->extra_size) return 0;
@@ -802,6 +841,33 @@ ATOM RegisterClassExW(const WNDCLASSEXW* window_class) {
     free(class_name);
     free(menu_name);
     return atom;
+}
+
+UINT RegisterClipboardFormatA(LPCSTR name) {
+    if (name == NULL || name[0] == '\0') {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+    struct ClipboardFormat* existing = find_clipboard_format(name);
+    if (existing != NULL) return existing->id;
+    if (!reserve_bytes((void**)&g_clipboard_formats,
+                       &g_clipboard_format_capacity,
+                       g_clipboard_format_count + 1,
+                       sizeof(g_clipboard_formats[0]))) {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return 0;
+    }
+    char* copy = dup_string(name);
+    if (copy == NULL) {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return 0;
+    }
+    struct ClipboardFormat* format =
+        &g_clipboard_formats[g_clipboard_format_count++];
+    format->id = g_next_clipboard_format++;
+    format->name = copy;
+    SetLastError(ERROR_SUCCESS);
+    return format->id;
 }
 
 HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
@@ -1148,6 +1214,72 @@ HBRUSH GetSysColorBrush(int index) {
         g_system_color_brushes[slot] = CreateSolidBrush(color);
     }
     return g_system_color_brushes[slot];
+}
+
+HWND GetClipboardOwner(void) {
+    return g_clipboard_owner;
+}
+
+BOOL OpenClipboard(HWND window) {
+    if (g_clipboard_open) {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return FALSE;
+    }
+    g_clipboard_open = TRUE;
+    g_clipboard_owner = window;
+    SetLastError(ERROR_SUCCESS);
+    return TRUE;
+}
+
+BOOL EmptyClipboard(void) {
+    if (!g_clipboard_open) {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return FALSE;
+    }
+    g_clipboard_item_count = 0;
+    SetLastError(ERROR_SUCCESS);
+    return TRUE;
+}
+
+HANDLE GetClipboardData(UINT format) {
+    struct ClipboardItem* item = find_clipboard_item(format);
+    return item != NULL ? item->data : NULL;
+}
+
+HANDLE SetClipboardData(UINT format, HANDLE memory) {
+    if (!g_clipboard_open) {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return NULL;
+    }
+    struct ClipboardItem* item = find_clipboard_item(format);
+    if (item == NULL) {
+        if (!reserve_bytes((void**)&g_clipboard_items,
+                           &g_clipboard_item_capacity,
+                           g_clipboard_item_count + 1,
+                           sizeof(g_clipboard_items[0]))) {
+            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            return NULL;
+        }
+        item = &g_clipboard_items[g_clipboard_item_count++];
+        item->format = format;
+    }
+    item->data = memory;
+    SetLastError(ERROR_SUCCESS);
+    return memory;
+}
+
+BOOL IsClipboardFormatAvailable(UINT format) {
+    return find_clipboard_item(format) != NULL;
+}
+
+BOOL CloseClipboard(void) {
+    if (!g_clipboard_open) {
+        SetLastError(ERROR_ACCESS_DENIED);
+        return FALSE;
+    }
+    g_clipboard_open = FALSE;
+    SetLastError(ERROR_SUCCESS);
+    return TRUE;
 }
 
 LONG_PTR GetWindowLongPtrA(HWND window, int index) {

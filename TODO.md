@@ -183,6 +183,10 @@ The edge drawing slice now covers `DrawEdge` for raised and sunken one-pixel bor
 sides used by the chrome. Remaining shape work includes `Polygon`, `Ellipse`, and
 UTF-16 text output.
 
+The clipboard state slice now covers process-local custom formats, open/close, owner,
+empty, availability, and handle get/set. It intentionally does not free handles when
+the clipboard is emptied because ownership varies by caller path.
+
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
 font names and diffs against output captured from the Windows build.

@@ -1,5 +1,26 @@
 # DONE
 
+## Add user32 clipboard state
+
+`src/port/win32/user32.c` now keeps a process-local clipboard registry and data
+table for `RegisterClipboardFormatA`, open/close, empty, owner lookup, availability,
+and handle get/set. The table preserves caller-provided handles and clears entries
+without freeing them.
+
+`opus-win32-user32-test` now covers registered format reuse, open-state failures,
+owner tracking, `CF_TEXT` storage, custom format storage, availability, and emptying.
+The implemented symbols were removed from `docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_user32_test -j2`,
+`ctest --test-dir build-chrstride -R 'opus_win32_user32_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep, searches proving the implemented clipboard names are gone
+from `uncovered.txt`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Add gdi32 edge drawing
 
 `src/port/win32/gdi32.c` now implements `DrawEdge` for `EDGE_RAISED` and

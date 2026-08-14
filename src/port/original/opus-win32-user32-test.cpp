@@ -1,5 +1,7 @@
 #include "windows.h"
 
+#include <cstring>
+
 #include "opusinputscript.h"
 
 namespace {
@@ -154,6 +156,43 @@ int main() {
     DeleteDC(color_dc);
     DeleteObject(color_bitmap);
 
+    const UINT custom_clipboard = RegisterClipboardFormatA("OpusCustom");
+    HANDLE clipboard_text = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, 8);
+    auto* clipboard_bytes = static_cast<char*>(GlobalLock(clipboard_text));
+    if (custom_clipboard == 0 ||
+        custom_clipboard != RegisterClipboardFormatA("OpusCustom") ||
+        SetClipboardData(CF_TEXT, clipboard_text) != nullptr ||
+        GetLastError() != ERROR_ACCESS_DENIED ||
+        clipboard_text == nullptr || clipboard_bytes == nullptr) {
+        return 12;
+    }
+    std::memcpy(clipboard_bytes, "clip", 5);
+    GlobalUnlock(clipboard_text);
+    if (!OpenClipboard(window) || GetClipboardOwner() != window ||
+        !EmptyClipboard() ||
+        IsClipboardFormatAvailable(CF_TEXT) ||
+        SetClipboardData(CF_TEXT, clipboard_text) != clipboard_text ||
+        !IsClipboardFormatAvailable(CF_TEXT) ||
+        GetClipboardData(CF_TEXT) != clipboard_text ||
+        SetClipboardData(custom_clipboard,
+                         reinterpret_cast<HANDLE>(0x1234)) !=
+            reinterpret_cast<HANDLE>(0x1234) ||
+        GetClipboardData(custom_clipboard) != reinterpret_cast<HANDLE>(0x1234) ||
+        OpenClipboard(nullptr) ||
+        GetLastError() != ERROR_ACCESS_DENIED ||
+        !CloseClipboard() ||
+        CloseClipboard() ||
+        GetLastError() != ERROR_ACCESS_DENIED ||
+        !OpenClipboard(nullptr) ||
+        GetClipboardOwner() != nullptr ||
+        !EmptyClipboard() ||
+        IsClipboardFormatAvailable(CF_TEXT) ||
+        GetClipboardData(custom_clipboard) != nullptr ||
+        !CloseClipboard()) {
+        return 13;
+    }
+    if (GlobalFree(clipboard_text) != nullptr) return 14;
+
     HWND child = CreateWindowExA(0, "STATIC", "child", WS_CHILD, 1, 2, 3, 4,
                                  window, nullptr, nullptr, nullptr);
     HWND popup = CreateWindowExA(0, "STATIC", "popup", WS_POPUP, 1, 2, 3, 4,
@@ -180,20 +219,20 @@ int main() {
         FindWindowA("OpusUser32Test", "wide") != window ||
         FindWindowExW(window, child, static_class, id_child_text) != id_child ||
         !MessageBeep(MB_OK)) {
-        return 12;
+        return 15;
     }
     g_enum_count = 0;
     if (!EnumChildWindows(window, CollectWindow, 0) || g_enum_count != 3 ||
         g_enum_windows[0] != child || g_enum_windows[1] != id_child ||
         g_enum_windows[2] != grandchild) {
-        return 13;
+        return 16;
     }
     g_enum_count = 0;
     if (EnumWindows(StopAfterFirstWindow, 0) || g_enum_count != 1 ||
         g_enum_windows[0] != window ||
         !EnumThreadWindows(0, CollectWindow, 0) || g_enum_count < 2 ||
         !BringWindowToTop(window) || GetActiveWindow() != window) {
-        return 14;
+        return 17;
     }
     HWND iconic = CreateWindowExA(0, "STATIC", "iconic",
                                   WS_POPUP | WS_MINIMIZE, 0, 0, 1, 1,
@@ -204,7 +243,7 @@ int main() {
     if (iconic == nullptr || zoomed == nullptr || !IsIconic(iconic) ||
         !OpenIcon(iconic) || IsIconic(iconic) || !IsWindowVisible(iconic) ||
         !IsZoomed(zoomed)) {
-        return 15;
+        return 18;
     }
 
     RECT client{};
