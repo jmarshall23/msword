@@ -41,6 +41,9 @@ HANDLE hPlaybackHook;
 HEVT FAR *lphevtHead;
 HANDLE FAR *lphrgbKeyState;
 FARPROC FAR *lplpfnPlaybackHookSave;
+typedef HANDLE (*PFNALLOCSELECTOR)(HANDLE);
+typedef VOID (*PFNPRESTOCHANGOSELECTOR)(HANDLE, HANDLE);
+typedef VOID (*PFNFREESELECTOR)(HANDLE);
 
 /* externals */
 extern BOOL fElActive;
@@ -1278,9 +1281,6 @@ OOM:
 				   segment containing PlaybackHook to code. */
 				{
 				HANDLE hKernel=GetModuleHandle(SzShared("KERNEL"));
-				typedef HANDLE (*PFNALLOCSELECTOR)(HANDLE);
-				typedef VOID (*PFNPRESTOCHANGOSELECTOR)(HANDLE, HANDLE);
-				typedef VOID (*PFNFREESELECTOR)(HANDLE);
 				PFNALLOCSELECTOR lpfnAllocSelector;
 				PFNPRESTOCHANGOSELECTOR lpfnPrestoChangoSelector;
 				PFNFREESELECTOR lpfnFreeSelector;

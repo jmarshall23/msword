@@ -1429,11 +1429,11 @@ struct GRIB *pgrib;
 		if ((lpfnGetInfo = (PFNGETINFO)GetProcAddress(hLib, MAKEINTRESOURCE(wProcInfo)))
 				!= NULL)
 			{
-            vrf.fInExternalCall = fTrue;
-            fReturn = (((*lpfnGetInfo)(wGiArg, (LPSTR)szOption, (LPSTR)&pgrib->hPref,
+			vrf.fInExternalCall = fTrue;
+			fReturn = (((*lpfnGetInfo)(wGiArg, (LPSTR)szOption, (LPSTR)&pgrib->hPref,
 					(LPSTR)&hT)) == wIdPict);
-            vrf.fInExternalCall = fFalse;
-            }
+			vrf.fInExternalCall = fFalse;
+			}
 		FreeLibrary(hLib);
 		}
 
@@ -1531,7 +1531,7 @@ HANDLE *ph; /* to return hMF */
 	PFNREADPICT lpfnReadPict;
 	struct GRFS grfs;
 	struct GRPI grpi;
-    int wRet;
+	int wRet;
 
 
 #ifdef DEBUG
@@ -1547,7 +1547,7 @@ HANDLE *ph; /* to return hMF */
 	ShrinkSwapArea();
 
 	if ((hLib = HOurLoadLibrary(pgrib->szName, NULL)) != NULL && (UINT_PTR)hLib >= 32)
-    	{
+		{
 #ifdef DEBUG
 	if (vdbs.fDumpPicInfo)
 		{
@@ -1557,18 +1557,18 @@ HANDLE *ph; /* to return hMF */
 		}
 #endif /* DEBUG */
 
-        if (FEqNcSz(*vpri.hszPrPort, szNone))
-    		hdc = CreateIC ( (LPSTR) **vpri.hszPrDriver,
-    				(LPSTR) **vpri.hszPrinter,
-    				(LPSTR) **vpri.hszPrPort, (LPSTR) NULL );
-    	else
-    		hdc = CreateDC ( (LPSTR) **vpri.hszPrDriver,
-    				(LPSTR) **vpri.hszPrinter,
-    				(LPSTR) **vpri.hszPrPort, (LPSTR) NULL );
+		if (FEqNcSz(*vpri.hszPrPort, szNone))
+			hdc = CreateIC ( (LPSTR) **vpri.hszPrDriver,
+					(LPSTR) **vpri.hszPrinter,
+					(LPSTR) **vpri.hszPrPort, (LPSTR) NULL );
+		else
+			hdc = CreateDC ( (LPSTR) **vpri.hszPrDriver,
+					(LPSTR) **vpri.hszPrinter,
+					(LPSTR) **vpri.hszPrPort, (LPSTR) NULL );
 
-	    if (hdc != NULL)
-	        LogGdiHandle(hdc, 1046);
-        }
+		if (hdc != NULL)
+			LogGdiHandle(hdc, 1046);
+		}
 #ifdef DEBUG
 	else
 		ReportSz("Graphics convertor not found/not loaded ");
@@ -1584,18 +1584,18 @@ HANDLE *ph; /* to return hMF */
 #endif /* DEBUG */
 
 	if (hLib != NULL && (UINT_PTR)hLib >= 32 && hdc != NULL &&
-        (lpfnReadPict = (PFNREADPICT)GetProcAddress(hLib, MAKEINTRESOURCE(wProcPict)))
-            != NULL)
+			(lpfnReadPict = (PFNREADPICT)GetProcAddress(hLib, MAKEINTRESOURCE(wProcPict)))
+			!= NULL)
 		{
 
 		SetBytes(&grfs, 0, sizeof(grfs));
 		CchCopySz(pgrib->szExt, grfs.szExt);
 		StToSz(st, grfs.szFullName);
 
-        vrf.fInExternalCall = fTrue;
+		vrf.fInExternalCall = fTrue;
 		wRet = (*lpfnReadPict)(hdc, (LPSTR)&grfs, (LPSTR)&grpi,
 				pgrib->hPref);
-        vrf.fInExternalCall = fFalse;
+		vrf.fInExternalCall = fFalse;
 		if (!wRet && grpi.hMF != NULL)
 			{
 			METAFILEPICT mfp;
