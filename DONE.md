@@ -1,5 +1,30 @@
 # DONE
 
+## Convert SDM runtime to C11
+
+The SDM 2.21 runtime now builds from
+`src/port/original/opus-sdm-runtime.c`. The conversion keeps the exported C ABI
+entry points for dialog lifetime, CAB/TMC state, listbox/text/value access,
+native dialog dispatch, render previews, common file dialog staging, and Win95
+save-alias handling.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, STL strings,
+vectors and maps, lambdas, `auto`, C++ casts, `std::exchange`, `std::min`,
+`std::sort`, `std::find`, `std::unique`, `nullptr`, and wide literal helpers.
+Dialog/control/list/alias ownership is now explicit C11 storage with the same
+handle keys, CAB synchronization points, callback order, native window
+ownership, and bounded file staging behavior.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-sdm-runtime.c`, the `nm` symbol check in
+`libopus_x64_runtime.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert SDM CAB adapter to C11
 
 The SDM CAB storage adapter now builds from

@@ -912,9 +912,9 @@ add_library(opus_x64_runtime STATIC
     port/original/opus_asm_sttb.c
     port/original/opus-asm-search.c
     port/original/opus-sdm-cab.c
-    port/original/opus_sdm_runtime.cpp
+    port/original/opus-sdm-runtime.c
 )
-target_compile_features(opus_x64_runtime PRIVATE c_std_11 cxx_std_20)
+target_compile_features(opus_x64_runtime PRIVATE c_std_11)
 target_compile_definitions(opus_x64_runtime PRIVATE
     WIN
     WIN23
@@ -956,6 +956,9 @@ else()
     )
 endif()
 set_source_files_properties(port/original/opus-x64-heap.c PROPERTIES
+    COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
+)
+set_source_files_properties(port/original/opus-sdm-runtime.c PROPERTIES
     COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
 )
 set_target_properties(opus_x64_runtime PROPERTIES
