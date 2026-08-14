@@ -16,6 +16,12 @@ Regression coverage landed in the existing module, user32, and GDI raster tests.
 `word1_scripted_key_test` now runs `WORD1 --scripted-key-test` through CTest with
 the same headless environment used by the manual gate.
 
+## Assert WORD1 scripted character delivery
+
+`WORD1 --scripted-key-test` now arms a one-shot user32 observer for the expected
+scripted character and returns nonzero if Word's message loop never consumes the
+matching `WM_CHAR`. The user32 test covers the observer on a shifted key path.
+
 ## Complete gdi32 shim tier
 
 `src/port/win32/gdi32.c` now covers the checked Win32 GDI surface used by the

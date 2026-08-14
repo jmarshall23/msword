@@ -476,12 +476,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                             nullptr, nullptr);
     }
     if (run_scripted_key_test) {
+        OpusUser32ExpectScriptedChar('a');
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 1);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 2);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
-    return OpusOriginalWinMain(instance, previous, command_line_ansi,
-                               show_command);
+    const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
+                                          show_command);
+    if (run_scripted_key_test && !OpusUser32ScriptedCharMatched()) return 2;
+    return result;
 }
 
 #ifndef _WIN32

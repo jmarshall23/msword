@@ -192,8 +192,11 @@ Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up an
 quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets
 scripted messages with no explicit HWND to the active/focused window, reaches the
 startup paint path, and exits cleanly under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`.
-The gate is registered as `word1_scripted_key_test`. The next small slice is
-turning scripted input from startup/quit into a typed-character assertion.
+The gate is registered as `word1_scripted_key_test` and now fails if the scripted
+key does not become the expected consumed `WM_CHAR`. The next small slice is
+feeding the scripted queue with text long enough to prove repeated character
+delivery and then replacing the out-of-process typing UI test with an in-process
+equivalent.
 
 Message ordering is where ports like this actually fail. Word assumes Windows 2/3
 delivery order around focus, capture and paint. Expect more time there than on any
