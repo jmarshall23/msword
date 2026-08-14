@@ -103,9 +103,9 @@ jmarshall23/msword --json statusCheckRollup`, then confirm that the Windows,
 macOS, and Linux jobs are attached to the PR and green.
 
 Status: PR #12 is open at `https://github.com/jmarshall23/msword/pull/12` from
-`jserv:dev` and is not a draft. As of 2026-08-14 08:07 UTC, fork CI run
-`31782393836` is green for Windows, macOS, and Linux at PR head
-`16ec02585a507893172b8fe7d1796a5390840812`, but `statusCheckRollup` on the
+`jserv:dev` and is not a draft. As of 2026-08-14 08:11 UTC, fork CI run
+`31782754896` is green for Windows, macOS, and Linux at PR head
+`848e82cf295d03ec83c1e05fbd0ac9920ccb0007`, but `statusCheckRollup` on the
 upstream PR is still empty. The remaining check is to make the upstream PR show
 the three green jobs, not just the fork-side run for the same head SHA.
 
@@ -117,54 +117,6 @@ Done when: the three jobs are green on a pull request.
 
 Execution order in this phase is 7, then 6, then 8, 9, 10, 11. The numbering is
 kept stable so citations elsewhere do not rot.
-
-## Shim dependency order
-
-The remaining shim dependency work is SDM control drawing. SDM now has the
-device-context and input-loop pieces it needs; the next local task is replacing
-the port-owned native-control choice with SDM-drawn controls.
-
-### 15. The controls decision, which is the biggest single item
-
-`opus_sdm_runtime.cpp` builds dialogs from real Win32 control classes through
-`create_native_control()` and `create_untracked_control()` helpers starting at `:814`:
-44 `"BUTTON"`, 17 `"COMBOBOX"`, 14 `"STATIC"`, 6 `"LISTBOX"`, 5 `"EDIT"`, plus
-`GetOpenFileNameA`/`GetSaveFileNameA` at `:2184`. Shimming those means five control
-classes with their full `BM_*`, `EM_*`, `LB_*` and `CB_*` protocols, focus and keyboard
-navigation, and a common file dialog: more work than gdi32 and user32 combined.
-
-It is also self-inflicted. Word 1.1a shipped SDM, which drew its own controls on Win16
-primitives. Native controls are a choice this port made, in code we own.
-
-What remains is SDM's own control drawing over the existing device context and
-input loop.
-
-Exclude `opus_win95_chrome.cpp` from non-Windows targets until the SDM path can redraw
-that chrome. It is 2882 lines of Win32 chrome with `<windowsx.h>` and `uxtheme.dll`, and
-has no cross-platform meaning as written.
-
-The two comdlg32 entries become a small SDM-drawn file browser over item 12's file APIs.
-
-Current finding: `opus_sdm_render_test` now materializes About and Save As through
-`OpusSdmRenderDialogPreview` and diffs the rendered buffers against checked-in
-PPM reference images under the headless `ui` CTest label. The live SDM path no
-longer creates native child controls for SDM-owned controls, and
-`opus_sdm_runtime.cpp` no longer calls `GetOpenFileNameA` or `GetSaveFileNameA`.
-`opus_x64_runtime_test` now proves the Open and Save As modal paths can complete
-from the SDM edit-control path without `WORD1_TEST_FILE_DIALOG_PATH`. The
-same test also drives the state-owned file and directory lists through the SDM
-host command path: Open navigates a directory list and selects a file-list
-entry, while Save As navigates the directory list before accepting the dialog.
-The remaining check is runner evidence for the full item 15 gate on Linux.
-
-Done when: a new `opus_sdm_render_test` renders the About and Save As dialogs to a
-pixel buffer and diffs against a checked-in reference image, and
-`ctest -L ui` is green headless on the Linux runner, and the Linux runner also
-passes the headless SDM file-browser test that completes Open and Save As
-through list/directory selection without native common dialogs or test-only
-environment injection.
-
----
 
 ## Targets, in order
 

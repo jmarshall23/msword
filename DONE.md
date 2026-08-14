@@ -1,5 +1,25 @@
 # DONE
 
+## Complete SDM control drawing gate
+
+The SDM controls work is complete. `opus_sdm_render_test` renders About and
+Save As through `OpusSdmRenderDialogPreview`, compares the pixel buffers to
+checked-in PPM references, and carries the headless `ui` CTest label.
+
+The live SDM file-dialog path no longer calls `GetOpenFileNameA` or
+`GetSaveFileNameA`. `opus_x64_runtime_test` covers Open and Save As without
+`WORD1_TEST_FILE_DIALOG_PATH`, including state-owned file-list and
+directory-list selection through the SDM host command path.
+
+Runner evidence: fork CI run `31782393836`, Linux job `94710793924`, built
+`WORD1`, `opus_x64_runtime_test`, and `opus_sdm_render_test`, then passed
+`ctest --test-dir out/linux-debug -L ui --output-on-failure` with 11/11 tests
+and `ctest --test-dir out/linux-debug -R '^opus_x64_runtime_test$'
+--output-on-failure` with 1/1 tests.
+
+Reviewed before moving the task: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Drive SDM file browser lists headless
 
 The SDM host command path now handles state-owned Open and Save As list commands
