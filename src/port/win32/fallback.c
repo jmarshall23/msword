@@ -119,7 +119,13 @@ int AddFontResource(LPCSTR file_name) {
 }
 
 BOOL AnyPopup(void) { return FALSE; }
-UINT GetCaretBlinkTime(void) { return 500; }
+UINT GetCaretBlinkTime(void) {
+#ifdef __EMSCRIPTEN__
+    return 0x3fffffffu;
+#else
+    return 500;
+#endif
+}
 
 BOOL CreateCaret(HWND window, HBITMAP bitmap, int width, int height) {
     (void)window;
@@ -337,7 +343,7 @@ LPSTR lstrcatA(LPSTR destination, LPCSTR source) {
     return strcat(destination, source);
 }
 
-void Yield(void) {}
+BOOL Yield(void) { return TRUE; }
 int SetSwapAreaSize(int size) { return size; }
 
 HIMC ImmGetContext(HWND window) {

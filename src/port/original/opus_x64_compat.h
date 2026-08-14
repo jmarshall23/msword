@@ -79,6 +79,25 @@ extern "C" {
 #endif
 BOOL OpusChangeMenu(HMENU menu, UINT item, const void *new_text,
 		UINT_PTR new_item, UINT flags);
+typedef struct NativeTime NativeTime;
+typedef struct NativeDate NativeDate;
+void InitApploader(void);
+HANDLE GetCodeHandle(FARPROC procedure);
+void CacheCodeSegment(HANDLE handle, WORD segment);
+void GlobalLruNewest(HANDLE handle);
+void GlobalLruOldest(HANDLE handle);
+void SetWindowColors(void);
+void OsTime(NativeTime *time);
+void OsDate(NativeDate *date);
+void FillBytePattern(unsigned char *destination, const unsigned char *pattern,
+		int pattern_count, int byte_count);
+void MoveCmds(void *syt, void *kmp, void *mud, void *bsy_sab,
+		void *bkme_sab);
+void CopyRgbLcb(const void *source, void *destination, long byte_count);
+struct STTB;
+void FreeHsttb(struct STTB **hsttb);
+void CacheParaCa(void *range);
+BOOL Yield(void);
 #ifdef __cplusplus
 }
 #endif
@@ -260,6 +279,11 @@ extern "C" {
 #endif
 extern SB sbMac;
 int FInitSegTable(SB requested_max);
+void CreateHeap(SB segment);
+void FreeSb(SB segment);
+void FreeEmmSb(SB segment);
+void EndEmm(void);
+void ResetSbCur(void);
 void OpusX64ReportSz(const char *message, const char *file, int line);
 void OpusX64ReportWin32(const char *message, DWORD error, const char *file,
 		int line);

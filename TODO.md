@@ -94,48 +94,6 @@ kept stable so citations elsewhere do not rot.
 
 ## Targets, in order
 
-### 18. WebAssembly
-
-wasm32 has 4-byte pointers. `wasm-debug` configures with Emscripten after building
-the native host tools from `macos-debug` or `linux-debug`. Reproduce the current
-compile gate with:
-
-```sh
-cmake --build out/macos-debug --target opus_mkcmd_tool opus_mkdlg_tool opus_mergeelx_tool opus_bitapp_tool opus_dibapp_tool -j2
-emcmake cmake --fresh -S src --preset wasm-debug
-cmake --build out/wasm-debug --target WORD1 -j2
-```
-
-The build now links `bin/wasm/WORD1.js` and `bin/wasm/WORD1.wasm`. `mkcmd`
-receives the target pointer width and emits wasm32 command offsets, so generated
-`bcm*` constants, `rgbcm`, menu command ids, `kOpusNativeBsyMac`, and the
-`MoveCmds` writer agree on 4-byte `OPUS_PFN` and heap handles. Keep both native
-host-tool and wasm generations covered when changing command-table layout.
-
-`node bin/wasm/WORD1.js --self-test` exits successfully. The next check is a
-browser run with SDL canvas output and Asyncify enabled where needed.
-
-Emscripten-linked artifacts now live under `build/wasm/` and `bin/wasm/`, while
-native host tools still come from `build/tools/Debug`. Keep that split intact
-before adding wasm CI.
-
-`wasm-debug` routes executable CTest entries through Node while leaving native
-CTest commands unchanged. The focused wasm CTest gate now covers
-`opus_x64_runtime_test`, `opus_win32_user32_test`, `opus_original_command_test`,
-and `word1_port_smoke_test`. Before adding wasm CI, build and run the broader
-wasm CTest set and decide which UI entries belong in Node versus browser.
-
-The blocking-loop problem is handled by the user32 queue model, and Asyncify is
-the chosen route for this item.
-Files come from MEMFS or IDBFS behind item 12's file APIs. SDL2 is the default from item
-5a because `-sUSE_SDL=2` is a first-class Emscripten port; SDL3 is only revisited if the
-probe in `docs/win32-shim/sdl.md` proves it across macOS, Linux and Emscripten before
-item 13 writes `backend_sdl.c`.
-
-Done when: WORD1 loads in a browser and renders its main window.
-
----
-
 ## Pointer-width and LP64 correctness
 
 Real defects in the current x64 build. All line numbers below were re-derived against

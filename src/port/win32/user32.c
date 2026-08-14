@@ -6,6 +6,8 @@
 #include <string.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/stack.h>
+#include <emscripten/emscripten.h>
+#include <SDL.h>
 #endif
 
 #define OPUS_WINDOW_MAGIC 0x55533232u
@@ -131,6 +133,108 @@ static int max_int(int left, int right) {
 static int min_int(int left, int right) {
     return left < right ? left : right;
 }
+
+#ifdef __EMSCRIPTEN__
+static SDL_Window* g_browser_window;
+static unsigned g_browser_present_count;
+
+static BOOL browser_has_canvas(void) {
+    return emscripten_run_script_int(
+        "typeof window !== 'undefined' && typeof document !== 'undefined'");
+}
+
+static void browser_set_metrics(unsigned present_count, unsigned window_count,
+                                unsigned visible_count, const RECT* rectangle) {
+    char script[256];
+    snprintf(script, sizeof(script),
+             "document.documentElement.dataset.word1PresentCount='%u';"
+             "document.documentElement.dataset.word1WindowCount='%u';"
+             "document.documentElement.dataset.word1VisibleWindowCount='%u';"
+             "document.documentElement.dataset.word1WindowRect='%ld,%ld,%ld,%ld'",
+             present_count, window_count, visible_count,
+             rectangle != NULL ? (long)rectangle->left : 0,
+             rectangle != NULL ? (long)rectangle->top : 0,
+             rectangle != NULL ? (long)rectangle->right : 0,
+             rectangle != NULL ? (long)rectangle->bottom : 0);
+    emscripten_run_script(script);
+}
+
+static SDL_Surface* browser_surface(void) {
+    if (!browser_has_canvas()) return NULL;
+    if (g_browser_window == NULL) {
+        if (SDL_WasInit(SDL_INIT_VIDEO) == 0 && SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) {
+            return NULL;
+        }
+        g_browser_window = SDL_CreateWindow("WORD1", SDL_WINDOWPOS_UNDEFINED,
+                                            SDL_WINDOWPOS_UNDEFINED, 960, 720,
+                                            SDL_WINDOW_SHOWN);
+        if (g_browser_window == NULL) return NULL;
+    }
+    return SDL_GetWindowSurface(g_browser_window);
+}
+
+static void fill_surface_rect(SDL_Surface* surface, int x, int y, int width,
+                              int height, Uint8 red, Uint8 green, Uint8 blue) {
+    if (surface == NULL || width <= 0 || height <= 0) return;
+    SDL_Rect rect = {x, y, width, height};
+    SDL_FillRect(surface, &rect,
+                 SDL_MapRGB(surface->format, red, green, blue));
+}
+
+static void present_browser_windows(void) {
+    SDL_Surface* surface = browser_surface();
+    if (surface == NULL) return;
+    fill_surface_rect(surface, 0, 0, surface->w, surface->h, 32, 32, 32);
+    BOOL has_visible_top_level = FALSE;
+    unsigned top_level_count = 0;
+    unsigned visible_top_level_count = 0;
+    const RECT* first_top_level_rectangle = NULL;
+    size_t index;
+    for (index = 0; index < g_window_count; ++index) {
+        struct WindowObject* window = g_windows[index];
+        if (window == NULL || window->parent != NULL) continue;
+        if (first_top_level_rectangle == NULL) {
+            first_top_level_rectangle = &window->rectangle;
+        }
+        ++top_level_count;
+        if (window->visible) {
+            has_visible_top_level = TRUE;
+            ++visible_top_level_count;
+        }
+    }
+    ++g_browser_present_count;
+    browser_set_metrics(g_browser_present_count, top_level_count,
+                        visible_top_level_count, first_top_level_rectangle);
+    for (index = 0; index < g_window_count; ++index) {
+        struct WindowObject* window = g_windows[index];
+        if (window == NULL || window->parent != NULL ||
+            (has_visible_top_level && !window->visible)) {
+            continue;
+        }
+        const int width = window->rectangle.right - window->rectangle.left;
+        const int height = window->rectangle.bottom - window->rectangle.top;
+        if (width <= 0 || height <= 0) continue;
+        fill_surface_rect(surface, window->rectangle.left, window->rectangle.top,
+                          width, height, 192, 192, 192);
+        fill_surface_rect(surface, window->rectangle.left, window->rectangle.top,
+                          width, 1, 0, 0, 0);
+        fill_surface_rect(surface, window->rectangle.left,
+                          window->rectangle.bottom - 1, width, 1, 0, 0, 0);
+        fill_surface_rect(surface, window->rectangle.left, window->rectangle.top,
+                          1, height, 0, 0, 0);
+        fill_surface_rect(surface, window->rectangle.right - 1,
+                          window->rectangle.top, 1, height, 0, 0, 0);
+        if ((window->style & WS_CAPTION) != 0) {
+            fill_surface_rect(surface, window->rectangle.left + 1,
+                              window->rectangle.top + 1, width - 2, 18, 0, 0,
+                              128);
+        }
+        break;
+    }
+}
+#else
+static void present_browser_windows(void) {}
+#endif
 
 static char* dup_string(const char* text) {
     if (text == NULL) text = "";
@@ -741,6 +845,11 @@ static void pump_block_until_message(void) {
         if (due > now) Sleep((DWORD)(due - now));
         if (pump_once()) return;
     }
+#ifdef __EMSCRIPTEN__
+    present_browser_windows();
+    emscripten_sleep(16);
+    return;
+#endif
     OutputDebugStringA("user32 GetMessage/WaitMessage needs an event backend\n");
     abort();
 }
@@ -918,6 +1027,15 @@ HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
     } else {
         klass = builtin_class(class_name);
     }
+    const BOOL child_window = (style & WS_CHILD) != 0;
+    if (!child_window) {
+        if (x == CW_USEDEFAULT) {
+            x = 0;
+            y = 0;
+        }
+        if (width == CW_USEDEFAULT || width <= 0) width = 640;
+        if (height == CW_USEDEFAULT || height <= 0) height = 480;
+    }
     struct WindowObject* window = (struct WindowObject*)calloc(1, sizeof(*window));
     if (window == NULL) return NULL;
     window->magic = OPUS_WINDOW_MAGIC;
@@ -929,8 +1047,8 @@ HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
     window->rectangle.top = y;
     window->rectangle.right = x + width;
     window->rectangle.bottom = y + height;
-    window->parent = (style & WS_CHILD) != 0 ? parent : NULL;
-    window->owner = (style & WS_CHILD) == 0 ? parent : NULL;
+    window->parent = child_window ? parent : NULL;
+    window->owner = !child_window ? parent : NULL;
     window->menu = menu;
     window->instance = instance;
     window->enabled = TRUE;
@@ -965,6 +1083,7 @@ HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
         }
         klass.procedure(handle, WM_CREATE, 0, (LPARAM)&create);
     }
+    present_browser_windows();
     return handle;
 }
 
@@ -1864,6 +1983,7 @@ BOOL ShowWindow(HWND window, int command_show) {
     } else {
         object->style &= ~(DWORD)WS_VISIBLE;
     }
+    present_browser_windows();
     return was_visible;
 }
 
@@ -2107,6 +2227,9 @@ BOOL SetWindowPos(HWND window, HWND insert_after, int x, int y, int cx, int cy,
     }
     if ((flags & SWP_SHOWWINDOW) != 0) ShowWindow(window, SW_SHOW);
     if ((flags & SWP_HIDEWINDOW) != 0) ShowWindow(window, SW_HIDE);
+    if ((flags & (SWP_SHOWWINDOW | SWP_HIDEWINDOW)) == 0) {
+        present_browser_windows();
+    }
     return TRUE;
 }
 
@@ -2185,6 +2308,7 @@ int GetWindowTextW(HWND window, LPWSTR text, int max_count) {
 }
 
 BOOL UpdateWindow(HWND window) {
+    if (IsWindow(window)) present_browser_windows();
     return IsWindow(window);
 }
 

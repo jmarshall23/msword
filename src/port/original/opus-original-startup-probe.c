@@ -885,6 +885,10 @@ static LONG WINAPI ObserveVectoredException(EXCEPTION_POINTERS *exception) {
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                     PWSTR command_line, int show_command) {
+#ifdef __EMSCRIPTEN__
+    extern long dtickCaret;
+    dtickCaret = 0x3fffffffL;
+#endif
     const LPCWSTR self_test = OPUSW("--self-test");
     const LPCWSTR scripted_ui_test = OPUSW("--scripted-ui-test");
     const LPCWSTR scripted_key_test = OPUSW("--scripted-key-test");

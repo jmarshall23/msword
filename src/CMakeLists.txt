@@ -25,7 +25,16 @@ set(MSWORD_TARGET_BIN_ROOT "${MSWORD_BIN_ROOT}")
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(MSWORD_TARGET_BUILD_ROOT "${MSWORD_BUILD_ROOT}/wasm")
     set(MSWORD_TARGET_BIN_ROOT "${MSWORD_BIN_ROOT}/wasm")
+    add_compile_options(-sUSE_SDL=2)
     add_link_options(-sSTACK_SIZE=1048576)
+    add_link_options(-sASYNCIFY)
+    add_link_options(-sASYNCIFY_IGNORE_INDIRECT=1)
+    add_link_options(-sUSE_SDL=2)
+    configure_file(
+        port/wasm/word1.html
+        "${MSWORD_TARGET_BIN_ROOT}/WORD1.html"
+        COPYONLY
+    )
 endif()
 # Reserved for the executable that will be linked from the original Opus
 # source graph. The migration bootstrap must not use this product name.

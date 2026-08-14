@@ -14,6 +14,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -1516,7 +1519,13 @@ ULONGLONG GetTickCount64(void) {
 
 DWORD GetTickCount(void) { return (DWORD)GetTickCount64(); }
 
-VOID Sleep(DWORD milliseconds) { usleep(milliseconds * 1000u); }
+VOID Sleep(DWORD milliseconds) {
+#ifdef __EMSCRIPTEN__
+    emscripten_sleep(milliseconds);
+#else
+    usleep(milliseconds * 1000u);
+#endif
+}
 
 BOOL FileTimeToLocalFileTime(const FILETIME* file_time, FILETIME* local_file_time) {
     if (file_time == NULL || local_file_time == NULL) return FALSE;

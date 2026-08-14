@@ -1,5 +1,31 @@
 # DONE
 
+## WebAssembly
+
+`wasm-debug` now builds `bin/wasm/WORD1.js`, `bin/wasm/WORD1.wasm`, and
+`bin/wasm/WORD1.html`. The HTML shell provides the Emscripten canvas, and the
+wasm build enables SDL2 and Asyncify so the original WinMain path can yield in
+the browser instead of aborting in the blocking message loop.
+
+WORD1 now loads in Chrome and renders a Win32 top-level main window through the
+minimal browser presenter in `user32.c`. The presenter normalizes
+`CW_USEDEFAULT`, reports non-visible DOM metrics for browser smoke checks, and
+draws the first visible top-level window into the SDL canvas. The no-argument
+wasm startup path stays alive for at least eight seconds under Node after the
+startup signature mismatches and idle `Yield` trap were fixed.
+
+Validated with focused wasm CTest covering `opus_x64_runtime_test`,
+`opus_win32_user32_test`, `opus_original_command_test`, and
+`word1_port_smoke_test`; `node bin/wasm/WORD1.js` stayed running for the
+eight-second startup gate; macOS focused, non-UI, and UI CTest passed; no
+C++-suffixed files remain under `src/port`; and `git diff --check` passed.
+Chrome/CDP captured the rendered main-window screenshot during diagnosis, but
+the final live Asyncify page can keep Chrome's screenshot command open, so that
+capture path remains a manual/harness issue rather than a product failure.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Confirm CI on Three Platforms
 
 PR #12 remains open at `https://github.com/jmarshall23/msword/pull/12` from

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WORD1</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #202020;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    canvas {
+      width: min(100vw, 960px);
+      height: min(100vh, 720px);
+      background: #c0c0c0;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="960" height="720"></canvas>
+  <script>
+    function setState(state) {
+      document.documentElement.dataset.word1State = state;
+    }
+    setState('loading');
+    window.Module = {
+      canvas: document.getElementById('canvas'),
+      onRuntimeInitialized: function () {
+        setState('runtime');
+      },
+      onAbort: function () {
+        setState('abort');
+      },
+      print: console.log.bind(console),
+      printErr: function (text) {
+        document.documentElement.dataset.word1Error = String(text);
+        console.error(text);
+      }
+    };
+  </script>
+  <script src="WORD1.js"></script>
+</body>
+</html>
