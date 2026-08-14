@@ -547,15 +547,6 @@ genuinely divergent files, and the Windows build is byte-identical.
 
 ## Hygiene
 
-### 26. No `.gitignore`
-
-`bin/`, `out/`, `build/`, `*.res`, generated headers. jphonorato has a usable one; drop
-his personal entries (`CLAUDE.md`, `GROK.md`, editor directories), which belong in
-`.git/info/exclude`.
-
-Done when: `git status --ignored -s` shows build outputs ignored and source files
-visible.
-
 ### 27. Do not copy jphonorato's LICENSE
 
 That fork put a top-level MIT license over a tree carrying Microsoft's copyright notices

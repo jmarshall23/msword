@@ -1,5 +1,19 @@
 # DONE
 
+## Add build-output ignore rules
+
+The repository now has a top-level `.gitignore` for build products and generated
+resource outputs: `bin/`, `build/`, `build-*`, `out/`, CMake scratch files, and
+`*.res`. It does not ignore ordinary source or documentation paths.
+
+Validated with `git status --ignored -s` and `git check-ignore -v` on disposable
+probe files under `bin/`, `build/`, `build-cmake-probe/`, `out/`, and a generated
+`.res` file. `git check-ignore -v` returned no match for a disposable ordinary source
+file, `docs/win32-shim/README.md`, or `src/port/win32/user32.c`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Add trace fallback for runtime targets
 
 `OpusX64TraceRibbon` now has one standalone fallback definition in
