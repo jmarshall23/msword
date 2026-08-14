@@ -1,6 +1,4 @@
 CloseMetaFile
-CreateDCA
-CreateICA
 CreateMetaFile
 DrawTextW
 Ellipse

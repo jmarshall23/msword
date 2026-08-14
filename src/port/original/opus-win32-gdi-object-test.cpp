@@ -12,6 +12,15 @@ int main() {
         return 2;
     }
 
+    HDC device_dc = CreateDCA("DISPLAY", nullptr, nullptr, nullptr);
+    HDC info_dc = CreateICA("DISPLAY", nullptr, nullptr, nullptr);
+    if (device_dc == nullptr || info_dc == nullptr || device_dc == info_dc ||
+        GetCurrentObject(device_dc, OBJ_BRUSH) == nullptr ||
+        GetCurrentObject(info_dc, OBJ_PEN) == nullptr ||
+        !DeleteDC(device_dc) || !DeleteDC(info_dc)) {
+        return 15;
+    }
+
     HBRUSH brush = CreateSolidBrush(RGB(10, 20, 30));
     HPEN pen = CreatePen(PS_SOLID, 2, RGB(30, 20, 10));
     LOGFONTA logical{};

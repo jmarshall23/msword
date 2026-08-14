@@ -183,6 +183,10 @@ The edge drawing slice now covers `DrawEdge` for raised and sunken one-pixel bor
 sides used by the chrome. Remaining shape work includes `Polygon`, `Ellipse`, and
 UTF-16 text output.
 
+The device context creation slice now covers `CreateDCA` and `CreateICA` by reusing
+the existing memory DC state. It does not model physical devices or metafiles; those
+stay separate from the selected-object DC behavior.
+
 The clipboard state slice now covers process-local custom formats, open/close, owner,
 empty, availability, and handle get/set. It intentionally does not free handles when
 the clipboard is emptied because ownership varies by caller path.

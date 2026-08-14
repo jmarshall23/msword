@@ -1,5 +1,24 @@
 # DONE
 
+## Add gdi32 device context creation
+
+`src/port/win32/gdi32.c` now implements `CreateDCA` and `CreateICA` as
+device-name-neutral DC creators backed by the existing compatible DC state.
+
+`opus-win32-gdi-object-test` now covers independent device and information
+contexts, default selected objects, and deletion. The implemented symbols were
+removed from `docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_gdi_object_test
+-j2`, `ctest --test-dir build-chrstride -R 'opus_win32_gdi_object_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep, searches proving `CreateDCA` and `CreateICA` are gone
+from `uncovered.txt`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Add user32 hook pass-through
 
 `src/port/win32/user32.c` now implements `CallNextHookEx` as a no-chain

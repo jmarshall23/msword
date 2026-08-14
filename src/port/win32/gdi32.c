@@ -682,6 +682,24 @@ HDC CreateCompatibleDC(HDC device_context) {
     return (HDC)object;
 }
 
+HDC CreateDCA(LPCSTR driver, LPCSTR device, LPCSTR output,
+              LPCVOID init_data) {
+    (void)driver;
+    (void)device;
+    (void)output;
+    (void)init_data;
+    return CreateCompatibleDC(NULL);
+}
+
+HDC CreateICA(LPCSTR driver, LPCSTR device, LPCSTR output,
+              LPCVOID init_data) {
+    (void)driver;
+    (void)device;
+    (void)output;
+    (void)init_data;
+    return CreateCompatibleDC(NULL);
+}
+
 BOOL DeleteDC(HDC device_context) {
     BOOL result = FALSE;
     lock_gdi();
