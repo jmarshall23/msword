@@ -139,6 +139,20 @@ int main() {
         GetSysColor(COLOR_BTNFACE) != RGB(192, 192, 192)) {
         return 10;
     }
+    HDC color_dc = CreateCompatibleDC(nullptr);
+    HBITMAP color_bitmap = CreateCompatibleBitmap(color_dc, 2, 2);
+    RECT color_rect{0, 0, 2, 2};
+    if (color_dc == nullptr || color_bitmap == nullptr ||
+        SelectObject(color_dc, color_bitmap) != nullptr ||
+        GetSysColorBrush(COLOR_MENU) == nullptr ||
+        GetSysColorBrush(COLOR_MENU) != GetSysColorBrush(COLOR_MENU) ||
+        FillRect(color_dc, &color_rect, GetSysColorBrush(COLOR_MENU)) == 0 ||
+        GetPixel(color_dc, 1, 1) != GetSysColor(COLOR_MENU) ||
+        DeleteObject(GetSysColorBrush(COLOR_MENU)) != FALSE) {
+        return 11;
+    }
+    DeleteDC(color_dc);
+    DeleteObject(color_bitmap);
 
     HWND child = CreateWindowExA(0, "STATIC", "child", WS_CHILD, 1, 2, 3, 4,
                                  window, nullptr, nullptr, nullptr);
@@ -166,20 +180,20 @@ int main() {
         FindWindowA("OpusUser32Test", "wide") != window ||
         FindWindowExW(window, child, static_class, id_child_text) != id_child ||
         !MessageBeep(MB_OK)) {
-        return 11;
+        return 12;
     }
     g_enum_count = 0;
     if (!EnumChildWindows(window, CollectWindow, 0) || g_enum_count != 3 ||
         g_enum_windows[0] != child || g_enum_windows[1] != id_child ||
         g_enum_windows[2] != grandchild) {
-        return 12;
+        return 13;
     }
     g_enum_count = 0;
     if (EnumWindows(StopAfterFirstWindow, 0) || g_enum_count != 1 ||
         g_enum_windows[0] != window ||
         !EnumThreadWindows(0, CollectWindow, 0) || g_enum_count < 2 ||
         !BringWindowToTop(window) || GetActiveWindow() != window) {
-        return 13;
+        return 14;
     }
     HWND iconic = CreateWindowExA(0, "STATIC", "iconic",
                                   WS_POPUP | WS_MINIMIZE, 0, 0, 1, 1,
@@ -190,7 +204,7 @@ int main() {
     if (iconic == nullptr || zoomed == nullptr || !IsIconic(iconic) ||
         !OpenIcon(iconic) || IsIconic(iconic) || !IsWindowVisible(iconic) ||
         !IsZoomed(zoomed)) {
-        return 14;
+        return 15;
     }
 
     RECT client{};

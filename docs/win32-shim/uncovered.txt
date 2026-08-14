@@ -13,7 +13,6 @@ EndPaint
 ExcludeClipRect
 GetClipboardData
 GetClipboardOwner
-GetSysColorBrush
 GetSystemMenu
 InvalidateRect
 IsClipboardFormatAvailable

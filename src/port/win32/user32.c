@@ -93,6 +93,7 @@ static POINT g_cursor_position;
 static int g_cursor_show_count;
 static BOOL g_quit_posted;
 static int g_quit_code;
+static HBRUSH g_system_color_brushes[32];
 
 static int max_int(int left, int right) {
     return left > right ? left : right;
@@ -707,6 +708,20 @@ static COLORREF system_color(int index) {
     }
 }
 
+static int system_color_brush_slot(int index) {
+    return index >= 0 && index < 31 ? index : 31;
+}
+
+static HBRUSH stock_brush_for_color(COLORREF color) {
+    switch (color & 0x00ffffffu) {
+        case RGB(0, 0, 0): return (HBRUSH)GetStockObject(BLACK_BRUSH);
+        case RGB(255, 255, 255): return (HBRUSH)GetStockObject(WHITE_BRUSH);
+        case RGB(192, 192, 192): return (HBRUSH)GetStockObject(LTGRAY_BRUSH);
+        case RGB(128, 128, 128): return (HBRUSH)GetStockObject(GRAY_BRUSH);
+        default: return NULL;
+    }
+}
+
 static LONG_PTR get_window_extra(const struct WindowObject* window, int index,
                                  size_t bytes) {
     if (index < 0 || (size_t)index + bytes > window->extra_size) return 0;
@@ -1122,6 +1137,17 @@ int GetSystemMetrics(int index) {
 
 DWORD GetSysColor(int index) {
     return system_color(index);
+}
+
+HBRUSH GetSysColorBrush(int index) {
+    const COLORREF color = system_color(index);
+    HBRUSH stock = stock_brush_for_color(color);
+    if (stock != NULL) return stock;
+    const int slot = system_color_brush_slot(index);
+    if (g_system_color_brushes[slot] == NULL) {
+        g_system_color_brushes[slot] = CreateSolidBrush(color);
+    }
+    return g_system_color_brushes[slot];
 }
 
 LONG_PTR GetWindowLongPtrA(HWND window, int index) {
