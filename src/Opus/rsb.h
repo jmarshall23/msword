@@ -35,7 +35,11 @@ struct BMS {	/* structure giving a bitmap and its size */
 struct RSBI {
 	union {
 	struct	{
+#if defined(__GNUC__) && !defined(__clang__)
+		struct BMS rgbms[0];
+#else
 		struct BMS rgbms [];
+#endif
 		};
 	struct	{
 		struct BMS	bmsUArrow;
@@ -70,7 +74,11 @@ struct ZPP {	/* describes a drawing range of horz/vert RSB control */
 
 union GRPZPP {	/* describes all drawing ranges of horz/vert RSB control */
 		struct	{
-		struct ZPP rgzpp[];
+#if defined(__GNUC__) && !defined(__clang__)
+			struct ZPP rgzpp[0];
+#else
+			struct ZPP rgzpp[];
+#endif
 		};
 	struct	{
 		struct ZPP zppUArrow;
@@ -90,4 +98,3 @@ union GRPZPP {	/* describes all drawing ranges of horz/vert RSB control */
 
 
 #endif /* ndef RSBSONLY */
-
