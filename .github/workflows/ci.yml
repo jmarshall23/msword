@@ -50,6 +50,24 @@ jobs:
           path: build/word1-layout-proof.bin
           if-no-files-found: error
 
+      - name: Probe Windows Save As
+        continue-on-error: true
+        shell: pwsh
+        working-directory: src
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          ctest --test-dir ..\out -C Release -R '^opus_word1_open_save_roundtrip_test$' --output-on-failure
+          if (Test-Path ..\build\WORD1-port-trace.txt) {
+            Get-Content ..\build\WORD1-port-trace.txt
+          }
+
+      - name: Upload Windows Save As trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: word1-save-as-windows-trace
+          path: build/WORD1-port-trace.txt
+          if-no-files-found: ignore
+
   macos:
     runs-on: macos-latest
     steps:
