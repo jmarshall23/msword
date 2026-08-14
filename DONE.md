@@ -1,5 +1,29 @@
 # DONE
 
+## Close the toolchain-agnostic Opus cleanup
+
+The duplicate-guard audit for `src/Opus/` is now closed. The current tree has
+no live `__GNUC__` guards under `src/Opus/`, no cast-as-lvalue pointer
+assignments under `src/Opus/`, and the cited `exp.c` path is correctly
+`src/Opus/interp/exp.c`. `RTFTBL.H` only retains an unrelated MSVC-only RTF
+table guard.
+
+The remaining local cleanup was kept to the two mechanical fixes that were
+actually present: move the selector function pointer typedefs in `eldde.c` out
+of a block scope, and restore the `GRSPEC.C` graphics converter indentation to
+the file's existing tab style.
+
+Validated with `cmake --build out/macos-debug --target WORD1 -j2`, `ctest
+--test-dir out/macos-debug -R
+'^(word1_port_smoke_test|opus_original_command_test)$' --output-on-failure`,
+`SDL_VIDEODRIVER=offscreen OPUS_HEADLESS=0 /opt/homebrew/bin/timeout 3
+./bin/WORD1`, `git diff --check`, the `src/Opus` cast-as-lvalue and `__GNUC__`
+`rg` audits, the `GRSPEC.C` indentation audit, and GitHub Actions run
+`31838353272`, which passed macOS, Linux, Windows and the saved-document
+artifact check.
+
+Reviewed before commit: agy reported no blockers on the two-file source diff.
+
 ## Stabilize SDL offscreen Save As CI
 
 The SDL scripted Save As path now runs under `SDL_VIDEODRIVER=offscreen` for the

@@ -134,44 +134,4 @@ Done when: a document saved on Windows opens byte-identically on macOS and Linux
 and back, or the remaining byte deltas are documented as intentional file-format
 fields with focused tests.
 
-### 25. Write the toolchain-agnostic fixes once
-
-jphonorato guards most of his `src/Opus/` changes with
-`#if defined(__GNUC__) && !defined(_MSC_VER)` and keeps the old text in the `#else`. For
-the genuinely divergent cases, FARPROC prototypes in `CLIPBRD2.C`, `GRSPEC.C` and
-`eldde.c`, and the packing in `exp.c`, that is right. For the rest it is twice the code
-for nothing.
-
-Cite these as classes, not single lines, since they recur:
-
-- Cast-as-lvalue pointer assignments. The stale 19-site list from the reference tree
-  no longer applies to this tree; the current live cleanup removed the two remaining
-  pointer increments in `debug/debugstr.c` and `debug/debuginf.c`. Keep the check
-  actionable with `rg -n "^[[:space:]]*\([^)]*\*\)[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(\+=|-=|=[^=])" src/Opus`,
-  which should return no matches.
-- Pointer subtraction between incompatible types: current cleanup made the cited
-  `elcore.c`, `inssubs.c:652`, and `pagevw.c:1380` offsets use explicit,
-  same-typed subtraction; `elxprocs.c:89` is already same-typed in this tree.
-- K&R definitions that conflict with a prototype: current cleanup aligned the
-  active `help.h` `FDlgAbout` fallback, `src/Opus/mathapi.c` `LWholeFromNum`,
-  and the SDM parser callback declarations with their existing call signatures.
-  Locate any remaining instances by compiling, not by line number; the four
-  cited in an earlier draft were jphonorato's post-patch positions.
-- Flexible array spellings inside `PLDR`, `RSBI` and `GRPZPP` now use the
-  existing zero-length member form unconditionally, removing the last local
-  `__GNUC__` source guards from `src/Opus/`.
-
-Current checks show the cited `src/Opus/exp.c` path is now
-`src/Opus/interp/exp.c`, and no live `__GNUC__` guards remain under
-`src/Opus/`. `RTFTBL.H` still has an unrelated MSVC-only RTF table guard. Before
-editing code, re-run the searches above and compile; if they still show no
-duplicate guarded source in `src/Opus/`, move this task to done with the exact
-checks instead of inventing another cleanup.
-
-Done when: the Windows build still passes after the duplicate-guard audit, and
-the audit commands above either have no live matches or every remaining match is
-documented as a genuinely divergent ABI case.
-
----
-
 ## Hygiene
