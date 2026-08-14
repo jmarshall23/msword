@@ -1057,6 +1057,33 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
     )
 endforeach()
 
+add_executable(opus_sdm_render_test
+    port/original/opus-sdm-render-test.c
+)
+target_compile_features(opus_sdm_render_test PRIVATE c_std_11)
+target_compile_definitions(opus_sdm_render_test PRIVATE
+    WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
+)
+target_include_directories(opus_sdm_render_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+target_link_libraries(opus_sdm_render_test PRIVATE opus_x64_runtime)
+if(WIN32)
+    target_link_libraries(opus_sdm_render_test PRIVATE user32)
+endif()
+if(APPLE)
+    target_link_options(opus_sdm_render_test PRIVATE -Wl,-undefined,dynamic_lookup)
+endif()
+set_target_properties(opus_sdm_render_test PROPERTIES
+    FOLDER "Original Opus x64/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    VS_GLOBAL_VcpkgApplocalDeps "false"
+)
+foreach(config Debug Release RelWithDebInfo MinSizeRel)
+    string(TOUPPER "${config}" config_upper)
+    set_target_properties(opus_sdm_render_test PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+    )
+endforeach()
+
 add_executable(opus_original_command_test
     port/original/opus_original_command_test.c
 )
@@ -1455,6 +1482,7 @@ add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
 add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_test>)
 add_test(NAME opus_sdm_cab_test COMMAND $<TARGET_FILE:opus_sdm_cab_test>)
+add_test(NAME opus_sdm_render_test COMMAND $<TARGET_FILE:opus_sdm_render_test>)
 add_test(NAME opus_original_command_test COMMAND $<TARGET_FILE:opus_original_command_test>)
 add_test(NAME word1_port_smoke_test COMMAND $<TARGET_FILE:WORD1> --self-test)
 add_test(NAME word1_scripted_key_test COMMAND $<TARGET_FILE:WORD1> --scripted-key-test)

@@ -143,6 +143,11 @@ has no cross-platform meaning as written.
 
 The two comdlg32 entries become a small SDM-drawn file browser over item 12's file APIs.
 
+Current finding: `opus_sdm_render_test` now materializes About and Save As through
+`OpusSdmRenderDialogPreview` and verifies stable nonblank ARGB buffers. This is a
+smoke oracle only; the remaining work is replacing the hash check with checked-in
+reference image diffs once SDM draws controls and text with reviewable fidelity.
+
 Done when: a new `opus_sdm_render_test` renders the About and Save As dialogs to a
 pixel buffer and diffs against a checked-in reference image, and
 `ctest -L ui` is green headless on the Linux runner.

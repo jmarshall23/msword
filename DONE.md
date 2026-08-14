@@ -1,5 +1,28 @@
 # DONE
 
+## Seed SDM render preview test
+
+`opus_sdm_runtime.cpp` now exposes `OpusSdmRenderDialogPreview` for tests. The
+helper materializes the existing About and Save As SDM templates, draws their
+visible controls into a deterministic ARGB buffer, and skips path-looking text
+so the Save As current-directory label does not make the oracle host-dependent.
+
+`opus_sdm_render_test` is a C11 smoke oracle for those two dialogs. It verifies
+that both previews are nonblank and match stable pixel hashes. This is partial
+item 15 progress only; checked-in reference image diffs and SDM-owned control
+drawing remain in TODO.
+
+Validated with `cmake --build build-chrstride --target opus_sdm_render_test -j2`,
+`ctest --test-dir build-chrstride -R '^opus_sdm_render_test$'
+--output-on-failure`, `git diff --check`, `ctest --test-dir build-chrstride -R
+'strtbl|sttb|plc|sdm_cab|sdm_render|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test|opus_word1_about_test|opus_word1_selection_test|opus_word1_interaction_test|opus_word1_save_as_test|opus_word1_pdf_export_test|opus_word1_font_typing_test'
+--output-on-failure`, which passed 27/27, and `ctest --test-dir
+build-chrstride -N -L ui`, which still reports zero labelled UI tests.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Complete user32 tier gate
 
 The user32 shim tier now meets its declared local gate: `WORD1` builds,

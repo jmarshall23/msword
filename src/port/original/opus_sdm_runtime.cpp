@@ -1102,6 +1102,148 @@ void materialize_save_as_template(DialogState& dialog) {
     set_save_options_visible(dialog, false);
 }
 
+unsigned int preview_color(const ControlKind kind) {
+    switch (kind) {
+        case ControlKind::button:
+            return 0xffc0c0c0u;
+        case ControlKind::edit:
+            return 0xffffffffu;
+        case ControlKind::list:
+            return 0xfff8f8f8u;
+        case ControlKind::combo:
+            return 0xffe8f0f8u;
+        case ControlKind::statik:
+            return 0xfff0f0f0u;
+        case ControlKind::unknown:
+            break;
+    }
+    return 0xffd0d0d0u;
+}
+
+void preview_set_pixel(unsigned int* pixels, const int width, const int height,
+                       const int x, const int y, const unsigned int color) {
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+        return;
+    }
+    pixels[y * width + x] = color;
+}
+
+void preview_fill_rect(unsigned int* pixels, const int width, const int height,
+                       const Rec& rec, const unsigned int color) {
+    const int left = (std::max)(0, rec.x);
+    const int top = (std::max)(0, rec.y);
+    const int right = (std::min)(width, rec.x + (std::max)(1, rec.dx));
+    const int bottom = (std::min)(height, rec.y + (std::max)(1, rec.dy));
+    for (int y = top; y < bottom; ++y) {
+        for (int x = left; x < right; ++x) {
+            pixels[y * width + x] = color;
+        }
+    }
+}
+
+void preview_frame_rect(unsigned int* pixels, const int width, const int height,
+                        const Rec& rec, const unsigned int color) {
+    const int right = rec.x + (std::max)(1, rec.dx) - 1;
+    const int bottom = rec.y + (std::max)(1, rec.dy) - 1;
+    for (int x = rec.x; x <= right; ++x) {
+        preview_set_pixel(pixels, width, height, x, rec.y, color);
+        preview_set_pixel(pixels, width, height, x, bottom, color);
+    }
+    for (int y = rec.y; y <= bottom; ++y) {
+        preview_set_pixel(pixels, width, height, rec.x, y, color);
+        preview_set_pixel(pixels, width, height, right, y, color);
+    }
+}
+
+void preview_draw_text_mark(unsigned int* pixels, const int width,
+                            const int height, const Rec& rec,
+                            const std::string& text) {
+    if (text.empty()) {
+        return;
+    }
+    if (text.find('/') != std::string::npos ||
+        text.find('\\') != std::string::npos) {
+        return;
+    }
+    if (text.size() >= 2 &&
+        std::isalpha(static_cast<unsigned char>(text[0])) && text[1] == ':') {
+        return;
+    }
+    unsigned int hash = 2166136261u;
+    for (const unsigned char ch : text) {
+        if (ch == '&') {
+            continue;
+        }
+        hash ^= ch;
+        hash *= 16777619u;
+    }
+    const int y = rec.y + rec.dy / 2;
+    const int count = (std::min)(rec.dx - 2, 3 + static_cast<int>(hash % 9u));
+    for (int index = 0; index < count; ++index) {
+        const unsigned int bit = (hash >> (index % 16)) & 1u;
+        preview_set_pixel(pixels, width, height, rec.x + 1 + index, y,
+                          bit ? 0xff000000u : 0xff606060u);
+    }
+}
+
+void preview_render_control(unsigned int* pixels, const int width,
+                            const int height, const ControlState& control) {
+    if (!control.visible) {
+        return;
+    }
+    preview_fill_rect(pixels, width, height, control.rectangle,
+                      preview_color(control.kind));
+    preview_frame_rect(pixels, width, height, control.rectangle, 0xff000000u);
+    preview_draw_text_mark(pixels, width, height, control.rectangle,
+                           control.text);
+}
+
+int render_dialog_preview(const Word hid, unsigned int* pixels,
+                          const int width, const int height) {
+    if (pixels == nullptr || width <= 0 || height <= 0) {
+        return 0;
+    }
+    DialogState dialog{};
+    dialog.hid = hid;
+    dialog.modal = true;
+    dialog.window = create_dialog_host(dialog, nullptr);
+    if (dialog.window == nullptr) {
+        return 0;
+    }
+    dialog.visible = true;
+
+    materialize_save_as_template(dialog);
+    materialize_about_template(dialog);
+    if (dialog.controls.empty() && dialog.untracked_controls.empty()) {
+        DestroyWindow(dialog.window);
+        return 0;
+    }
+
+    std::fill(pixels, pixels + static_cast<std::size_t>(width) * height,
+              0xffffffffu);
+    preview_frame_rect(pixels, width, height, {0, 0, width, height},
+                       0xff000000u);
+
+    for (const auto& control : dialog.untracked_controls) {
+        preview_render_control(pixels, width, height, control);
+    }
+
+    std::vector<std::pair<Tmc, const ControlState*>> controls;
+    controls.reserve(dialog.controls.size());
+    for (const auto& entry : dialog.controls) {
+        controls.push_back({entry.first, &entry.second});
+    }
+    std::sort(controls.begin(), controls.end(),
+              [](const auto& left, const auto& right) {
+                  return left.first < right.first;
+              });
+    for (const auto& entry : controls) {
+        preview_render_control(pixels, width, height, *entry.second);
+    }
+    DestroyWindow(dialog.window);
+    return 1;
+}
+
 bool is_font_name_control(const DialogState& dialog, const Tmc tmc) {
     return (dialog.hid == kCxtRibbonIconBar && tmc == kTmcUserMin) ||
            (dialog.hid == kIddCharacter && tmc == kTmcCharacterName);
@@ -2765,6 +2907,13 @@ void GetTmcRec(Tmc tmc, Rec* rectangle) {
     const auto* state = find_control(tmc);
     *rectangle = state == nullptr ? Rec{} : state->rectangle;
 }
+
+int OpusSdmRenderDialogPreview(unsigned short hid, unsigned int* pixels,
+                               int width, int height) {
+    return render_dialog_preview(static_cast<Word>(hid), pixels, width,
+                                 height);
+}
+
 HWND HwndOfTmc(Tmc tmc) { return ensure_control_window(tmc); }
 Hdlg HdlgFromHwnd(HWND window) {
     if (window == nullptr) {
