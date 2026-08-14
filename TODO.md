@@ -94,16 +94,6 @@ kept stable so citations elsewhere do not rot.
 
 ## Targets, in order
 
-### 16. macOS
-
-arm64 and x86_64. `char` is signed by default on clang, and the engine builds with `/J`
-under MSVC precisely to keep the original compiler's unsigned default
-(`src/CMakeLists.txt:690-692`, whose comment says not to change it). The clang
-equivalent is `-funsigned-char` and it is not optional, for the engine and for the five
-host tools in item 3.
-
-Done when: WORD1 launches, shows a window, and accepts typing.
-
 ### 17. Linux
 
 jphonorato's ground truth: `ninja -k 0` reaches 0 errors across all 207 engine

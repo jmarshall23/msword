@@ -2582,3 +2582,20 @@ source, and `git diff --check`.
 Reviewed by agy and claude before implementation, but agy failed because its
 interactive TTY could not open `/dev/tty`, and claude timed out with only an
 execution-error line.
+
+## Complete macOS WORD1 target
+
+WORD1 launches on the macOS debug build, reaches the scripted UI path, exposes
+the `OpusApp` window, creates a second document, and accepts scripted typing
+into the document pane. The existing clang `-funsigned-char` coverage remains in
+the engine and host-tool build settings.
+
+Validated with `ctest --test-dir out/macos-debug -R
+'^word1_port_smoke_test$|^opus_word1_ui_test$|^opus_word1_typing_test$|^opus_word1_font_typing_test$'
+--output-on-failure`, `ctest --test-dir out/macos-debug -L ui
+--output-on-failure`, and fork CI run `31793929134` for
+`e5d6cfe91363c71f7e15c3499da2299de11a4b33`.
+
+Reviewed by agy and claude before ledger update, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line.
