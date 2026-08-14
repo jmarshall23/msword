@@ -158,6 +158,21 @@ int main() {
         return 19;
     }
 
+    HRGN region = CreateRectRgn(1, 1, 3, 3);
+    if (region == nullptr || !DeleteObject(region) ||
+        !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+        IntersectClipRect(destination, 1, 1, 3, 3) != SIMPLEREGION ||
+        !PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
+        !PixelIs(destination, 1, 1, RGB(0, 0, 0)) ||
+        !PixelIs(destination, 2, 2, RGB(0, 0, 0)) ||
+        !PixelIs(destination, 0, 0, RGB(255, 255, 255)) ||
+        !PixelIs(destination, 3, 3, RGB(255, 255, 255)) ||
+        IntersectClipRect(destination, 3, 3, 4, 4) != NULLREGION ||
+        !PatBlt(destination, 1, 1, 1, 1, WHITENESS) ||
+        !PixelIs(destination, 1, 1, RGB(0, 0, 0))) {
+        return 20;
+    }
+
     SelectObject(destination, old_brush);
     SelectObject(destination, old_pen);
     DeleteObject(green);

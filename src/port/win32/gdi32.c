@@ -19,6 +19,7 @@ enum GdiKind {
     kGdiKindBrush,
     kGdiKindPen,
     kGdiKindFont,
+    kGdiKindRegion,
 };
 
 struct BitmapData {
@@ -44,6 +45,10 @@ struct FontData {
 struct BrushData {
     COLORREF color;
     HBITMAP pattern;
+};
+
+struct RegionData {
+    RECT bounds;
 };
 
 struct DcState {
@@ -74,6 +79,7 @@ struct GdiObject {
     struct BrushData brush;
     struct PenData pen;
     struct FontData font;
+    struct RegionData region;
     struct DcState dc;
     struct DcState* saved;
     size_t saved_size;
@@ -115,6 +121,11 @@ static int min_int(int left, int right) {
 
 static LONG max_long(LONG left, LONG right) {
     return left > right ? left : right;
+}
+
+static int rect_region_type(const RECT* rect) {
+    return rect->right <= rect->left || rect->bottom <= rect->top ? NULLREGION
+                                                                 : SIMPLEREGION;
 }
 
 static void lock_gdi(void) {
@@ -384,6 +395,7 @@ static HGDIOBJ select_object(struct GdiObject* dc, struct GdiObject* object) {
         case kGdiKindBrush: slot = (HGDIOBJ*)&dc->dc.brush; break;
         case kGdiKindPen: slot = (HGDIOBJ*)&dc->dc.pen; break;
         case kGdiKindFont: slot = (HGDIOBJ*)&dc->dc.font; break;
+        case kGdiKindRegion:
         case kGdiKindDc: return NULL;
     }
     HGDIOBJ previous = *slot;
@@ -740,6 +752,16 @@ HPEN CreatePenIndirect(const LOGPEN* log_pen) {
     if (log_pen == NULL) return NULL;
     return CreatePen(log_pen->lopnStyle, log_pen->lopnWidth.x,
                      log_pen->lopnColor);
+}
+
+HRGN CreateRectRgn(int left, int top, int right, int bottom) {
+    struct GdiObject* object = alloc_gdi_object(kGdiKindRegion);
+    if (object == NULL) return NULL;
+    object->region.bounds.left = left;
+    object->region.bounds.top = top;
+    object->region.bounds.right = right;
+    object->region.bounds.bottom = bottom;
+    return (HRGN)object;
 }
 
 HFONT CreateFontIndirectW(const LOGFONTW* logical_font) {
@@ -1228,6 +1250,22 @@ COLORREF SetPixel(HDC device_context, int x, int y, COLORREF color) {
     if (bitmap == NULL) return CLR_INVALID;
     return put_pixel(&bitmap->bitmap, x, y, color) ? (color & 0x00ffffffu)
                                                    : CLR_INVALID;
+}
+
+int IntersectClipRect(HDC device_context, int left, int top, int right,
+                      int bottom) {
+    int result = ERROR;
+    lock_gdi();
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc != NULL) {
+        dc->dc.clip.left = max_int(dc->dc.clip.left, left);
+        dc->dc.clip.top = max_int(dc->dc.clip.top, top);
+        dc->dc.clip.right = min_int(dc->dc.clip.right, right);
+        dc->dc.clip.bottom = min_int(dc->dc.clip.bottom, bottom);
+        result = rect_region_type(&dc->dc.clip);
+    }
+    unlock_gdi();
+    return result;
 }
 
 BOOL PatBlt(HDC device_context, int x, int y, int width, int height,

@@ -172,6 +172,10 @@ The rectangle primitive slice now covers `FillRect`, `FrameRect`, and `Rectangle
 the selected bitmap. Remaining shape work includes region-aware clipping, `DrawEdge`,
 `Polygon`, and `Ellipse`.
 
+The rectangular clip slice now covers `CreateRectRgn` and `IntersectClipRect` for the
+existing single-rectangle DC clip. `ExcludeClipRect` still needs real region handling
+before it can model cut-outs without lying to callers.
+
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
 font names and diffs against output captured from the Windows build.

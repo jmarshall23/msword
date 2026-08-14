@@ -5,7 +5,6 @@ CloseMetaFile
 CreateDCA
 CreateICA
 CreateMetaFile
-CreateRectRgn
 DrawEdge
 DrawTextW
 Ellipse
@@ -16,7 +15,6 @@ GetClipboardData
 GetClipboardOwner
 GetSysColorBrush
 GetSystemMenu
-IntersectClipRect
 InvalidateRect
 IsClipboardFormatAvailable
 OpenClipboard
