@@ -1409,20 +1409,22 @@ if(NOT WIN32)
 endif()
 
 add_executable(opus_x64_runtime_test
-    port/original/opus_x64_runtime_test.cpp
+    port/original/opus-x64-runtime-test.c
     port/original/opus_x64_layout_test_fixture.c
 )
-target_compile_features(opus_x64_runtime_test PRIVATE cxx_std_20)
+target_compile_features(opus_x64_runtime_test PRIVATE c_std_11)
 target_compile_definitions(opus_x64_runtime_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
 target_include_directories(opus_x64_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime)
+set_source_files_properties(port/original/opus_x64_layout_test_fixture.c PROPERTIES
+    COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu89>"
+)
 if(WIN32)
     target_link_libraries(opus_x64_runtime_test PRIVATE user32 gdi32)
 else()
     target_compile_options(opus_x64_runtime_test PRIVATE
-        $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
         $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
     )

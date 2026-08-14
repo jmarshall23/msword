@@ -1,5 +1,28 @@
 # DONE
 
+## Convert x64 runtime smoke test to C11
+
+The x64 runtime smoke test now builds from
+`src/port/original/opus-x64-runtime-test.c`. The conversion keeps the existing
+coverage for heap handles, PRC tokens, string helpers, document/window lookup
+adapters, RESN arithmetic and range helpers, SDM dialog lifetimes, CAB-backed
+file dialog paths, and Win95 save-alias handling.
+
+The replacement drops C++ headers, `extern "C"`, `std::array`, `std::memcmp`,
+`std::strcmp`, `std::strstr`, `std::fopen`, `nullptr`, `auto`, `constexpr`, C++
+casts, value initialization, and the browse-tree cleanup lambda. The runtime
+test target now requests C11, while the legacy layout fixture keeps its
+source-local `gnu89` compile option for the original K&R-style headers.
+
+Validated with `cmake --build out/macos-debug --target
+opus_x64_runtime_test -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-x64-runtime-test.c`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert FILEWIN adapter to C11
 
 The FILEWIN native boundary now builds from
