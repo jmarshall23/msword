@@ -1,6 +1,5 @@
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <stdint.h>
+#include <string.h>
 
 /*
  * AMD64 entry adapters for original Microsoft C reference bodies that were
@@ -9,22 +8,20 @@
  * by-value ABI is required by the original entry points.
  */
 
-struct OpusNativeRect {
+typedef struct OpusNativeRect {
     int left;
     int top;
     int right;
     int bottom;
-};
+} OpusNativeRect;
 
-struct OpusNativeBrc {
+typedef struct OpusNativeBrc {
     int value;
-};
+} OpusNativeBrc;
 
-union OpusNativeFcid {
-    std::uint32_t value;
-};
-
-extern "C" {
+typedef union OpusNativeFcid {
+    uint32_t value;
+} OpusNativeFcid;
 
 int C_DisplayFli(int ww, void** hpldr, int idr, int dl, int yp_line);
 int C_DisplayFliCore(int ww, OpusNativeRect clip, int dxp_to_xw, int yw_line);
@@ -129,12 +126,12 @@ int C_WCompSzSrt(char* first, char* second, int case_sensitive);
 int C_WCompChCh(char first, char second);
 
 void _BLTBH(void* source, void* destination, unsigned count) {
-    std::memmove(destination, source, count);
+    memmove(destination, source, count);
 }
 
-long _UOP_LONG(int, int high, int low) {
-    return static_cast<long>((static_cast<std::uint32_t>(high) << 16u) |
-                             (static_cast<std::uint32_t>(low) & 0xffffu));
+long _UOP_LONG(int ignored, int high, int low) {
+    (void)ignored;
+    return (long)(((uint32_t)high << 16u) | ((uint32_t)low & 0xffffu));
 }
 
 int N_DisplayFli(int ww, void** hpldr, int idr, int dl, int yp_line) {
@@ -362,8 +359,7 @@ int N_XReplaceCps(int plan, void* transaction, void* replace_state) {
 }
 
 void* N_PxsInit(void* replace_states, int state_count, void* transaction) {
-    return C_PxsInit(static_cast<char*>(replace_states), state_count,
-                     transaction);
+    return C_PxsInit((char*)replace_states, state_count, transaction);
 }
 
 int N_PostTn(void* transaction, int intention, void** handle, int count) {
@@ -482,5 +478,3 @@ int N_WCompSzSrt(char* first, char* second, int case_sensitive) {
 int N_WCompChCh(char first, char second) {
     return C_WCompChCh(first, second);
 }
-
-}  // extern "C"
