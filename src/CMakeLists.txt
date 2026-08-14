@@ -930,7 +930,7 @@ if(WIN32)
     target_sources(opus_x64_runtime PRIVATE port/original/opus_modern_formats.cpp)
 else()
     target_sources(opus_x64_runtime PRIVATE
-        port/original/modernformatsstub.cpp
+        port/original/modernformatsstub.c
         port/win32/commdlg.c
         port/win32/fallback.c
         port/win32/gdi32.c

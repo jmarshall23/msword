@@ -1,5 +1,21 @@
 # DONE
 
+## Convert modern formats stub to C11
+
+The non-Windows modern-format fallback now builds from
+`src/port/original/modernformatsstub.c` instead of the former C++ source. The
+stub keeps the same C ABI exports and fallback behavior while dropping the
+anonymous namespace, `extern "C"`, C++ headers, `std::` calls, `nullptr`,
+`bool`, and `static_cast`.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Complete SDM control drawing gate
 
 The SDM controls work is complete. `opus_sdm_render_test` renders About and
