@@ -5,7 +5,6 @@ CloseMetaFile
 CreateDCA
 CreateICA
 CreateMetaFile
-DrawEdge
 DrawTextW
 Ellipse
 EmptyClipboard

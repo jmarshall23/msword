@@ -177,8 +177,11 @@ existing single-rectangle DC clip. `ExcludeClipRect` still needs real region han
 before it can model cut-outs without lying to callers.
 
 The system color brush slice now covers `GetSysColorBrush` for chrome fills that need
-an `HBRUSH` view of the existing `GetSysColor` palette. Remaining chrome drawing work
-includes `DrawEdge`, `Polygon`, `Ellipse`, and UTF-16 text output.
+an `HBRUSH` view of the existing `GetSysColor` palette.
+
+The edge drawing slice now covers `DrawEdge` for raised and sunken one-pixel border
+sides used by the chrome. Remaining shape work includes `Polygon`, `Ellipse`, and
+UTF-16 text output.
 
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup

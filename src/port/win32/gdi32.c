@@ -1208,6 +1208,44 @@ int FrameRect(HDC device_context, const RECT* rect, HBRUSH brush) {
     return FillRect(device_context, &edge, brush);
 }
 
+static BOOL fill_edge(HDC device_context, const RECT* rect, HBRUSH brush,
+                      UINT flags, UINT side) {
+    RECT edge;
+    if ((flags & side) == 0) return TRUE;
+    edge = *rect;
+    switch (side) {
+        case BF_LEFT: edge.right = edge.left + 1; break;
+        case BF_TOP: edge.bottom = edge.top + 1; break;
+        case BF_RIGHT: edge.left = edge.right - 1; break;
+        case BF_BOTTOM: edge.top = edge.bottom - 1; break;
+        default: return FALSE;
+    }
+    return FillRect(device_context, &edge, brush) != 0;
+}
+
+BOOL DrawEdge(HDC device_context, RECT* rect, UINT edge, UINT flags) {
+    if (rect == NULL) return FALSE;
+    const COLORREF light = edge == EDGE_SUNKEN ? RGB(128, 128, 128)
+                                               : RGB(255, 255, 255);
+    const COLORREF shadow = edge == EDGE_SUNKEN ? RGB(255, 255, 255)
+                                                : RGB(128, 128, 128);
+    if (edge != EDGE_RAISED && edge != EDGE_SUNKEN) return FALSE;
+    HBRUSH light_brush = CreateSolidBrush(light);
+    HBRUSH shadow_brush = CreateSolidBrush(shadow);
+    BOOL result = light_brush != NULL && shadow_brush != NULL &&
+                  fill_edge(device_context, rect, light_brush, flags,
+                            BF_LEFT) &&
+                  fill_edge(device_context, rect, light_brush, flags,
+                            BF_TOP) &&
+                  fill_edge(device_context, rect, shadow_brush, flags,
+                            BF_RIGHT) &&
+                  fill_edge(device_context, rect, shadow_brush, flags,
+                            BF_BOTTOM);
+    DeleteObject(light_brush);
+    DeleteObject(shadow_brush);
+    return result;
+}
+
 BOOL Rectangle(HDC device_context, int left, int top, int right, int bottom) {
     struct GdiObject* dc = dc_from_handle(device_context);
     if (dc == NULL) return FALSE;
