@@ -895,7 +895,7 @@ add_library(opus_x64_runtime STATIC
     port/original/opus_sdm_cab.cpp
     port/original/opus_sdm_runtime.cpp
 )
-target_compile_features(opus_x64_runtime PRIVATE cxx_std_20)
+target_compile_features(opus_x64_runtime PRIVATE c_std_11 cxx_std_20)
 target_compile_definitions(opus_x64_runtime PRIVATE
     WIN
     WIN23
@@ -917,9 +917,9 @@ else()
         port/win32/commdlg.c
         port/win32/gdi32.cpp
         port/win32/kernel32.cpp
-        port/win32/module.cpp
+        port/win32/module.c
         port/win32/objbase.c
-        port/win32/resource.cpp
+        port/win32/resource.c
         port/win32/user32.cpp
     )
     add_dependencies(opus_x64_runtime opus_generated_win32_resources)

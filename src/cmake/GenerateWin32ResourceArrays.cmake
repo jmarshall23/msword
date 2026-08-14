@@ -20,13 +20,14 @@ function(append_resource_array output_var name input)
     endif()
     set(updated "${${output_var}}")
     string(APPEND updated
-        "inline constexpr unsigned char ${name}[] = {\n${initializer}};\n"
-        "inline constexpr unsigned int ${name}_size = sizeof(${name});\n\n")
+        "OPUS_WIN32_RESOURCE_ARRAY unsigned char ${name}[] = {\n${initializer}};\n"
+        "OPUS_WIN32_RESOURCE_ARRAY unsigned int ${name}_size = sizeof(${name});\n\n")
     set(${output_var} "${updated}" PARENT_SCOPE)
 endfunction()
 
-set(content "/* THIS IS A GENERATED FILE -- DO NOT EDIT */\n#pragma once\n\n")
+set(content "/* THIS IS A GENERATED FILE -- DO NOT EDIT */\n#pragma once\n\n#ifdef __cplusplus\n#define OPUS_WIN32_RESOURCE_ARRAY inline constexpr\n#else\n#define OPUS_WIN32_RESOURCE_ARRAY static const\n#endif\n\n")
 append_resource_array(content "kOpusToolbar201Bmp" "${TOOLBAR_BMP}")
 append_resource_array(content "kOpusIcon301Ico" "${ICON_301}")
 append_resource_array(content "kOpusIcon302Ico" "${ICON_302}")
+string(APPEND content "#undef OPUS_WIN32_RESOURCE_ARRAY\n")
 file(WRITE "${OUTPUT}" "${content}")
