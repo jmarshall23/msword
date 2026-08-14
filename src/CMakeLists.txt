@@ -1184,9 +1184,9 @@ endforeach()
 
 if(NOT WIN32)
     add_executable(opus_win16_module_test
-        port/original/opus-win16-module-test.cpp
+        port/original/opus-win16-module-test.c
     )
-    target_compile_features(opus_win16_module_test PRIVATE cxx_std_20)
+    target_compile_features(opus_win16_module_test PRIVATE c_std_11)
     target_compile_definitions(opus_win16_module_test PRIVATE
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
@@ -1207,9 +1207,9 @@ endif()
 
 if(NOT WIN32)
     add_executable(opus_win32_resource_test
-        port/original/opus-win32-resource-test.cpp
+        port/original/opus-win32-resource-test.c
     )
-    target_compile_features(opus_win32_resource_test PRIVATE cxx_std_20)
+    target_compile_features(opus_win32_resource_test PRIVATE c_std_11)
     target_compile_definitions(opus_win32_resource_test PRIVATE
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
     )
