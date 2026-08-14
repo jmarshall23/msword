@@ -97,10 +97,12 @@ void CopyRgbLcb(const void *source, void *destination, long byte_count);
 struct STTB;
 void FreeHsttb(struct STTB **hsttb);
 void CacheParaCa(void *range);
+#if !defined(_WIN32)
 #ifdef Yield
 #undef Yield
 #endif
 BOOL Yield(void);
+#endif
 #ifdef __cplusplus
 }
 #endif
