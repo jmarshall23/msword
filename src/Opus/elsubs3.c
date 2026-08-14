@@ -41,7 +41,7 @@ extern PFN PfnTmcOptFromHidIag();
 BOOL vfElNumFormat;
 DPV DpvDttmFromTmcSz();
 BOOL vfElOom;
-extern WParseDttm();
+extern WORD WParseDttm(TMM, char *, void **, WORD, TMC, WORD);
 
 #define FEditHpeli(hpeli) ((hpeli)->w == 0xffff)
 #define ImeiFromEditHpeli(hpeli) (LOWORD((hpeli)->l))

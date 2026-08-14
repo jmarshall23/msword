@@ -998,9 +998,7 @@ int cDigBlw;
 */
 
 /* %%Function:LWholeFromNum  %%Owner:bryanl */
-LONG LWholeFromNum (pnum, fTruncate)
-NUM *pnum;
-BOOL fTruncate;
+LONG LWholeFromNum(NUM *pnum, BOOL fTruncate)
 {
 	long	  l, lPrev;
 	CHAR	 *rgch, *pch;

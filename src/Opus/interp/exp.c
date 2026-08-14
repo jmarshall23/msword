@@ -18,8 +18,8 @@
 #include "_exp.h"
 
 
-extern WORD WParseDttm();
-LONG LWholeFromNum();
+extern WORD WParseDttm(TMM, char *, void **, WORD, TMC, WORD);
+LONG LWholeFromNum(NUM *, BOOL);
 
 EVI EviPop(), EviTop(), EviPush();
 ELD EldExecutePproc();

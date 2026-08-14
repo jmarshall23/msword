@@ -196,26 +196,26 @@ csconst int csrghid [] =
 #define ihidViewPref		15
 
 
-extern WParseOpt();
-extern WParsePos();
-extern WParseDttm();
-extern WParseFontName();
-extern WParseFontSize();
-extern WParseHpsQps();
-extern WParseToc();
-extern WParseStyleNameSize();
+extern WORD WParseOpt(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParsePos(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParseDttm(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParseFontName(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParseFontSize(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParseHpsQps(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParseToc(TMM, char *, void **, WORD, TMC, WORD);
+extern WORD WParseStyleNameSize(TMM, char *, void **, WORD, TMC, WORD);
 
 
 csconst PFN csrgpfnWParse [] =
 {
-	WParseOpt,
-			WParsePos,
-			WParseDttm,
-			WParseFontName,
-			WParseFontSize,
-			WParseHpsQps,
-			WParseToc,
-			WParseStyleNameSize
+	(PFN)WParseOpt,
+			(PFN)WParsePos,
+			(PFN)WParseDttm,
+			(PFN)WParseFontName,
+			(PFN)WParseFontSize,
+			(PFN)WParseHpsQps,
+			(PFN)WParseToc,
+			(PFN)WParseStyleNameSize
 };
 
 

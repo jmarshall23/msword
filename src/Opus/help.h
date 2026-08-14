@@ -226,10 +226,7 @@ windows reopened and correctly placed, as soon as CBT is finished.    **/
 };
 
 #ifdef NOABOUT
-BOOL FDlgAbout(dlm, tmc, wNew, wOld, wParam)
-DLM dlm;
-TMC tmc;
-WORD wOld, wNew, wParam;
+BOOL FDlgAbout(DLM dlm, TMC tmc, WORD wNew, WORD wOld, WORD wParam)
 {
 	/* make ESC close the dialog, as ok does */
 	if (dlm == dlmKey)

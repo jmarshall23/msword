@@ -123,7 +123,7 @@ union RRU
 
 
 /* functions to/from NUM */
-LONG LWholeFromNum ();
+LONG LWholeFromNum(NUM *, BOOL);
 MakeNum ();
 CchSzWholeNum ();
 CchSzFractNum ();

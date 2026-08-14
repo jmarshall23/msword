@@ -142,9 +142,11 @@ Cite these as classes, not single lines, since they recur:
 - Pointer subtraction between incompatible types: current cleanup made the cited
   `elcore.c`, `inssubs.c:652`, and `pagevw.c:1380` offsets use explicit,
   same-typed subtraction; `elxprocs.c:89` is already same-typed in this tree.
-- K&R definitions that conflict with a prototype: `help.h` `FDlgAbout`, `mathapi.c`
-  `LWholeFromNum`, and the SDM parser declarations. Locate by compiling, not by line
-  number; the four cited in an earlier draft were jphonorato's post-patch positions.
+- K&R definitions that conflict with a prototype: current cleanup aligned the
+  active `help.h` `FDlgAbout` fallback, `src/Opus/mathapi.c` `LWholeFromNum`,
+  and the SDM parser callback declarations with their existing call signatures.
+  Locate any remaining instances by compiling, not by line number; the four
+  cited in an earlier draft were jphonorato's post-patch positions.
 
 While doing this, fix the formatting the guards introduced in jphonorato's tree before
 adopting: a typedef block landed inside a function body at `eldde.c:1279`, and
