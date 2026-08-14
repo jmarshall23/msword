@@ -898,7 +898,7 @@ add_library(opus_x64_runtime STATIC
     port/original/opustracestub.c
     port/original/opus_elx_dispatch.cpp
     port/original/opus_startup_diagnostics.c
-    port/original/opus_win16_platform.cpp
+    port/original/opus-win16-platform.c
     port/original/opus_x64_heap.cpp
     port/original/opus_x64_layout.c
     port/original/opus_asm_fetchn2.c

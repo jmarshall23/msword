@@ -1,5 +1,28 @@
 # DONE
 
+## Convert Win16 platform adapter to C11
+
+The Win16 platform compatibility adapter now builds from
+`src/port/original/opus-win16-platform.c`. The conversion keeps the exported C
+ABI entry points for menu changes, packed GDI coordinate helpers, clipboard
+format registration, shell execution, temp-drive lookup, legacy environment
+probing, string thunks, stack helpers, and no-op Win16 code-segment hooks.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, C++ casts,
+`nullptr`, `auto`, value initialization, `std::memmove`, and line comments, and
+keeps the target source name hyphenated for the new C file.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test opus_original_plc_test WORD1 -j2`, `ctest --test-dir
+out/macos-debug -R '^opus_original_plc_test$' --output-on-failure`, `ctest
+--test-dir out/macos-debug -R '^opus_x64_runtime_test$' --output-on-failure`,
+`ctest --test-dir out/macos-debug -L ui --output-on-failure`, the C++ surface
+grep over `src/port/original/opus-win16-platform.c`, the `nm` symbol check in
+`libopus_x64_runtime.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert RESN2 STTB adapter to C11
 
 The RESN2 STTB access adapter now builds from
