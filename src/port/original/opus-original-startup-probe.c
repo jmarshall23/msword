@@ -265,18 +265,89 @@ static bool ScriptedInteractionMatched(void) {
     return IsWindow(app) && FindWindowA("OpusSdmDialog", NULL) == NULL;
 }
 
+static bool InsertText(HWND pane, const char *text) {
+    for (; *text != 0; ++text) {
+        if (SendMessageW(pane, kWmOpusX64QuerySelection, 107,
+                         (LPARAM)(unsigned char)*text) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static uint32_t ReadLittleU32(const unsigned char *bytes) {
+    return (uint32_t)bytes[0] |
+           ((uint32_t)bytes[1] << 8) |
+           ((uint32_t)bytes[2] << 16) |
+           ((uint32_t)bytes[3] << 24);
+}
+
+static bool FileHasNativeDocHeader(const char *path) {
+    HANDLE file = CreateFileA(path, GENERIC_READ,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    unsigned char header[512];
+    DWORD read = 0;
+    size_t index;
+    bool matched;
+    if (file == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    matched = ReadFile(file, header, sizeof(header), &read, NULL) &&
+              read == sizeof(header) &&
+              ReadLittleU32(header + 0) == 0xfe37 &&
+              ReadLittleU32(header + 4) == 33 &&
+              ReadLittleU32(header + 24) == 25 &&
+              ReadLittleU32(header + 48) == 512;
+    for (index = 420; matched && index < sizeof(header); ++index) {
+        matched = header[index] == 0;
+    }
+    CloseHandle(file);
+    return matched;
+}
+
 static bool ScriptedSaveAsMatched(void) {
     const HWND app = FindWindowA("OpusApp", NULL);
+    const HWND pane = FindDocumentPane();
+    char temporary_directory[MAX_PATH] = {0};
+    char temporary_seed[MAX_PATH] = {0};
+    char doc_path[MAX_PATH + 5] = {0};
     INT_PTR stage;
-    if (app == NULL) {
+    bool matched;
+    int path_length;
+    DWORD temporary_directory_length;
+    if (app == NULL || pane == NULL) {
+        return false;
+    }
+    if (!InsertText(pane, "native save as text")) {
+        return false;
+    }
+    temporary_directory_length = GetTempPathA(
+        (DWORD)sizeof(temporary_directory), temporary_directory);
+    if (temporary_directory_length == 0 ||
+        temporary_directory_length >= (DWORD)sizeof(temporary_directory) ||
+        GetTempFileNameA(temporary_directory, "OWD", 0, temporary_seed) == 0) {
+        return false;
+    }
+    DeleteFileA(temporary_seed);
+    path_length = snprintf(doc_path, sizeof(doc_path), "%s.doc", temporary_seed);
+    if (path_length <= 0 || path_length >= (int)sizeof(doc_path)) {
+        return false;
+    }
+    DeleteFileA(doc_path);
+    if (!SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", doc_path)) {
         return false;
     }
     RemovePropW(app, OPUSW("OpusX64SaveAsStage"));
     SendMessageW(app, WM_COMMAND, kFileSaveAs, 0);
+    SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", NULL);
     stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
-    return stage == 2 && IsWindow(app) &&
-           FindWindowA("OpusSdmDialog", NULL) == NULL &&
-           FindWindowA("#32770", NULL) == NULL;
+    matched = stage == 2 && IsWindow(app) &&
+              FindWindowA("OpusSdmDialog", NULL) == NULL &&
+              FindWindowA("#32770", NULL) == NULL &&
+              FileHasNativeDocHeader(doc_path);
+    DeleteFileA(doc_path);
+    return matched;
 }
 
 static bool FileStartsWithPdfHeader(const char *path) {
@@ -357,16 +428,6 @@ static bool SelectComboText(const HWND combo, LPCWSTR text) {
                  (LPARAM)combo);
     SendMessageW(parent, WM_COMMAND, MAKEWPARAM(control_id, CBN_SELENDOK),
                  (LPARAM)combo);
-    return true;
-}
-
-static bool InsertText(HWND pane, const char *text) {
-    for (; *text != 0; ++text) {
-        if (SendMessageW(pane, kWmOpusX64QuerySelection, 107,
-                         (LPARAM)(unsigned char)*text) == 0) {
-            return false;
-        }
-    }
     return true;
 }
 
