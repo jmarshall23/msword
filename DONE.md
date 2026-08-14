@@ -1,5 +1,28 @@
 # DONE
 
+## Convert search adapter to C11
+
+The SEARCHN and WORDGREP adapter now builds from
+`src/port/original/opus-asm-search.c`. The conversion keeps the exported C ABI
+entry points for `N_CpSearchSz`, `N_CpSearchSzBackward`, `FMatchChp`,
+`FMatchPap`, `N_WCompRgchIndex`, and `wordgrep`.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, `enum class`,
+`std::vector`, the `StreamingGrep` class, C++ casts, `nullptr`, `auto`,
+`std::min`, `std::all_of`, and line comments. The streaming matcher is now a C
+struct with explicit atom/state buffers, preserving wildcard, non-space,
+repeat, ignore-case, DOS-handle read, and result-flag behavior.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-asm-search.c`, the `nm` symbol check in
+`libopus_x64_runtime.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert x64 runtime smoke test to C11
 
 The x64 runtime smoke test now builds from
