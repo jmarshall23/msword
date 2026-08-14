@@ -173,20 +173,20 @@ this is the same class of defect as item 19, a pointer squeezed through a slot t
 narrow to hold it.
 
 Headless mode belongs here, not deferred forever: `backend_sdl.c` honours
-`SDL_VIDEODRIVER=dummy` under `OPUS_HEADLESS=1`, and the input translator replays a
-scripted event list instead of SDL events. The 8 UI tests currently drive WORD1
-out of process with `SendInput` and `GetGUIThreadInfo`
-(`opus_word1_ui_test.cpp:391, 297`), which has no meaning under a self-contained shim;
-they become in-process scripted-event tests against the same harness.
+`SDL_VIDEODRIVER=dummy` under `OPUS_HEADLESS=1`, and the input translator
+replays a scripted event list instead of SDL events. The rich WORD1 UI
+harnesses now run in process under that headless path. The remaining
+UI-labelled test is the base `opus_word1_ui_test` smoke harness.
 
 Current finding: `word1_port_smoke_test` passes, and the typing, clipboard,
-Unicode, About, selection, interaction, Save As, and PDF export UI harnesses
-now run in process under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. The
-remaining item 14 UI-test work is to convert the richer font-typing test to an
-in-process scripted-event equivalent. The old interaction test's
-out-of-process caption-drag coverage is not preserved yet; add an in-process
-nonclient mouse drag gate when the shim has a scripted cursor/capture path for
-native window movement.
+Unicode, About, selection, interaction, font-typing, Save As, and PDF export
+UI harnesses now run in process under the headless scripted environment. The
+old interaction test's out-of-process caption-drag
+coverage is not preserved yet; add an in-process nonclient mouse drag gate
+when the shim has a scripted cursor/capture path for native window movement.
+The old font-typing test's screen-pixel paint assertions are not preserved
+under SDL dummy; add a headless paint-buffer oracle if line rendering regresses
+without formatter-state failures.
 
 Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
 quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets

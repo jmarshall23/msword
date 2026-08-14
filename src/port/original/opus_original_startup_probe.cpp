@@ -54,6 +54,13 @@ constexpr WPARAM kFileNew = 1813;
 constexpr WPARAM kFileSaveAs = 1897;
 constexpr WPARAM kHelpAbout = 182;
 constexpr WPARAM kExportPdf = 0x7103;
+constexpr int kComboFont = 0x7502;
+constexpr int kComboSize = 0x7503;
+
+struct ControlSearch {
+    int control_id;
+    HWND result;
+};
 
 bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
     if (text == nullptr || needle == nullptr || *needle == 0) {
@@ -91,6 +98,24 @@ HWND FindDocumentPane() {
     HWND result = nullptr;
     EnumWindows(FindDocumentPaneCallback, reinterpret_cast<LPARAM>(&result));
     return result;
+}
+
+BOOL CALLBACK FindControlByIdCallback(HWND window, LPARAM parameter);
+
+BOOL CALLBACK FindControlByIdCallback(HWND window, LPARAM parameter) {
+    auto* search = reinterpret_cast<ControlSearch*>(parameter);
+    if (IsWindowVisible(window) && GetDlgCtrlID(window) == search->control_id) {
+        search->result = window;
+        return FALSE;
+    }
+    EnumChildWindows(window, FindControlByIdCallback, parameter);
+    return search->result == nullptr;
+}
+
+HWND FindControlById(const int control_id) {
+    ControlSearch search{control_id, nullptr};
+    EnumWindows(FindControlByIdCallback, reinterpret_cast<LPARAM>(&search));
+    return search.result;
 }
 
 bool ScriptedTypingDocumentMatched() {
@@ -319,6 +344,172 @@ bool ScriptedPdfExportMatched() {
                          FileStartsWithPdfHeader(pdf_path);
     DeleteFileA(pdf_path);
     return matched;
+}
+
+bool SelectComboText(const HWND combo, LPCWSTR text) {
+    const LRESULT index = SendMessageW(
+        combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
+        reinterpret_cast<LPARAM>(text));
+    const HWND parent = GetParent(combo);
+    const int control_id = GetDlgCtrlID(combo);
+    if (index == CB_ERR || parent == nullptr ||
+        SendMessageW(combo, CB_SETCURSEL, index, 0) == CB_ERR) {
+        return false;
+    }
+    SendMessageW(parent, WM_COMMAND, MAKEWPARAM(control_id, CBN_SELCHANGE),
+                 reinterpret_cast<LPARAM>(combo));
+    SendMessageW(parent, WM_COMMAND, MAKEWPARAM(control_id, CBN_SELENDOK),
+                 reinterpret_cast<LPARAM>(combo));
+    return true;
+}
+
+bool InsertText(HWND pane, const char* text) {
+    for (; *text != 0; ++text) {
+        if (SendMessageW(pane, kWmOpusX64QuerySelection, 107,
+                         static_cast<LPARAM>(
+                             static_cast<unsigned char>(*text))) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ScriptedFontTypingMatched() {
+    const HWND pane = FindDocumentPane();
+    const HWND font_combo = FindControlById(kComboFont);
+    const HWND size_combo = FindControlById(kComboSize);
+    if (pane == nullptr || font_combo == nullptr || size_combo == nullptr) {
+        return false;
+    }
+    const LRESULT initial_ftc =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 49, 0);
+    const LRESULT initial_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 50, 0);
+    if (SendMessageW(pane, kWmOpusX64QuerySelection, 54, 195) != 195 ||
+        SendMessageW(pane, kWmOpusX64QuerySelection, 58, 0) != 4) {
+        return false;
+    }
+
+    if (!SelectComboText(font_combo, OPUSW("Courier New")) ||
+        !SelectComboText(size_combo, OPUSW("24"))) {
+        return false;
+    }
+    const LRESULT applied_ftc =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 49, 0);
+    const LRESULT applied_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 50, 0);
+    const LRESULT cp_before =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
+    if (!InsertText(pane, "fonttest")) {
+        return false;
+    }
+    const LRESULT inserted_ftc =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 51, cp_before);
+    const LRESULT inserted_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 52, cp_before);
+    const LRESULT first_height =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 55, cp_before);
+    if (applied_ftc < 0 || applied_ftc == initial_ftc ||
+        applied_hps != 48 || applied_hps == initial_hps ||
+        inserted_ftc != applied_ftc || inserted_hps != applied_hps ||
+        first_height <= 0) {
+        return false;
+    }
+
+    if (!SelectComboText(font_combo, OPUSW("Arial")) ||
+        !SelectComboText(size_combo, OPUSW("36"))) {
+        return false;
+    }
+    const LRESULT second_ftc =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 49, 0);
+    const LRESULT second_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 50, 0);
+    const LRESULT second_cp =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
+    if (!InsertText(pane, " secondfont")) {
+        return false;
+    }
+    const LRESULT second_inserted_ftc =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 51, second_cp);
+    const LRESULT second_inserted_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 52, second_cp);
+    const LRESULT first_hps_after_second =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 52, cp_before);
+    const LRESULT second_height =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 55, second_cp);
+    const LRESULT formatted_chp_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 59, second_cp);
+    const LRESULT formatted_fcid_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 60, second_cp);
+    if (second_ftc < 0 || second_ftc == applied_ftc || second_hps != 72 ||
+        second_inserted_ftc != second_ftc ||
+        second_inserted_hps != second_hps ||
+        first_hps_after_second != applied_hps ||
+        second_height <= first_height ||
+        formatted_chp_hps != 72 || formatted_fcid_hps != 72) {
+        return false;
+    }
+
+    if (!InsertText(pane, "\r") ||
+        !SelectComboText(size_combo, OPUSW("72"))) {
+        return false;
+    }
+    const LRESULT large_cp =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
+    if (!InsertText(pane, "largeline")) {
+        return false;
+    }
+    const LRESULT large_inserted_ftc =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 51, large_cp);
+    const LRESULT large_inserted_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 52, large_cp);
+    const LRESULT large_height =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 55, large_cp);
+    const LRESULT display_lines =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 30, 0);
+    const LRESULT cp_mac =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 41, 0);
+    bool fetch_bytes_match = true;
+    for (LRESULT cp = 0; cp < cp_mac; ++cp) {
+        const LRESULT raw = SendMessageW(
+            pane, kWmOpusX64QuerySelection, 69, cp);
+        const LRESULT formatted = SendMessageW(
+            pane, kWmOpusX64QuerySelection, 70, cp);
+        if (raw != formatted) {
+            fetch_bytes_match = false;
+            break;
+        }
+    }
+    const LRESULT cache_pages =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 71, 0);
+    if (large_inserted_ftc != second_ftc || large_inserted_hps != 144 ||
+        large_height <= second_height || display_lines < 2 ||
+        !fetch_bytes_match || LOWORD(cache_pages) == HIWORD(cache_pages)) {
+        return false;
+    }
+
+    if (SendMessageW(pane, kWmOpusX64QuerySelection, 80,
+                     kKcControl | 'A') == 0 ||
+        !SelectComboText(size_combo, OPUSW("48"))) {
+        return false;
+    }
+    const LRESULT selected_first =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
+    const LRESULT selected_lim =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 1, 0);
+    const LRESULT selected_first_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 52, cp_before);
+    const LRESULT selected_second_hps =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 52, second_cp);
+    const LRESULT selected_height =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 55, cp_before);
+    return selected_lim > selected_first && selected_first_hps == 96 &&
+           selected_second_hps == 96 && selected_height > second_height &&
+           SelectComboText(size_combo, OPUSW("72")) &&
+           SendMessageW(pane, kWmOpusX64QuerySelection, 52,
+                        cp_before) == 144 &&
+           SendMessageW(pane, kWmOpusX64QuerySelection, 52,
+                        second_cp) == 144;
 }
 
 void WriteCrashText(HANDLE file, const char* text) {
@@ -704,6 +895,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const LPCWSTR scripted_save_as_test = OPUSW("--scripted-save-as-test");
     const LPCWSTR scripted_pdf_export_test =
         OPUSW("--scripted-pdf-export-test");
+    const LPCWSTR scripted_font_typing_test =
+        OPUSW("--scripted-font-typing-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -735,6 +928,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_pdf_export_test =
         OpusWideContains(command_line, scripted_pdf_export_test) ||
         OpusWideContains(GetCommandLineW(), scripted_pdf_export_test);
+    const bool run_scripted_font_typing_test =
+        OpusWideContains(command_line, scripted_font_typing_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_font_typing_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -786,7 +982,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     } else if (run_scripted_unicode_test || run_scripted_about_test ||
                run_scripted_selection_test || run_scripted_interaction_test ||
-               run_scripted_save_as_test || run_scripted_pdf_export_test) {
+               run_scripted_save_as_test || run_scripted_pdf_export_test ||
+               run_scripted_font_typing_test) {
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
@@ -807,6 +1004,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
     if (run_scripted_save_as_test && !ScriptedSaveAsMatched()) return 9;
     if (run_scripted_pdf_export_test && !ScriptedPdfExportMatched()) return 10;
+    if (run_scripted_font_typing_test && !ScriptedFontTypingMatched()) {
+        return 11;
+    }
     return result;
 }
 
