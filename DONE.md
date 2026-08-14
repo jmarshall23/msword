@@ -1,5 +1,29 @@
 # DONE
 
+## Convert RESN core utilities to C11
+
+The RESN core utility adapter now builds from
+`src/port/original/opus-asm-resn-core.c`. The conversion keeps the exported C
+ABI entry points for CP min/max, signed and unsigned multiply/divide helpers,
+byte and word blitters, rectangle and interval helpers, counted-string mapping,
+document CP limits, and `CA` range constructors.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, `constexpr`,
+C++ casts, `nullptr`, `thread_local`, `std::memmove`, `std::memset`,
+`std::memcmp`, `std::strlen`, `std::memcpy`, and line comments. `StringMap`
+uses C11 `_Thread_local` storage for the same scratch-buffer lifetime, and the
+target source name is hyphenated for the new C file.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-asm-resn-core.c`, the `nm` symbol check in
+`libopus_x64_runtime.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert math-pack adapter to C11
 
 The original-engine math-pack adapter now builds from
