@@ -432,8 +432,11 @@ set_target_properties(opus_generated_win32_resources PROPERTIES
 set(OPUS_GENERATED_COMMAND_FILES
     "${OPUS_GENERATED_COMMAND_DIR}/opuscmd.h"
     "${OPUS_GENERATED_COMMAND_DIR}/IBCM.H"
+    "${OPUS_GENERATED_COMMAND_DIR}/ibcm.h"
     "${OPUS_GENERATED_COMMAND_DIR}/RGBCM.H"
+    "${OPUS_GENERATED_COMMAND_DIR}/rgbcm.h"
     "${OPUS_GENERATED_COMMAND_DIR}/OPUSCMD2.H"
+    "${OPUS_GENERATED_COMMAND_DIR}/opuscmd2.h"
     "${OPUS_GENERATED_COMMAND_DIR}/OPUSMENU.H"
     "${OPUS_GENERATED_COMMAND_DIR}/MENUHELP.TXT"
     "${OPUS_GENERATED_COMMAND_DIR}/menuhelp.h"
@@ -474,6 +477,15 @@ add_custom_command(
     COMMAND "$<TARGET_FILE:opus_mkcmd_tool>"
         -T@13 -s${OPUS_DLG_SOURCE_ARG}/ -bcabi/
         opuscmd keys menus
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${OPUS_GENERATED_COMMAND_DIR}/IBCM.H"
+        "${OPUS_GENERATED_COMMAND_DIR}/ibcm.h"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${OPUS_GENERATED_COMMAND_DIR}/RGBCM.H"
+        "${OPUS_GENERATED_COMMAND_DIR}/rgbcm.h"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${OPUS_GENERATED_COMMAND_DIR}/OPUSCMD2.H"
+        "${OPUS_GENERATED_COMMAND_DIR}/opuscmd2.h"
     COMMAND "${CMAKE_COMMAND}"
         -DINPUT=${OPUS_GENERATED_COMMAND_DIR}/MENUHELP.TXT
         -DOUTPUT=${OPUS_GENERATED_COMMAND_DIR}/menuhelp.h
