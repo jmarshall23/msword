@@ -92,22 +92,22 @@ static void TranslateRect(const OpusRect* source, OpusRect* destination,
 }
 
 void RclToRcw(void** hpldr, const OpusRect* rcl, OpusRect* rcw) {
-    const OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, -1));
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, -1));
     TranslateRect(rcl, rcw, offset.x, offset.y);
 }
 
 void RcwToRcl(void** hpldr, const OpusRect* rcw, OpusRect* rcl) {
-    const OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, -1));
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, -1));
     TranslateRect(rcw, rcl, -offset.x, -offset.y);
 }
 
 void RcwToRcp(void** hpldr, int idr, const OpusRect* rcw, OpusRect* rcp) {
-    const OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
     TranslateRect(rcw, rcp, -offset.x, -offset.y);
 }
 
 void RcpToRcw(void** hpldr, int idr, const OpusRect* rcp, OpusRect* rcw) {
-    const OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
     TranslateRect(rcp, rcw, offset.x, offset.y);
 }
 
@@ -130,7 +130,7 @@ void DrclToRcw(void** hpldr, const OpusDrc* drcl, OpusRect* rcw) {
 }
 
 void DrcpToRcl(void** hpldr, int idr, const OpusDrc* drcp, OpusRect* rcl) {
-    const OpusPoint origin = C_PtOrigin(hpldr, idr);
+    OpusPoint origin = C_PtOrigin(hpldr, idr);
     rcl->left = drcp->x + origin.x;
     rcl->top = drcp->y + origin.y;
     rcl->right = rcl->left + drcp->dx;

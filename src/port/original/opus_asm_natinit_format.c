@@ -16,12 +16,14 @@ static int MinInt(int lhs, int rhs) {
 
 void FillBytePattern(unsigned char* destination, const unsigned char* pattern,
                      const int pattern_count, int byte_count) {
+    int copied;
+
     if (destination == NULL || pattern == NULL ||
         pattern_count <= 0 || byte_count <= 0) {
         return;
     }
     while (byte_count > 0) {
-        const int copied = MinInt(pattern_count, byte_count);
+        copied = MinInt(pattern_count, byte_count);
         memcpy(destination, pattern, (size_t)copied);
         destination += copied;
         byte_count -= copied;

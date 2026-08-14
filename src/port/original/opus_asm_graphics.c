@@ -29,6 +29,12 @@ void MonoStrBltRow(void* picture, const unsigned char* source,
     unsigned int remainder = 0;
     unsigned int destination_bit = 0;
     unsigned int source_bit;
+    unsigned int repeat;
+    unsigned int color;
+    unsigned int plane;
+    unsigned char pattern;
+    unsigned char byte;
+    unsigned int bit_in_byte;
 
     if (picture == NULL || source == NULL || destination == NULL ||
         patterns == NULL) {
@@ -56,10 +62,8 @@ void MonoStrBltRow(void* picture, const unsigned char* source,
     for (source_bit = 0; source_bit < source_width &&
          destination_bit < destination_width;
          ++source_bit) {
-        unsigned int repeat = normal_repeat;
-        unsigned int color = 0;
-        unsigned int plane;
-        unsigned char pattern;
+        repeat = normal_repeat;
+        color = 0;
         remainder += repeat_delta;
         if (remainder >= source_width) {
             ++repeat;
@@ -67,15 +71,14 @@ void MonoStrBltRow(void* picture, const unsigned char* source,
         }
 
         for (plane = input_planes; plane-- > 0;) {
-            const unsigned char byte =
-                source[(size_t)plane * plane_bytes + source_bit / 8u];
+            byte = source[(size_t)plane * plane_bytes + source_bit / 8u];
             color = (color << 1u) |
                     ((byte >> (7u - (source_bit & 7u))) & 1u);
         }
 
         pattern = pattern_row[color & 0x0fu];
         while (repeat-- > 0 && destination_bit < destination_width) {
-            const unsigned int bit_in_byte = destination_bit & 7u;
+            bit_in_byte = destination_bit & 7u;
             if (((pattern >> (7u - bit_in_byte)) & 1u) != 0) {
                 destination[destination_bit / 8u] |=
                     (unsigned char)(0x80u >> bit_in_byte);

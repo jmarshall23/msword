@@ -188,10 +188,10 @@ LRESULT CALLBACK NatIconBarWndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     ARRAY_COUNT(kIconBarMessages), MouseCursorArrow);
 }
 LRESULT CALLBACK NatRulerMarkWndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    const LRESULT result = Dispatch(h, m, w, l, RulerMarkWndProc,
-                                    kRulerMarkMessages,
-                                    ARRAY_COUNT(kRulerMarkMessages),
-                                    MouseCursorArrow);
+    LRESULT result = Dispatch(h, m, w, l, RulerMarkWndProc,
+                              kRulerMarkMessages,
+                              ARRAY_COUNT(kRulerMarkMessages),
+                              MouseCursorArrow);
     if (m == WM_PAINT) {
         OpusDrawWin95HorizontalRuler(h);
     }
