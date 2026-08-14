@@ -908,7 +908,7 @@ add_library(opus_x64_runtime STATIC
     port/original/opus-asm-resn2.c
     port/original/opus_asm_resn2_access.c
     port/original/opus_asm_resn2_pl.c
-    port/original/opus_asm_resn2_sttb.cpp
+    port/original/opus-asm-resn2-sttb.c
     port/original/opus_asm_sttb.c
     port/original/opus_asm_search.cpp
     port/original/opus_sdm_cab.cpp
