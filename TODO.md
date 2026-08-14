@@ -95,7 +95,8 @@ The Windows job keeps the useful Checkout, Configure, Build and Test shape.
 macOS and Linux jobs install SDL2, configure their Ninja presets, and build the current
 non-Windows gates: `opus-sdl-probe`, the native generator tools, and the generated
 command/resource targets. The former WORD1 UI-labelled tests now run through
-headless scripted `WORD1` modes, so `ctest -L ui` is empty.
+headless scripted `WORD1` modes, while `ctest -L ui` now runs the headless
+SDM render reference-image test.
 
 Do: check PR #12's status rollup with `gh pr view 12 --repo
 jmarshall23/msword --json statusCheckRollup`, then confirm that the Windows,
