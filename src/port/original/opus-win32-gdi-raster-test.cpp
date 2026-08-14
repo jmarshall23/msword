@@ -10,7 +10,7 @@ int main() {
     HDC destination = CreateCompatibleDC(nullptr);
     HBITMAP destination_bitmap = CreateCompatibleBitmap(destination, 4, 4);
     if (destination == nullptr || destination_bitmap == nullptr ||
-        SelectObject(destination, destination_bitmap) != nullptr) {
+        SelectObject(destination, destination_bitmap) == nullptr) {
         return 1;
     }
 
@@ -46,7 +46,7 @@ int main() {
     };
     HBITMAP source_bitmap = CreateBitmap(2, 2, 1, 32, pixels.data());
     if (source == nullptr || source_bitmap == nullptr ||
-        SelectObject(source, source_bitmap) != nullptr) {
+        SelectObject(source, source_bitmap) == nullptr) {
         return 7;
     }
     if (!BitBlt(destination, 0, 0, 2, 2, source, 0, 0, SRCCOPY) ||

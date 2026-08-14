@@ -28,7 +28,9 @@ BOOL OpusChangeMenu(HMENU menu, UINT item, const void* new_text,
                     UINT_PTR new_item, UINT flags) {
     const UINT operation_flags =
         flags & ~(MF_APPEND | MF_CHANGE | MF_DELETE | MF_REMOVE);
-    const auto text = static_cast<LPCSTR>(new_text);
+    const auto text = (operation_flags & MF_BITMAP) != 0
+                          ? nullptr
+                          : static_cast<LPCSTR>(new_text);
     if ((flags & MF_APPEND) != 0) {
         return AppendMenuA(menu, operation_flags, new_item, text);
     }

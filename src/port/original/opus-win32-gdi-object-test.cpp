@@ -7,8 +7,10 @@ int main() {
     HBRUSH default_brush = static_cast<HBRUSH>(GetCurrentObject(dc, OBJ_BRUSH));
     HPEN default_pen = static_cast<HPEN>(GetCurrentObject(dc, OBJ_PEN));
     HFONT default_font = static_cast<HFONT>(GetCurrentObject(dc, OBJ_FONT));
+    HBITMAP default_bitmap =
+        static_cast<HBITMAP>(GetCurrentObject(dc, OBJ_BITMAP));
     if (default_brush == nullptr || default_pen == nullptr ||
-        default_font == nullptr) {
+        default_font == nullptr || default_bitmap == nullptr) {
         return 2;
     }
 
@@ -43,7 +45,7 @@ int main() {
     if (SelectObject(dc, brush) != default_brush ||
         SelectObject(dc, pen) != default_pen ||
         SelectObject(dc, font) != default_font ||
-        SelectObject(dc, bitmap) != nullptr) {
+        SelectObject(dc, bitmap) != default_bitmap) {
         return 4;
     }
     if (DeleteObject(brush) != FALSE) return 5;

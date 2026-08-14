@@ -154,7 +154,7 @@ int main() {
     HBITMAP color_bitmap = CreateCompatibleBitmap(color_dc, 2, 2);
     RECT color_rect{0, 0, 2, 2};
     if (color_dc == nullptr || color_bitmap == nullptr ||
-        SelectObject(color_dc, color_bitmap) != nullptr ||
+        SelectObject(color_dc, color_bitmap) == nullptr ||
         GetSysColorBrush(COLOR_MENU) == nullptr ||
         GetSysColorBrush(COLOR_MENU) != GetSysColorBrush(COLOR_MENU) ||
         FillRect(color_dc, &color_rect, GetSysColorBrush(COLOR_MENU)) == 0 ||
@@ -164,6 +164,16 @@ int main() {
     }
     DeleteDC(color_dc);
     DeleteObject(color_bitmap);
+
+    if ((VkKeyScanA('+') & 0xff) != VK_OEM_PLUS ||
+        (VkKeyScanA('+') & 0x0100) == 0 ||
+        (VkKeyScanA('-') & 0xff) != VK_OEM_MINUS ||
+        (VkKeyScanA('*') & 0xff) != '8' ||
+        (VkKeyScanA('=') & 0xff) != VK_OEM_PLUS ||
+        (VkKeyScanW('?') & 0xff) != VK_OEM_2 ||
+        VkKeyScanA('\x80') != -1) {
+        return 16;
+    }
 
     const UINT custom_clipboard = RegisterClipboardFormatA("OpusCustom");
     HANDLE clipboard_text = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, 8);
@@ -543,6 +553,9 @@ int main() {
         GetMenuItemID(popup_menu, 0) != 100 ||
         !ModifyMenuA(popup_menu, 101, MF_BYCOMMAND | MF_STRING, 111,
                      "OneOne") ||
+        GetMenuStringA(popup_menu, 0, reinterpret_cast<LPSTR>(text), 4,
+                       MF_BYPOSITION) != 3 ||
+        text[0] != 'Z' || text[2] != 'r' || text[3] != '\0' ||
         GetMenuStringW(popup_menu, 111, menu_text, 16, MF_BYCOMMAND) != 6 ||
         menu_text[0] != 'O' || menu_text[5] != 'e' ||
         CheckMenuItem(popup_menu, 111, MF_BYCOMMAND | MF_CHECKED) !=

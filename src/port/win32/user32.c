@@ -1150,12 +1150,30 @@ int GetMenuStringW(HMENU handle, UINT item_id, LPWSTR string, int max_count,
         string[0] = 0;
         return 0;
     }
-    const char* text = menu->items[index].text != NULL ? menu->items[index].text : "";
+    const char* text =
+        menu->items[index].text != NULL ? menu->items[index].text : "";
     const size_t limit = (size_t)max_count;
     const size_t count = min_int((int)strlen(text), (int)limit - 1);
     size_t i;
     for (i = 0; i < count; ++i) string[i] = (WCHAR)(unsigned char)text[i];
     string[count] = 0;
+    return (int)count;
+}
+
+int GetMenuStringA(HMENU handle, UINT item_id, LPSTR string, int max_count,
+                   UINT flags) {
+    struct MenuObject* menu = menu_from_handle(handle);
+    if (menu == NULL || string == NULL || max_count <= 0) return 0;
+    const size_t index = menu_item_index(menu, item_id, flags);
+    if (index >= menu->item_count) {
+        string[0] = '\0';
+        return 0;
+    }
+    const char* text =
+        menu->items[index].text != NULL ? menu->items[index].text : "";
+    const size_t count = (size_t)min_int((int)strlen(text), max_count - 1);
+    memcpy(string, text, count);
+    string[count] = '\0';
     return (int)count;
 }
 
@@ -2224,6 +2242,32 @@ LRESULT CallNextHookEx(HANDLE hook, int code, WPARAM wparam, LPARAM lparam) {
     (void)wparam;
     (void)lparam;
     return 0;
+}
+
+SHORT VkKeyScanA(CHAR ch) {
+    const unsigned char c = (unsigned char)ch;
+    if (c >= 'a' && c <= 'z') return (SHORT)(c - 'a' + 'A');
+    if (c >= 'A' && c <= 'Z') return (SHORT)(0x0100 | c);
+    if (c >= '0' && c <= '9') return (SHORT)c;
+    switch (c) {
+        case ' ': return VK_SPACE;
+        case '\t': return VK_TAB;
+        case '\r': return VK_RETURN;
+        case '+': return (SHORT)(0x0100 | VK_OEM_PLUS);
+        case '=': return VK_OEM_PLUS;
+        case '-': return VK_OEM_MINUS;
+        case '_': return (SHORT)(0x0100 | VK_OEM_MINUS);
+        case '*': return (SHORT)(0x0100 | '8');
+        case '?': return (SHORT)(0x0100 | VK_OEM_2);
+        case '/': return VK_OEM_2;
+        case ',': return VK_OEM_COMMA;
+        case '.': return VK_OEM_PERIOD;
+        default: return -1;
+    }
+}
+
+SHORT VkKeyScanW(WCHAR ch) {
+    return ch <= 0x7f ? VkKeyScanA((CHAR)ch) : (SHORT)-1;
 }
 
 UINT_PTR SetTimer(HWND window, UINT_PTR event, UINT elapsed, LPVOID timer_func) {

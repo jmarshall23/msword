@@ -109,6 +109,8 @@ static struct GdiObject g_black_pen;
 static struct GdiObject g_white_pen;
 static struct GdiObject g_system_font;
 static struct GdiObject g_default_gui_font;
+static struct GdiObject g_null_bitmap;
+static unsigned char g_null_bitmap_bits[4];
 
 static const struct FontFace kFontFaces[] = {
     {"Tms Rmn", ANSI_CHARSET, VARIABLE_PITCH | FF_ROMAN, FALSE},
@@ -507,6 +509,9 @@ static void init_stock_objects(void) {
     init_gdi_object(&g_white_pen, kGdiKindPen, TRUE);
     init_gdi_object(&g_system_font, kGdiKindFont, TRUE);
     init_gdi_object(&g_default_gui_font, kGdiKindFont, TRUE);
+    init_gdi_object(&g_null_bitmap, kGdiKindBitmap, TRUE);
+    g_null_bitmap.bitmap.bits = g_null_bitmap_bits;
+    g_null_bitmap.bitmap.bits_size = sizeof(g_null_bitmap_bits);
     g_white_brush.brush.color = RGB(255, 255, 255);
     g_ltgray_brush.brush.color = RGB(192, 192, 192);
     g_gray_brush.brush.color = RGB(128, 128, 128);
@@ -750,6 +755,7 @@ HDC CreateCompatibleDC(HDC device_context) {
     object->dc.brush = (HBRUSH)GetStockObject(WHITE_BRUSH);
     object->dc.pen = (HPEN)GetStockObject(BLACK_PEN);
     object->dc.font = (HFONT)GetStockObject(SYSTEM_FONT);
+    object->dc.bitmap = (HBITMAP)&g_null_bitmap;
     object->dc.clip.left = 0;
     object->dc.clip.top = 0;
     object->dc.clip.right = 640;

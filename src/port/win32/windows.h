@@ -1022,6 +1022,21 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef VK_DIVIDE
 #define VK_DIVIDE 0x6f
 #endif
+#ifndef VK_OEM_PLUS
+#define VK_OEM_PLUS 0xbb
+#endif
+#ifndef VK_OEM_COMMA
+#define VK_OEM_COMMA 0xbc
+#endif
+#ifndef VK_OEM_MINUS
+#define VK_OEM_MINUS 0xbd
+#endif
+#ifndef VK_OEM_PERIOD
+#define VK_OEM_PERIOD 0xbe
+#endif
+#ifndef VK_OEM_2
+#define VK_OEM_2 0xbf
+#endif
 #ifndef VK_F1
 #define VK_F1 0x70
 #endif
@@ -2980,8 +2995,13 @@ UINT GetMenuItemID(HMENU menu, int position);
 HMENU GetSubMenu(HMENU menu, int position);
 HMENU GetMenu(HWND window);
 int GetMenuItemCount(HMENU menu);
+int GetMenuStringA(HMENU menu, UINT item, LPSTR string, int max_count,
+                   UINT flags);
 int GetMenuStringW(HMENU menu, UINT item, LPWSTR string, int max_count,
                    UINT flags);
+#ifndef GetMenuString
+#define GetMenuString GetMenuStringA
+#endif
 BOOL SetMenuInfo(HMENU menu, const MENUINFO* menu_info);
 UINT GetMenuState(HMENU menu, UINT id, UINT flags);
 HMENU CreateMenu(void);
@@ -3117,6 +3137,11 @@ BOOL BringWindowToTop(HWND window);
 BOOL AttachThreadInput(DWORD id_attach, DWORD id_attach_to, BOOL attach);
 BOOL GetGUIThreadInfo(DWORD thread_id, PGUITHREADINFO gui);
 UINT MapVirtualKeyW(UINT code, UINT map_type);
+SHORT VkKeyScanA(CHAR ch);
+SHORT VkKeyScanW(WCHAR ch);
+#ifndef VkKeyScan
+#define VkKeyScan VkKeyScanA
+#endif
 UINT SendInput(UINT inputs, INPUT* input, int size);
 BOOL IsHungAppWindow(HWND window);
 HGDIOBJ GetStockObject(int object);
