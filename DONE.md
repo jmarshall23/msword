@@ -11,6 +11,11 @@ and the GDI path exposes background/text colors plus ANSI/plain `TextOut` and
 
 Regression coverage landed in the existing module, user32, and GDI raster tests.
 
+## Register WORD1 scripted startup gate
+
+`word1_scripted_key_test` now runs `WORD1 --scripted-key-test` through CTest with
+the same headless environment used by the manual gate.
+
 ## Complete gdi32 shim tier
 
 `src/port/win32/gdi32.c` now covers the checked Win32 GDI surface used by the

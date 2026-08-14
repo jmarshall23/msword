@@ -1484,6 +1484,11 @@ add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_tes
 add_test(NAME opus_sdm_cab_test COMMAND $<TARGET_FILE:opus_sdm_cab_test>)
 add_test(NAME opus_original_command_test COMMAND $<TARGET_FILE:opus_original_command_test>)
 add_test(NAME word1_port_smoke_test COMMAND $<TARGET_FILE:WORD1> --self-test)
+add_test(NAME word1_scripted_key_test COMMAND $<TARGET_FILE:WORD1> --scripted-key-test)
+set_tests_properties(word1_scripted_key_test PROPERTIES
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    TIMEOUT 15
+)
 add_test(NAME opus_word1_ui_test
     COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1>
 )
