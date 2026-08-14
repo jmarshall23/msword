@@ -2168,6 +2168,14 @@ BOOL PostMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     return PostMessageA(window, message, wparam, lparam);
 }
 
+LRESULT CallNextHookEx(HANDLE hook, int code, WPARAM wparam, LPARAM lparam) {
+    (void)hook;
+    (void)code;
+    (void)wparam;
+    (void)lparam;
+    return 0;
+}
+
 UINT_PTR SetTimer(HWND window, UINT_PTR event, UINT elapsed, LPVOID timer_func) {
     if (window != NULL && !IsWindow(window)) return 0;
     UINT_PTR id = event;

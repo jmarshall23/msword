@@ -94,6 +94,10 @@ int main() {
         GetWindowLongPtrA(window, 0) != kExtraData) {
         return 5;
     }
+    if (CallNextHookEx(nullptr, 0, 1, 2) != 0 ||
+        CallNextHookEx(reinterpret_cast<HANDLE>(0x1234), HC_GETNEXT, 3, 4) != 0) {
+        return 6;
+    }
     if (SetWindowLongA(window, 8, 0x11223344) != 0 ||
         GetWindowLongA(window, 8) != 0x11223344 ||
         SetWindowWord(window, 10, 0xabcd) != 0x1122 ||
@@ -101,7 +105,7 @@ int main() {
         SetWindowWord(window, 12, 0x5566) != 0 ||
         GetWindowWord(window, 12) != 0x5566 ||
         GetWindowWord(window, 14) != 0) {
-        return 6;
+        return 7;
     }
 
     char text[16]{};
@@ -129,13 +133,13 @@ int main() {
         lstrcmpW(nullptr, lower_word) >= 0 ||
         lstrcmpiW(lower_word, mixed_word) != 0 ||
         lstrcmpiW(high_upper, high_lower) == 0) {
-        return 7;
+        return 8;
     }
 
     HDC dc = GetDC(window);
-    if (dc == nullptr || ReleaseDC(window, dc) != 1) return 8;
+    if (dc == nullptr || ReleaseDC(window, dc) != 1) return 9;
     HDC screen = GetDC(nullptr);
-    if (screen == nullptr || ReleaseDC(nullptr, screen) != 1) return 9;
+    if (screen == nullptr || ReleaseDC(nullptr, screen) != 1) return 10;
 
     if (GetSystemMetrics(SM_CXSCREEN) != 640 ||
         GetSystemMetrics(SM_CYSCREEN) != 480 ||
@@ -144,7 +148,7 @@ int main() {
         GetSysColor(COLOR_WINDOW) != RGB(255, 255, 255) ||
         GetSysColor(COLOR_WINDOWTEXT) != RGB(0, 0, 0) ||
         GetSysColor(COLOR_BTNFACE) != RGB(192, 192, 192)) {
-        return 10;
+        return 11;
     }
     HDC color_dc = CreateCompatibleDC(nullptr);
     HBITMAP color_bitmap = CreateCompatibleBitmap(color_dc, 2, 2);

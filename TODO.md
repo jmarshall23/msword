@@ -196,6 +196,9 @@ horizontal and vertical window scroll state with default ranges and range clampi
 The system menu slice now covers `GetSystemMenu` with per-window system menus and
 revert behavior.
 
+The hook pass-through slice now covers `CallNextHookEx` for the playback hook paths
+that delegate unhandled hook codes when no native hook chain exists.
+
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
 font names and diffs against output captured from the Windows build.

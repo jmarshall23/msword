@@ -1,4 +1,3 @@
-CallNextHookEx
 CloseMetaFile
 CreateDCA
 CreateICA
