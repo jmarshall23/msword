@@ -1642,6 +1642,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Word1OpenSaveRoundtrip.cmake"
     )
     set_tests_properties(opus_word1_open_save_roundtrip_test PROPERTIES
+        LABELS ui
         TIMEOUT 30
     )
 endif()

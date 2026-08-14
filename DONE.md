@@ -1,5 +1,22 @@
 # DONE
 
+## Add CI saved-document byte comparison gate
+
+The GitHub Actions workflow now runs `opus_word1_open_save_roundtrip_test` on
+Windows, macOS and Linux, uploads each job's `word1-open-save-input.doc`, and
+compares the three SHA-256 hashes in a dependent Linux job. macOS CI now builds
+`WORD1` before running the roundtrip test, and the roundtrip CTest is labeled
+`ui` so it is run explicitly rather than accidentally through `ctest -LE ui`.
+
+Validated locally with `cmake -S src --preset macos-debug`, `ctest --test-dir
+out/macos-debug -N`, `cmake --build out/macos-debug --target WORD1 -j2`,
+`ctest --test-dir out/macos-debug -R '^opus_word1_open_save_roundtrip_test$'
+--output-on-failure`, `git diff --check`, and a Ruby YAML parse of
+`.github/workflows/ci.yml`.
+
+Reviewed before implementation: agy recommended per-OS artifact upload plus a
+downstream SHA-256 comparison job.
+
 ## Add local WORD1 open/save byte roundtrip
 
 `opus_word1_open_save_roundtrip_test` now exercises the saved document path in

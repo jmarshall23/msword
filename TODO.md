@@ -123,8 +123,9 @@ Save As harness now exits 0 on macOS, writes the requested native `.doc` artifac
 and produces byte-identical output across repeated local runs. The macOS CTest suite
 now also creates a native `.doc`, reopens it by launching `WORD1` with the file path,
 resaves it through the same scripted Save As hook, and compares SHA-256 hashes. Next
-run that artifact flow with PLC, FIB and keymap data present, capture the saved bytes
-from Windows, macOS and Linux, and compare them.
+the GitHub Actions workflow uploads that saved `.doc` from Windows, macOS and Linux
+and compares hashes in a dependent job. Run CI and use the three-platform result to
+close this item or debug the first platform-specific byte delta.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.
