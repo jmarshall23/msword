@@ -5,6 +5,7 @@
 #endif
 #include "../win32/opusinputscript.h"
 #include "opus-native-compat.h"
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -73,6 +74,14 @@ static BOOL g_last_scripted_save_opus_dialog_open;
 static BOOL g_last_scripted_save_win_dialog_open;
 static BOOL g_last_scripted_save_header;
 static DWORD g_last_scripted_save_error;
+static BOOL g_last_scripted_save_file_open;
+static DWORD g_last_scripted_save_file_error;
+static DWORD g_last_scripted_save_file_size;
+static DWORD g_last_scripted_save_file_read;
+static uint32_t g_last_scripted_save_header0;
+static uint32_t g_last_scripted_save_header4;
+static uint32_t g_last_scripted_save_header24;
+static uint32_t g_last_scripted_save_header48;
 
 typedef struct ControlSearch {
     int control_id;
@@ -339,27 +348,48 @@ static uint32_t ReadLittleU32(const unsigned char *bytes) {
 }
 
 static bool FileHasNativeDocHeader(const char *path) {
-    HANDLE file = CreateFileA(path, GENERIC_READ,
-                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    FILE *file = fopen(path, "rb");
     unsigned char header[512];
-    DWORD read = 0;
+    size_t read = 0;
     size_t index;
     bool matched;
-    if (file == INVALID_HANDLE_VALUE) {
+    g_last_scripted_save_file_open = file != NULL;
+    g_last_scripted_save_file_error = 0;
+    g_last_scripted_save_file_size = 0;
+    g_last_scripted_save_file_read = 0;
+    g_last_scripted_save_header0 = 0;
+    g_last_scripted_save_header4 = 0;
+    g_last_scripted_save_header24 = 0;
+    g_last_scripted_save_header48 = 0;
+    if (file == NULL) {
+        g_last_scripted_save_file_error = (DWORD)errno;
         return false;
     }
-    matched = ReadFile(file, header, sizeof(header), &read, NULL) &&
-              read == sizeof(header) &&
-              (ReadLittleU32(header + 0) == 0xfe37 ||
-               ReadLittleU32(header + 0) == 0xa59b) &&
-              ReadLittleU32(header + 4) == 33 &&
-              ReadLittleU32(header + 24) == 25 &&
-              ReadLittleU32(header + 48) == 512;
+    if (fseek(file, 0, SEEK_END) == 0) {
+        long size = ftell(file);
+        if (size >= 0) {
+            g_last_scripted_save_file_size = (DWORD)size;
+        }
+        rewind(file);
+    }
+    read = fread(header, 1, sizeof(header), file);
+    matched = read == sizeof(header);
+    g_last_scripted_save_file_read = (DWORD)read;
+    if (matched) {
+        g_last_scripted_save_header0 = ReadLittleU32(header + 0);
+        g_last_scripted_save_header4 = ReadLittleU32(header + 4);
+        g_last_scripted_save_header24 = ReadLittleU32(header + 24);
+        g_last_scripted_save_header48 = ReadLittleU32(header + 48);
+        matched = (g_last_scripted_save_header0 == 0xfe37 ||
+                   g_last_scripted_save_header0 == 0xa59b) &&
+                  g_last_scripted_save_header4 == 33 &&
+                  g_last_scripted_save_header24 == 25 &&
+                  g_last_scripted_save_header48 == 512;
+    }
     for (index = 420; matched && index < sizeof(header); ++index) {
         matched = header[index] == 0;
     }
-    CloseHandle(file);
+    fclose(file);
     return matched;
 }
 
@@ -524,7 +554,9 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
     fprintf(stderr,
             "WORD1 x64: scripted Save As timed out attempts=%u app=%d pane=%d "
             "stage=%lld app_alive=%d opus_dialog=%d win_dialog=%d header=%d "
-            "last_error=%lu output=\"%s\"\n",
+            "last_error=%lu file_open=%d file_error=%lu file_size=%lu "
+            "file_read=%lu h0=%08lx h4=%08lx h24=%08lx h48=%08lx "
+            "output=\"%s\"\n",
             g_scripted_save_as_attempts, g_last_scripted_save_has_app,
             g_last_scripted_save_has_pane,
             (long long)g_last_scripted_save_stage,
@@ -533,10 +565,20 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
             g_last_scripted_save_win_dialog_open,
             g_last_scripted_save_header,
             (unsigned long)g_last_scripted_save_error,
+            g_last_scripted_save_file_open,
+            (unsigned long)g_last_scripted_save_file_error,
+            (unsigned long)g_last_scripted_save_file_size,
+            (unsigned long)g_last_scripted_save_file_read,
+            (unsigned long)g_last_scripted_save_header0,
+            (unsigned long)g_last_scripted_save_header4,
+            (unsigned long)g_last_scripted_save_header24,
+            (unsigned long)g_last_scripted_save_header48,
             g_scripted_save_as_doc_path[0] != '\0' ?
                 g_scripted_save_as_doc_path : g_scripted_save_as_output);
     g_scripted_save_as_running = false;
     FinishScriptedSaveAs(9);
+    fflush(stderr);
+    exit(9);
 }
 
 static void ScheduleScriptedSaveAsTimer(void) {
@@ -556,6 +598,14 @@ static void ScheduleScriptedSaveAsTimer(void) {
     g_last_scripted_save_win_dialog_open = false;
     g_last_scripted_save_header = false;
     g_last_scripted_save_error = 0;
+    g_last_scripted_save_file_open = false;
+    g_last_scripted_save_file_error = 0;
+    g_last_scripted_save_file_size = 0;
+    g_last_scripted_save_file_read = 0;
+    g_last_scripted_save_header0 = 0;
+    g_last_scripted_save_header4 = 0;
+    g_last_scripted_save_header24 = 0;
+    g_last_scripted_save_header48 = 0;
 #ifdef _WIN32
     g_scripted_save_as_timer = SetTimer(NULL, 1, 1, ScriptedSaveAsTimer);
 #else
