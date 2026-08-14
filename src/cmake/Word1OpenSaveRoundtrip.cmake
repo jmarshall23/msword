@@ -11,8 +11,6 @@ endif()
 file(MAKE_DIRECTORY "${ROUNDTRIP_DIR}")
 set(input_doc "${ROUNDTRIP_DIR}/word1-open-save-input.doc")
 set(output_doc "${ROUNDTRIP_DIR}/word1-open-save-output.doc")
-set(input_arg "build/save-proof/word1-open-save-input.doc")
-set(output_arg "build/save-proof/word1-open-save-output.doc")
 file(REMOVE "${input_doc}" "${output_doc}")
 
 execute_process(
@@ -20,7 +18,7 @@ execute_process(
         OPUS_HEADLESS=1
         SDL_VIDEODRIVER=dummy
         "${WORD1_PATH}"
-        "--scripted-save-as-output=${input_arg}"
+        "--scripted-save-as-output=${input_doc}"
     WORKING_DIRECTORY "${WORKDIR}"
     RESULT_VARIABLE save_result
 )
@@ -33,8 +31,8 @@ execute_process(
         OPUS_HEADLESS=1
         SDL_VIDEODRIVER=dummy
         "${WORD1_PATH}"
-        "${input_arg}"
-        "--scripted-save-as-output=${output_arg}"
+        "${input_doc}"
+        "--scripted-save-as-output=${output_doc}"
     WORKING_DIRECTORY "${WORKDIR}"
     RESULT_VARIABLE roundtrip_result
 )
