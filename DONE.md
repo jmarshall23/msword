@@ -1,5 +1,21 @@
 # DONE
 
+## Convert startup diagnostics to C11
+
+`src/port/original/opus_startup_diagnostics.c` now provides the startup report
+and trace helpers that were previously compiled as C++. The conversion keeps
+the same C ABI functions and Win32 shim calls while replacing C++ headers,
+anonymous namespace storage, `extern "C"`, `nullptr`, and `std::strrchr` /
+`std::strlen` with C equivalents.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert modern formats stub to C11
 
 The non-Windows modern-format fallback now builds from
