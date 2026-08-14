@@ -800,7 +800,7 @@ add_library(opus_original_engine STATIC
     port/original/opus_asm_graphics.c
     port/original/opus_asm_fetch3.c
     port/original/opus_asm_prompt.c
-    port/original/opus_asm_misc.cpp
+    port/original/opus_asm_misc.c
     port/original/opus_asm_movecmds.c
     port/original/opus_asm_fetch_adapters.c
     port/original/opus_asm_display_adapters.c
