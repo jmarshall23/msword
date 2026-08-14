@@ -1137,7 +1137,7 @@ endif()
 # adapter converts the modern process command line, then transfers control to
 # Microsoft's original Opus WinMain and its original window/message loop.
 add_executable(WORD1 WIN32
-    port/original/opus_original_startup_probe.cpp
+    port/original/opus-original-startup-probe.c
 )
 if(WIN32)
     target_sources(WORD1 PRIVATE
@@ -1147,7 +1147,7 @@ if(WIN32)
     )
 endif()
 add_dependencies(WORD1 opus_original_engine)
-target_compile_features(WORD1 PRIVATE cxx_std_20)
+target_compile_features(WORD1 PRIVATE c_std_11)
 target_compile_definitions(WORD1 PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
 )
@@ -1164,6 +1164,7 @@ if(MSVC)
 endif()
 set_target_properties(WORD1 PROPERTIES
     FOLDER "Original Opus x64/product"
+    LINKER_LANGUAGE CXX
     OUTPUT_NAME "${MSWORD_PRODUCT_OUTPUT_NAME}"
     VS_DEBUGGER_WORKING_DIRECTORY "${MSWORD_BIN_ROOT}"
     VS_GLOBAL_VcpkgApplocalDeps "false"
@@ -1172,7 +1173,7 @@ set_target_properties(WORD1 PROPERTIES
 # Diagnostic executable that force-links the same original startup graph as
 # WORD1 without product resources. It remains useful as an all-symbol gate.
 add_executable(opus_original_startup_probe EXCLUDE_FROM_ALL WIN32
-    port/original/opus_original_startup_probe.cpp
+    port/original/opus-original-startup-probe.c
 )
 if(WIN32)
     target_sources(opus_original_startup_probe PRIVATE
@@ -1180,13 +1181,20 @@ if(WIN32)
     )
 endif()
 add_dependencies(opus_original_startup_probe opus_original_engine)
-target_compile_features(opus_original_startup_probe PRIVATE cxx_std_20)
+target_compile_features(opus_original_startup_probe PRIVATE c_std_11)
 target_compile_definitions(opus_original_startup_probe PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
 )
-target_link_libraries(opus_original_startup_probe PRIVATE opus_original_engine opus_x64_runtime user32 dbghelp)
+target_include_directories(opus_original_startup_probe PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+target_link_libraries(opus_original_startup_probe PRIVATE opus_original_engine opus_x64_runtime)
+if(WIN32)
+    target_link_libraries(opus_original_startup_probe PRIVATE user32 dbghelp)
+elseif(APPLE)
+    target_link_options(opus_original_startup_probe PRIVATE -Wl,-undefined,dynamic_lookup)
+endif()
 set_target_properties(opus_original_startup_probe PROPERTIES
     FOLDER "Original Opus x64/port probes"
+    LINKER_LANGUAGE CXX
     RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/probes"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )

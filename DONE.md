@@ -2372,3 +2372,31 @@ interactive TTY could not open `/dev/tty`, and claude timed out with only an
 execution-error line. The implementation keeps the search table deliberately
 small and linear; replace it only if directory enumeration becomes a measured
 hot path.
+
+## Convert original startup probe to C11
+
+`src/port/original/opus_original_startup_probe.cpp` is now
+`src/port/original/opus-original-startup-probe.c`. The startup and scripted UI
+probe code now uses C11 constructs, C library calls, C function-pointer
+typedefs, and a malloc-backed non-Windows `argv` to `WCHAR` bridge instead of
+C++ namespaces, `constexpr`, casts, range loops, and `std::vector`.
+
+`WORD1` and `opus_original_startup_probe` now build that C source with
+`c_std_11`. Both targets keep C++ link language because they still link the
+existing original-engine C++ archive, and the probe target now mirrors WORD1's
+non-Windows link behavior instead of unconditionally passing host `-luser32`
+and `-ldbghelp`.
+
+Validated with `cmake --build out/macos-debug --target WORD1
+opus_original_startup_probe opus_x64_runtime_test -j2`, `ctest --test-dir
+out/macos-debug -R '^opus_x64_runtime_test$' --output-on-failure`, `ctest
+--test-dir out/macos-debug -L ui --output-on-failure`,
+`build/probes/Debug/opus_original_startup_probe --self-test`, a C++ surface
+grep over the new C source, `nm` checks for `_main` and `_wWinMain`, and
+`git diff --check`.
+
+Reviewed by agy and claude before implementation, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line. The conversion leaves the shared `OPUSW` macro untouched
+and uses a source-local C11 fallback so other C translation units do not inherit
+new wide-literal behavior.
