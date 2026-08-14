@@ -97,11 +97,15 @@ non-Windows gates: `opus-sdl-probe`, the native generator tools, and the generat
 command/resource targets. The former WORD1 UI-labelled tests now run through
 headless scripted `WORD1` modes, so `ctest -L ui` is empty.
 
-Do: open a pull request and confirm the Windows, macOS and Linux jobs are green.
+Do: check PR #12's status rollup with `gh pr view 12 --repo
+jmarshall23/msword --json statusCheckRollup`, then confirm that the Windows,
+macOS, and Linux jobs are attached to the PR and green.
 
 Status: PR #12 is open at `https://github.com/jmarshall23/msword/pull/12` from
-`jserv:dev`. Fork CI is green for Windows, macOS and Linux, but the upstream PR check
-rollup is empty because the upstream default branch has no Actions workflow yet.
+`jserv:dev`, is not a draft, and has a clean merge state. As of
+2026-08-13 20:00 UTC, fork CI run `31738579720` is green for Windows, macOS,
+and Linux, but `statusCheckRollup` on the upstream PR is still empty because
+the upstream default branch has no Actions workflow yet.
 
 Done when: the three jobs are green on a pull request.
 
