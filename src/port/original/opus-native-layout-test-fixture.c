@@ -7,6 +7,29 @@ DEBUGASSERTSZ
 
 #include <string.h>
 
+typedef char OpusAssertCurrentFibSize[
+	((sizeof(CP) == 8 && sizeof(struct FIB) == 768) ||
+	 (sizeof(CP) == 4 && sizeof(struct FIB) == 420)) ? 1 : -1];
+typedef char OpusAssertCurrentFileHeaderSize[
+	((sizeof(CP) == 8 && cbFileHeader == 768) ||
+	 (sizeof(CP) == 4 && cbFileHeader == 512)) ? 1 : -1];
+typedef char OpusAssertCurrentPlcBaseSize[
+	((sizeof(CP) == 8 && sizeof(void *) == 8 && cbPLCBase == 32) ||
+	 (sizeof(CP) == 4 && sizeof(void *) == 8 && cbPLCBase == 36) ||
+	 (sizeof(CP) == 4 && sizeof(void *) == 4 && cbPLCBase == 28)) ? 1 : -1];
+typedef char OpusAssertCurrentPcdSize[
+	((sizeof(CP) == 8 && sizeof(struct PCD) == 24) ||
+	 (sizeof(CP) == 4 && sizeof(struct PCD) == 12)) ? 1 : -1];
+typedef char OpusAssertCurrentSedSize[
+	((sizeof(CP) == 8 && sizeof(struct SED) == 16) ||
+	 (sizeof(CP) == 4 && sizeof(struct SED) == 8)) ? 1 : -1];
+typedef char OpusAssertCurrentKmeSize[
+	((sizeof(void *) == 8 && sizeof(KME) == 16) ||
+	 (sizeof(void *) == 4 && sizeof(KME) == 8)) ? 1 : -1];
+typedef char OpusAssertCurrentKmeWords[
+	((sizeof(void *) == 8 && cwKME == 4) ||
+	 (sizeof(void *) == 4 && cwKME == 2)) ? 1 : -1];
+
 /* Real original-layout objects used by the C++ runtime test. */
 static struct DOD rgdodTest[4];
 static struct WWD rgwwdTest[2];

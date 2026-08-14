@@ -1,13 +1,17 @@
 file	line	type	serialized_or_runtime	windows_size	host_size	fix
 src/Opus/wordtech/word.h	60	CP	typedef serialized	4	8	Use fixed-width on-disk CP storage before blitting file structures.
 src/Opus/wordtech/word.h	63	FC	typedef serialized	4	8	Use fixed-width on-disk FC storage before blitting file structures.
-src/Opus/wordtech/file.h	726	struct FIB	serialized	TBD	768	Size follows CP and FC; derive and assert the Windows frozen layout before changing file I/O.
+src/Opus/wordtech/file.h	15	cbFileHeader	serialized	512	LP64 768, 32-bit long 512	Size follows cbFIB; current values are guarded until the fixed-width file-format pass changes them.
+src/Opus/wordtech/file.h	726	struct FIB	serialized	420	LP64 768, 32-bit long 420	Size follows CP and FC; current values are guarded until the fixed-width file-format pass changes them.
 src/port/win32/windows.h	53	LONG	typedef runtime ABI	4	4	Already int32_t; guarded by opus_native_runtime_test static assertions.
 src/Opus/wordwin.h	195	MAKELONG macro	runtime ABI	4	4	Under OPUS_X64, returns LONG through WORD/DWORD packing instead of host long.
 src/Opus/wordtech/file.h	661	struct BKINFO.lCreation	runtime	4	8	MAC-only backup metadata; not compiled in the WIN build and no fread/fwrite path found.
 src/Opus/wordtech/file.h	672	struct BKINFO.ftg	runtime	4	8	MAC-only Finder metadata; not compiled in the WIN build and no fread/fwrite path found.
 src/Opus/wordtech/file.h	673	struct BKINFO.sig	runtime	4	8	MAC-only Finder metadata; not compiled in the WIN build and no fread/fwrite path found.
 src/Opus/wordtech/file.h	1006	struct ELOF.lcch	runtime	4	8	Macro-language open-stream state; no whole-struct fread/fwrite path found.
-src/Opus/wordtech/doc.h	90	cbPLCBase	runtime	TBD	TBD	Heap PLC layout also follows CP and pointer width; audit before the PLC serialization fix.
+src/Opus/wordtech/doc.h	90	cbPLCBase	runtime	16	LP64 32, LLP64 36, wasm32 28	Heap PLC layout also follows CP and pointer width; current values are guarded until the PLC serialization fix.
+src/Opus/wordtech/doc.h	102	struct PCD	serialized	8	LP64 24, 32-bit long 12	PLC piece descriptors contain FC; current values are guarded until the fixed-width file-format pass changes them.
+src/Opus/wordtech/doc.h	147	struct SED	serialized	6	LP64 16, 32-bit long 8	Section descriptors contain a bitfield word and FC; current values are guarded until the fixed-width file-format pass changes them.
+src/Opus/wordwin.h	474	cwKME serialized bytes	serialized	4	64-bit pointer 8, wasm32 4	Keymap entries are read and written as cwKME * 2 bytes; current word counts are guarded until the fixed-width keymap pass changes them.
 src/Opus/wordtech/savefast.c	284	LcbExtHplc long locals	runtime	4	8	Computes in-memory PLC byte counts; serialized CP/PLC width is tracked by the next TODO item.
 src/Opus/wordtech/plc.c	118	PLC search long locals	runtime	4	8	In-memory PLC indexes and byte offsets only; serialized CP/PLC width is tracked by the next TODO item.

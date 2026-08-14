@@ -1,5 +1,30 @@
 # DONE
 
+## Complete the LP64 serialized-layout audit
+
+`docs/lp64-audit.tsv` now records the direct runtime `long` rows, the Win32
+runtime ABI rows, and the serialized `CP`/`FC`/FIB/file-header/PLC/PCD/SED/KME
+rows without placeholder sizes. The audit separates runtime-only `long` users
+from file-format rows whose layout follows `CP`, `FC`, pointer width, or keymap
+word counts.
+
+`opus-native-layout-test-fixture.c` now has compile-time tripwires for the
+current native FIB, file-header, PLC base, PCD, SED, and KME shapes across the
+LP64 and 32-bit-long builds. These assertions deliberately guard the current
+layout so the next fixed-width serialization pass has a failing check to update.
+
+Validated with `git diff --check`, `! rg -n "TBD" docs/lp64-audit.tsv`,
+`cmake --build out/macos-debug --target opus_native_runtime_test -j2`,
+`ctest --test-dir out/macos-debug -R '^opus_native_runtime_test$'
+--output-on-failure`, `cmake --build out/wasm-lp64-audit --target
+opus_native_runtime_test -j2`, and `ctest --test-dir out/wasm-lp64-audit -R
+'^opus_native_runtime_test$' --output-on-failure`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude could not read the migration skill or compile probes,
+but its review confirmed item 22 can move to DONE once the audit has no TBD
+rows, includes `cbFileHeader`, and has compile-time layout guards.
+
 ## Route pure Long Declare calls through the typed macro bridge
 
 `exp.c` now marks `dktLong` arguments as typed while marshaling WordBasic

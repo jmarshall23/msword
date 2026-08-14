@@ -100,37 +100,6 @@ Real defects in the current x64 build. All line numbers below were re-derived ag
 this tree; an earlier draft carried jphonorato's post-patch numbers, which are offset by
 roughly 18 lines in `exp.c` and 29 in `CLIPBRD2.C`.
 
-### 22. Bare `long` in serialized structures
-
-An earlier draft headlined this as "`qwindows.h:119` is the construct that already
-corrupted our tooling". That is false and the item should not send anyone to that file:
-`qwindows.h` is not compiled in this build. Every include of it sits in the `#else` of
-an `#ifdef OPUS_X64` (`wordtech/word.h:39-42` and the seven `interp/*.c`), and nothing
-includes `Opus/windows.h`, its only other route. Its `typedef unsigned long DWORD` is
-dead text; `DWORD` in this build comes from the SDK and is correctly 32-bit. Rule 1 puts
-the file off limits anyway.
-
-The direct bare-`long` scan in `wordtech/plc.c`, `savefast.c`, and `file.h`
-mostly finds runtime counters, Mac-only backup metadata, and macro-language open-file
-state. Record those rows so nobody re-opens them as serialized file-format defects.
-The real serialized exposure is the `CP` and `FC` typedefs in `wordtech/word.h`,
-because `savefast.c` blits structures whose size follows those typedefs.
-
-The shim's own `LONG` must stay `int32_t`, not `long`, or every `RECT`, `POINT`
-and `MAKELONG` changes width on LP64. The Win32 shim already defines `LONG` as
-`int32_t`; the `OPUS_X64` `MAKELONG` override in `wordwin.h` must also return
-a 32-bit `LONG`, not host `long`.
-
-Produce `docs/lp64-audit.tsv` with columns `file`, `line`, `type`,
-`serialized_or_runtime`, `windows_size`, `host_size`, `fix`. Mark only on-disk or
-wire-format rows as `serialized`; ordinary runtime-only uses do not need serialization
-tests.
-
-Done when: `docs/lp64-audit.tsv` records the direct runtime rows and the serialized
-`CP`/`FC` rows, the runtime `LONG`/`POINT`/`RECT`/`MAKELONG` widths are guarded by a
-compile-time test, and the remaining serialized rows have exact target sizes ready for
-the fixed-width file-format pass.
-
 ### 23. `CP` is `long` and PLC tables are serialized
 
 8 bytes under LP64, 4 under LLP64 and wasm32. Keep the on-disk format at a 32-bit
