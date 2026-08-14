@@ -913,7 +913,7 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
     )
 endforeach()
 
-add_library(opus_x64_runtime STATIC
+add_library(opus_native_runtime STATIC
     port/original/opus_original_chupper.c
     port/original/opustracestub.c
     port/original/opus-elx-dispatch.c
@@ -934,8 +934,8 @@ add_library(opus_x64_runtime STATIC
     port/original/opus-sdm-cab.c
     port/original/opus-sdm-runtime.c
 )
-target_compile_features(opus_x64_runtime PRIVATE c_std_11)
-target_compile_definitions(opus_x64_runtime PRIVATE
+target_compile_features(opus_native_runtime PRIVATE c_std_11)
+target_compile_definitions(opus_native_runtime PRIVATE
     WIN
     WIN23
     CRLF
@@ -944,16 +944,16 @@ target_compile_definitions(opus_x64_runtime PRIVATE
     NOMINMAX
     $<$<CONFIG:Debug>:OPUS_TEST_HOOKS>
 )
-target_include_directories(opus_x64_runtime PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+target_include_directories(opus_native_runtime PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 if(WIN32)
-    target_link_libraries(opus_x64_runtime PUBLIC ole32 comdlg32 gdi32)
+    target_link_libraries(opus_native_runtime PUBLIC ole32 comdlg32 gdi32)
 endif()
-target_sources(opus_x64_runtime PRIVATE port/original/opus-modern-formats.c)
+target_sources(opus_native_runtime PRIVATE port/original/opus-modern-formats.c)
 set_source_files_properties(port/original/opus-modern-formats.c PROPERTIES
     COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
 )
 if(NOT WIN32)
-    target_sources(opus_x64_runtime PRIVATE
+    target_sources(opus_native_runtime PRIVATE
         port/win32/commdlg.c
         port/win32/fallback.c
         port/win32/gdi32.c
@@ -963,16 +963,16 @@ if(NOT WIN32)
         port/win32/resource.c
         port/win32/user32.c
     )
-    add_dependencies(opus_x64_runtime opus_generated_win32_resources)
+    add_dependencies(opus_native_runtime opus_generated_win32_resources)
 endif()
 if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string
     # and international-character assembly routines depend on that behavior.
-    target_compile_options(opus_x64_runtime PRIVATE
+    target_compile_options(opus_native_runtime PRIVATE
         /J /W4 /permissive- /guard:cf /sdl /experimental:c11atomics
     )
 else()
-    target_compile_options(opus_x64_runtime PRIVATE
+    target_compile_options(opus_native_runtime PRIVATE
         $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
         $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
@@ -984,14 +984,14 @@ set_source_files_properties(port/original/opus-native-heap.c PROPERTIES
 set_source_files_properties(port/original/opus-sdm-runtime.c PROPERTIES
     COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
 )
-set_target_properties(opus_x64_runtime PROPERTIES
+set_target_properties(opus_native_runtime PROPERTIES
     FOLDER "Original Opus x64/runtime"
     ARCHIVE_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/lib"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_x64_runtime PROPERTIES
+    set_target_properties(opus_native_runtime PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/lib/${config}"
     )
 endforeach()
@@ -1004,7 +1004,7 @@ target_compile_definitions(opus_original_sttb_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
 target_include_directories(opus_original_sttb_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_original_sttb_test PRIVATE opus_x64_runtime)
+target_link_libraries(opus_original_sttb_test PRIVATE opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_original_sttb_test PRIVATE user32)
 endif()
@@ -1041,7 +1041,7 @@ target_compile_definitions(opus_original_plc_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
 target_include_directories(opus_original_plc_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_original_plc_test PRIVATE opus_x64_runtime)
+target_link_libraries(opus_original_plc_test PRIVATE opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_original_plc_test PRIVATE user32)
 endif()
@@ -1077,7 +1077,7 @@ target_compile_definitions(opus_sdm_cab_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
 target_include_directories(opus_sdm_cab_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_sdm_cab_test PRIVATE opus_x64_runtime)
+target_link_libraries(opus_sdm_cab_test PRIVATE opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_sdm_cab_test PRIVATE user32)
 endif()
@@ -1113,7 +1113,7 @@ target_compile_definitions(opus_sdm_render_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
 target_include_directories(opus_sdm_render_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_sdm_render_test PRIVATE opus_x64_runtime)
+target_link_libraries(opus_sdm_render_test PRIVATE opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_sdm_render_test PRIVATE user32)
 endif()
@@ -1157,7 +1157,7 @@ endforeach()
 
 # Future product executables link this original-source archive and inherit the
 # translated assembly/native-handle runtime at the library boundary.
-target_link_libraries(opus_original_engine PUBLIC opus_x64_runtime)
+target_link_libraries(opus_original_engine PUBLIC opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_original_engine PUBLIC user32)
 endif()
@@ -1181,7 +1181,7 @@ target_compile_definitions(WORD1 PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
 )
 target_include_directories(WORD1 PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(WORD1 PRIVATE opus_original_engine opus_x64_runtime)
+target_link_libraries(WORD1 PRIVATE opus_original_engine opus_native_runtime)
 if(WIN32)
     target_link_libraries(WORD1 PRIVATE user32 imm32 dbghelp)
 elseif(APPLE)
@@ -1215,7 +1215,7 @@ target_compile_definitions(opus_original_startup_probe PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
 )
 target_include_directories(opus_original_startup_probe PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_original_startup_probe PRIVATE opus_original_engine opus_x64_runtime)
+target_link_libraries(opus_original_startup_probe PRIVATE opus_original_engine opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_original_startup_probe PRIVATE user32 dbghelp)
 elseif(APPLE)
@@ -1245,7 +1245,7 @@ target_include_directories(opus_original_strtbl_test PRIVATE ${OPUS_ORIGINAL_INC
 if(WIN32)
     target_link_libraries(opus_original_strtbl_test PRIVATE user32)
 else()
-    target_link_libraries(opus_original_strtbl_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_original_strtbl_test PRIVATE opus_native_runtime)
 endif()
 if(APPLE)
     target_link_options(opus_original_strtbl_test PRIVATE -Wl,-undefined,dynamic_lookup)
@@ -1280,7 +1280,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win16_module_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win16_module_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win16_module_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win16_module_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1303,7 +1303,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX UNICODE _UNICODE
     )
     target_include_directories(opus_win32_resource_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_resource_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_resource_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_resource_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1326,7 +1326,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win32_gdi_object_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_gdi_object_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_gdi_object_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_gdi_object_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1347,7 +1347,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win32_gdi_raster_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_gdi_raster_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_gdi_raster_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_gdi_raster_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1368,7 +1368,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win32_font_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_font_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_font_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_font_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1389,7 +1389,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win32_print_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_print_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_print_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_print_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1410,7 +1410,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win32_user32_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_user32_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_user32_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_user32_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1431,7 +1431,7 @@ if(NOT WIN32)
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
     target_include_directories(opus_win32_memory_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-    target_link_libraries(opus_win32_memory_test PRIVATE opus_x64_runtime)
+    target_link_libraries(opus_win32_memory_test PRIVATE opus_native_runtime)
     set_target_properties(opus_win32_memory_test PROPERTIES
         FOLDER "Original Opus x64/tests"
         RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
@@ -1445,36 +1445,36 @@ if(NOT WIN32)
     endforeach()
 endif()
 
-add_executable(opus_x64_runtime_test
+add_executable(opus_native_runtime_test
     port/original/opus-native-runtime-test.c
     port/original/opus_asm_misc.c
     port/original/opus-native-layout-test-fixture.c
 )
-target_compile_features(opus_x64_runtime_test PRIVATE c_std_11)
-target_compile_definitions(opus_x64_runtime_test PRIVATE
+target_compile_features(opus_native_runtime_test PRIVATE c_std_11)
+target_compile_definitions(opus_native_runtime_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
-target_include_directories(opus_x64_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime)
+target_include_directories(opus_native_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
+target_link_libraries(opus_native_runtime_test PRIVATE opus_native_runtime)
 set_source_files_properties(port/original/opus-native-layout-test-fixture.c PROPERTIES
     COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu89>"
 )
 if(WIN32)
-    target_link_libraries(opus_x64_runtime_test PRIVATE user32 gdi32)
+    target_link_libraries(opus_native_runtime_test PRIVATE user32 gdi32)
 else()
-    target_compile_options(opus_x64_runtime_test PRIVATE
+    target_compile_options(opus_native_runtime_test PRIVATE
         $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
     )
 endif()
-set_target_properties(opus_x64_runtime_test PROPERTIES
+set_target_properties(opus_native_runtime_test PROPERTIES
     FOLDER "Original Opus x64/tests"
     RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_x64_runtime_test PROPERTIES
+    set_target_properties(opus_native_runtime_test PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
@@ -1485,7 +1485,7 @@ add_executable(opus_modern_formats_test
 target_compile_features(opus_modern_formats_test PRIVATE c_std_11)
 target_compile_definitions(opus_modern_formats_test PRIVATE NOMINMAX UNICODE _UNICODE)
 target_include_directories(opus_modern_formats_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-target_link_libraries(opus_modern_formats_test PRIVATE opus_x64_runtime)
+target_link_libraries(opus_modern_formats_test PRIVATE opus_native_runtime)
 if(WIN32)
     target_link_libraries(opus_modern_formats_test PRIVATE user32 gdi32)
 elseif(APPLE)
@@ -1531,7 +1531,7 @@ add_test(NAME opus_bitapp_8hdr_test
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyBitapp.cmake"
 )
 opus_add_executable_test(opus_original_strtbl_test opus_original_strtbl_test)
-opus_add_executable_test(opus_x64_runtime_test opus_x64_runtime_test)
+opus_add_executable_test(opus_native_runtime_test opus_native_runtime_test)
 if(NOT WIN32)
     opus_add_executable_test(opus_win16_module_test opus_win16_module_test)
     opus_add_executable_test(opus_win32_resource_test opus_win32_resource_test)
@@ -1549,7 +1549,7 @@ if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     add_test(NAME win32_coverage
         COMMAND "${CMAKE_COMMAND}"
             "-DNM=${CMAKE_NM}"
-            "-DARCHIVES=$<TARGET_FILE:opus_original_engine>;$<TARGET_FILE:opus_x64_runtime>"
+            "-DARCHIVES=$<TARGET_FILE:opus_original_engine>;$<TARGET_FILE:opus_native_runtime>"
             "-DHEADER=${CMAKE_CURRENT_SOURCE_DIR}/port/win32/windows.h"
             "-DBASELINE=${MSWORD_ROOT}/docs/win32-shim/uncovered.txt"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckWin32Coverage.cmake"
