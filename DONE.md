@@ -2350,3 +2350,25 @@ Reviewed by agy and claude before implementation, but both reviewer commands
 stalled without final output and were stopped. The implementation keeps thread
 modeling, real host memory accounting, and collision-resistant temp-file retry
 logic out of scope until a real call site requires them.
+
+## Convert FILE2N adapter to C11
+
+`src/port/original/opus_asm_file2.cpp` is now
+`src/port/original/opus-asm-file2.c`, with the original FILE2N entry points
+kept as C exports through the existing engine build. The C11 rewrite replaces
+the C++ mutex and unordered map with a `SRWLOCK`-guarded linked list keyed by
+the caller's `FINDFILE` buffer, reuses the shim's Win32 file APIs, and keeps the
+native `FINDFILE` layout assertions.
+
+Validated with `cmake --build out/macos-debug --target WORD1
+opus_x64_runtime_test -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, exported-symbol checks for the
+FILE2N entry points in `libopus_original_engine.a`, C++ surface grep over the
+new C source, and `git diff --check`.
+
+Reviewed by agy and claude before implementation, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line. The implementation keeps the search table deliberately
+small and linear; replace it only if directory enumeration becomes a measured
+hot path.
