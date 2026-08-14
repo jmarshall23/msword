@@ -2452,3 +2452,32 @@ C source, and `git diff --check`.
 Reviewed by agy and claude before implementation, but agy failed because its
 interactive TTY could not open `/dev/tty`, and claude timed out with only an
 execution-error line.
+
+## Convert ELX dispatch bridge to C11
+
+`src/port/original/opus_elx_dispatch.cpp` is now
+`src/port/original/opus-elx-dispatch.c`. The ELX native-call bridge no longer
+uses C++ variadic templates, `if constexpr`, namespaces, or C++ casts. It now
+uses a finite C11 dispatch matrix for zero through six arguments, with each
+argument selected from the existing integer, pointer, or 8-byte `NUM`
+representation.
+
+The conversion preserves the old bridge contract: `OpusInvokeElx` validates the
+function pointer, argument count, and argument array, calls exact typed function
+pointers for the selected arity/kind path, copies `NUM` returns by byte, and
+stores integer and pointer-sized returns through the caller's result pointer.
+
+`opus_x64_runtime_test` now directly covers `OpusInvokeElx` with six mixed
+arguments, `NUM` by-value input and return, pointer-sized returns, void calls,
+and invalid dispatch requests.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, an exported-symbol check for
+`_OpusInvokeElx` in `libopus_x64_runtime.a`, C++ surface grep over the new C
+source, and `git diff --check`.
+
+Reviewed by agy and claude before implementation, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line.

@@ -896,7 +896,7 @@ endforeach()
 add_library(opus_x64_runtime STATIC
     port/original/opus_original_chupper.c
     port/original/opustracestub.c
-    port/original/opus_elx_dispatch.cpp
+    port/original/opus-elx-dispatch.c
     port/original/opus_startup_diagnostics.c
     port/original/opus-win16-platform.c
     port/original/opus-x64-heap.c

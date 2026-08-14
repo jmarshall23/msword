@@ -1,4 +1,5 @@
 #include "opus_x64_compat.h"
+#include "opus_elx_dispatch.h"
 #include "opus_x64_heap.h"
 #include "inter.h"
 
@@ -55,6 +56,13 @@ typedef struct TestSdmRec {
     int dx;
     int dy;
 } TestSdmRec;
+
+typedef struct TestElxNum {
+    union {
+        unsigned char rgb[8];
+        double d;
+    } num;
+} TestElxNum;
 
 typedef struct TestDltHeader {
     TestSdmRec rec;
@@ -192,6 +200,88 @@ static void cleanup_browse_tree(void) {
     RemoveDirectoryA("sdm.browse");
 }
 
+static TestElxNum TestElxNumFromDouble(double value) {
+    TestElxNum result;
+    result.num.d = value;
+    return result;
+}
+
+static void SetElxNumArg(OPUS_ELX_NATIVE_ARG *argument, double value) {
+    TestElxNum num = TestElxNumFromDouble(value);
+    argument->kind = opusElxArgNum;
+    memcpy(argument->num, &num, sizeof(num));
+}
+
+static int TestElxMixed(int first, void *pointer, TestElxNum num,
+                        int second, void *other, TestElxNum other_num) {
+    return first + second + (pointer != NULL ? 10 : 0) +
+           (other != NULL ? 20 : 0) + (int)num.num.d + (int)other_num.num.d;
+}
+
+static TestElxNum TestElxReturnNum(int addend, TestElxNum num) {
+    return TestElxNumFromDouble(num.num.d + addend);
+}
+
+static uintptr_t TestElxReturnPointer(void *pointer) {
+    return (uintptr_t)pointer;
+}
+
+static int elx_void_called = 0;
+static void TestElxVoid(int value, void *pointer, TestElxNum num) {
+    elx_void_called = value + (pointer != NULL ? 5 : 0) + (int)num.num.d;
+}
+
+static int RunElxDispatchTest(void) {
+    OPUS_ELX_NATIVE_ARG args[6];
+    OPUS_ELX_NATIVE_ARG num_args[2];
+    int int_result = 0;
+    uintptr_t pointer_result = 0;
+    TestElxNum num_result;
+    int marker = 0;
+
+    args[0].kind = opusElxArgInt;
+    args[0].integer = 3;
+    args[1].kind = opusElxArgPointer;
+    args[1].pointer = &marker;
+    SetElxNumArg(&args[2], 7.0);
+    args[3].kind = opusElxArgInt;
+    args[3].integer = 4;
+    args[4].kind = opusElxArgPointer;
+    args[4].pointer = &int_result;
+    SetElxNumArg(&args[5], 9.0);
+    if (!OpusInvokeElx((void *)TestElxMixed, 2, 6, args, &int_result) ||
+        int_result != 53) {
+        return 0;
+    }
+
+    num_args[0].kind = opusElxArgInt;
+    num_args[0].integer = 3;
+    SetElxNumArg(&num_args[1], 7.0);
+    if (!OpusInvokeElx((void *)TestElxReturnNum, 1, 2, num_args, &num_result) ||
+        num_result.num.d != 10.0) {
+        return 0;
+    }
+
+    if (!OpusInvokeElx((void *)TestElxReturnPointer, 3, 1, args + 1,
+                       &pointer_result) ||
+        pointer_result != (uintptr_t)&marker) {
+        return 0;
+    }
+
+    if (!OpusInvokeElx((void *)TestElxVoid, 0, 3, args, NULL) ||
+        elx_void_called != 15) {
+        return 0;
+    }
+
+    args[0].kind = 99;
+    if (OpusInvokeElx((void *)TestElxMixed, 2, 1, args, &int_result) ||
+        OpusInvokeElx(NULL, 2, 0, NULL, &int_result) ||
+        OpusInvokeElx((void *)TestElxMixed, 2, 7, args, &int_result)) {
+        return 0;
+    }
+    return 1;
+}
+
 int main(void) {
     int offsets[] = {2, 8, 13, 3};
     const int expected_offsets[] = {2, 13, 18, 3};
@@ -285,6 +375,10 @@ int main(void) {
     TestWord browse_save;
     char browsed_save_path[32768] = {0};
     int browsed_save_ok;
+
+    if (!RunElxDispatchTest()) {
+        return 31;
+    }
 
     AddDcbToLprgbst(offsets, (int)(sizeof(offsets) / sizeof(offsets[0])), 5,
                     8);
