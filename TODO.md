@@ -103,9 +103,9 @@ jmarshall23/msword --json statusCheckRollup`, then confirm that the Windows,
 macOS, and Linux jobs are attached to the PR and green.
 
 Status: PR #12 is open at `https://github.com/jmarshall23/msword/pull/12` from
-`jserv:dev` and is not a draft. As of 2026-08-14 06:29 UTC, fork CI run
-`31776338149` is green for Windows, macOS, and Linux at PR head
-`10fcd43ee1ff901fe42a79dc23fbf0ed7471f99f`, but `statusCheckRollup` on the
+`jserv:dev` and is not a draft. As of 2026-08-14 08:07 UTC, fork CI run
+`31782393836` is green for Windows, macOS, and Linux at PR head
+`16ec02585a507893172b8fe7d1796a5390840812`, but `statusCheckRollup` on the
 upstream PR is still empty. The remaining check is to make the upstream PR show
 the three green jobs, not just the fork-side run for the same head SHA.
 
