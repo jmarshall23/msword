@@ -94,6 +94,15 @@ void FillBytePattern(unsigned char *destination, const unsigned char *pattern,
 void MoveCmds(void *syt, void *kmp, void *mud, void *bsy_sab,
 		void *bkme_sab);
 void CopyRgbLcb(const void *source, void *destination, long byte_count);
+int OpusDiskPlcSize(int entry_count, int runtime_entry_size);
+int OpusPackPlcDisk(const void *pplc, int entry_count, long cp_last_override,
+		void *bytes, int byte_count);
+int OpusUnpackPlcDisk(void *pplc, int entry_count, const void *bytes,
+		int byte_count);
+int OpusPackPcdDisk(const void *pcd, void *bytes);
+int OpusUnpackPcdDisk(void *pcd, const void *bytes);
+int OpusPackSedDisk(const void *sed, void *bytes);
+int OpusUnpackSedDisk(void *sed, const void *bytes);
 long LPushMacroArgs(void *procedure, const int *arguments, int argument_count);
 long LPushMacroArgsTyped(void *procedure, const int *arguments,
 		int argument_count, const int *types, int type_count);

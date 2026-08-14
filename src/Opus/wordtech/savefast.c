@@ -313,6 +313,35 @@ NATIVE FFileWriteError()
 			Mac( || (vfcDestLim - vfcBegWrite > vdfcSpaceAvail) );
 }
 
+#ifdef OPUS_X64
+static void WriteCpDisk(int fn, CP cp)
+{
+	unsigned char rgch[4];
+	uint32_t value = (uint32_t)(int32_t)cp;
+	rgch[0] = (unsigned char)(value & 0xffu);
+	rgch[1] = (unsigned char)((value >> 8) & 0xffu);
+	rgch[2] = (unsigned char)((value >> 16) & 0xffu);
+	rgch[3] = (unsigned char)((value >> 24) & 0xffu);
+	WriteRgchToFn(fn, rgch, 4);
+}
+
+
+static void WritePcdDisk(int fn, struct PCD *ppcd)
+{
+	unsigned char rgch[8];
+	OpusPackPcdDisk(ppcd, rgch);
+	WriteRgchToFn(fn, rgch, 8);
+}
+
+
+static void WriteSedDisk(int fn, struct SED *psed)
+{
+	unsigned char rgch[6];
+	OpusPackSedDisk(psed, rgch);
+	WriteRgchToFn(fn, rgch, 6);
+}
+#endif
+
 
 /* F   Q U I C K   S A V E */
 /* %%Function:FQuickSave %%Owner:davidlu */
@@ -2289,16 +2318,26 @@ FSaveTbls()
 			}
 		else
 			hprgcp = ((CP HUGE *)(*hplcsed)->rgcp);
-		WriteHprgchToFn(fnDest, hprgcp,
-				vpqsib->cbPlcfsed = (isedMac + 1) * sizeof(CP));
+		vpqsib->cbPlcfsed = (isedMac + 1) * WinMac(4, sizeof(CP));
+#ifdef OPUS_X64
+		for (ised = 0; ised <= isedMac; ++ised)
+			WriteCpDisk(fnDest, hprgcp[ised]);
+#else
+		WriteHprgchToFn(fnDest, hprgcp, vpqsib->cbPlcfsed);
+#endif
 #ifdef MAC
 		if ((*hplcsed)->fExternal)
 			UnlockHq((*hplcsed)->hqplce);
 #endif
 
 		fcPosSave = (PfcbFn(fnDest))->fcPos;
-		SetFnPos(fnDest, vpqsib->fcPlcfsed + (isedMac * sizeof(CP)));
+		SetFnPos(fnDest, vpqsib->fcPlcfsed +
+				(isedMac * WinMac(4, sizeof(CP))));
+#ifdef OPUS_X64
+		WriteCpDisk(fnDest, cpLastCorrect);
+#else
 		WriteRgchToFn(fnDest, &cpLastCorrect, sizeof(CP));
+#endif
 
 		SetFnPos(fnDest, fcPosSave);
 		fcDestLimSave = vfcDestLim;
@@ -2341,12 +2380,20 @@ FSaveTbls()
 						psedExcerpt->fUnk = fFalse;
 					}
 				}
-			WriteRgchToFn(fnDest, rgsedExcerpt, cbSED * isedExcerptMac);
+			for (isedExcerpt = 0, psedExcerpt = &rgsedExcerpt[0];
+					isedExcerpt < isedExcerptMac;
+					isedExcerpt++, psedExcerpt++)
+#ifdef OPUS_X64
+				WriteSedDisk(fnDest, psedExcerpt);
+#else
+				WriteRgchToFn(fnDest, psedExcerpt, cbSED);
+#endif
 			if (FFileWriteError())
 				goto LReturnFail;
 			}
 
-		vfcDestLim = fcDestLimSave + (vpqsib->cbPlcfsed += (uns)cbSED * isedMac);
+		vfcDestLim = fcDestLimSave + (vpqsib->cbPlcfsed +=
+				(uns)WinMac(6, cbSED) * isedMac);
 		}
 
 	FreezeHp();
@@ -2757,7 +2804,8 @@ FSaveTbls()
 		}
 
 	vpqsib->fcPlcfpcd = vfcDestLim;
-	vpqsib->cbPlcfpcd = (ipcdMac * (sizeof(CP) + cbPCD)) + sizeof(CP) + 3;
+	vpqsib->cbPlcfpcd = (ipcdMac * (WinMac(4, sizeof(CP)) +
+			WinMac(8, cbPCD))) + WinMac(4, sizeof(CP)) + 3;
 	vfcDestLim += vpqsib->cbPlcfpcd;
 	vpqsib->cbClx = vfcDestLim - vpqsib->fcClx;
 
@@ -2773,7 +2821,12 @@ FSaveTbls()
 		}
 	else
 		hprgcp = ((CP HUGE *)(*hplcpcd)->rgcp);
+#ifdef OPUS_X64
+	for (ipcd = 0; ipcd <= ipcdMac; ++ipcd)
+		WriteCpDisk(fnDest, hprgcp[ipcd]);
+#else
 	WriteHprgchToFn(fnDest, hprgcp, (ipcdMac + 1) * sizeof(CP));
+#endif
 #ifdef MAC
 	if ((*hplcpcd)->fExternal)
 		UnlockHq((*hplcpcd)->hqplce);
@@ -2818,7 +2871,14 @@ FSaveTbls()
 				((struct PRM *)&ppcdExcerpt->prm)->cfgrPrc = iprc;
 				}
 			}
-		WriteRgchToFn(fnDest, rgpcdExcerpt, cbPCD * ipcdExcerptMac);
+		for (ipcdExcerpt = 0, ppcdExcerpt = &rgpcdExcerpt[0];
+				ipcdExcerpt < ipcdExcerptMac;
+				ipcdExcerpt++, ppcdExcerpt++)
+#ifdef OPUS_X64
+			WritePcdDisk(fnDest, ppcdExcerpt);
+#else
+			WriteRgchToFn(fnDest, ppcdExcerpt, cbPCD);
+#endif
 		if (FFileWriteError())
 			goto LReturnFail;
 		}
@@ -2883,6 +2943,11 @@ CP      cpCorrect;
 	uns     cbRgfoo;
 	CP  HUGE *hprgcp;
 	char HUGE *hpchFoo;
+#ifdef OPUS_X64
+	HQ hqDisk;
+	char HUGE *hpchDisk;
+	uns cbDisk;
+#endif
 
 	fc = *pfc = *pfcDestLim;
 	*pcb = 0;
@@ -2906,6 +2971,16 @@ CP      cpCorrect;
 		else
 			hprgcp = ((CP HUGE *)pplc->rgcp);
 
+#ifdef OPUS_X64
+		cbDisk = (uns)OpusDiskPlcSize(iMac, pplc->cb);
+		if ((hqDisk = HqAllocLcb((long)cbDisk)) == hqNil)
+			return 0;
+		hpchDisk = HpOfHq(hqDisk);
+		OpusPackPlcDisk(pplc, iMac, cpCorrect, hpchDisk, cbDisk);
+		WriteHprgchToFn(fnDest, hpchDisk, cbDisk);
+		*pcb = cbDisk;
+		FreeHq(hqDisk);
+#else
 		/* write rgcp */
 		cbRgcp = (iMac + 1) * sizeof(CP);
 		WriteHprgchToFn(fnDest, hprgcp, cbRgcp);
@@ -2927,6 +3002,7 @@ CP      cpCorrect;
 			WriteRgchToFn(fnDest, &cpCorrect, sizeof(CP));
 			SetFnPos(fnDest, fcPosSave);
 			}
+#endif
 		}
 	*pfcDestLim += *pcb;
 }
@@ -3948,10 +4024,15 @@ PN pnFib;
 		uns ised;
 		CP far *lprgcp;
 /* calculate how many sed entries stored in disk copy of plc */
-		iMac = ((long)fib.cbPlcfsed - (long)sizeof(CP)) / ((long)cbSED + sizeof(CP));
+		iMac = ((long)fib.cbPlcfsed - (long)WinMac(4, sizeof(CP))) /
+				((long)WinMac(6, cbSED) + WinMac(4, sizeof(CP)));
 		Assert(iMac + 1 <= (*hplcsed)->iMax);
 /* read directly into external part of plc */
+#ifdef OPUS_X64
+		ReadIntoExtPlcDisk(hplcsed, fn, fib.fcPlcfsed, fib.cbPlcfsed, 6, 2);
+#else
 		ReadIntoExtPlc(hplcsed, fn, fib.fcPlcfsed, fib.cbPlcfsed);
+#endif
 /* set iMax and IMac to match */
 		pplc = *hplcsed;
 		pplc->iMac = iMac;
@@ -4260,4 +4341,3 @@ PN pn;
 		SetDirty(vibp);
 		}
 }
-

@@ -7,6 +7,7 @@ DEBUGASSERTSZ
 #include "debug.h"
 #include "error.h"
 #include "inter.h"
+#include "opus-native-layout.h"
 
 #include <string.h>
 
@@ -120,11 +121,76 @@ static int FExercisePlc(int fExternal)
 	return result;
 }
 
+static int FExerciseDiskPacking(void)
+{
+	struct PCD pcd;
+	struct PCD pcdCopy;
+	struct SED sed;
+	struct SED sedCopy;
+	unsigned char rgch[32];
+	struct TESTFOO foo0 = {11, 22};
+	struct TESTFOO foo1 = {33, 44};
+	struct PLC** hplc;
+	int result = 0;
+
+	memset(&pcd, 0, sizeof(pcd));
+	pcd.fNoParaLast = fTrue;
+	pcd.fPaphNil = fTrue;
+	pcd.fn = 7;
+	pcd.fc = (FC)0x12345678L;
+	pcd.prm = -2;
+	OpusPackPcdDisk(&pcd, rgch);
+	if (rgch[0] != 3 || rgch[1] != 7 || rgch[2] != 0x78 ||
+			rgch[3] != 0x56 || rgch[4] != 0x34 || rgch[5] != 0x12 ||
+			rgch[6] != 0xfe || rgch[7] != 0xff)
+		return 21;
+	OpusUnpackPcdDisk(&pcdCopy, rgch);
+	if (!pcdCopy.fNoParaLast || !pcdCopy.fPaphNil || pcdCopy.fn != 7 ||
+			pcdCopy.fc != (FC)0x12345678L || pcdCopy.prm != -2)
+		return 22;
+
+	memset(&sed, 0, sizeof(sed));
+	sed.fSpare = fTrue;
+	sed.fn = -1;
+	sed.fcSepx = fcNil;
+	OpusPackSedDisk(&sed, rgch);
+	if (rgch[0] != 0xfd || rgch[1] != 0xff || rgch[2] != 0xff ||
+			rgch[3] != 0xff || rgch[4] != 0xff || rgch[5] != 0xff)
+		return 23;
+	OpusUnpackSedDisk(&sedCopy, rgch);
+	if (!sedCopy.fSpare || sedCopy.fUnk || sedCopy.fn != -1 ||
+			sedCopy.fcSepx != fcNil)
+		return 24;
+
+	hplc = HplcInit(sizeof(struct TESTFOO), 3, 100, fTrue);
+	if (hplc == 0)
+		return 25;
+	(*hplc)->iMac = 2;
+	(*hplc)->icpAdjust = 3;
+	PutCpPlc(hplc, 0, 0);
+	PutCpPlc(hplc, 1, 10);
+	PutCpPlc(hplc, 2, 100);
+	PutPlc(hplc, 0, &foo0);
+	PutPlc(hplc, 1, &foo1);
+	if (OpusDiskPlcSize(2, sizeof(struct TESTFOO)) != 28)
+		result = 26;
+	else if (!OpusPackPlcDisk(*hplc, 2, 90, rgch, sizeof(rgch)))
+		result = 27;
+	else if (rgch[0] != 0 || rgch[4] != 10 || rgch[8] != 90 ||
+			rgch[12] != 11 || rgch[16] != 22 || rgch[20] != 33 ||
+			rgch[24] != 44)
+		result = 28;
+	FreeHplc(hplc);
+	return result;
+}
+
 int main(void)
 {
 	int result = FExercisePlc(fFalse);
 	if (result != 0)
 		return result;
 	result = FExercisePlc(fTrue);
-	return result == 0 ? 0 : result + 10;
+	if (result != 0)
+		return result + 10;
+	return FExerciseDiskPacking();
 }

@@ -125,6 +125,8 @@ extern FC               FcAppendRgchToFn();
 struct STTB      **HsttbPropeFromStsh();
 struct DTTM DttmCur();
 struct PLC **HplcReadPlcf();
+struct PLC **HplcReadPlcfPcd();
+struct PLC **HplcReadPlcfSed();
 
 
 /* D O C  C R E A T E  F N */
@@ -311,7 +313,7 @@ struct SELS *psels;
 		struct SED sed;
 		int ised;
 		if (FNoHeap ( dod.hplcsed =
-				HplcReadPlcf(fn, fib.fcPlcfsed, fib.cbPlcfsed, cbSED)))
+				HplcReadPlcfSed(fn, fib.fcPlcfsed, fib.cbPlcfsed, cbSED)))
 			goto ErrRet1;
 		/* set the fn's in the section table */
 		for ( ised = 0; ised < IMacPlc( dod.hplcsed ); ised++ )
@@ -844,7 +846,7 @@ struct FIB     *pfib;
 	ReadRgchFromFn(fn, &cbPlcpcd, 2);
 	Assert(cbPlcpcd == cb - 3);
 
-	if (FNoHeap(hplcpcd = HplcReadPlcf(fn, (**mpfnhfcb[fn]).fcPos,
+	if (FNoHeap(hplcpcd = HplcReadPlcfPcd(fn, (**mpfnhfcb[fn]).fcPos,
 			cbPlcpcd, cbPCD)))
 		goto MemErr;
 
@@ -1637,32 +1639,35 @@ long l;
 
 /*  %%Function:HplcReadPlcf %%Owner:peterj  */
 /* H P L C  R E A D  P L C F */
-struct PLC **HplcReadPlcf(fn, fcFirst, cbTotal, cb)
+struct PLC **HplcReadPlcfDisk(fn, fcFirst, cbTotal, cb, cbDisk, dfk)
 int     fn;
 FC      fcFirst;
 uns     cbTotal;
 int     cb;
+int     cbDisk;
+int     dfk;
 {
 	int     iMax;
 	struct PLC     **hplc, *pplc;
 
-	if (cbTotal < sizeof(CP))
+	if (cbTotal < WinMac(4, sizeof(CP)))
 		{
 		Assert(fFalse);
 		/* safety, we have files out there with this true! */
 		return hNil;
 		}
-	iMax = (long)((long) cbTotal - sizeof(CP)) / (long)(cb + sizeof(CP));
+	iMax = (long)((long) cbTotal - WinMac(4, sizeof(CP))) /
+			(long)(WinMac(cbDisk, cb) + WinMac(4, sizeof(CP)));
 	if (vmerr.fMemFail || (hplc = HplcInit(cb, iMax, cp0, fTrue /* ext rgFoo */)) == hNil)
 		return(hNil);
 	if ((*hplc)->iMax < iMax)
 		{
 		FreeHplc(hplc);
 		return hNil;
-		}
+	}
 	{
-	extern struct PLC **ReadIntoExtPlc();
-	ReadIntoExtPlc(hplc, fn, fcFirst, cbTotal);
+	extern struct PLC **ReadIntoExtPlcDisk();
+	ReadIntoExtPlcDisk(hplc, fn, fcFirst, cbTotal, cbDisk, dfk);
 	}
 	(*hplc)->iMac = iMax;
 	(*hplc)->icpAdjust = iMax+1;
@@ -1670,26 +1675,117 @@ int     cb;
 }
 
 
+struct PLC **HplcReadPlcf(fn, fcFirst, cbTotal, cb)
+int     fn;
+FC      fcFirst;
+uns     cbTotal;
+int     cb;
+{
+	return HplcReadPlcfDisk(fn, fcFirst, cbTotal, cb, cb, 0);
+}
+
+
+struct PLC **HplcReadPlcfPcd(fn, fcFirst, cbTotal, cb)
+int     fn;
+FC      fcFirst;
+uns     cbTotal;
+int     cb;
+{
+#ifdef OPUS_X64
+	return HplcReadPlcfDisk(fn, fcFirst, cbTotal, cb, 8, 1);
+#else
+	return HplcReadPlcf(fn, fcFirst, cbTotal, cb);
+#endif
+}
+
+
+struct PLC **HplcReadPlcfSed(fn, fcFirst, cbTotal, cb)
+int     fn;
+FC      fcFirst;
+uns     cbTotal;
+int     cb;
+{
+#ifdef OPUS_X64
+	return HplcReadPlcfDisk(fn, fcFirst, cbTotal, cb, 6, 2);
+#else
+	return HplcReadPlcf(fn, fcFirst, cbTotal, cb);
+#endif
+}
+
+
 /*  %%Function:ReadIntoExtPlc %%Owner:peterj  */
-struct PLC **ReadIntoExtPlc(hplc, fn, fcFirst, cbTotal)
+struct PLC **ReadIntoExtPlcDisk(hplc, fn, fcFirst, cbTotal, cbDisk, dfk)
 struct PLC **hplc;
 int fn;
 FC fcFirst;
 uns cbTotal;
+int cbDisk;
+int dfk;
 {
 	struct PLC *pplc;
 	CP HUGE *hprgcp;
+#ifdef OPUS_X64
+	HQ hqDisk;
+	char HUGE *hpchDisk;
+	int iMacDisk;
+	int i;
+	char HUGE *hpchFoo;
+	char HUGE *hpchDiskFoo;
+#endif
 
 	if (fcFirst != fcNil)
 		SetFnPos(fn, fcFirst);
 	pplc = *hplc;
 	Assert(pplc->fExternal);
 	hprgcp = (CP HUGE *)HpOfHq(pplc->hqplce);
+#ifdef OPUS_X64
+	if ((hqDisk = HqAllocLcb((long)cbTotal)) == hqNil)
+		return hNil;
+	hpchDisk = HpOfHq(hqDisk);
+	Win(StartUMeas(umScanFnForBytes));
+	ReadHprgchFromFn(fn, hpchDisk, cbTotal);
+	Win(StopUMeas(umScanFnForBytes));
+	iMacDisk = ((long)cbTotal - 4) / ((long)cbDisk + 4);
+	if (dfk == 0)
+		OpusUnpackPlcDisk(pplc, iMacDisk, hpchDisk, cbTotal);
+	else
+		{
+		for (i = 0; i <= iMacDisk; ++i)
+			hprgcp[i] = (CP)(int32_t)(
+					(uint32_t)(unsigned char)hpchDisk[i * 4] |
+					((uint32_t)(unsigned char)hpchDisk[i * 4 + 1] << 8) |
+					((uint32_t)(unsigned char)hpchDisk[i * 4 + 2] << 16) |
+					((uint32_t)(unsigned char)hpchDisk[i * 4 + 3] << 24));
+		hpchFoo = (char HUGE *)&hprgcp[pplc->iMax];
+		hpchDiskFoo = hpchDisk + (iMacDisk + 1) * 4;
+		for (i = 0; i < iMacDisk; ++i)
+			{
+			if (dfk == 1)
+				OpusUnpackPcdDisk(hpchFoo + i * pplc->cb,
+						hpchDiskFoo + i * cbDisk);
+			else
+				OpusUnpackSedDisk(hpchFoo + i * pplc->cb,
+						hpchDiskFoo + i * cbDisk);
+			}
+		}
+	FreeHq(hqDisk);
+#else
 	Assert(CbOfHq(pplc->hqplce) >= cbTotal);
 	Win(StartUMeas(umScanFnForBytes));
 	ReadHprgchFromFn(fn, hprgcp, cbTotal);
 	Win(StopUMeas(umScanFnForBytes));
+#endif
 	return(hplc);
+}
+
+
+struct PLC **ReadIntoExtPlc(hplc, fn, fcFirst, cbTotal)
+struct PLC **hplc;
+int fn;
+FC fcFirst;
+uns cbTotal;
+{
+	return ReadIntoExtPlcDisk(hplc, fn, fcFirst, cbTotal, (*hplc)->cb, 0);
 }
 
 
@@ -1871,11 +1967,6 @@ int doc;
 		}
 	return fTrue;
 }
-
-
-
-
-
 
 
 

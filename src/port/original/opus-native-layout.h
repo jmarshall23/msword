@@ -39,6 +39,15 @@ void OpusPlcClearAdjustment(void* pplc);
 void* OpusPlData(void* ppl);
 int OpusPlCount(const void* ppl);
 int OpusPlEntrySize(const void* ppl);
+int OpusDiskPlcSize(int entry_count, int runtime_entry_size);
+int OpusPackPlcDisk(const void* pplc, int entry_count, long cp_last_override,
+                    void* bytes, int byte_count);
+int OpusUnpackPlcDisk(void* pplc, int entry_count, const void* bytes,
+                      int byte_count);
+int OpusPackPcdDisk(const void* pcd, void* bytes);
+int OpusUnpackPcdDisk(void* pcd, const void* bytes);
+int OpusPackSedDisk(const void* sed, void* bytes);
+int OpusUnpackSedDisk(void* sed, const void* bytes);
 
 #ifdef __cplusplus
 }
