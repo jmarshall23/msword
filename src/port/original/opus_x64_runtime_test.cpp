@@ -89,6 +89,9 @@ extern "C" TestWord TmcDoDlgDli(TestDltHeader**, void**, TestDli*);
 extern "C" void EndDlg(TestWord);
 extern "C" void SetTmcText_sdm21(TestWord, char*);
 extern "C" void GetTmcText_sdm21(TestWord, char*, TestWord);
+extern "C" void SetTmcVal_sdm21(TestWord, TestWord);
+extern "C" TestWord CEntryListBoxTmc(TestWord);
+extern "C" void GetListBoxEntry(TestWord, TestWord, char*, TestWord);
 extern "C" void** HcabAlloc_sdm21(TestWord);
 extern "C" void FreeCab(void**);
 extern "C" int FSetCabSz(void**, const char*, TestWord);
@@ -133,6 +136,19 @@ void CountedPath(const char* path, unsigned char* counted_path,
     counted_path[0] = static_cast<unsigned char>(
         length >= capacity ? capacity - 1 : length);
     std::memcpy(counted_path + 1, path, counted_path[0]);
+}
+
+bool FindListEntry(const TestWord tmc, const char* text, TestWord* index) {
+    const TestWord count = CEntryListBoxTmc(tmc);
+    for (TestWord item = 0; item < count; ++item) {
+        char entry[260] = {};
+        GetListBoxEntry(tmc, item, entry, sizeof(entry));
+        if (std::strcmp(entry, text) == 0) {
+            *index = item;
+            return true;
+        }
+    }
+    return false;
 }
 
 int ModalRuntimeProbe(TestWord message, TestWord, TestWord, TestWord,
@@ -461,6 +477,137 @@ int main() {
         DestroyWindow(parent);
         EndSdm();
         return 29;
+    }
+
+    const auto cleanup_browse_tree = [] {
+        DeleteFileA("sdm.browse/sub.dir/open.doc");
+        RemoveDirectoryA("sdm.browse/sub.dir");
+        RemoveDirectoryA("sdm.browse");
+    };
+
+    cleanup_browse_tree();
+    if (!CreateDirectoryA("sdm.browse", nullptr) ||
+        !CreateDirectoryA("sdm.browse/sub.dir", nullptr)) {
+        DestroyWindow(parent);
+        EndSdm();
+        return 30;
+    }
+    FILE* browse_file = std::fopen("sdm.browse/sub.dir/open.doc", "wb");
+    if (browse_file != nullptr) {
+        std::fputs("browse", browse_file);
+        std::fclose(browse_file);
+    }
+    if (browse_file == nullptr) {
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 31;
+    }
+
+    void** browse_open_cab = HcabAlloc_sdm21(save_cab_initializer);
+    if (browse_open_cab == nullptr ||
+        !FSetCabSz(browse_open_cab, "sdm.browse/*.doc", 1)) {
+        if (browse_open_cab != nullptr) {
+            FreeCab(browse_open_cab);
+        }
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 32;
+    }
+    auto* browse_open_template_pointer = &open_template;
+    const TestWord browse_open =
+        HdlgStartDlg(&browse_open_template_pointer, browse_open_cab,
+                     &modal_initializer);
+    TestWord list_index = 0;
+    if (browse_open == 0 || !FindListEntry(0x0402, "[sub.dir]", &list_index)) {
+        FreeCab(browse_open_cab);
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 33;
+    }
+    SetTmcVal_sdm21(0x0402, list_index);
+    SendMessageA(HwndFromDlg(browse_open), WM_COMMAND,
+                 MAKEWPARAM(0x0402, LBN_DBLCLK), 0);
+    if (!FindListEntry(0x0401, "open.doc", &list_index)) {
+        FFreeDlg();
+        FreeCab(browse_open_cab);
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 34;
+    }
+    SetTmcVal_sdm21(0x0401, list_index);
+    SendMessageA(HwndFromDlg(browse_open), WM_COMMAND,
+                 MAKEWPARAM(0x0401, LBN_DBLCLK), 0);
+    char browsed_open_path[32768] = {};
+    GetCabSz(browse_open_cab, browsed_open_path, sizeof(browsed_open_path), 1);
+    const bool browsed_open_ok =
+        std::strstr(browsed_open_path, "sdm.browse") != nullptr &&
+        std::strstr(browsed_open_path, "sub.dir") != nullptr &&
+        std::strstr(browsed_open_path, "open.doc") != nullptr;
+    FFreeDlg();
+    FreeCab(browse_open_cab);
+    if (!browsed_open_ok) {
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 35;
+    }
+
+    void** browse_save_cab = HcabAlloc_sdm21(save_cab_initializer);
+    if (browse_save_cab == nullptr ||
+        !FSetCabSz(browse_save_cab, "save.doc", 1)) {
+        if (browse_save_cab != nullptr) {
+            FreeCab(browse_save_cab);
+        }
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 36;
+    }
+    auto* browse_save_template_pointer = &save_template;
+    const TestWord browse_save =
+        HdlgStartDlg(&browse_save_template_pointer, browse_save_cab,
+                     &modal_initializer);
+    if (browse_save == 0 ||
+        !FindListEntry(0x0403, "[sdm.browse]", &list_index)) {
+        FreeCab(browse_save_cab);
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 37;
+    }
+    SetTmcVal_sdm21(0x0403, list_index);
+    SendMessageA(HwndFromDlg(browse_save), WM_COMMAND,
+                 MAKEWPARAM(0x0403, LBN_DBLCLK), 0);
+    if (!FindListEntry(0x0403, "[sub.dir]", &list_index)) {
+        FFreeDlg();
+        FreeCab(browse_save_cab);
+        cleanup_browse_tree();
+        DestroyWindow(parent);
+        EndSdm();
+        return 38;
+    }
+    SetTmcVal_sdm21(0x0403, list_index);
+    SendMessageA(HwndFromDlg(browse_save), WM_COMMAND,
+                 MAKEWPARAM(0x0403, LBN_DBLCLK), 0);
+    SendMessageA(HwndFromDlg(browse_save), WM_COMMAND,
+                 MAKEWPARAM(1, BN_CLICKED), 0);
+    char browsed_save_path[32768] = {};
+    GetCabSz(browse_save_cab, browsed_save_path, sizeof(browsed_save_path), 1);
+    const bool browsed_save_ok =
+        std::strstr(browsed_save_path, "sdm.browse") != nullptr &&
+        std::strstr(browsed_save_path, "sub.dir") != nullptr &&
+        std::strstr(browsed_save_path, "save.doc") != nullptr;
+    FFreeDlg();
+    FreeCab(browse_save_cab);
+    cleanup_browse_tree();
+    if (!browsed_save_ok) {
+        DestroyWindow(parent);
+        EndSdm();
+        return 39;
     }
     EndSdm();
     DestroyWindow(parent);

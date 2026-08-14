@@ -1,5 +1,33 @@
 # DONE
 
+## Drive SDM file browser lists headless
+
+The SDM host command path now handles state-owned Open and Save As list commands
+without depending on native child-control focus state. Open directory-list
+double-clicks navigate and repopulate the file list, Open file-list double-clicks
+select and accept the file, and Save As directory-list double-clicks update the
+save path before OK syncs the CAB.
+
+`opus_x64_runtime_test` builds a temporary `sdm.browse/sub.dir` tree, drives the
+Open and Save As host windows with `WM_COMMAND` list notifications, and verifies
+that the resulting CAB paths came from list and directory selection without
+`WORD1_TEST_FILE_DIALOG_PATH`.
+
+This is partial item 15 progress only. The remaining check is Linux runner
+evidence for the full item 15 gate.
+
+Validated with `cmake --build build-chrstride --target opus_x64_runtime_test
+WORD1 opus_sdm_render_test -j2`, the focused SDM/Save/PDF CTest set,
+`ctest --test-dir build-chrstride -L ui --output-on-failure`, grep checks
+showing no `GetOpenFileNameA`/`GetSaveFileNameA` calls in
+`opus_sdm_runtime.cpp` and only the two dialog-host `CreateWindowExA` calls,
+`git diff --check`, a temp-file cleanup check, and the broader 27-test CTest
+sweep.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Use SDM edit paths for file dialogs
 
 The SDM Open and Save As modal path now uses the state-owned edit-control text
@@ -15,8 +43,8 @@ dialog instead of retrying forever with the same fixed selection.
 the SDM CAB path, clearing `WORD1_TEST_FILE_DIALOG_PATH`, running the modal
 dialog, and checking that the staging alias is active.
 
-This is partial item 15 progress only. The remaining work is interactive
-file-list and directory-list selection without native common dialogs.
+This was partial item 15 progress; list and directory selection are covered in
+the later SDM file-browser list entry.
 
 Validated with `cmake --build build-chrstride --target opus_x64_runtime_test
 -j2`, `ctest --test-dir build-chrstride -R '^opus_x64_runtime_test$'
@@ -37,8 +65,8 @@ headless About and Save As reference-image renderer, so `ctest -L ui` exercises 
 real dialog pixel diff without depending on native windows or scripted WORD1
 input.
 
-This is partial item 15 progress only. The remaining SDM work is the interactive
-Open/Save file browser path without `WORD1_TEST_FILE_DIALOG_PATH`.
+This was partial item 15 progress; later entries cover the file dialog path
+without `WORD1_TEST_FILE_DIALOG_PATH`.
 
 Validated with `cmake -S src -B build-chrstride`, `cmake --build
 build-chrstride --target opus_sdm_render_test -j2`, `ctest --test-dir
@@ -56,9 +84,8 @@ against checked-in PPM images instead of only checking pixel hashes. The test
 still keeps a nonblank guard, and its explicit `--write-references` mode was
 used once to generate `opus-sdm-about.ppm` and `opus-sdm-save-as.ppm`.
 
-This is partial item 15 progress only. The live SDM path still creates native
-child controls, the common dialogs still need an SDM file browser, and
-`ctest -L ui` still reports zero labelled tests.
+This was partial item 15 progress; later entries cover the headless `ui` label
+and state-owned file dialog path.
 
 Validated with `cmake --build build-chrstride --target opus_sdm_render_test -j2`,
 `build/tests/Debug/opus_sdm_render_test --write-references

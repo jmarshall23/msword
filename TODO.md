@@ -152,15 +152,17 @@ longer creates native child controls for SDM-owned controls, and
 `opus_sdm_runtime.cpp` no longer calls `GetOpenFileNameA` or `GetSaveFileNameA`.
 `opus_x64_runtime_test` now proves the Open and Save As modal paths can complete
 from the SDM edit-control path without `WORD1_TEST_FILE_DIALOG_PATH`. The
-remaining work is the browser interaction itself: selecting files from the
-state-owned file list and navigating directories from the state-owned directory
-list without native common dialogs.
+same test also drives the state-owned file and directory lists through the SDM
+host command path: Open navigates a directory list and selects a file-list
+entry, while Save As navigates the directory list before accepting the dialog.
+The remaining check is runner evidence for the full item 15 gate on Linux.
 
 Done when: a new `opus_sdm_render_test` renders the About and Save As dialogs to a
 pixel buffer and diffs against a checked-in reference image, and
-`ctest -L ui` is green headless on the Linux runner, and a headless SDM file
-browser test completes Open and Save As through list/directory selection without
-native common dialogs or test-only environment injection.
+`ctest -L ui` is green headless on the Linux runner, and the Linux runner also
+passes the headless SDM file-browser test that completes Open and Save As
+through list/directory selection without native common dialogs or test-only
+environment injection.
 
 ---
 

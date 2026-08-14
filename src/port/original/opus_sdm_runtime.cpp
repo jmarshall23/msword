@@ -1875,6 +1875,37 @@ void enter_open_directory(DialogState& dialog) {
     edit.text = join_path(dialog.current_directory, dialog.file_pattern);
 }
 
+void enter_save_directory(DialogState& dialog) {
+    const auto found = dialog.controls.find(kTmcSaveDirectoryList);
+    if (found == dialog.controls.end()) {
+        return;
+    }
+    std::string selected = selected_list_text(found->second);
+    if (selected.size() < 2 || selected.front() != '[' ||
+        selected.back() != ']') {
+        return;
+    }
+    selected = selected.substr(1, selected.size() - 2);
+    char full_path[32768] = {};
+    const std::string destination =
+        join_path(dialog.current_directory, selected);
+    if (GetFullPathNameA(destination.c_str(),
+                         static_cast<DWORD>(sizeof(full_path)), full_path,
+                         nullptr) == 0) {
+        return;
+    }
+    dialog.current_directory = full_path;
+    populate_save_directories(dialog);
+
+    auto& edit = dialog.controls[kTmcSaveFile];
+    const std::size_t leaf = edit.text.find_last_of("\\/");
+    const std::string file_name =
+        leaf == std::string::npos ? edit.text : edit.text.substr(leaf + 1);
+    edit.text = file_name.empty() ? file_name
+                                  : join_path(dialog.current_directory,
+                                              file_name);
+}
+
 void finish_native_dialog(DialogState& dialog, const Tmc result) {
     if (dialog.hid == kIddOpen) {
         sync_open_cab(dialog);
@@ -1913,6 +1944,50 @@ void handle_dialog_command(const Hdlg handle, const WPARAM w_param,
     g_current_dialog = handle;
     g_focus_dialog = handle;
     sync_current_dialog_globals();
+
+    if (dialog->hid == kIddSaveAs && tmc == kTmcSaveDirectoryList &&
+        (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
+        if (found == dialog->controls.end()) {
+            return;
+        }
+        if (notification == LBN_DBLCLK) {
+            enter_save_directory(*dialog);
+        }
+        invoke_dialog_proc(*dialog,
+                           notification == LBN_DBLCLK ? kDlmDblClk
+                                                     : kDlmClick,
+                           tmc, found->second.value);
+        return;
+    }
+    if (dialog->hid == kIddOpen && tmc == kTmcOpenFileList &&
+        (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
+        select_open_file(*dialog);
+        invoke_dialog_proc(*dialog,
+                           notification == LBN_DBLCLK ? kDlmDblClk
+                                                     : kDlmClick,
+                           tmc);
+        if (notification == LBN_DBLCLK && !dialog->dying) {
+            finish_native_dialog(*dialog, kTmcOk);
+        }
+        return;
+    }
+    if (dialog->hid == kIddOpen && tmc == kTmcOpenFileDir &&
+        (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
+        invoke_dialog_proc(*dialog,
+                           notification == LBN_DBLCLK ? kDlmDblClk
+                                                     : kDlmClick,
+                           tmc);
+        if (notification == LBN_DBLCLK && !dialog->dying) {
+            enter_open_directory(*dialog);
+        }
+        return;
+    }
+    if (notification == BN_CLICKED &&
+        (tmc == kTmcOk || tmc == kTmcCancel ||
+         (dialog->hid == kIddOpen && tmc == kTmcOpenCatalog))) {
+        finish_native_dialog(*dialog, tmc);
+        return;
+    }
 
     if (found != dialog->controls.end() &&
         found->second.kind == ControlKind::combo) {
@@ -2000,37 +2075,6 @@ void handle_dialog_command(const Hdlg handle, const WPARAM w_param,
     if (dialog->hid == kIddSaveAs && tmc == kTmcSaveFile &&
         notification == EN_CHANGE) {
         invoke_dialog_proc(*dialog, kDlmChange, tmc);
-        return;
-    }
-    if (dialog->hid == kIddSaveAs && tmc == kTmcSaveDirectoryList &&
-        (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
-        invoke_dialog_proc(*dialog,
-                           notification == LBN_DBLCLK ? kDlmDblClk
-                                                     : kDlmClick,
-                           tmc, found->second.value);
-        return;
-    }
-    if (dialog->hid == kIddOpen && tmc == kTmcOpenFileList &&
-        (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
-        select_open_file(*dialog);
-        invoke_dialog_proc(*dialog,
-                           notification == LBN_DBLCLK ? kDlmDblClk
-                                                     : kDlmClick,
-                           tmc);
-        if (notification == LBN_DBLCLK && !dialog->dying) {
-            finish_native_dialog(*dialog, kTmcOk);
-        }
-        return;
-    }
-    if (dialog->hid == kIddOpen && tmc == kTmcOpenFileDir &&
-        (notification == LBN_SELCHANGE || notification == LBN_DBLCLK)) {
-        invoke_dialog_proc(*dialog,
-                           notification == LBN_DBLCLK ? kDlmDblClk
-                                                     : kDlmClick,
-                           tmc);
-        if (notification == LBN_DBLCLK && !dialog->dying) {
-            enter_open_directory(*dialog);
-        }
         return;
     }
     if (notification == BN_CLICKED) {
