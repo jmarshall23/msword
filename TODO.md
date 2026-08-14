@@ -113,10 +113,13 @@ at byte 24 when `OPUS_PFN` and heap handles are 4-byte wasm pointers. Fix the
 table writer and every reader that assumes x64-native KME/KMP widths; do not
 paper over the assertions.
 
-The wasm build currently writes static archives under `build/lib/Debug`, the same
-directory used by native debug builds. Rebuild `opus_x64_runtime` after a wasm
-probe before running native tests, or split target artifact directories before
-adding wasm CI.
+Emscripten-linked artifacts now live under `build/wasm/` and `bin/wasm/`, while
+native host tools still come from `build/tools/Debug`. Keep that split intact
+before adding wasm CI.
+
+`wasm-debug` still registers native CTest tests whose Emscripten outputs are not
+directly executable by CTest. Guard or route those tests through Node before
+turning on a wasm CI job.
 
 The blocking-loop problem is handled by the user32 queue model, and Asyncify is
 the chosen route for this item.

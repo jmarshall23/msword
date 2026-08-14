@@ -20,24 +20,30 @@ set(MSWORD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
 cmake_path(NORMAL_PATH MSWORD_ROOT)
 set(MSWORD_BUILD_ROOT "${MSWORD_ROOT}/build")
 set(MSWORD_BIN_ROOT "${MSWORD_ROOT}/bin")
+set(MSWORD_TARGET_BUILD_ROOT "${MSWORD_BUILD_ROOT}")
+set(MSWORD_TARGET_BIN_ROOT "${MSWORD_BIN_ROOT}")
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(MSWORD_TARGET_BUILD_ROOT "${MSWORD_BUILD_ROOT}/wasm")
+    set(MSWORD_TARGET_BIN_ROOT "${MSWORD_BIN_ROOT}/wasm")
+endif()
 # Reserved for the executable that will be linked from the original Opus
 # source graph. The migration bootstrap must not use this product name.
 set(MSWORD_PRODUCT_OUTPUT_NAME "WORD1" CACHE STRING
     "Filename stem for the original-source Word x64 executable")
 
-file(MAKE_DIRECTORY "${MSWORD_BUILD_ROOT}" "${MSWORD_BIN_ROOT}")
+file(MAKE_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}" "${MSWORD_TARGET_BIN_ROOT}")
 
 # Keep linked artifacts in the locations requested for this port. CMake's
 # generated project and cache live under ../out (see CMakePresets.json).
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BIN_ROOT}")
-set(CMAKE_PDB_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/pdb")
-set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/pdb")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BIN_ROOT}")
+set(CMAKE_PDB_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/pdb")
+set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/pdb")
 
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BIN_ROOT}")
-    set(CMAKE_PDB_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/pdb/${config}")
-    set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/pdb/${config}")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BIN_ROOT}")
+    set(CMAKE_PDB_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/pdb/${config}")
+    set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/pdb/${config}")
 endforeach()
 
 file(GLOB LEGACY_ASSEMBLY CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Opus/asm/*.asm")
@@ -72,7 +78,7 @@ if(NOT WIN32)
     endif()
     set_target_properties(opus-sdl-probe PROPERTIES
         FOLDER "Port probes"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/probes"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/probes"
     )
 endif()
 
@@ -888,12 +894,12 @@ else()
 endif()
 set_target_properties(opus_original_engine PROPERTIES
     FOLDER "Original Opus x64"
-    ARCHIVE_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/lib"
+    ARCHIVE_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/lib"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_original_engine PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/lib/${config}"
+        ARCHIVE_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/lib/${config}"
     )
 endforeach()
 
@@ -970,13 +976,13 @@ set_source_files_properties(port/original/opus-sdm-runtime.c PROPERTIES
 )
 set_target_properties(opus_x64_runtime PROPERTIES
     FOLDER "Original Opus x64/runtime"
-    ARCHIVE_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/lib"
+    ARCHIVE_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/lib"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_x64_runtime PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/lib/${config}"
+        ARCHIVE_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/lib/${config}"
     )
 endforeach()
 
@@ -1006,13 +1012,13 @@ else()
 endif()
 set_target_properties(opus_original_sttb_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_original_sttb_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1043,13 +1049,13 @@ else()
 endif()
 set_target_properties(opus_original_plc_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_original_plc_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1079,13 +1085,13 @@ else()
 endif()
 set_target_properties(opus_sdm_cab_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_sdm_cab_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1106,13 +1112,13 @@ if(APPLE)
 endif()
 set_target_properties(opus_sdm_render_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_sdm_render_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1129,13 +1135,13 @@ if(MSVC)
 endif()
 set_target_properties(opus_original_command_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_original_command_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1208,13 +1214,13 @@ endif()
 set_target_properties(opus_original_startup_probe PROPERTIES
     FOLDER "Original Opus x64/port probes"
     LINKER_LANGUAGE CXX
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/probes"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/probes"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_original_startup_probe PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/probes/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/probes/${config}"
     )
 endforeach()
 
@@ -1245,13 +1251,13 @@ else()
 endif()
 set_target_properties(opus_original_strtbl_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_original_strtbl_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1267,13 +1273,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win16_module_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win16_module_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win16_module_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 endif()
@@ -1290,13 +1296,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_resource_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_resource_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_resource_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 endif()
@@ -1313,13 +1319,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_gdi_object_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_gdi_object_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_gdi_object_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 
@@ -1334,13 +1340,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_gdi_raster_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_gdi_raster_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_gdi_raster_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 
@@ -1355,13 +1361,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_font_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_font_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_font_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 
@@ -1376,13 +1382,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_print_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_print_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_print_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 
@@ -1397,13 +1403,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_user32_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_user32_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_user32_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 
@@ -1418,13 +1424,13 @@ if(NOT WIN32)
     target_link_libraries(opus_win32_memory_test PRIVATE opus_x64_runtime)
     set_target_properties(opus_win32_memory_test PROPERTIES
         FOLDER "Original Opus x64/tests"
-        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+        RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
         VS_GLOBAL_VcpkgApplocalDeps "false"
     )
     foreach(config Debug Release RelWithDebInfo MinSizeRel)
         string(TOUPPER "${config}" config_upper)
         set_target_properties(opus_win32_memory_test PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+            RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
         )
     endforeach()
 endif()
@@ -1452,13 +1458,13 @@ else()
 endif()
 set_target_properties(opus_x64_runtime_test PROPERTIES
     FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_x64_runtime_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
@@ -1480,13 +1486,13 @@ endif()
 set_target_properties(opus_modern_formats_test PROPERTIES
     FOLDER "Original Opus x64/tests"
     LINKER_LANGUAGE CXX
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
+    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_TARGET_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
 foreach(config Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${config}" config_upper)
     set_target_properties(opus_modern_formats_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
+        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_TARGET_BUILD_ROOT}/tests/${config}"
     )
 endforeach()
 
