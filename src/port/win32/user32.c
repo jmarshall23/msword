@@ -37,6 +37,9 @@ struct WindowObject {
     LONG_PTR user_data;
     BOOL enabled;
     BOOL visible;
+    int scroll_min[2];
+    int scroll_max[2];
+    int scroll_pos[2];
     unsigned char* extra;
     size_t extra_size;
     struct WindowProperty* properties;
@@ -898,6 +901,8 @@ HWND CreateWindowExA(DWORD extended_style, LPCSTR class_name,
     window->instance = instance;
     window->enabled = TRUE;
     window->visible = (style & WS_VISIBLE) != 0;
+    window->scroll_max[SB_HORZ] = 100;
+    window->scroll_max[SB_VERT] = 100;
     window->extra_size = (size_t)max_int(0, klass.window_extra);
     if (window->extra_size != 0) {
         window->extra = (unsigned char*)calloc(window->extra_size, 1);
@@ -1972,6 +1977,32 @@ BOOL SetWindowPos(HWND window, HWND insert_after, int x, int y, int cx, int cy,
 BOOL MoveWindow(HWND window, int x, int y, int width, int height, BOOL repaint) {
     return SetWindowPos(window, NULL, x, y, width, height,
                         repaint ? 0 : SWP_NOREDRAW);
+}
+
+static int scroll_bar_index(int bar) {
+    return bar == SB_HORZ || bar == SB_VERT ? bar : -1;
+}
+
+VOID SetScrollRange(HWND window, int bar, int minimum, int maximum,
+                    BOOL redraw) {
+    (void)redraw;
+    struct WindowObject* object = window_from_handle(window);
+    const int index = scroll_bar_index(bar);
+    if (object == NULL || index < 0) return;
+    object->scroll_min[index] = minimum;
+    object->scroll_max[index] = maximum;
+}
+
+int SetScrollPos(HWND window, int bar, int position, BOOL redraw) {
+    (void)redraw;
+    struct WindowObject* object = window_from_handle(window);
+    const int index = scroll_bar_index(bar);
+    if (object == NULL || index < 0) return 0;
+    const int previous = object->scroll_pos[index];
+    object->scroll_pos[index] =
+        min_int(max_int(position, object->scroll_min[index]),
+                object->scroll_max[index]);
+    return previous;
 }
 
 BOOL SetWindowTextA(HWND window, LPCSTR text) {

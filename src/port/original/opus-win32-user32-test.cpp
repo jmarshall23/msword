@@ -272,6 +272,21 @@ int main() {
         PeekMessageA(&paint_message, window, WM_PAINT, WM_PAINT, PM_REMOVE)) {
         return 22;
     }
+    if (SetScrollPos(window, SB_VERT, 12, FALSE) != 0 ||
+        SetScrollPos(window, SB_VERT, 25, FALSE) != 12) {
+        return 23;
+    }
+    SetScrollRange(window, SB_VERT, 0, 100, FALSE);
+    SetScrollRange(window, SB_HORZ, -10, 10, FALSE);
+    if (SetScrollPos(window, SB_HORZ, -3, FALSE) != 0 ||
+        SetScrollPos(window, SB_VERT, 40, TRUE) != 25 ||
+        SetScrollPos(window, SB_HORZ, 7, TRUE) != -3 ||
+        SetScrollPos(window, SB_VERT, 150, TRUE) != 40 ||
+        SetScrollPos(window, SB_VERT, 60, TRUE) != 100 ||
+        SetScrollPos(nullptr, SB_VERT, 1, FALSE) != 0 ||
+        SetScrollPos(window, 99, 1, FALSE) != 0) {
+        return 23;
+    }
 
     RECT client{};
     RECT window_rect{};

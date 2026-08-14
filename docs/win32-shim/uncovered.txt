@@ -8,6 +8,4 @@ Ellipse
 ExcludeClipRect
 GetSystemMenu
 Polygon
-SetScrollPos
-SetScrollRange
 TextOutW
