@@ -52,23 +52,20 @@ and `IsZoomed` are Word's own routines, not imports, so their high call counts a
 noise; and the shim must be a static library so Word's definitions win at link.
 
 Two things not in the way: zero SEH and zero inline assembly across the whole tree.
-The MSVC-only constructs are confined to three files, `opus_asm_resn2_sttb.cpp`
-(`__declspec(dllimport)`), `opus_original_startup_probe.cpp` (`<rtcapi.h>`, `wWinMain`),
-and `opus_win95_chrome.cpp` (`<windowsx.h>`, `uxtheme.dll`). The dead
-`opus_product_entry.cpp` stub is gone; every file named here is compiled by a
-live target.
+The remaining MSVC-only C++ constructs are confined to `opus_asm_resn2_sttb.cpp`
+(`__declspec(dllimport)`) and `opus_original_startup_probe.cpp` (`<rtcapi.h>`,
+`wWinMain`). The Win95 chrome `uxtheme.dll` path now builds from C11. The dead
+`opus_product_entry.cpp` stub is gone; every file named here is compiled by a live target.
 
 ## Finish the C11 port surface
 
-Most `src/port/original/` C++ adapters have been converted to C11. Two large
-feature islands remain and should be handled as separate migration batches:
-`src/port/original/opus_win95_chrome.cpp` owns the toolbar, ruler, page-view
-chrome, and Unicode input queue; `src/port/original/opus_modern_formats.cpp`
-owns DOCX/ODT/RTF/PDF conversion, Unicode document tracking, and PDF export.
+Most `src/port/original/` C++ adapters have been converted to C11. One large
+feature island remains: `src/port/original/opus_modern_formats.cpp` owns
+DOCX/ODT/RTF/PDF conversion, Unicode document tracking, and PDF export.
 
-Do: convert one island at a time to C11, rename new source files with hyphenated
-names, keep exported symbols stable, and update `src/CMakeLists.txt` source
-lists and target language settings after each conversion.
+Do: convert it to C11, rename the new source file with a hyphenated name, keep
+exported symbols stable, and update `src/CMakeLists.txt` source lists and
+target language settings.
 
 Done when: `rg --files src/port | rg '\.(cpp|cc|cxx|hpp|hh|hxx)$'` returns no
 matches, `cmake --build out/macos-debug --target opus_x64_runtime

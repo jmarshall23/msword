@@ -1,5 +1,28 @@
 # DONE
 
+## Convert Win95 chrome to C11
+
+The Win95 toolbar, ruler, page-view chrome, menu repaint, text color, input
+language, and Unicode input queue adapter now builds from
+`src/port/original/opus-win95-chrome.c`.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, STL arrays,
+vectors, deques, strings, lambdas, `auto`, `constexpr`, C++ casts, `nullptr`,
+and scoped enums. Toolbar state, page snapshots, pending Unicode input, combo
+copies, and ruler labels now use explicit C11 storage while keeping the same
+Win32 calls and exported symbols.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test opus_modern_formats_test WORD1 -j2`, `ctest --test-dir
+out/macos-debug -R '^opus_modern_formats_test$|^opus_x64_runtime_test$'
+--output-on-failure`, `ctest --test-dir out/macos-debug -L ui
+--output-on-failure`, the C++ surface grep over
+`src/port/original/opus-win95-chrome.c`, the `nm` symbol check in
+`libopus_original_engine.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert SDM runtime to C11
 
 The SDM 2.21 runtime now builds from

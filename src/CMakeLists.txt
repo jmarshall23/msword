@@ -810,7 +810,7 @@ add_library(opus_original_engine STATIC
     port/original/opus_asm_resn2_adapters.c
     port/original/opus_asm_native_adapters.c
     port/original/opus_asm_wproc.c
-    port/original/opus_win95_chrome.cpp
+    port/original/opus-win95-chrome.c
     port/original/opus_x64_segment_anchors.c
 )
 add_dependencies(opus_original_engine
@@ -836,6 +836,9 @@ set_source_files_properties(Opus/wordtech/layout1.c Opus/wordtech/layout2.c PROP
 )
 set_source_files_properties(Opus/wordtech/disp2.c PROPERTIES
     COMPILE_DEFINITIONS DEBUGORNOTWIN
+)
+set_source_files_properties(port/original/opus-win95-chrome.c PROPERTIES
+    COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
 )
 set_source_files_properties(Opus/wordtech/disptbl.c PROPERTIES
     COMPILE_DEFINITIONS DEBUGORNOTWIN

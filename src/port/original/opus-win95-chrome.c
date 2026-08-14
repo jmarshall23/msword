@@ -3,96 +3,104 @@
 #include "imm.h"
 #include "windowsx.h"
 
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <deque>
-#include <iterator>
-#include <string>
-#include <vector>
+#ifndef OPUSW
+#define OPUSW(text) u##text
+#endif
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define USEBCM
 #include "opuscmd.h"
 
-extern "C" int OpusGetWin95VerticalRulerMetrics(
+int OpusGetWin95VerticalRulerMetrics(
     HWND pane, int* page_top, int* page_bottom, int* top_margin,
     int* bottom_margin, int* pixels_per_inch);
-extern "C" int OpusGetWin95ContinuousPageMetrics(
+int OpusGetWin95ContinuousPageMetrics(
     HWND pane, int* page_left, int* page_top, int* page_right,
     int* page_bottom, int* page_gap, int* has_previous, int* has_next);
-extern "C" int OpusScrollWin95ContinuousPages(HWND pane, int pixels);
-extern "C" int OpusGetWin95ZoomPercent(HWND pane);
-extern "C" int OpusGetWin95CurrentPageIndex(HWND pane);
-extern "C" int OpusAdjustWin95Zoom(HWND pane, int percent_delta);
-extern "C" int OpusRecenterWin95PageView(HWND pane);
-extern "C" int OpusSetWin95VerticalMargin(
+int OpusScrollWin95ContinuousPages(HWND pane, int pixels);
+int OpusGetWin95ZoomPercent(HWND pane);
+int OpusGetWin95CurrentPageIndex(HWND pane);
+int OpusAdjustWin95Zoom(HWND pane, int percent_delta);
+int OpusRecenterWin95PageView(HWND pane);
+int OpusSetWin95VerticalMargin(
     HWND pane, int top_margin, int margin_pixels);
-extern "C" int OpusApplyWin95TextColor(HWND pane, int color_index);
-extern "C" int OpusGetWin95HorizontalRulerMetrics(
+int OpusApplyWin95TextColor(HWND pane, int color_index);
+int OpusGetWin95HorizontalRulerMetrics(
     HWND ruler, int* zero, int* active_left, int* active_right,
     int* pixels_per_inch, int* left_indent, int* first_indent,
     int* right_indent, int* default_tab, int* tab_count,
     int* tab_positions, unsigned char* tab_types, int tab_capacity);
-extern "C" int OpusGetWin95HorizontalPageMargins(
+int OpusGetWin95HorizontalPageMargins(
     HWND ruler, int* left_margin, int* right_margin);
-extern "C" int OpusAdjustWin95HorizontalMargin(
+int OpusAdjustWin95HorizontalMargin(
     HWND ruler, int left_margin, int delta_pixels);
-extern "C" void OpusDrawWin95HorizontalRuler(HWND ruler);
-extern "C" int OpusExportCurrentDocumentPdf(void);
-extern "C" int OpusGetUnicodeSelection(
+void OpusDrawWin95HorizontalRuler(HWND ruler);
+int OpusExportCurrentDocumentPdf(void);
+int OpusGetUnicodeSelection(
     int* doc, long* cp_first, long* cp_lim);
-extern "C" int OpusUnicodeLegacyByteForScalar(unsigned int scalar);
-extern "C" int OpusUnicodeSetScalar(
+int OpusUnicodeLegacyByteForScalar(unsigned int scalar);
+int OpusUnicodeSetScalar(
     int doc, long cp, unsigned int scalar);
-extern "C" int OpusUnicodeSetInputLanguage(const char* language);
-extern "C" int OpusUnicodeGetInputLanguage(char* language, int capacity);
-extern "C" int OpusQueueUnicodeWmChar(HWND pane, unsigned int code_unit);
+int OpusUnicodeSetInputLanguage(const char* language);
+int OpusUnicodeGetInputLanguage(char* language, int capacity);
+int OpusQueueUnicodeWmChar(HWND pane, unsigned int code_unit);
 
-namespace {
+static const WCHAR kToolbarClass[] = OPUSW("OpusWin95Toolbar");
+static const WCHAR kRulerOverlayClass[] = OPUSW("OpusWin95RulerOverlay");
+static const WCHAR kComboBoxClass[] = OPUSW("ComboBox");
+static const WCHAR kComboBoxWindowClass[] = OPUSW("COMBOBOX");
+static const WCHAR kDocumentPaneClass[] = OPUSW("OpusWwd");
+static const WCHAR kRulerClass[] = OPUSW("OpusRul");
+static const WCHAR kMenuPopupClass[] = OPUSW("#32768");
+static const WCHAR kArialFace[] = OPUSW("Arial");
+static const WCHAR kToolbarFace[] = OPUSW("MS Sans Serif");
+static const WCHAR kNormalStyle[] = OPUSW("Normal");
+static const WCHAR kDefaultSize[] = OPUSW("10");
+static const WCHAR kZoom100[] = OPUSW("100%");
+static const WCHAR kZoomPageWidth[] = OPUSW("Page Width");
+static const WCHAR kZoomWholePage[] = OPUSW("Whole Page");
+static const WCHAR kZoomPrintPreview[] = OPUSW("Print Preview");
+static const WCHAR kDwmApiLibrary[] = OPUSW("dwmapi.dll");
+static const WCHAR kFormatGlyphColor[] = OPUSW("A");
+static const WCHAR kFormatGlyphBold[] = OPUSW("B");
+static const WCHAR kFormatGlyphItalic[] = OPUSW("I");
+static const WCHAR kFormatGlyphUnderline[] = OPUSW("U");
+static const WCHAR kOriginalPaneProcProperty[] = OPUSW("OpusWord95OriginalPaneProc");
 
-constexpr WCHAR kToolbarClass[] = OPUSW("OpusWin95Toolbar");
-constexpr WCHAR kRulerOverlayClass[] = OPUSW("OpusWin95RulerOverlay");
-constexpr WCHAR kComboBoxClass[] = OPUSW("ComboBox");
-constexpr WCHAR kComboBoxWindowClass[] = OPUSW("COMBOBOX");
-constexpr WCHAR kDocumentPaneClass[] = OPUSW("OpusWwd");
-constexpr WCHAR kRulerClass[] = OPUSW("OpusRul");
-constexpr WCHAR kMenuPopupClass[] = OPUSW("#32768");
-constexpr WCHAR kArialFace[] = OPUSW("Arial");
-constexpr WCHAR kToolbarFace[] = OPUSW("MS Sans Serif");
-constexpr WCHAR kNormalStyle[] = OPUSW("Normal");
-constexpr WCHAR kDefaultSize[] = OPUSW("10");
-constexpr WCHAR kZoom100[] = OPUSW("100%");
-constexpr WCHAR kZoomPageWidth[] = OPUSW("Page Width");
-constexpr WCHAR kZoomWholePage[] = OPUSW("Whole Page");
-constexpr WCHAR kZoomPrintPreview[] = OPUSW("Print Preview");
-constexpr WCHAR kDwmApiLibrary[] = OPUSW("dwmapi.dll");
-constexpr WCHAR kFormatGlyphColor[] = OPUSW("A");
-constexpr WCHAR kFormatGlyphBold[] = OPUSW("B");
-constexpr WCHAR kFormatGlyphItalic[] = OPUSW("I");
-constexpr WCHAR kFormatGlyphUnderline[] = OPUSW("U");
-constexpr int kToolbarBitmap = 201;
-constexpr int kSpriteCell = 20;
-constexpr COLORREF kButtonFace = RGB(192, 192, 192);
-constexpr UINT_PTR kMenuRepaintTimer = 0x7f51;
-constexpr COLORREF kButtonShadow = RGB(128, 128, 128);
-constexpr COLORREF kButtonDarkShadow = RGB(0, 0, 0);
-constexpr COLORREF kButtonHighlight = RGB(255, 255, 255);
-constexpr COLORREF kCaptionBlue = RGB(0, 0, 128);
-constexpr UINT kComboStyle = 0x7501;
-constexpr UINT kComboFont = 0x7502;
-constexpr UINT kComboSize = 0x7503;
-constexpr UINT kComboZoom = 0x7504;
-constexpr UINT kCmdToggleStandardToolbar = 0x7101;
-constexpr UINT kCmdToggleFormattingToolbar = 0x7102;
-constexpr UINT kCmdExportPdf = 0x7103;
-constexpr UINT kCmdTextColorBase = 0x7200;
-constexpr UINT kCmdLanguageBase = 0x7300;
-constexpr UINT_PTR kSyncTimer = 0x951;
-constexpr UINT kWmCommitUnicodeScalar = WM_APP + 0x452;
-constexpr std::size_t kMaxPendingUnicodeInput = 0xffff;
-constexpr WCHAR kOriginalPaneProcProperty[] = OPUSW("OpusWord95OriginalPaneProc");
+enum {
+    kToolbarBitmap = 201,
+    kSpriteCell = 20,
+    kComboStyle = 0x7501,
+    kComboFont = 0x7502,
+    kComboSize = 0x7503,
+    kComboZoom = 0x7504,
+    kCmdToggleStandardToolbar = 0x7101,
+    kCmdToggleFormattingToolbar = 0x7102,
+    kCmdExportPdf = 0x7103,
+    kCmdTextColorBase = 0x7200,
+    kCmdLanguageBase = 0x7300,
+    kStandardButtonCount = 18,
+    kFormatButtonCount = 14,
+    kLanguageChoiceCount = 17,
+    kMaxPendingUnicodeInput = 0xffff,
+    kWmCommitUnicodeScalar = WM_APP + 0x452
+};
 
-enum class FormatGlyph {
+static const COLORREF kButtonFace = RGB(192, 192, 192);
+static const UINT_PTR kMenuRepaintTimer = 0x7f51;
+static const COLORREF kButtonShadow = RGB(128, 128, 128);
+static const COLORREF kButtonDarkShadow = RGB(0, 0, 0);
+static const COLORREF kButtonHighlight = RGB(255, 255, 255);
+static const COLORREF kCaptionBlue = RGB(0, 0, 128);
+static const UINT_PTR kSyncTimer = 0x951;
+
+typedef enum FormatGlyph {
     bold,
     italic,
     underline,
@@ -107,23 +115,23 @@ enum class FormatGlyph {
     indent_right,
     table,
     borders
-};
+} FormatGlyph;
 
-struct SpriteButton {
+typedef struct SpriteButton {
     int sprite;
     UINT command;
     int group;
     bool latch;
-};
+} SpriteButton;
 
-struct FormatButton {
+typedef struct FormatButton {
     FormatGlyph glyph;
     UINT command;
     int group;
     bool latch;
-};
+} FormatButton;
 
-constexpr std::array<SpriteButton, 18> kStandardButtons{{
+static const SpriteButton kStandardButtons[kStandardButtonCount] = {
     {0, bcmFileNew, 0, false},
     {1, imiOpen, 0, false},
     {2, bcmSave, 0, false},
@@ -142,87 +150,93 @@ constexpr std::array<SpriteButton, 18> kStandardButtons{{
     {14, bcmShowAll, 4, true},
     {15, bcmHelp, 5, false},
     {16, bcmHelp, 5, false},
-}};
-
-constexpr std::array<FormatButton, 14> kFormatButtons{{
-    {FormatGlyph::bold, bcmBold, 0, true},
-    {FormatGlyph::italic, bcmItalic, 0, true},
-    {FormatGlyph::underline, bcmULine, 0, true},
-    {FormatGlyph::color, bcmColor, 0, false},
-    {FormatGlyph::align_left, bcmParaLeft, 1, true},
-    {FormatGlyph::align_center, bcmParaCenter, 1, true},
-    {FormatGlyph::align_right, bcmParaRight, 1, true},
-    {FormatGlyph::align_justify, bcmParaBoth, 1, true},
-    {FormatGlyph::numbered, imiRenumParas, 2, false},
-    {FormatGlyph::bullets, imiRenumParas, 2, false},
-    {FormatGlyph::indent_left, bcmUnIndent, 2, false},
-    {FormatGlyph::indent_right, bcmIndent, 2, false},
-    {FormatGlyph::table, bcmInsTable, 3, false},
-    {FormatGlyph::borders, bcmParagraph, 3, false},
-}};
-
-struct HitResult {
-    bool hit = false;
-    bool format = false;
-    int index = -1;
-    UINT command = 0;
 };
 
-struct ToolbarState {
-    HBITMAP sprite = nullptr;
-    HFONT font = nullptr;
-    HWND style_combo = nullptr;
-    HWND font_combo = nullptr;
-    HWND size_combo = nullptr;
-    HWND zoom_combo = nullptr;
-    HWND source_style = nullptr;
-    HWND source_font = nullptr;
-    HWND source_size = nullptr;
-    int copied_style_count = -1;
-    int copied_font_count = -1;
-    int copied_size_count = -1;
-    ULONGLONG suppress_sync_until = 0;
-    ULONGLONG page_view_start_after = 0;
-    bool style_edit_dirty = false;
-    bool font_edit_dirty = false;
-    bool size_edit_dirty = false;
-    bool standard_visible = true;
-    bool formatting_visible = true;
-    bool startup_page_view_requested = false;
-    int ruler_refreshes_remaining = 0;
-    int text_color_index = 0;
-    COLORREF text_color = RGB(0, 0, 0);
-    HitResult pressed{};
-    std::array<bool, kStandardButtons.size()> standard_latched{};
-    std::array<bool, kFormatButtons.size()> format_latched{};
+static const FormatButton kFormatButtons[kFormatButtonCount] = {
+    {bold, bcmBold, 0, true},
+    {italic, bcmItalic, 0, true},
+    {underline, bcmULine, 0, true},
+    {color, bcmColor, 0, false},
+    {align_left, bcmParaLeft, 1, true},
+    {align_center, bcmParaCenter, 1, true},
+    {align_right, bcmParaRight, 1, true},
+    {align_justify, bcmParaBoth, 1, true},
+    {numbered, imiRenumParas, 2, false},
+    {bullets, imiRenumParas, 2, false},
+    {indent_left, bcmUnIndent, 2, false},
+    {indent_right, bcmIndent, 2, false},
+    {table, bcmInsTable, 3, false},
+    {borders, bcmParagraph, 3, false},
 };
 
-HBRUSH g_menu_brush = nullptr;
-HMENU g_table_menu = nullptr;
-HMENU g_toolbars_menu = nullptr;
-HMENU g_language_menu = nullptr;
-WNDPROC g_original_app_proc = nullptr;
-bool g_word95_page_view_active = false;
-WCHAR g_pending_high_surrogate = 0;
+typedef struct HitResult {
+    bool hit;
+    bool format;
+    int index;
+    UINT command;
+} HitResult;
 
-struct LanguageChoice {
+typedef struct ToolbarState {
+    HBITMAP sprite;
+    HFONT font;
+    HWND style_combo;
+    HWND font_combo;
+    HWND size_combo;
+    HWND zoom_combo;
+    HWND source_style;
+    HWND source_font;
+    HWND source_size;
+    int copied_style_count;
+    int copied_font_count;
+    int copied_size_count;
+    ULONGLONG suppress_sync_until;
+    ULONGLONG page_view_start_after;
+    bool style_edit_dirty;
+    bool font_edit_dirty;
+    bool size_edit_dirty;
+    bool standard_visible;
+    bool formatting_visible;
+    bool startup_page_view_requested;
+    int ruler_refreshes_remaining;
+    int text_color_index;
+    COLORREF text_color;
+    HitResult pressed;
+    bool standard_latched[kStandardButtonCount];
+    bool format_latched[kFormatButtonCount];
+} ToolbarState;
+
+static HBRUSH g_menu_brush = NULL;
+static HMENU g_table_menu = NULL;
+static HMENU g_toolbars_menu = NULL;
+static HMENU g_language_menu = NULL;
+static WNDPROC g_original_app_proc = NULL;
+static bool g_word95_page_view_active;
+static WCHAR g_pending_high_surrogate;
+
+typedef struct LanguageChoice {
     UINT command;
     const WCHAR* label;
     const char* tag;
-};
+} LanguageChoice;
 
-struct PendingUnicodeInput {
-    int doc = -1;
-    long cp = 0;
-    std::uint32_t scalar = 0;
-    int retries = 0;
-};
+typedef struct PendingUnicodeInput {
+    int doc;
+    long cp;
+    uint32_t scalar;
+    int retries;
+} PendingUnicodeInput;
 
-std::deque<PendingUnicodeInput> g_pending_unicode_inputs;
-PendingUnicodeInput g_active_unicode_input;
-bool g_unicode_input_active = false;
+typedef struct PendingUnicodeQueue {
+    PendingUnicodeInput* data;
+    size_t size;
+    size_t capacity;
+} PendingUnicodeQueue;
 
-constexpr std::array<LanguageChoice, 17> kLanguageChoices{{
+static PendingUnicodeQueue g_pending_unicode_inputs;
+static PendingUnicodeInput g_active_unicode_input;
+static bool g_unicode_input_active;
+
+static const LanguageChoice kLanguageChoices[kLanguageChoiceCount] = {
     {kCmdLanguageBase, OPUSW("&Automatic (Keyboard)"), "auto"},
     {kCmdLanguageBase + 1, OPUSW("&English (United States)"), "en-US"},
     {kCmdLanguageBase + 2, OPUSW("&Spanish"), "es-ES"},
@@ -240,56 +254,212 @@ constexpr std::array<LanguageChoice, 17> kLanguageChoices{{
     {kCmdLanguageBase + 14, OPUSW("Chinese (&Simplified)"), "zh-CN"},
     {kCmdLanguageBase + 15, OPUSW("Chinese (&Traditional)"), "zh-TW"},
     {kCmdLanguageBase + 16, OPUSW("&Korean"), "ko-KR"},
-}};
-
-struct VerticalRulerDragState {
-    HWND pane = nullptr;
-    bool active = false;
-    bool top = false;
-    int preview_y = 0;
-    int page_offset = 0;
 };
 
-VerticalRulerDragState g_vertical_ruler_drag{};
+typedef struct VerticalRulerDragState {
+    HWND pane;
+    bool active;
+    bool top;
+    int preview_y;
+    int page_offset;
+} VerticalRulerDragState;
 
-struct HorizontalRulerDragState {
-    HWND overlay = nullptr;
-    HWND ruler = nullptr;
-    bool active = false;
-    bool left = false;
-    int origin_x = 0;
-    int preview_x = 0;
-};
+static VerticalRulerDragState g_vertical_ruler_drag;
 
-HorizontalRulerDragState g_horizontal_ruler_drag{};
+typedef struct HorizontalRulerDragState {
+    HWND overlay;
+    HWND ruler;
+    bool active;
+    bool left;
+    int origin_x;
+    int preview_x;
+} HorizontalRulerDragState;
 
-struct DocumentWheelState {
-    HWND pane = nullptr;
-    int scroll_remainder = 0;
-    int zoom_remainder = 0;
-};
+static HorizontalRulerDragState g_horizontal_ruler_drag;
 
-DocumentWheelState g_document_wheel{};
+typedef struct DocumentWheelState {
+    HWND pane;
+    int scroll_remainder;
+    int zoom_remainder;
+} DocumentWheelState;
 
-struct PageSnapshot {
-    HWND pane = nullptr;
-    int page_index = -1;
-    int zoom_percent = 100;
-    int width = 0;
-    int height = 0;
-    HBITMAP bitmap = nullptr;
-    ULONGLONG last_used = 0;
-};
+static DocumentWheelState g_document_wheel;
 
-std::vector<PageSnapshot> g_page_snapshots;
+typedef struct PageSnapshot {
+    HWND pane;
+    int page_index;
+    int zoom_percent;
+    int width;
+    int height;
+    HBITMAP bitmap;
+    ULONGLONG last_used;
+} PageSnapshot;
+
+typedef struct PageSnapshotList {
+    PageSnapshot* data;
+    size_t size;
+    size_t capacity;
+} PageSnapshotList;
+
+static PageSnapshotList g_page_snapshots;
+
+static int min_int(int left, int right) {
+    return left < right ? left : right;
+}
+
+static int max_int(int left, int right) {
+    return left > right ? left : right;
+}
+
+static void toolbar_state_init(ToolbarState* state) {
+    memset(state, 0, sizeof(*state));
+    state->copied_style_count = -1;
+    state->copied_font_count = -1;
+    state->copied_size_count = -1;
+    state->standard_visible = true;
+    state->formatting_visible = true;
+    state->text_color = RGB(0, 0, 0);
+    state->pressed.index = -1;
+}
+
+static bool hwnd_list_push(HWND** data, size_t* size, size_t* capacity,
+                           HWND value) {
+    if (*size == *capacity) {
+        const size_t next = *capacity == 0 ? 8 : *capacity * 2;
+        HWND* grown = (HWND*) realloc(*data, next * sizeof((*data)[0]));
+        if (grown == NULL) return false;
+        *data = grown;
+        *capacity = next;
+    }
+    (*data)[(*size)++] = value;
+    return true;
+}
+
+static bool pending_unicode_push(PendingUnicodeInput input) {
+    if (g_pending_unicode_inputs.size >= kMaxPendingUnicodeInput) return false;
+    if (g_pending_unicode_inputs.size == g_pending_unicode_inputs.capacity) {
+        const size_t next = g_pending_unicode_inputs.capacity == 0 ? 16 :
+            g_pending_unicode_inputs.capacity * 2;
+        PendingUnicodeInput* data = (PendingUnicodeInput*) realloc(
+            g_pending_unicode_inputs.data, next * sizeof(data[0]));
+        if (data == NULL) return false;
+        g_pending_unicode_inputs.data = data;
+        g_pending_unicode_inputs.capacity = next;
+    }
+    g_pending_unicode_inputs.data[g_pending_unicode_inputs.size++] = input;
+    return true;
+}
+
+static bool pending_unicode_empty(void) {
+    return g_pending_unicode_inputs.size == 0;
+}
+
+static PendingUnicodeInput pending_unicode_pop_front(void) {
+    PendingUnicodeInput value = g_pending_unicode_inputs.data[0];
+    memmove(g_pending_unicode_inputs.data, g_pending_unicode_inputs.data + 1,
+            (g_pending_unicode_inputs.size - 1) *
+                sizeof(g_pending_unicode_inputs.data[0]));
+    --g_pending_unicode_inputs.size;
+    return value;
+}
+
+static void pending_unicode_clear(void) {
+    g_pending_unicode_inputs.size = 0;
+}
+
+static bool page_snapshot_push(PageSnapshot snapshot) {
+    if (g_page_snapshots.size == g_page_snapshots.capacity) {
+        const size_t next = g_page_snapshots.capacity == 0 ? 8 :
+            g_page_snapshots.capacity * 2;
+        PageSnapshot* data = (PageSnapshot*) realloc(
+            g_page_snapshots.data, next * sizeof(data[0]));
+        if (data == NULL) return false;
+        g_page_snapshots.data = data;
+        g_page_snapshots.capacity = next;
+    }
+    g_page_snapshots.data[g_page_snapshots.size++] = snapshot;
+    return true;
+}
+
+static void page_snapshot_delete(size_t index) {
+    if (index >= g_page_snapshots.size) return;
+    if (g_page_snapshots.data[index].bitmap != NULL) {
+        DeleteObject(g_page_snapshots.data[index].bitmap);
+    }
+    memmove(g_page_snapshots.data + index, g_page_snapshots.data + index + 1,
+            (g_page_snapshots.size - index - 1) *
+                sizeof(g_page_snapshots.data[0]));
+    --g_page_snapshots.size;
+}
+
+static int format_wide_decimal(WCHAR* output, size_t capacity, int value,
+                               const WCHAR* suffix) {
+    char ascii[32];
+    int length;
+    if (capacity == 0) return 0;
+    memset(output, 0, capacity * sizeof(output[0]));
+    snprintf(ascii, sizeof(ascii), "%d", value);
+    length = 0;
+    while (ascii[length] != '\0' && (size_t) length + 1 < capacity) {
+        output[length] = (WCHAR) (unsigned char) ascii[length];
+        ++length;
+    }
+    if (suffix != NULL) {
+        for (int index = 0; suffix[index] != 0 &&
+             (size_t) length + 1 < capacity; ++index) {
+            output[length++] = suffix[index];
+        }
+    }
+    output[length] = 0;
+    return length;
+}
+
+static void draw_vertical_margin_marker(HDC dc, const RECT* ruler,
+                                        int marker_x, int marker_half,
+                                        int y) {
+    if (y < ruler->top || y >= ruler->bottom) {
+        return;
+    }
+    POINT points[3] = {{marker_x, y},
+                       {marker_x - marker_half, y - marker_half},
+                       {marker_x - marker_half, y + marker_half}};
+    HBRUSH marker = CreateSolidBrush(RGB(255, 255, 255));
+    HBRUSH old = (HBRUSH) SelectObject(dc, marker);
+    Polygon(dc, points, 3);
+    SelectObject(dc, old);
+    DeleteObject(marker);
+}
+
+static void draw_down_triangle(HDC dc, int x, int marker_top,
+                               int marker_bottom) {
+    POINT points[3] = {{x - 5, marker_top}, {x + 5, marker_top},
+                       {x, min_int(marker_bottom, marker_top + 6)}};
+    Polygon(dc, points, 3);
+}
+
+static void draw_up_triangle(HDC dc, int x, int marker_top,
+                             int marker_bottom, bool with_base) {
+    POINT points[3] = {{x - 5, marker_bottom - 2},
+                       {x + 5, marker_bottom - 2},
+                       {x, max_int(marker_top, marker_bottom - 8)}};
+    Polygon(dc, points, 3);
+    if (with_base) {
+        Rectangle(dc, x - 3, marker_bottom - 2, x + 4,
+                  marker_bottom + 1);
+    }
+}
 
 int dpi_for_window(HWND window) {
-    using GetDpiForWindowProc = UINT(WINAPI*)(HWND);
-    static const auto get_dpi = reinterpret_cast<GetDpiForWindowProc>(
-        GetProcAddress(GetModuleHandleW(OPUSW("user32.dll")),
-                       "GetDpiForWindow"));
-    return get_dpi != nullptr && window != nullptr ?
-               static_cast<int>(get_dpi(window)) :
+    typedef UINT(WINAPI* GetDpiForWindowProc)(HWND);
+    static GetDpiForWindowProc get_dpi;
+    static bool looked_up;
+    if (!looked_up) {
+        get_dpi = (GetDpiForWindowProc) GetProcAddress(
+            GetModuleHandleW(OPUSW("user32.dll")), "GetDpiForWindow");
+        looked_up = true;
+    }
+    return get_dpi != NULL && window != NULL ?
+               (int) get_dpi(window) :
                96;
 }
 
@@ -298,22 +468,28 @@ int scale(HWND window, int value) {
 }
 
 void set_window_classic(HWND window) {
-    using SetWindowThemeProc = HRESULT(WINAPI*)(HWND, LPCWSTR, LPCWSTR);
-    static HMODULE theme_module = LoadLibraryExW(
-        OPUSW("uxtheme.dll"), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    static const auto set_theme = theme_module != nullptr ?
-        reinterpret_cast<SetWindowThemeProc>(
-            GetProcAddress(theme_module, "SetWindowTheme")) : nullptr;
-    if (set_theme != nullptr && window != nullptr) {
+    typedef HRESULT(WINAPI* SetWindowThemeProc)(HWND, LPCWSTR, LPCWSTR);
+    static SetWindowThemeProc set_theme;
+    static bool looked_up;
+    if (!looked_up) {
+        HMODULE theme_module = LoadLibraryExW(
+            OPUSW("uxtheme.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        set_theme = theme_module != NULL ?
+            (SetWindowThemeProc) GetProcAddress(theme_module,
+                                                "SetWindowTheme") :
+            NULL;
+        looked_up = true;
+    }
+    if (set_theme != NULL && window != NULL) {
         set_theme(window, OPUSW(""), OPUSW(""));
     }
 }
 
 void style_menu_tree(HMENU menu) {
-    if (menu == nullptr) {
+    if (menu == NULL) {
         return;
     }
-    MENUINFO info{};
+    MENUINFO info = {0};
     info.cbSize = sizeof(info);
     info.fMask = MIM_BACKGROUND | MIM_APPLYTOSUBMENUS;
     info.hbrBack = g_menu_brush;
@@ -324,121 +500,96 @@ void style_menu_tree(HMENU menu) {
     }
 }
 
-BOOL CALLBACK repaint_menu_popup(HWND window, LPARAM) {
-    WCHAR class_name[32]{};
+BOOL CALLBACK repaint_menu_popup(HWND window, LPARAM parameter) {
+    (void) parameter;
+    WCHAR class_name[32] = {0};
     GetClassNameW(window, class_name,
-                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
+                  (int) (sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpW(class_name, kMenuPopupClass) == 0 && IsWindowVisible(window)) {
-        RedrawWindow(window, nullptr, nullptr,
+        RedrawWindow(window, NULL, NULL,
                      RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW |
                          RDW_ALLCHILDREN | RDW_FRAME);
     }
     return TRUE;
 }
 
+static int find_named_menu(HMENU menu, LPCWSTR expected) {
+    const int count = menu != NULL ? GetMenuItemCount(menu) : 0;
+    for (int index = 0; index < count; ++index) {
+        WCHAR label[80] = {0};
+        WCHAR name[80] = {0};
+        int output = 0;
+        GetMenuStringW(menu, index, label,
+                       (int) (sizeof(label) / sizeof(label[0])),
+                       MF_BYPOSITION);
+        for (int input = 0; label[input] != 0 && output < 79; ++input) {
+            if (label[input] != OPUSW("&")[0]) {
+                name[output++] = label[input];
+            }
+        }
+        if (lstrcmpiW(name, expected) == 0) {
+            return index;
+        }
+    }
+    return -1;
+}
+
 void configure_word95_menus(HWND window) {
     HMENU root = GetMenu(window);
-    if (root == nullptr || GetMenuItemCount(root) < 7) {
+    if (root == NULL || GetMenuItemCount(root) < 7) {
         return;
     }
 
-    auto menu_name = [root](int index) {
-        WCHAR label[80]{};
-        GetMenuStringW(root, index, label,
-                       static_cast<int>(sizeof(label) / sizeof(label[0])),
-                       MF_BYPOSITION);
-        std::basic_string<WCHAR> name;
-        for (const WCHAR character : label) {
-            if (character == 0) {
-                break;
-            }
-            if (character != OPUSW("&")[0]) {
-                name.push_back(character);
-            }
-        }
-        return name;
-    };
-    auto find_named = [&menu_name, root](LPCWSTR expected) {
-        const int count = GetMenuItemCount(root);
-        for (int index = 0; index < count; ++index) {
-            if (lstrcmpiW(menu_name(index).c_str(), expected) == 0) {
-                return index;
-            }
-        }
-        return -1;
-    };
-    auto find_named_in = [](HMENU menu, LPCWSTR expected) {
-        const int count = menu != nullptr ? GetMenuItemCount(menu) : 0;
-        for (int index = 0; index < count; ++index) {
-            WCHAR label[80]{};
-            GetMenuStringW(menu, index, label,
-                           static_cast<int>(sizeof(label) / sizeof(label[0])),
-                           MF_BYPOSITION);
-            std::basic_string<WCHAR> name;
-            for (const WCHAR character : label) {
-                if (character == 0) {
-                    break;
-                }
-                if (character != OPUSW("&")[0]) {
-                    name.push_back(character);
-                }
-            }
-            if (lstrcmpiW(name.c_str(), expected) == 0) {
-                return index;
-            }
-        }
-        return -1;
-    };
-
     // Word's menu loader can finish replacing the startup menu after this layer
     // is created, so normalize by label every time we resync.
-    const int file_index = find_named(OPUSW("File"));
+    const int file_index = find_named_menu(root, OPUSW("File"));
     if (file_index >= 0 && GetMenuItemCount(root) > file_index + 4) {
         HMENU insert = GetSubMenu(root, file_index + 3);
         HMENU format = GetSubMenu(root, file_index + 4);
-        if (insert != nullptr) {
+        if (insert != NULL) {
             ModifyMenuW(root, file_index + 3,
                         MF_BYPOSITION | MF_POPUP | MF_STRING,
-                        reinterpret_cast<UINT_PTR>(insert), OPUSW("&Insert"));
+                        ((UINT_PTR) insert), OPUSW("&Insert"));
         }
-        if (format != nullptr) {
+        if (format != NULL) {
             ModifyMenuW(root, file_index + 4,
                         MF_BYPOSITION | MF_POPUP | MF_STRING,
-                        reinterpret_cast<UINT_PTR>(format),
+                        ((UINT_PTR) format),
                         OPUSW("F&ormat"));
         }
     }
-    HMENU file_menu = file_index >= 0 ? GetSubMenu(root, file_index) : nullptr;
-    if (file_menu != nullptr &&
+    HMENU file_menu = file_index >= 0 ? GetSubMenu(root, file_index) : NULL;
+    if (file_menu != NULL &&
         GetMenuState(file_menu, kCmdExportPdf, MF_BYCOMMAND) ==
-            static_cast<UINT>(-1)) {
-        int exit_position = find_named_in(file_menu, OPUSW("Exit"));
+            ((UINT) -1)) {
+        int exit_position = find_named_menu(file_menu, OPUSW("Exit"));
         if (exit_position < 0) exit_position = GetMenuItemCount(file_menu);
         InsertMenuW(file_menu, exit_position, MF_BYPOSITION | MF_SEPARATOR,
-                    0, nullptr);
+                    0, NULL);
         InsertMenuW(file_menu, exit_position, MF_BYPOSITION | MF_STRING,
                     kCmdExportPdf, OPUSW("E&xport as PDF..."));
     }
-    const int utilities_index = find_named(OPUSW("Utilities"));
+    const int utilities_index = find_named_menu(root, OPUSW("Utilities"));
     if (utilities_index >= 0) {
         HMENU tools = GetSubMenu(root, utilities_index);
         ModifyMenuW(root, utilities_index,
                     MF_BYPOSITION | MF_POPUP | MF_STRING,
-                    reinterpret_cast<UINT_PTR>(tools), OPUSW("&Tools"));
+                    ((UINT_PTR) tools), OPUSW("&Tools"));
     }
-    const int tools_index = find_named(OPUSW("Tools"));
+    const int tools_index = find_named_menu(root, OPUSW("Tools"));
     HMENU tools_menu = tools_index >= 0 ? GetSubMenu(root, tools_index) :
-        (utilities_index >= 0 ? GetSubMenu(root, utilities_index) : nullptr);
-    if (g_language_menu == nullptr || !IsMenu(g_language_menu)) {
+        (utilities_index >= 0 ? GetSubMenu(root, utilities_index) : NULL);
+    if (g_language_menu == NULL || !IsMenu(g_language_menu)) {
         g_language_menu = CreatePopupMenu();
-        if (g_language_menu != nullptr) {
-            for (const LanguageChoice& choice : kLanguageChoices) {
-                AppendMenuW(g_language_menu, MF_STRING, choice.command,
-                            choice.label);
+        if (g_language_menu != NULL) {
+            for (int index = 0; index < kLanguageChoiceCount; ++index) {
+                AppendMenuW(g_language_menu, MF_STRING,
+                            kLanguageChoices[index].command,
+                            kLanguageChoices[index].label);
             }
         }
     }
-    if (tools_menu != nullptr && g_language_menu != nullptr) {
+    if (tools_menu != NULL && g_language_menu != NULL) {
         bool present = false;
         for (int index = 0; index < GetMenuItemCount(tools_menu); ++index) {
             if (GetSubMenu(tools_menu, index) == g_language_menu) {
@@ -447,30 +598,30 @@ void configure_word95_menus(HWND window) {
             }
         }
         if (!present) {
-            AppendMenuW(tools_menu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(tools_menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(tools_menu, MF_POPUP | MF_STRING,
-                        reinterpret_cast<UINT_PTR>(g_language_menu),
+                        ((UINT_PTR) g_language_menu),
                         OPUSW("&Language"));
         }
     }
 
-    if (g_table_menu == nullptr || !IsMenu(g_table_menu)) {
+    if (g_table_menu == NULL || !IsMenu(g_table_menu)) {
         g_table_menu = CreatePopupMenu();
-        if (g_table_menu != nullptr) {
+        if (g_table_menu != NULL) {
             AppendMenuW(g_table_menu, MF_STRING, bcmInsTable,
                         OPUSW("&Insert Table..."));
             AppendMenuW(g_table_menu, MF_STRING, imiEditTable,
                         OPUSW("&Rows and Columns..."));
             AppendMenuW(g_table_menu, MF_STRING, bcmFormatTable,
                         OPUSW("Table &Properties..."));
-            AppendMenuW(g_table_menu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(g_table_menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(g_table_menu, MF_STRING, bcmSelectTable,
                         OPUSW("&Select Table"));
             AppendMenuW(g_table_menu, MF_STRING, bcmNextCell,
                         OPUSW("Move to &Next Cell"));
             AppendMenuW(g_table_menu, MF_STRING, bcmPrevCell,
                         OPUSW("Move to Pre&vious Cell"));
-            AppendMenuW(g_table_menu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(g_table_menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(g_table_menu, MF_STRING, bcmTableToText,
                         OPUSW("Convert Table to Te&xt..."));
             AppendMenuW(g_table_menu, MF_STRING, imiSort,
@@ -484,48 +635,48 @@ void configure_word95_menus(HWND window) {
             RemoveMenu(root, index, MF_BYPOSITION);
         }
     }
-    const int window_index = find_named(OPUSW("Window"));
-    if (g_table_menu != nullptr && window_index >= 0) {
+    const int window_index = find_named_menu(root, OPUSW("Window"));
+    if (g_table_menu != NULL && window_index >= 0) {
         InsertMenuW(root, window_index,
                     MF_BYPOSITION | MF_POPUP | MF_STRING,
-                    reinterpret_cast<UINT_PTR>(g_table_menu),
+                    ((UINT_PTR) g_table_menu),
                     OPUSW("Ta&ble"));
     }
 
-    if (g_toolbars_menu == nullptr || !IsMenu(g_toolbars_menu)) {
+    if (g_toolbars_menu == NULL || !IsMenu(g_toolbars_menu)) {
         g_toolbars_menu = CreatePopupMenu();
-        if (g_toolbars_menu != nullptr) {
+        if (g_toolbars_menu != NULL) {
             AppendMenuW(g_toolbars_menu, MF_STRING,
                         kCmdToggleStandardToolbar, OPUSW("&Standard"));
             AppendMenuW(g_toolbars_menu, MF_STRING,
                         kCmdToggleFormattingToolbar, OPUSW("&Formatting"));
-            AppendMenuW(g_toolbars_menu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(g_toolbars_menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(g_toolbars_menu, MF_STRING, bcmRuler,
                         OPUSW("&Ruler"));
             AppendMenuW(g_toolbars_menu, MF_STRING, bcmStatusArea,
                         OPUSW("&Status Bar"));
-            AppendMenuW(g_toolbars_menu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(g_toolbars_menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(g_toolbars_menu, MF_STRING, bcmCustomize,
                         OPUSW("&Customize..."));
         }
     }
 
-    const int view_index = find_named(OPUSW("View"));
-    HMENU view_menu = view_index >= 0 ? GetSubMenu(root, view_index) : nullptr;
-    if (view_menu != nullptr && g_toolbars_menu != nullptr) {
+    const int view_index = find_named_menu(root, OPUSW("View"));
+    HMENU view_menu = view_index >= 0 ? GetSubMenu(root, view_index) : NULL;
+    if (view_menu != NULL && g_toolbars_menu != NULL) {
         for (int index = GetMenuItemCount(view_menu) - 1; index >= 0;
              --index) {
             if (GetSubMenu(view_menu, index) == g_toolbars_menu ||
-                find_named_in(view_menu, OPUSW("Toolbars")) == index) {
+                find_named_menu(view_menu, OPUSW("Toolbars")) == index) {
                 RemoveMenu(view_menu, index, MF_BYPOSITION);
             }
         }
         AppendMenuW(view_menu, MF_POPUP | MF_STRING,
-                    reinterpret_cast<UINT_PTR>(g_toolbars_menu),
+                    ((UINT_PTR) g_toolbars_menu),
                     OPUSW("&Toolbars"));
 
         if (GetMenuState(view_menu, bcmRibbon, MF_BYCOMMAND) !=
-            static_cast<UINT>(-1)) {
+            ((UINT) -1)) {
             ModifyMenuW(view_menu, bcmRibbon,
                         MF_BYCOMMAND | MF_STRING,
                         kCmdToggleFormattingToolbar,
@@ -533,23 +684,23 @@ void configure_word95_menus(HWND window) {
         }
     }
 
-    const int normalized_window_index = find_named(OPUSW("Window"));
+    const int normalized_window_index = find_named_menu(root, OPUSW("Window"));
     HMENU window_menu = normalized_window_index >= 0 ?
-        GetSubMenu(root, normalized_window_index) : nullptr;
-    if (window_menu != nullptr) {
+        GetSubMenu(root, normalized_window_index) : NULL;
+    if (window_menu != NULL) {
         if (GetMenuState(window_menu, imiNewWnd, MF_BYCOMMAND) ==
-            static_cast<UINT>(-1)) {
+            ((UINT) -1)) {
             AppendMenuW(window_menu, MF_STRING, imiNewWnd,
                         OPUSW("&New Window"));
         }
         if (GetMenuState(window_menu, bcmArrangeWnd, MF_BYCOMMAND) ==
-            static_cast<UINT>(-1)) {
+            ((UINT) -1)) {
             AppendMenuW(window_menu, MF_STRING, bcmArrangeWnd,
                         OPUSW("&Arrange All"));
         }
         if (GetMenuState(window_menu, bcmZoomWnd, MF_BYCOMMAND) ==
-            static_cast<UINT>(-1)) {
-            AppendMenuW(window_menu, MF_SEPARATOR, 0, nullptr);
+            ((UINT) -1)) {
+            AppendMenuW(window_menu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(window_menu, MF_STRING, bcmZoomWnd,
                         OPUSW("Ma&ximize Document"));
             AppendMenuW(window_menu, MF_STRING, bcmRestoreWnd,
@@ -561,20 +712,21 @@ void configure_word95_menus(HWND window) {
 }
 
 void apply_caption_colors(HWND window) {
-    using DwmSetWindowAttributeProc = HRESULT(WINAPI*)(HWND, DWORD,
+    typedef HRESULT(WINAPI* DwmSetWindowAttributeProc)(HWND, DWORD,
                                                        LPCVOID, DWORD);
     HMODULE module = LoadLibraryExW(
-        kDwmApiLibrary, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (module == nullptr) {
+        kDwmApiLibrary, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (module == NULL) {
         return;
     }
-    const auto set_attribute = reinterpret_cast<DwmSetWindowAttributeProc>(
-        GetProcAddress(module, "DwmSetWindowAttribute"));
-    if (set_attribute != nullptr) {
-        constexpr DWORD kDwmBorderColor = 34;
-        constexpr DWORD kDwmCaptionColor = 35;
-        constexpr DWORD kDwmTextColor = 36;
-        constexpr DWORD kDwmCornerPreference = 33;
+    DwmSetWindowAttributeProc set_attribute =
+        (DwmSetWindowAttributeProc) GetProcAddress(
+            module, "DwmSetWindowAttribute");
+    if (set_attribute != NULL) {
+        const DWORD kDwmBorderColor = 34;
+        const DWORD kDwmCaptionColor = 35;
+        const DWORD kDwmTextColor = 36;
+        const DWORD kDwmCornerPreference = 33;
         const COLORREF border = kButtonShadow;
         const COLORREF caption = kCaptionBlue;
         const COLORREF text = RGB(255, 255, 255);
@@ -589,13 +741,13 @@ void apply_caption_colors(HWND window) {
 }
 
 ToolbarState* toolbar_state(HWND toolbar) {
-    return toolbar != nullptr ? reinterpret_cast<ToolbarState*>(
-        GetWindowLongPtrW(toolbar, GWLP_USERDATA)) : nullptr;
+    return toolbar != NULL ?
+        (ToolbarState*) GetWindowLongPtrW(toolbar, GWLP_USERDATA) : NULL;
 }
 
 int toolbar_height(HWND toolbar) {
     const ToolbarState* state = toolbar_state(toolbar);
-    if (state == nullptr ||
+    if (state == NULL ||
         (state->standard_visible && state->formatting_visible)) {
         return scale(toolbar, 64);
     }
@@ -608,8 +760,8 @@ int toolbar_height(HWND toolbar) {
     return 0;
 }
 
-int formatting_row_top(HWND toolbar, const ToolbarState& state) {
-    return scale(toolbar, state.standard_visible ? 34 : 1);
+int formatting_row_top(HWND toolbar, const ToolbarState* state) {
+    return scale(toolbar, state->standard_visible ? 34 : 1);
 }
 
 RECT standard_button_rect(HWND toolbar, int target) {
@@ -623,20 +775,20 @@ RECT standard_button_rect(HWND toolbar, int target) {
             x += group_gap;
         }
         if (index == target) {
-            return RECT{x, scale(toolbar, 2), x + button,
+            return (RECT){x, scale(toolbar, 2), x + button,
                         scale(toolbar, 2) + button};
         }
         x += button + gap;
         previous_group = kStandardButtons[index].group;
     }
-    return RECT{};
+    return (RECT){};
 }
 
 int format_buttons_start(HWND toolbar) {
     return scale(toolbar, 4 + 118 + 4 + 146 + 4 + 52 + 8);
 }
 
-RECT format_button_rect(HWND toolbar, const ToolbarState& state, int target) {
+RECT format_button_rect(HWND toolbar, const ToolbarState* state, int target) {
     const int button = scale(toolbar, 27);
     const int gap = scale(toolbar, 2);
     const int group_gap = scale(toolbar, 7);
@@ -648,17 +800,17 @@ RECT format_button_rect(HWND toolbar, const ToolbarState& state, int target) {
         }
         if (index == target) {
             const int top = formatting_row_top(toolbar, state);
-            return RECT{x, top, x + button, top + button};
+            return (RECT){x, top, x + button, top + button};
         }
         x += button + gap;
         previous_group = kFormatButtons[index].group;
     }
-    return RECT{};
+    return (RECT){};
 }
 
 int standard_buttons_end(HWND toolbar) {
     const RECT last = standard_button_rect(
-        toolbar, static_cast<int>(kStandardButtons.size()) - 1);
+        toolbar, kStandardButtonCount - 1);
     return last.right + scale(toolbar, 8);
 }
 
@@ -671,20 +823,20 @@ void draw_classic_edge(HDC dc, RECT rect, bool sunken) {
         sunken ? kButtonHighlight : kButtonDarkShadow);
     const HPEN bottom_inner = CreatePen(PS_SOLID, 1,
         sunken ? kButtonFace : kButtonShadow);
-    HPEN old = static_cast<HPEN>(SelectObject(dc, top_outer));
-    MoveToEx(dc, rect.left, rect.bottom - 1, nullptr);
+    HPEN old = ((HPEN) SelectObject(dc, top_outer));
+    MoveToEx(dc, rect.left, rect.bottom - 1, NULL);
     LineTo(dc, rect.left, rect.top);
     LineTo(dc, rect.right - 1, rect.top);
     SelectObject(dc, top_inner);
-    MoveToEx(dc, rect.left + 1, rect.bottom - 2, nullptr);
+    MoveToEx(dc, rect.left + 1, rect.bottom - 2, NULL);
     LineTo(dc, rect.left + 1, rect.top + 1);
     LineTo(dc, rect.right - 2, rect.top + 1);
     SelectObject(dc, bottom_outer);
-    MoveToEx(dc, rect.left, rect.bottom - 1, nullptr);
+    MoveToEx(dc, rect.left, rect.bottom - 1, NULL);
     LineTo(dc, rect.right - 1, rect.bottom - 1);
     LineTo(dc, rect.right - 1, rect.top - 1);
     SelectObject(dc, bottom_inner);
-    MoveToEx(dc, rect.left + 1, rect.bottom - 2, nullptr);
+    MoveToEx(dc, rect.left + 1, rect.bottom - 2, NULL);
     LineTo(dc, rect.right - 2, rect.bottom - 2);
     LineTo(dc, rect.right - 2, rect.top);
     SelectObject(dc, old);
@@ -695,14 +847,14 @@ void draw_classic_edge(HDC dc, RECT rect, bool sunken) {
 }
 
 void draw_standard_glyph(HWND toolbar, HDC dc, HDC sprite_dc,
-                         const SpriteButton& spec, RECT rect, bool sunken) {
+                         const SpriteButton* spec, RECT rect, bool sunken) {
     const int glyph = scale(toolbar, 20);
     const int offset = sunken ? scale(toolbar, 1) : 0;
     const int x = rect.left + (rect.right - rect.left - glyph) / 2 + offset;
     const int y = rect.top + (rect.bottom - rect.top - glyph) / 2 + offset;
     SetStretchBltMode(dc, COLORONCOLOR);
     StretchBlt(dc, x, y, glyph, glyph, sprite_dc,
-               spec.sprite * kSpriteCell, 0, kSpriteCell, kSpriteCell,
+               spec->sprite * kSpriteCell, 0, kSpriteCell, kSpriteCell,
                SRCCOPY);
 }
 
@@ -715,142 +867,142 @@ void draw_alignment(HDC dc, RECT area, FormatGlyph glyph) {
         int x1 = left;
         int x2 = right;
         const int short_by = (row % 2 == 0) ? width / 4 : width / 6;
-        if (glyph == FormatGlyph::align_left) {
+        if (glyph == align_left) {
             x2 -= short_by;
-        } else if (glyph == FormatGlyph::align_center) {
+        } else if (glyph == align_center) {
             x1 += short_by / 2;
             x2 -= short_by / 2;
-        } else if (glyph == FormatGlyph::align_right) {
+        } else if (glyph == align_right) {
             x1 += short_by;
-        } else if (glyph == FormatGlyph::align_justify && row == 3) {
+        } else if (glyph == align_justify && row == 3) {
             x2 -= width / 5;
         }
-        MoveToEx(dc, x1, y, nullptr);
+        MoveToEx(dc, x1, y, NULL);
         LineTo(dc, x2, y);
     }
 }
 
-void draw_format_glyph(HWND toolbar, HDC dc, const FormatButton& spec,
+void draw_format_glyph(HWND toolbar, HDC dc, const FormatButton* spec,
                        RECT rect, bool sunken, HDC sprite_dc,
                        COLORREF text_color) {
     const int offset = sunken ? scale(toolbar, 1) : 0;
-    RECT area{rect.left + scale(toolbar, 4) + offset,
+    RECT area = {rect.left + scale(toolbar, 4) + offset,
               rect.top + scale(toolbar, 4) + offset,
               rect.right - scale(toolbar, 4) + offset,
               rect.bottom - scale(toolbar, 4) + offset};
     SetBkMode(dc, TRANSPARENT);
     SetTextColor(dc, RGB(0, 0, 0));
-    HFONT old_font = nullptr;
-    LOGFONTW logical{};
+    HFONT old_font = NULL;
+    LOGFONTW logical = {0};
     logical.lfHeight = -(area.bottom - area.top);
     lstrcpyW(logical.lfFaceName, kArialFace);
-    if (spec.glyph == FormatGlyph::bold) {
+    if (spec->glyph == bold) {
         logical.lfWeight = FW_BOLD;
-    } else if (spec.glyph == FormatGlyph::italic) {
+    } else if (spec->glyph == italic) {
         logical.lfItalic = TRUE;
-    } else if (spec.glyph == FormatGlyph::underline) {
+    } else if (spec->glyph == underline) {
         logical.lfUnderline = TRUE;
     }
-    if (spec.glyph == FormatGlyph::bold ||
-        spec.glyph == FormatGlyph::italic ||
-        spec.glyph == FormatGlyph::underline ||
-        spec.glyph == FormatGlyph::color) {
+    if (spec->glyph == bold ||
+        spec->glyph == italic ||
+        spec->glyph == underline ||
+        spec->glyph == color) {
         HFONT font = CreateFontIndirectW(&logical);
-        old_font = static_cast<HFONT>(SelectObject(dc, font));
-        DrawTextW(dc, spec.glyph == FormatGlyph::color ? kFormatGlyphColor :
-                  spec.glyph == FormatGlyph::bold ? kFormatGlyphBold :
-                  spec.glyph == FormatGlyph::italic ? kFormatGlyphItalic :
+        old_font = ((HFONT) SelectObject(dc, font));
+        DrawTextW(dc, spec->glyph == color ? kFormatGlyphColor :
+                  spec->glyph == bold ? kFormatGlyphBold :
+                  spec->glyph == italic ? kFormatGlyphItalic :
                   kFormatGlyphUnderline,
                   1, &area, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         SelectObject(dc, old_font);
         DeleteObject(font);
-        if (spec.glyph == FormatGlyph::color) {
+        if (spec->glyph == color) {
             HBRUSH swatch = CreateSolidBrush(text_color);
-            RECT swatch_rect{area.left + 1, area.bottom - 3,
+            RECT swatch_rect = {area.left + 1, area.bottom - 3,
                              area.right - 1, area.bottom};
             FillRect(dc, &swatch_rect, swatch);
             DeleteObject(swatch);
         }
         return;
     }
-    if (spec.glyph == FormatGlyph::align_left ||
-        spec.glyph == FormatGlyph::align_center ||
-        spec.glyph == FormatGlyph::align_right ||
-        spec.glyph == FormatGlyph::align_justify) {
-        draw_alignment(dc, area, spec.glyph);
+    if (spec->glyph == align_left ||
+        spec->glyph == align_center ||
+        spec->glyph == align_right ||
+        spec->glyph == align_justify) {
+        draw_alignment(dc, area, spec->glyph);
         return;
     }
-    if (spec.glyph == FormatGlyph::numbered ||
-        spec.glyph == FormatGlyph::bullets) {
+    if (spec->glyph == numbered ||
+        spec->glyph == bullets) {
         for (int row = 0; row < 3; ++row) {
-            if (spec.glyph == FormatGlyph::numbered) {
-                WCHAR number[2]{
-                    static_cast<WCHAR>(OPUSW("1")[0] + row), 0};
+            if (spec->glyph == numbered) {
+                WCHAR number[2] = {
+                    (WCHAR) (OPUSW("1")[0] + row), 0};
                 TextOutW(dc, area.left, area.top + row * 5 - 1, number, 1);
             } else {
-                HBRUSH old_brush = static_cast<HBRUSH>(SelectObject(
+                HBRUSH old_brush = ((HBRUSH) SelectObject(
                     dc, GetStockObject(BLACK_BRUSH)));
                 Ellipse(dc, area.left + 1, area.top + row * 5 + 1,
                         area.left + 4, area.top + row * 5 + 4);
                 SelectObject(dc, old_brush);
             }
-            MoveToEx(dc, area.left + 6, area.top + row * 5 + 2, nullptr);
+            MoveToEx(dc, area.left + 6, area.top + row * 5 + 2, NULL);
             LineTo(dc, area.right, area.top + row * 5 + 2);
         }
         return;
     }
-    if (spec.glyph == FormatGlyph::indent_left ||
-        spec.glyph == FormatGlyph::indent_right) {
+    if (spec->glyph == indent_left ||
+        spec->glyph == indent_right) {
         for (int row = 0; row < 3; ++row) {
-            MoveToEx(dc, area.left + 6, area.top + 2 + row * 5, nullptr);
+            MoveToEx(dc, area.left + 6, area.top + 2 + row * 5, NULL);
             LineTo(dc, area.right, area.top + 2 + row * 5);
         }
-        const bool right = spec.glyph == FormatGlyph::indent_right;
-        POINT triangle[3]{{right ? area.left + 1 : area.left + 6, area.top + 6},
+        const bool right = spec->glyph == indent_right;
+        POINT triangle[3] = {{right ? area.left + 1 : area.left + 6, area.top + 6},
                           {right ? area.left + 6 : area.left + 1, area.top + 3},
                           {right ? area.left + 6 : area.left + 1, area.top + 9}};
-        HBRUSH brush = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
-        HBRUSH old_brush = static_cast<HBRUSH>(SelectObject(dc, brush));
+        HBRUSH brush = ((HBRUSH) GetStockObject(BLACK_BRUSH));
+        HBRUSH old_brush = ((HBRUSH) SelectObject(dc, brush));
         Polygon(dc, triangle, 3);
         SelectObject(dc, old_brush);
         return;
     }
-    if (spec.glyph == FormatGlyph::table && sprite_dc != nullptr) {
+    if (spec->glyph == table && sprite_dc != NULL) {
         const int glyph = area.bottom - area.top;
         StretchBlt(dc, area.left, area.top, glyph, glyph, sprite_dc,
                    12 * kSpriteCell, 0, kSpriteCell, kSpriteCell, SRCCOPY);
         return;
     }
-    if (spec.glyph == FormatGlyph::borders) {
+    if (spec->glyph == borders) {
         Rectangle(dc, area.left + 1, area.top + 1,
                   area.right - 1, area.bottom - 1);
         const int middle_x = (area.left + area.right) / 2;
         const int middle_y = (area.top + area.bottom) / 2;
-        MoveToEx(dc, middle_x, area.top + 1, nullptr);
+        MoveToEx(dc, middle_x, area.top + 1, NULL);
         LineTo(dc, middle_x, area.bottom - 1);
-        MoveToEx(dc, area.left + 1, middle_y, nullptr);
+        MoveToEx(dc, area.left + 1, middle_y, NULL);
         LineTo(dc, area.right - 1, middle_y);
     }
 }
 
-void paint_toolbar(HWND toolbar, ToolbarState& state) {
-    PAINTSTRUCT paint{};
+void paint_toolbar(HWND toolbar, ToolbarState* state) {
+    PAINTSTRUCT paint = {0};
     HDC dc = BeginPaint(toolbar, &paint);
-    RECT client{};
+    RECT client = {0};
     GetClientRect(toolbar, &client);
     HBRUSH face = CreateSolidBrush(kButtonFace);
     FillRect(dc, &client, face);
     DeleteObject(face);
 
-    if (state.standard_visible && state.formatting_visible) {
+    if (state->standard_visible && state->formatting_visible) {
         HPEN separator = CreatePen(PS_SOLID, 1, kButtonShadow);
         HPEN highlight = CreatePen(PS_SOLID, 1, kButtonHighlight);
-        HPEN old_pen = static_cast<HPEN>(SelectObject(dc, separator));
+        HPEN old_pen = ((HPEN) SelectObject(dc, separator));
         const int row_line = scale(toolbar, 32);
-        MoveToEx(dc, 0, row_line, nullptr);
+        MoveToEx(dc, 0, row_line, NULL);
         LineTo(dc, client.right, row_line);
         SelectObject(dc, highlight);
-        MoveToEx(dc, 0, row_line + 1, nullptr);
+        MoveToEx(dc, 0, row_line + 1, NULL);
         LineTo(dc, client.right, row_line + 1);
         SelectObject(dc, old_pen);
         DeleteObject(separator);
@@ -858,168 +1010,178 @@ void paint_toolbar(HWND toolbar, ToolbarState& state) {
     }
 
     HDC sprite_dc = CreateCompatibleDC(dc);
-    HBITMAP old_bitmap = state.sprite != nullptr ?
-        static_cast<HBITMAP>(SelectObject(sprite_dc, state.sprite)) : nullptr;
-    if (state.standard_visible) {
+    HBITMAP old_bitmap = state->sprite != NULL ?
+        (HBITMAP) SelectObject(sprite_dc, state->sprite) : NULL;
+    if (state->standard_visible) {
         for (int index = 0;
-             index < static_cast<int>(kStandardButtons.size()); ++index) {
+             index < ((int) kStandardButtonCount); ++index) {
             RECT rect = standard_button_rect(toolbar, index);
             const bool down =
-                (state.pressed.hit && !state.pressed.format &&
-                 state.pressed.index == index) || state.standard_latched[index];
+                (state->pressed.hit && !state->pressed.format &&
+                 state->pressed.index == index) || state->standard_latched[index];
             draw_classic_edge(dc, rect, down);
-            if (state.sprite != nullptr) {
-                draw_standard_glyph(toolbar, dc, sprite_dc,
-                                    kStandardButtons[index], rect, down);
+            if (state->sprite != NULL) {
+                draw_standard_glyph(toolbar, dc, sprite_dc, &kStandardButtons[index], rect, down);
             }
         }
     }
-    if (state.formatting_visible) {
+    if (state->formatting_visible) {
         for (int index = 0;
-             index < static_cast<int>(kFormatButtons.size()); ++index) {
+             index < ((int) kFormatButtonCount); ++index) {
             RECT rect = format_button_rect(toolbar, state, index);
             const bool down =
-                (state.pressed.hit && state.pressed.format &&
-                 state.pressed.index == index) || state.format_latched[index];
+                (state->pressed.hit && state->pressed.format &&
+                 state->pressed.index == index) || state->format_latched[index];
             draw_classic_edge(dc, rect, down);
-            draw_format_glyph(toolbar, dc, kFormatButtons[index], rect, down,
-                               state.sprite != nullptr ? sprite_dc : nullptr,
-                               state.text_color);
+            draw_format_glyph(toolbar, dc, &kFormatButtons[index], rect, down,
+                               state->sprite != NULL ? sprite_dc : NULL,
+                               state->text_color);
         }
     }
-    if (old_bitmap != nullptr) {
+    if (old_bitmap != NULL) {
         SelectObject(sprite_dc, old_bitmap);
     }
     DeleteDC(sprite_dc);
     EndPaint(toolbar, &paint);
 }
 
-HitResult hit_test(HWND toolbar, const ToolbarState& state, POINT point) {
-    if (state.standard_visible) {
+HitResult hit_test(HWND toolbar, const ToolbarState* state, POINT point) {
+    if (state->standard_visible) {
         for (int index = 0;
-             index < static_cast<int>(kStandardButtons.size()); ++index) {
+             index < ((int) kStandardButtonCount); ++index) {
             RECT rect = standard_button_rect(toolbar, index);
             if (PtInRect(&rect, point)) {
-                return {true, false, index, kStandardButtons[index].command};
+                return (HitResult){true, false, index, kStandardButtons[index].command};
             }
         }
     }
-    if (state.formatting_visible) {
+    if (state->formatting_visible) {
         for (int index = 0;
-             index < static_cast<int>(kFormatButtons.size()); ++index) {
+             index < ((int) kFormatButtonCount); ++index) {
             RECT rect = format_button_rect(toolbar, state, index);
             if (PtInRect(&rect, point)) {
-                return {true, true, index, kFormatButtons[index].command};
+                return (HitResult){true, true, index, kFormatButtons[index].command};
             }
         }
     }
-    return {};
+    return (HitResult){false, false, -1, 0};
 }
 
 bool is_toolbar_descendant(HWND toolbar, HWND candidate) {
     return candidate == toolbar || IsChild(toolbar, candidate) != FALSE;
 }
 
-std::string combo_item(HWND combo, int index) {
+static char* combo_item(HWND combo, int index) {
     const LRESULT length = SendMessageA(combo, CB_GETLBTEXTLEN, index, 0);
     if (length == CB_ERR || length < 0) {
-        return {};
+        return NULL;
     }
-    std::vector<char> text(static_cast<std::size_t>(length) + 1);
-    SendMessageA(combo, CB_GETLBTEXT, index,
-                 reinterpret_cast<LPARAM>(text.data()));
-    return text.data();
+    char* text = (char*) calloc((size_t) length + 1, 1);
+    if (text == NULL) return NULL;
+    SendMessageA(combo, CB_GETLBTEXT, index, (LPARAM) text);
+    return text;
 }
 
 bool combo_contains(HWND combo, const char* value) {
-    return SendMessageA(combo, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-                        reinterpret_cast<LPARAM>(value)) != CB_ERR;
+    return SendMessageA(combo, CB_FINDSTRINGEXACT, ((WPARAM) (-1)),
+                        ((LPARAM) value)) != CB_ERR;
 }
 
-struct ComboEnumeration {
+typedef struct ComboEnumeration {
     HWND toolbar;
-    std::vector<HWND> combos;
-};
+    HWND* combos;
+    size_t combo_count;
+    size_t combo_capacity;
+} ComboEnumeration;
 
 BOOL CALLBACK collect_original_combos(HWND candidate, LPARAM parameter) {
-    auto& enumeration = *reinterpret_cast<ComboEnumeration*>(parameter);
-    if (is_toolbar_descendant(enumeration.toolbar, candidate)) {
+    ComboEnumeration* enumeration = (ComboEnumeration*) parameter;
+    if (is_toolbar_descendant(enumeration->toolbar, candidate)) {
         return TRUE;
     }
-    WCHAR class_name[64]{};
+    WCHAR class_name[64] = {0};
     GetClassNameW(candidate, class_name,
-                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
+                  (int) (sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpiW(class_name, kComboBoxClass) == 0) {
-        enumeration.combos.push_back(candidate);
+        hwnd_list_push(&enumeration->combos, &enumeration->combo_count,
+                       &enumeration->combo_capacity, candidate);
     }
     return TRUE;
 }
 
-void locate_source_combos(HWND toolbar, ToolbarState& state) {
-    ComboEnumeration enumeration{toolbar, {}};
+void locate_source_combos(HWND toolbar, ToolbarState* state) {
+    ComboEnumeration enumeration = {0};
+    enumeration.toolbar = toolbar;
     EnumChildWindows(GetParent(toolbar), collect_original_combos,
-                     reinterpret_cast<LPARAM>(&enumeration));
-    for (HWND combo : enumeration.combos) {
+                     ((LPARAM) &enumeration));
+    for (size_t index = 0; index < enumeration.combo_count; ++index) {
+        HWND combo = enumeration.combos[index];
         if (combo_contains(combo, "Courier New") &&
             combo_contains(combo, "Arial")) {
-            state.source_font = combo;
+            state->source_font = combo;
         } else if (combo_contains(combo, "24") &&
                    combo_contains(combo, "72")) {
-            state.source_size = combo;
+            state->source_size = combo;
         } else if (combo_contains(combo, "Normal") ||
                    SendMessageA(combo, CB_GETCOUNT, 0, 0) > 0) {
-            state.source_style = combo;
+            state->source_style = combo;
         }
     }
+    free(enumeration.combos);
 }
 
-std::basic_string<WCHAR> wide_from_ansi(const std::string& text) {
-    if (text.empty()) {
-        return {};
+static WCHAR* wide_from_ansi(const char* text) {
+    if (text == NULL || *text == '\0') {
+        return NULL;
     }
-    const int count = MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1,
-                                          nullptr, 0);
-    std::vector<WCHAR> wide(static_cast<std::size_t>(count));
-    MultiByteToWideChar(CP_ACP, 0, text.c_str(), -1, wide.data(), count);
-    return wide.data();
+    const int count = MultiByteToWideChar(CP_ACP, 0, text, -1, NULL, 0);
+    WCHAR* wide = (WCHAR*) calloc((size_t) count, sizeof(WCHAR));
+    if (wide == NULL) return NULL;
+    MultiByteToWideChar(CP_ACP, 0, text, -1, wide, count);
+    return wide;
 }
 
-std::string ansi_from_wide(LPCWSTR text) {
-    if (text == nullptr || *text == 0) {
-        return {};
+static char* ansi_from_wide(LPCWSTR text) {
+    if (text == NULL || *text == 0) {
+        return NULL;
     }
     const int count = WideCharToMultiByte(CP_ACP, 0, text, -1,
-                                          nullptr, 0, nullptr, nullptr);
-    std::vector<char> ansi(static_cast<std::size_t>(count));
-    WideCharToMultiByte(CP_ACP, 0, text, -1, ansi.data(), count,
-                        nullptr, nullptr);
-    return ansi.data();
+                                          NULL, 0, NULL, NULL);
+    char* ansi = (char*) calloc((size_t) count, 1);
+    if (ansi == NULL) return NULL;
+    WideCharToMultiByte(CP_ACP, 0, text, -1, ansi, count, NULL, NULL);
+    return ansi;
 }
 
 bool combo_or_child_has_focus(HWND combo) {
     const HWND focus = GetFocus();
-    return focus == combo || (focus != nullptr && IsChild(combo, focus));
+    return focus == combo || (focus != NULL && IsChild(combo, focus));
 }
 
-void sync_combo(HWND mirror, HWND source, int& copied_count) {
-    if (mirror == nullptr || source == nullptr || !IsWindow(source)) {
+void sync_combo(HWND mirror, HWND source, int* copied_count) {
+    if (mirror == NULL || source == NULL || !IsWindow(source)) {
         return;
     }
-    const int count = static_cast<int>(SendMessageA(source, CB_GETCOUNT, 0, 0));
-    if (count >= 0 && count != copied_count) {
-        std::basic_string<WCHAR> mirror_text;
+    const int count = (int) SendMessageA(source, CB_GETCOUNT, 0, 0);
+    if (count >= 0 && count != *copied_count) {
         const int mirror_length = GetWindowTextLengthW(mirror);
-        mirror_text.resize(static_cast<std::size_t>(mirror_length) + 1);
-        GetWindowTextW(mirror, &mirror_text[0], mirror_length + 1);
+        WCHAR* mirror_text = (WCHAR*) calloc((size_t) mirror_length + 1,
+                                             sizeof(WCHAR));
+        if (mirror_text == NULL) return;
+        GetWindowTextW(mirror, mirror_text, mirror_length + 1);
         SendMessageW(mirror, CB_RESETCONTENT, 0, 0);
         for (int index = 0; index < count; ++index) {
-            const std::basic_string<WCHAR> item =
-                wide_from_ansi(combo_item(source, index));
-            SendMessageW(mirror, CB_ADDSTRING, 0,
-                         reinterpret_cast<LPARAM>(item.c_str()));
+            char* item_ansi = combo_item(source, index);
+            WCHAR* item = wide_from_ansi(item_ansi);
+            if (item != NULL) {
+                SendMessageW(mirror, CB_ADDSTRING, 0, (LPARAM) item);
+            }
+            free(item);
+            free(item_ansi);
         }
-        SetWindowTextW(mirror, mirror_text.c_str());
-        copied_count = count;
+        SetWindowTextW(mirror, mirror_text);
+        free(mirror_text);
+        *copied_count = count;
     }
     if (!combo_or_child_has_focus(mirror)) {
         const LRESULT selection = SendMessageA(source, CB_GETCURSEL, 0, 0);
@@ -1027,55 +1189,59 @@ void sync_combo(HWND mirror, HWND source, int& copied_count) {
             SendMessageW(mirror, CB_SETCURSEL, selection, 0);
         } else {
             const int length = GetWindowTextLengthA(source);
-            std::vector<char> text(static_cast<std::size_t>(length) + 1);
-            GetWindowTextA(source, text.data(), static_cast<int>(text.size()));
-            const std::basic_string<WCHAR> source_text =
-                wide_from_ansi(text.data());
-            if (!source_text.empty()) {
-                SetWindowTextW(mirror, source_text.c_str());
+            char* text = (char*) calloc((size_t) length + 1, 1);
+            if (text == NULL) return;
+            GetWindowTextA(source, text, length + 1);
+            WCHAR* source_text = wide_from_ansi(text);
+            if (source_text != NULL && source_text[0] != 0) {
+                SetWindowTextW(mirror, source_text);
             }
+            free(source_text);
+            free(text);
         }
         SendMessageW(mirror, CB_SETEDITSEL, 0, MAKELPARAM(-1, 0));
     }
 }
 
-void sync_mirrors(HWND toolbar, ToolbarState& state) {
-    if (state.source_font == nullptr || !IsWindow(state.source_font) ||
-        state.source_size == nullptr || !IsWindow(state.source_size) ||
-        state.source_style == nullptr || !IsWindow(state.source_style)) {
+void sync_mirrors(HWND toolbar, ToolbarState* state) {
+    if (state->source_font == NULL || !IsWindow(state->source_font) ||
+        state->source_size == NULL || !IsWindow(state->source_size) ||
+        state->source_style == NULL || !IsWindow(state->source_style)) {
         locate_source_combos(toolbar, state);
     }
-    sync_combo(state.style_combo, state.source_style,
-               state.copied_style_count);
-    sync_combo(state.font_combo, state.source_font, state.copied_font_count);
-    sync_combo(state.size_combo, state.source_size, state.copied_size_count);
+    sync_combo(state->style_combo, state->source_style,
+               &state->copied_style_count);
+    sync_combo(state->font_combo, state->source_font,
+               &state->copied_font_count);
+    sync_combo(state->size_combo, state->source_size,
+               &state->copied_size_count);
 }
 
 BOOL CALLBACK find_document_pane(HWND candidate, LPARAM parameter) {
-    WCHAR class_name[64]{};
+    WCHAR class_name[64] = {0};
     GetClassNameW(candidate, class_name,
-                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
+                  (int) (sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpiW(class_name, kDocumentPaneClass) == 0) {
-        *reinterpret_cast<HWND*>(parameter) = candidate;
+        *((HWND*) (parameter)) = candidate;
         return FALSE;
     }
     return TRUE;
 }
 
 void restore_document_focus(HWND source) {
-    HWND pane = nullptr;
+    HWND pane = NULL;
     EnumChildWindows(GetAncestor(source, GA_ROOT), find_document_pane,
-                     reinterpret_cast<LPARAM>(&pane));
-    if (pane != nullptr) {
+                     ((LPARAM) &pane));
+    if (pane != NULL) {
         SetFocus(pane);
     }
 }
 
 void restore_document_focus_from_root(HWND root) {
-    HWND pane = nullptr;
+    HWND pane = NULL;
     EnumChildWindows(root, find_document_pane,
-                     reinterpret_cast<LPARAM>(&pane));
-    if (pane != nullptr) {
+                     ((LPARAM) &pane));
+    if (pane != NULL) {
         SetFocus(pane);
     }
 }
@@ -1083,28 +1249,28 @@ void restore_document_focus_from_root(HWND root) {
 HBITMAP create_color_menu_swatch(HWND owner, COLORREF color,
                                  bool automatic) {
     HDC screen = GetDC(owner);
-    if (screen == nullptr) {
-        return nullptr;
+    if (screen == NULL) {
+        return NULL;
     }
     const int size = scale(owner, 14);
     HBITMAP bitmap = CreateCompatibleBitmap(screen, size, size);
     HDC memory = CreateCompatibleDC(screen);
-    HBITMAP previous = bitmap != nullptr ? static_cast<HBITMAP>(
-        SelectObject(memory, bitmap)) : nullptr;
-    if (bitmap != nullptr) {
-        RECT bounds{0, 0, size, size};
+    HBITMAP previous = bitmap != NULL ?
+        (HBITMAP) SelectObject(memory, bitmap) : NULL;
+    if (bitmap != NULL) {
+        RECT bounds = {0, 0, size, size};
         FillRect(memory, &bounds, GetSysColorBrush(COLOR_MENU));
-        RECT swatch{scale(owner, 2), scale(owner, 2),
+        RECT swatch = {scale(owner, 2), scale(owner, 2),
                     size - scale(owner, 1), size - scale(owner, 1)};
         HBRUSH fill = CreateSolidBrush(color);
         FillRect(memory, &swatch, fill);
         DeleteObject(fill);
         FrameRect(memory, &swatch,
-                  static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+                  ((HBRUSH) GetStockObject(BLACK_BRUSH)));
         if (automatic) {
             HPEN pen = CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
-            HPEN old_pen = static_cast<HPEN>(SelectObject(memory, pen));
-            MoveToEx(memory, swatch.left + 1, swatch.bottom - 2, nullptr);
+            HPEN old_pen = ((HPEN) SelectObject(memory, pen));
+            MoveToEx(memory, swatch.left + 1, swatch.bottom - 2, NULL);
             LineTo(memory, swatch.right - 1, swatch.top + 1);
             SelectObject(memory, old_pen);
             DeleteObject(pen);
@@ -1118,15 +1284,15 @@ HBITMAP create_color_menu_swatch(HWND owner, COLORREF color,
 
 void show_text_color_palette(HWND app, HWND toolbar) {
     ToolbarState* state = toolbar_state(toolbar);
-    if (state == nullptr) {
+    if (state == NULL) {
         return;
     }
-    struct Choice {
+    typedef struct Choice {
         int index;
         COLORREF color;
         const WCHAR* name;
-    };
-    const std::array<Choice, 9> choices{{
+    } Choice;
+    static const Choice choices[] = {
         {0, RGB(0, 0, 0), OPUSW("Automatic")},
         {1, RGB(0, 0, 0), OPUSW("Black")},
         {2, RGB(0, 0, 255), OPUSW("Blue")},
@@ -1136,121 +1302,126 @@ void show_text_color_palette(HWND app, HWND toolbar) {
         {6, RGB(255, 0, 0), OPUSW("Red")},
         {7, RGB(255, 255, 0), OPUSW("Yellow")},
         {8, RGB(255, 255, 255), OPUSW("White")},
-    }};
+    };
+    enum { kTextColorChoiceCount = sizeof(choices) / sizeof(choices[0]) };
 
     HMENU popup = CreatePopupMenu();
-    if (popup == nullptr) {
+    if (popup == NULL) {
         return;
     }
-    std::vector<HBITMAP> swatches;
-    swatches.reserve(choices.size());
-    for (const auto& choice : choices) {
-        const UINT command = kCmdTextColorBase + choice.index;
-        AppendMenuW(popup, MF_STRING, command, choice.name);
+    HBITMAP swatches[kTextColorChoiceCount] = {0};
+    for (int index = 0; index < kTextColorChoiceCount; ++index) {
+        const Choice* choice = &choices[index];
+        const UINT command = kCmdTextColorBase + choice->index;
+        AppendMenuW(popup, MF_STRING, command, choice->name);
         HBITMAP swatch = create_color_menu_swatch(
-            toolbar, choice.color, choice.index == 0);
-        swatches.push_back(swatch);
-        if (swatch != nullptr) {
+            toolbar, choice->color, choice->index == 0);
+        swatches[index] = swatch;
+        if (swatch != NULL) {
             SetMenuItemBitmaps(popup, command, MF_BYCOMMAND, swatch, swatch);
         }
-        if (choice.index == state->text_color_index) {
+        if (choice->index == state->text_color_index) {
             CheckMenuItem(popup, command, MF_BYCOMMAND | MF_CHECKED);
         }
     }
     style_menu_tree(popup);
 
-    RECT anchor = format_button_rect(toolbar, *state, 3);
-    POINT point{anchor.left, anchor.bottom};
+    RECT anchor = format_button_rect(toolbar, state, 3);
+    POINT point = {anchor.left, anchor.bottom};
     ClientToScreen(toolbar, &point);
     const UINT selected = TrackPopupMenu(
         popup, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RIGHTBUTTON,
-        point.x, point.y, 0, app, nullptr);
+        point.x, point.y, 0, app, NULL);
     if (selected >= kCmdTextColorBase &&
-        selected < kCmdTextColorBase + choices.size()) {
-        const int index = static_cast<int>(selected - kCmdTextColorBase);
-        HWND pane = nullptr;
+        selected < kCmdTextColorBase + kTextColorChoiceCount) {
+        const int index = (int) (selected - kCmdTextColorBase);
+        HWND pane = NULL;
         EnumChildWindows(app, find_document_pane,
-                         reinterpret_cast<LPARAM>(&pane));
-        if (pane != nullptr &&
+                         ((LPARAM) &pane));
+        if (pane != NULL &&
             OpusApplyWin95TextColor(pane, choices[index].index)) {
             state->text_color_index = choices[index].index;
             state->text_color = choices[index].color;
-            InvalidateRect(toolbar, nullptr, FALSE);
+            InvalidateRect(toolbar, NULL, FALSE);
             UpdateWindow(toolbar);
         } else {
             MessageBeep(MB_ICONEXCLAMATION);
         }
     }
     DestroyMenu(popup);
-    for (HBITMAP swatch : swatches) {
-        if (swatch != nullptr) {
-            DeleteObject(swatch);
+    for (int index = 0; index < kTextColorChoiceCount; ++index) {
+        if (swatches[index] != NULL) {
+            DeleteObject(swatches[index]);
         }
     }
     restore_document_focus_from_root(app);
 }
 
 void forward_combo(HWND mirror, HWND source, int notification,
-                   bool& edit_dirty) {
-    if (mirror == nullptr || source == nullptr || !IsWindow(source)) {
+                   bool* edit_dirty) {
+    if (mirror == NULL || source == NULL || !IsWindow(source)) {
         return;
     }
     if (notification == CBN_SELCHANGE || notification == CBN_SELENDOK) {
-        edit_dirty = false;
+        *edit_dirty = false;
     }
-    std::basic_string<WCHAR> wide;
+    WCHAR* wide = NULL;
     const LRESULT mirror_selection = SendMessageW(mirror, CB_GETCURSEL, 0, 0);
     if (mirror_selection != CB_ERR) {
         const LRESULT length = SendMessageW(
             mirror, CB_GETLBTEXTLEN, mirror_selection, 0);
-        wide.resize(static_cast<std::size_t>(length) + 1, 0);
+        wide = (WCHAR*) calloc((size_t) length + 1, sizeof(WCHAR));
+        if (wide == NULL) return;
         SendMessageW(mirror, CB_GETLBTEXT, mirror_selection,
-                     reinterpret_cast<LPARAM>(&wide[0]));
+                     (LPARAM) wide);
     } else {
         const int length = GetWindowTextLengthW(mirror);
-        wide.resize(static_cast<std::size_t>(length) + 1, 0);
-        GetWindowTextW(mirror, &wide[0], length + 1);
+        wide = (WCHAR*) calloc((size_t) length + 1, sizeof(WCHAR));
+        if (wide == NULL) return;
+        GetWindowTextW(mirror, wide, length + 1);
     }
-    const std::string text = ansi_from_wide(wide.c_str());
+    char* text = ansi_from_wide(wide);
+    free(wide);
+    if (text == NULL) return;
     const LRESULT selection = SendMessageA(
-        source, CB_FINDSTRINGEXACT, static_cast<WPARAM>(-1),
-        reinterpret_cast<LPARAM>(text.c_str()));
+        source, CB_FINDSTRINGEXACT, (WPARAM) -1, (LPARAM) text);
     if (selection != CB_ERR) {
         SendMessageA(source, CB_SETCURSEL, selection, 0);
     }
-    SetWindowTextA(source, text.c_str());
+    SetWindowTextA(source, text);
+    free(text);
     const HWND parent = GetParent(source);
     const int control_id = GetDlgCtrlID(source);
     if (notification == CBN_SELCHANGE) {
         SendMessageW(parent, WM_COMMAND,
                      MAKEWPARAM(control_id, CBN_SELCHANGE),
-                     reinterpret_cast<LPARAM>(source));
+                     ((LPARAM) source));
     } else if (notification == CBN_SELENDOK) {
         SendMessageW(parent, WM_COMMAND,
                      MAKEWPARAM(control_id, CBN_SELENDOK),
-                     reinterpret_cast<LPARAM>(source));
+                     ((LPARAM) source));
         restore_document_focus(source);
     } else if (notification == CBN_EDITCHANGE) {
         // A dropdown selection can emit EDITCHANGE too; only free-form text (no
         // selected list item) needs the legacy control's focus-loss commit
         // path.
-        edit_dirty = SendMessageW(mirror, CB_GETCURSEL, 0, 0) == CB_ERR;
+        *edit_dirty = SendMessageW(mirror, CB_GETCURSEL, 0, 0) == CB_ERR;
         SendMessageW(parent, WM_COMMAND,
                      MAKEWPARAM(control_id, CBN_EDITCHANGE),
-                     reinterpret_cast<LPARAM>(source));
+                     ((LPARAM) source));
     } else if (notification == CBN_DROPDOWN) {
         SendMessageW(parent, WM_COMMAND,
                      MAKEWPARAM(control_id, CBN_DROPDOWN),
-                     reinterpret_cast<LPARAM>(source));
-    } else if (notification == CBN_KILLFOCUS && edit_dirty) {
+                     ((LPARAM) source));
+    } else if (notification == CBN_KILLFOCUS && *edit_dirty) {
         SendMessageW(parent, WM_COMMAND,
                      MAKEWPARAM(control_id, CBN_KILLFOCUS),
-                     reinterpret_cast<LPARAM>(source));
-        edit_dirty = false;
+                     ((LPARAM) source));
+        *edit_dirty = false;
     }
 }
 
-void position_combos(HWND toolbar, ToolbarState& state) {
+void position_combos(HWND toolbar, ToolbarState* state) {
     const int y = formatting_row_top(toolbar, state) + scale(toolbar, 1);
 
     // For CBS_DROPDOWN the window height also reserves the popup list. The
@@ -1262,96 +1433,93 @@ void position_combos(HWND toolbar, ToolbarState& state) {
     const int width_font = scale(toolbar, 146);
     const int x_size = scale(toolbar, 276);
     const int width_size = scale(toolbar, 52);
-    ShowWindow(state.style_combo,
-               state.formatting_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-    ShowWindow(state.font_combo,
-               state.formatting_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-    ShowWindow(state.size_combo,
-               state.formatting_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-    MoveWindow(state.style_combo, x_style, y, width_style, height, TRUE);
-    MoveWindow(state.font_combo, x_font, y, width_font, height, TRUE);
-    MoveWindow(state.size_combo, x_size, y, width_size, height, TRUE);
+    ShowWindow(state->style_combo,
+               state->formatting_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
+    ShowWindow(state->font_combo,
+               state->formatting_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
+    ShowWindow(state->size_combo,
+               state->formatting_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
+    MoveWindow(state->style_combo, x_style, y, width_style, height, TRUE);
+    MoveWindow(state->font_combo, x_font, y, width_font, height, TRUE);
+    MoveWindow(state->size_combo, x_size, y, width_size, height, TRUE);
 
-    if (state.zoom_combo != nullptr) {
-        ShowWindow(state.zoom_combo,
-                   state.standard_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-        MoveWindow(state.zoom_combo, standard_buttons_end(toolbar),
+    if (state->zoom_combo != NULL) {
+        ShowWindow(state->zoom_combo,
+                   state->standard_visible ? SW_SHOWNOACTIVATE : SW_HIDE);
+        MoveWindow(state->zoom_combo, standard_buttons_end(toolbar),
                    scale(toolbar, 3), scale(toolbar, 82), height, TRUE);
     }
 }
 
 HWND create_combo(HWND toolbar, UINT id) {
     HWND combo = CreateWindowExW(
-        0, kComboBoxWindowClass, nullptr,
+        0, kComboBoxWindowClass, NULL,
         WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL |
             CBS_DROPDOWN | CBS_AUTOHSCROLL,
         0, 0, 10, 200, toolbar,
-        reinterpret_cast<HMENU>(static_cast<UINT_PTR>(id)),
-        GetModuleHandleW(nullptr), nullptr);
+        ((HMENU) ((UINT_PTR) (id))),
+        GetModuleHandleW(NULL), NULL);
     set_window_classic(combo);
     return combo;
 }
 
 HWND create_zoom_combo(HWND toolbar) {
     HWND combo = CreateWindowExW(
-        0, kComboBoxWindowClass, nullptr,
+        0, kComboBoxWindowClass, NULL,
         WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL |
             CBS_DROPDOWN | CBS_AUTOHSCROLL,
         0, 0, 10, 200, toolbar,
-        reinterpret_cast<HMENU>(static_cast<UINT_PTR>(kComboZoom)),
-        GetModuleHandleW(nullptr), nullptr);
+        ((HMENU) ((UINT_PTR) (kComboZoom))),
+        GetModuleHandleW(NULL), NULL);
     set_window_classic(combo);
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(kZoom100));
+                 ((LPARAM) kZoom100));
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(kZoomPageWidth));
+                 ((LPARAM) kZoomPageWidth));
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(kZoomWholePage));
+                 ((LPARAM) kZoomWholePage));
     SendMessageW(combo, CB_ADDSTRING, 0,
-                 reinterpret_cast<LPARAM>(kZoomPrintPreview));
+                 ((LPARAM) kZoomPrintPreview));
     SendMessageW(combo, CB_SETCURSEL, 0, 0);
     return combo;
 }
 
 void update_zoom_combo(HWND pane, int percent) {
     const HWND app = GetAncestor(pane, GA_ROOT);
-    const HWND toolbar = FindWindowExW(app, nullptr, kToolbarClass, nullptr);
+    const HWND toolbar = FindWindowExW(app, NULL, kToolbarClass, NULL);
     ToolbarState* state = toolbar_state(toolbar);
-    if (state == nullptr || state->zoom_combo == nullptr) {
+    if (state == NULL || state->zoom_combo == NULL) {
         return;
     }
-    std::basic_string<WCHAR> text;
-    for (const char digit : std::to_string(percent)) {
-        text.push_back(static_cast<WCHAR>(static_cast<unsigned char>(digit)));
-    }
-    text.push_back(OPUSW("%")[0]);
-    SendMessageW(state->zoom_combo, CB_SETCURSEL,
-                 static_cast<WPARAM>(-1), 0);
-    SetWindowTextW(state->zoom_combo, text.c_str());
+    WCHAR text[16] = {0};
+    format_wide_decimal(text, sizeof(text) / sizeof(text[0]), percent,
+                        OPUSW("%"));
+    SendMessageW(state->zoom_combo, CB_SETCURSEL, (WPARAM) -1, 0);
+    SetWindowTextW(state->zoom_combo, text);
 }
 
-void update_toolbar_menu_checks(HWND app, const ToolbarState& state) {
+void update_toolbar_menu_checks(HWND app, const ToolbarState* state) {
     const UINT standard = MF_BYCOMMAND |
-        (state.standard_visible ? MF_CHECKED : MF_UNCHECKED);
+        (state->standard_visible ? MF_CHECKED : MF_UNCHECKED);
     const UINT formatting = MF_BYCOMMAND |
-        (state.formatting_visible ? MF_CHECKED : MF_UNCHECKED);
-    if (g_toolbars_menu != nullptr && IsMenu(g_toolbars_menu)) {
+        (state->formatting_visible ? MF_CHECKED : MF_UNCHECKED);
+    if (g_toolbars_menu != NULL && IsMenu(g_toolbars_menu)) {
         CheckMenuItem(g_toolbars_menu, kCmdToggleStandardToolbar, standard);
         CheckMenuItem(g_toolbars_menu, kCmdToggleFormattingToolbar,
                       formatting);
     }
     HMENU root = GetMenu(app);
-    if (root != nullptr) {
+    if (root != NULL) {
         CheckMenuItem(root, kCmdToggleStandardToolbar, standard);
         CheckMenuItem(root, kCmdToggleFormattingToolbar, formatting);
     }
 }
 
 void request_toolbar_layout(HWND app, HWND toolbar) {
-    if (app == nullptr || toolbar == nullptr) {
+    if (app == NULL || toolbar == NULL) {
         return;
     }
-    RECT client{};
+    RECT client = {0};
     GetClientRect(app, &client);
     const int height = toolbar_height(toolbar);
     ShowWindow(toolbar, height > 0 ? SW_SHOWNOACTIVATE : SW_HIDE);
@@ -1360,13 +1528,13 @@ void request_toolbar_layout(HWND app, HWND toolbar) {
     SendMessageW(app, WM_SIZE, size_type,
                  MAKELPARAM(client.right - client.left,
                             client.bottom - client.top));
-    InvalidateRect(app, nullptr, TRUE);
+    InvalidateRect(app, NULL, TRUE);
     DrawMenuBar(app);
 }
 
 void toggle_toolbar_row(HWND app, HWND toolbar, bool standard) {
     ToolbarState* state = toolbar_state(toolbar);
-    if (state == nullptr) {
+    if (state == NULL) {
         return;
     }
     if (standard) {
@@ -1374,19 +1542,19 @@ void toggle_toolbar_row(HWND app, HWND toolbar, bool standard) {
     } else {
         state->formatting_visible = !state->formatting_visible;
     }
-    state->pressed = {};
-    position_combos(toolbar, *state);
-    update_toolbar_menu_checks(app, *state);
+    state->pressed = (HitResult){false, false, -1, 0};
+    position_combos(toolbar, state);
+    update_toolbar_menu_checks(app, state);
     request_toolbar_layout(app, toolbar);
 }
 
 void show_toolbar_context_menu(HWND toolbar, POINT screen_point) {
     ToolbarState* state = toolbar_state(toolbar);
-    if (state == nullptr) {
+    if (state == NULL) {
         return;
     }
     HMENU popup = CreatePopupMenu();
-    if (popup == nullptr) {
+    if (popup == NULL) {
         return;
     }
     AppendMenuW(popup,
@@ -1399,12 +1567,12 @@ void show_toolbar_context_menu(HWND toolbar, POINT screen_point) {
                 kCmdToggleFormattingToolbar, OPUSW("&Formatting"));
     AppendMenuW(popup, MF_STRING, bcmRuler, OPUSW("&Ruler"));
     AppendMenuW(popup, MF_STRING, bcmStatusArea, OPUSW("&Status Bar"));
-    AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(popup, MF_SEPARATOR, 0, NULL);
     AppendMenuW(popup, MF_STRING, bcmCustomize, OPUSW("&Customize..."));
     style_menu_tree(popup);
     const UINT command = TrackPopupMenu(
         popup, TPM_RETURNCMD | TPM_RIGHTBUTTON,
-        screen_point.x, screen_point.y, 0, GetParent(toolbar), nullptr);
+        screen_point.x, screen_point.y, 0, GetParent(toolbar), NULL);
     DestroyMenu(popup);
     if (command != 0) {
         PostMessageW(GetParent(toolbar), WM_COMMAND,
@@ -1413,21 +1581,21 @@ void show_toolbar_context_menu(HWND toolbar, POINT screen_point) {
 }
 
 WNDPROC original_pane_proc(HWND pane) {
-    return reinterpret_cast<WNDPROC>(
+    return ((WNDPROC)
         GetPropW(pane, kOriginalPaneProcProperty));
 }
 
 void redraw_vertical_ruler(HWND pane) {
-    RECT ruler{};
+    RECT ruler = {0};
     GetClientRect(pane, &ruler);
-    ruler.right = std::min(ruler.right, ruler.left + scale(pane, 22));
+    ruler.right = min_int(ruler.right, ruler.left + scale(pane, 22));
     InvalidateRect(pane, &ruler, FALSE);
     UpdateWindow(pane);
 }
 
 bool vertical_margin_marker_at(HWND pane, POINT point, bool* top_marker,
                                int* page_offset) {
-    RECT client{};
+    RECT client = {0};
     GetClientRect(pane, &client);
     if (point.x < client.left ||
         point.x >= client.left + scale(pane, 22)) {
@@ -1457,22 +1625,22 @@ bool vertical_margin_marker_at(HWND pane, POINT point, bool* top_marker,
         pane, &page_left, &continuous_top, &page_right,
         &continuous_bottom, &page_gap, &has_previous, &has_next);
     const int page_step = page_bottom - page_top + page_gap;
-    const std::array<int, 3> offsets{
+    const int offsets[3] = {
         has_previous ? -page_step : 0,
         0,
         has_next ? page_step : 0};
     int closest_distance = hit_radius + 1;
     bool closest_top = false;
     int closest_offset = 0;
-    for (std::size_t index = 0; index < offsets.size(); ++index) {
+    for (size_t index = 0; index < 3; ++index) {
         const int offset = offsets[index];
         if ((index == 0 && !has_previous) ||
             (index == 2 && !has_next)) {
             continue;
         }
-        const int top_distance = std::abs(
+        const int top_distance = abs(
             point.y - (page_top + offset + top_margin));
-        const int bottom_distance = std::abs(
+        const int bottom_distance = abs(
             point.y - (page_bottom + offset - bottom_margin));
         if (top_distance < closest_distance) {
             closest_distance = top_distance;
@@ -1489,7 +1657,7 @@ bool vertical_margin_marker_at(HWND pane, POINT point, bool* top_marker,
         return false;
     }
     *top_marker = closest_top;
-    if (page_offset != nullptr) {
+    if (page_offset != NULL) {
         *page_offset = closest_offset;
     }
     return true;
@@ -1514,16 +1682,16 @@ void update_vertical_margin_drag(HWND pane, int y) {
 
     page_top += g_vertical_ruler_drag.page_offset;
     page_bottom += g_vertical_ruler_drag.page_offset;
-    const int minimum_text_height = std::max(
-        scale(pane, 12), std::max(1, pixels_per_inch / 4));
+    const int minimum_text_height = max_int(
+        scale(pane, 12), max_int(1, pixels_per_inch / 4));
     if (g_vertical_ruler_drag.top) {
         const int bottom_y = page_bottom - bottom_margin;
-        y = std::max(page_top,
-                     std::min(y, bottom_y - minimum_text_height));
+        y = max_int(page_top,
+                     min_int(y, bottom_y - minimum_text_height));
     } else {
         const int top_y = page_top + top_margin;
-        y = std::max(top_y + minimum_text_height,
-                     std::min(y, page_bottom));
+        y = max_int(top_y + minimum_text_height,
+                     min_int(y, page_bottom));
     }
     if (y != g_vertical_ruler_drag.preview_y) {
         g_vertical_ruler_drag.preview_y = y;
@@ -1536,61 +1704,55 @@ void cancel_vertical_margin_drag(HWND pane) {
         g_vertical_ruler_drag.pane != pane) {
         return;
     }
-    g_vertical_ruler_drag = {};
+    g_vertical_ruler_drag = (VerticalRulerDragState){0};
     redraw_vertical_ruler(pane);
 }
 
 PageSnapshot* find_page_snapshot(HWND pane, int page_index, int width,
                                  int height, int zoom_percent) {
-    for (auto& snapshot : g_page_snapshots) {
-        if (snapshot.pane == pane && snapshot.page_index == page_index &&
-            snapshot.width == width && snapshot.height == height &&
-            snapshot.zoom_percent == zoom_percent) {
-            snapshot.last_used = GetTickCount64();
-            return &snapshot;
+    for (size_t index = 0; index < g_page_snapshots.size; ++index) {
+        PageSnapshot* snapshot = &g_page_snapshots.data[index];
+        if (snapshot->pane == pane && snapshot->page_index == page_index &&
+            snapshot->width == width && snapshot->height == height &&
+            snapshot->zoom_percent == zoom_percent) {
+            snapshot->last_used = GetTickCount64();
+            return snapshot;
         }
     }
-    return nullptr;
+    return NULL;
 }
 
 void prune_page_snapshots(HWND pane) {
-    std::size_t pane_count = 0;
-    for (const auto& snapshot : g_page_snapshots) {
-        if (snapshot.pane == pane) {
+    size_t pane_count = 0;
+    for (size_t index = 0; index < g_page_snapshots.size; ++index) {
+        if (g_page_snapshots.data[index].pane == pane) {
             ++pane_count;
         }
     }
     while (pane_count > 4) {
-        auto oldest = g_page_snapshots.end();
-        for (auto iterator = g_page_snapshots.begin();
-             iterator != g_page_snapshots.end(); ++iterator) {
-            if (iterator->pane == pane &&
-                (oldest == g_page_snapshots.end() ||
-                 iterator->last_used < oldest->last_used)) {
-                oldest = iterator;
+        size_t oldest = g_page_snapshots.size;
+        for (size_t index = 0; index < g_page_snapshots.size; ++index) {
+            PageSnapshot* snapshot = &g_page_snapshots.data[index];
+            if (snapshot->pane == pane &&
+                (oldest == g_page_snapshots.size ||
+                 snapshot->last_used < g_page_snapshots.data[oldest].last_used)) {
+                oldest = index;
             }
         }
-        if (oldest == g_page_snapshots.end()) {
+        if (oldest == g_page_snapshots.size) {
             break;
         }
-        if (oldest->bitmap != nullptr) {
-            DeleteObject(oldest->bitmap);
-        }
-        g_page_snapshots.erase(oldest);
+        page_snapshot_delete(oldest);
         --pane_count;
     }
 }
 
 void clear_page_snapshots(HWND pane) {
-    for (auto iterator = g_page_snapshots.begin();
-         iterator != g_page_snapshots.end();) {
-        if (iterator->pane == pane) {
-            if (iterator->bitmap != nullptr) {
-                DeleteObject(iterator->bitmap);
-            }
-            iterator = g_page_snapshots.erase(iterator);
+    for (size_t index = 0; index < g_page_snapshots.size;) {
+        if (g_page_snapshots.data[index].pane == pane) {
+            page_snapshot_delete(index);
         } else {
-            ++iterator;
+            ++index;
         }
     }
 }
@@ -1618,8 +1780,8 @@ void update_current_page_snapshot(HWND pane, HDC dc) {
 
     PageSnapshot* snapshot = find_page_snapshot(
         pane, page_index, width, height, zoom_percent);
-    if (snapshot == nullptr) {
-        PageSnapshot created{};
+    if (snapshot == NULL) {
+        PageSnapshot created = {0};
         created.pane = pane;
         created.page_index = page_index;
         created.zoom_percent = zoom_percent;
@@ -1627,36 +1789,39 @@ void update_current_page_snapshot(HWND pane, HDC dc) {
         created.height = height;
         created.bitmap = CreateCompatibleBitmap(dc, width, height);
         created.last_used = GetTickCount64();
-        if (created.bitmap == nullptr) {
+        if (created.bitmap == NULL) {
             return;
         }
         HDC memory = CreateCompatibleDC(dc);
-        HBITMAP previous = static_cast<HBITMAP>(
+        HBITMAP previous = ((HBITMAP)
             SelectObject(memory, created.bitmap));
-        RECT background{0, 0, width, height};
+        RECT background = {0, 0, width, height};
         FillRect(memory, &background,
-                 static_cast<HBRUSH>(GetStockObject(WHITE_BRUSH)));
+                 ((HBRUSH) GetStockObject(WHITE_BRUSH)));
         SelectObject(memory, previous);
         DeleteDC(memory);
-        g_page_snapshots.push_back(created);
-        snapshot = &g_page_snapshots.back();
+        if (!page_snapshot_push(created)) {
+            DeleteObject(created.bitmap);
+            return;
+        }
+        snapshot = &g_page_snapshots.data[g_page_snapshots.size - 1];
         prune_page_snapshots(pane);
         snapshot = find_page_snapshot(
             pane, page_index, width, height, zoom_percent);
     }
-    if (snapshot == nullptr || snapshot->bitmap == nullptr) {
+    if (snapshot == NULL || snapshot->bitmap == NULL) {
         return;
     }
 
-    RECT client{};
-    RECT page{page_left, page_top, page_right, page_bottom};
-    RECT visible{};
+    RECT client = {0};
+    RECT page = {page_left, page_top, page_right, page_bottom};
+    RECT visible = {0};
     GetClientRect(pane, &client);
     if (!IntersectRect(&visible, &page, &client)) {
         return;
     }
     HDC memory = CreateCompatibleDC(dc);
-    HBITMAP previous = static_cast<HBITMAP>(
+    HBITMAP previous = ((HBITMAP)
         SelectObject(memory, snapshot->bitmap));
     BitBlt(memory, visible.left - page_left, visible.top - page_top,
            visible.right - visible.left, visible.bottom - visible.top,
@@ -1665,29 +1830,29 @@ void update_current_page_snapshot(HWND pane, HDC dc) {
     DeleteDC(memory);
 }
 
-void draw_neighbor_sheet(HDC dc, const RECT& sheet, const RECT& client,
+void draw_neighbor_sheet(HDC dc, const RECT* sheet, const RECT* client,
                          const PageSnapshot* snapshot) {
-    RECT visible{};
-    if (!IntersectRect(&visible, &sheet, &client)) {
+    RECT visible = {0};
+    if (!IntersectRect(&visible, sheet, client)) {
         return;
     }
 
-    RECT shadow = sheet;
+    RECT shadow = *sheet;
     OffsetRect(&shadow, 3, 3);
-    RECT visible_shadow{};
-    if (IntersectRect(&visible_shadow, &shadow, &client)) {
+    RECT visible_shadow = {0};
+    if (IntersectRect(&visible_shadow, &shadow, client)) {
         HBRUSH shadow_brush = CreateSolidBrush(RGB(96, 96, 96));
         FillRect(dc, &visible_shadow, shadow_brush);
         DeleteObject(shadow_brush);
     }
 
-    if (snapshot != nullptr && snapshot->bitmap != nullptr) {
+    if (snapshot != NULL && snapshot->bitmap != NULL) {
         HDC memory = CreateCompatibleDC(dc);
-        HBITMAP previous = static_cast<HBITMAP>(
+        HBITMAP previous = ((HBITMAP)
             SelectObject(memory, snapshot->bitmap));
         BitBlt(dc, visible.left, visible.top,
                visible.right - visible.left, visible.bottom - visible.top,
-               memory, visible.left - sheet.left, visible.top - sheet.top,
+               memory, visible.left - sheet->left, visible.top - sheet->top,
                SRCCOPY);
         SelectObject(memory, previous);
         DeleteDC(memory);
@@ -1697,7 +1862,7 @@ void draw_neighbor_sheet(HDC dc, const RECT& sheet, const RECT& client,
         DeleteObject(page_brush);
     }
     HBRUSH border_brush = CreateSolidBrush(RGB(96, 96, 96));
-    FrameRect(dc, &sheet, border_brush);
+    FrameRect(dc, sheet, border_brush);
     DeleteObject(border_brush);
 }
 
@@ -1715,7 +1880,7 @@ void draw_continuous_page_workspace(HWND pane, HDC dc) {
         return;
     }
 
-    RECT client{};
+    RECT client = {0};
     GetClientRect(pane, &client);
     const int page_height = page_bottom - page_top;
     if (page_right <= page_left || page_height <= 0) {
@@ -1739,7 +1904,7 @@ void draw_continuous_page_workspace(HWND pane, HDC dc) {
     const int first = has_previous ? 0 : 1;
     const int last = has_next ? 3 : 2;
     for (int index = first; index < last; ++index) {
-        const RECT sheet{
+        const RECT sheet = {
             page_left, page_top + offsets[index],
             page_right, page_bottom + offsets[index]};
         ExcludeClipRect(dc, sheet.left, sheet.top,
@@ -1752,7 +1917,7 @@ void draw_continuous_page_workspace(HWND pane, HDC dc) {
      * workspace. Clip the shadow away from the page so it cannot cover document
      * pixels that the legacy formatter just drew.
      */
-    const RECT current{page_left, page_top, page_right, page_bottom};
+    const RECT current = {page_left, page_top, page_right, page_bottom};
     RECT shadow = current;
     OffsetRect(&shadow, 3, 3);
     const int shadow_saved = SaveDC(dc);
@@ -1783,7 +1948,7 @@ void draw_continuous_page_neighbors(HWND pane, HDC dc) {
         return;
     }
 
-    RECT client{};
+    RECT client = {0};
     GetClientRect(pane, &client);
     const int page_height = page_bottom - page_top;
     if (page_right <= page_left || page_height <= 0) {
@@ -1793,19 +1958,19 @@ void draw_continuous_page_neighbors(HWND pane, HDC dc) {
     const int page_index = OpusGetWin95CurrentPageIndex(pane);
     const int zoom_percent = OpusGetWin95ZoomPercent(pane);
     if (has_previous) {
-        RECT previous{page_left, page_top - page_step,
+        RECT previous = {page_left, page_top - page_step,
                       page_right, page_bottom - page_step};
         draw_neighbor_sheet(
-            dc, previous, client,
+            dc, &previous, &client,
             find_page_snapshot(pane, page_index - 1,
                                page_right - page_left, page_height,
                                zoom_percent));
     }
     if (has_next) {
-        RECT next{page_left, page_top + page_step,
+        RECT next = {page_left, page_top + page_step,
                   page_right, page_bottom + page_step};
         draw_neighbor_sheet(
-            dc, next, client,
+            dc, &next, &client,
             find_page_snapshot(pane, page_index + 1,
                                page_right - page_left, page_height,
                                zoom_percent));
@@ -1813,11 +1978,11 @@ void draw_continuous_page_neighbors(HWND pane, HDC dc) {
 }
 
 void draw_vertical_ruler(HWND pane, HDC dc) {
-    RECT client{};
+    RECT client = {0};
     GetClientRect(pane, &client);
     const int width = scale(pane, 22);
-    RECT ruler{client.left, client.top,
-               std::min(client.right, client.left + width), client.bottom};
+    RECT ruler = {client.left, client.top,
+               min_int(client.right, client.left + width), client.bottom};
     HBRUSH outside_brush = CreateSolidBrush(kButtonFace);
     FillRect(dc, &ruler, outside_brush);
     DeleteObject(outside_brush);
@@ -1863,24 +2028,24 @@ void draw_vertical_ruler(HWND pane, HDC dc) {
     }
 
     const int page_step = page_bottom - page_top + page_gap;
-    const std::array<int, 3> offsets{
+    const int offsets[3] = {
         has_previous ? -page_step : 0,
         0,
         has_next ? page_step : 0};
     HBRUSH active_brush = CreateSolidBrush(RGB(255, 255, 255));
-    for (std::size_t index = 0; index < offsets.size(); ++index) {
+    for (size_t index = 0; index < 3; ++index) {
         if ((index == 0 && !has_previous) ||
             (index == 2 && !has_next)) {
             continue;
         }
         const int instance_top = page_top + offsets[index];
         const int instance_bottom = page_bottom + offsets[index];
-        RECT writable{ruler.left,
+        RECT writable = {ruler.left,
                       instance_top + displayed_top_margin,
                       ruler.right,
                       instance_bottom - displayed_bottom_margin};
-        writable.top = std::max(ruler.top, writable.top);
-        writable.bottom = std::min(ruler.bottom, writable.bottom);
+        writable.top = max_int(ruler.top, writable.top);
+        writable.bottom = min_int(ruler.bottom, writable.bottom);
         if (writable.bottom > writable.top) {
             FillRect(dc, &writable, active_brush);
             DrawEdge(dc, &writable, EDGE_SUNKEN, BF_TOP | BF_BOTTOM);
@@ -1891,13 +2056,13 @@ void draw_vertical_ruler(HWND pane, HDC dc) {
 
     HPEN active_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
     HPEN subdued_pen = CreatePen(PS_SOLID, 1, RGB(96, 96, 96));
-    HPEN previous_pen = static_cast<HPEN>(SelectObject(dc, active_pen));
-    HFONT previous_font = static_cast<HFONT>(
+    HPEN previous_pen = ((HPEN) SelectObject(dc, active_pen));
+    HFONT previous_font = ((HFONT)
         SelectObject(dc, GetStockObject(DEFAULT_GUI_FONT)));
     const int previous_bk = SetBkMode(dc, TRANSPARENT);
     const COLORREF previous_text = SetTextColor(dc, RGB(0, 0, 0));
-    const int eighth = std::max(1, pixels_per_inch / 8);
-    for (std::size_t index = 0; index < offsets.size(); ++index) {
+    const int eighth = max_int(1, pixels_per_inch / 8);
+    for (size_t index = 0; index < 3; ++index) {
         if ((index == 0 && !has_previous) ||
             (index == 2 && !has_next)) {
             continue;
@@ -1923,19 +2088,17 @@ void draw_vertical_ruler(HWND pane, HDC dc) {
             } else if (tick_index % 2 == 0) {
                 length = scale(pane, 5);
             }
-            MoveToEx(dc, ruler.right - scale(pane, 2) - length, y, nullptr);
+            MoveToEx(dc, ruler.right - scale(pane, 2) - length, y, NULL);
             LineTo(dc, ruler.right - scale(pane, 2), y);
             if (tick_index > 0 && tick_index % 8 == 0) {
-                std::basic_string<WCHAR> label;
-                for (const char digit : std::to_string(tick_index / 8)) {
-                    label.push_back(static_cast<WCHAR>(
-                        static_cast<unsigned char>(digit)));
-                }
+                WCHAR label[16] = {0};
+                const int label_length = format_wide_decimal(
+                    label, sizeof(label) / sizeof(label[0]), tick_index / 8,
+                    NULL);
                 SetTextColor(dc, writable_tick ? RGB(0, 0, 0) :
                                                  RGB(80, 80, 80));
                 TextOutW(dc, ruler.left + scale(pane, 3),
-                         y - scale(pane, 6), label.c_str(),
-                         static_cast<int>(label.size()));
+                         y - scale(pane, 6), label, label_length);
             }
         }
     }
@@ -1944,28 +2107,17 @@ void draw_vertical_ruler(HWND pane, HDC dc) {
     SetTextColor(dc, RGB(0, 0, 0));
     const int marker_x = ruler.right - scale(pane, 2);
     const int marker_half = scale(pane, 4);
-    const auto draw_margin_marker = [&](int y) {
-        if (y < ruler.top || y >= ruler.bottom) {
-            return;
-        }
-        POINT points[3]{{marker_x, y},
-                        {marker_x - marker_half, y - marker_half},
-                        {marker_x - marker_half, y + marker_half}};
-        HBRUSH marker = CreateSolidBrush(RGB(255, 255, 255));
-        HBRUSH old = static_cast<HBRUSH>(SelectObject(dc, marker));
-        Polygon(dc, points, 3);
-        SelectObject(dc, old);
-        DeleteObject(marker);
-    };
-    for (std::size_t index = 0; index < offsets.size(); ++index) {
+    for (size_t index = 0; index < 3; ++index) {
         if ((index == 0 && !has_previous) ||
             (index == 2 && !has_next)) {
             continue;
         }
-        draw_margin_marker(page_top + offsets[index] +
-                           displayed_top_margin);
-        draw_margin_marker(page_bottom + offsets[index] -
-                           displayed_bottom_margin);
+        draw_vertical_margin_marker(dc, &ruler, marker_x, marker_half,
+                                    page_top + offsets[index] +
+                                        displayed_top_margin);
+        draw_vertical_margin_marker(dc, &ruler, marker_x, marker_half,
+                                    page_bottom + offsets[index] -
+                                        displayed_bottom_margin);
     }
 
     SetTextColor(dc, previous_text);
@@ -1979,7 +2131,7 @@ void draw_vertical_ruler(HWND pane, HDC dc) {
 bool horizontal_margin_boundary_at(HWND overlay, POINT point,
                                    bool* left_boundary) {
     HWND ruler = GetParent(overlay);
-    RECT client{};
+    RECT client = {0};
     GetClientRect(overlay, &client);
 
     /* Keep the lower marker lane transparent so native indent/tab dragging
@@ -1999,17 +2151,17 @@ bool horizontal_margin_boundary_at(HWND overlay, POINT point,
     int right_indent = 0;
     int default_tab = 0;
     int tab_count = 0;
-    std::array<int, 1> tab_positions{};
-    std::array<unsigned char, 1> tab_types{};
+    int tab_positions[1] = {0};
+    unsigned char tab_types[1] = {0};
     if (!OpusGetWin95HorizontalRulerMetrics(
             ruler, &zero, &active_left, &active_right, &pixels_per_inch,
             &left_indent, &first_indent, &right_indent, &default_tab,
-            &tab_count, tab_positions.data(), tab_types.data(), 0)) {
+            &tab_count, tab_positions, tab_types, 0)) {
         return false;
     }
     const int hit_radius = scale(ruler, 5);
-    const int left_distance = std::abs(point.x - active_left);
-    const int right_distance = std::abs(point.x - active_right);
+    const int left_distance = abs(point.x - active_left);
+    const int right_distance = abs(point.x - active_right);
     if (left_distance > hit_radius && right_distance > hit_radius) {
         return false;
     }
@@ -2018,7 +2170,7 @@ bool horizontal_margin_boundary_at(HWND overlay, POINT point,
 }
 
 void redraw_horizontal_ruler_overlay(HWND overlay) {
-    InvalidateRect(overlay, nullptr, FALSE);
+    InvalidateRect(overlay, NULL, FALSE);
     UpdateWindow(overlay);
 }
 
@@ -2039,24 +2191,24 @@ void update_horizontal_margin_drag(HWND overlay, int x) {
     int tab_count = 0;
     int left_margin = 0;
     int right_margin = 0;
-    std::array<int, 1> tab_positions{};
-    std::array<unsigned char, 1> tab_types{};
+    int tab_positions[1] = {0};
+    unsigned char tab_types[1] = {0};
     if (!OpusGetWin95HorizontalRulerMetrics(
             ruler, &zero, &active_left, &active_right, &pixels_per_inch,
             &left_indent, &first_indent, &right_indent, &default_tab,
-            &tab_count, tab_positions.data(), tab_types.data(), 0) ||
+            &tab_count, tab_positions, tab_types, 0) ||
         !OpusGetWin95HorizontalPageMargins(
             ruler, &left_margin, &right_margin)) {
         return;
     }
-    const int minimum_text_width = std::max(
-        scale(ruler, 12), std::max(1, pixels_per_inch / 4));
+    const int minimum_text_width = max_int(
+        scale(ruler, 12), max_int(1, pixels_per_inch / 4));
     if (g_horizontal_ruler_drag.left) {
-        x = std::max(active_left - left_margin,
-                     std::min(x, active_right - minimum_text_width));
+        x = max_int(active_left - left_margin,
+                     min_int(x, active_right - minimum_text_width));
     } else {
-        x = std::max(active_left + minimum_text_width,
-                     std::min(x, active_right + right_margin));
+        x = max_int(active_left + minimum_text_width,
+                     min_int(x, active_right + right_margin));
     }
     if (x != g_horizontal_ruler_drag.preview_x) {
         g_horizontal_ruler_drag.preview_x = x;
@@ -2069,12 +2221,12 @@ void cancel_horizontal_margin_drag(HWND overlay) {
         g_horizontal_ruler_drag.overlay != overlay) {
         return;
     }
-    g_horizontal_ruler_drag = {};
+    g_horizontal_ruler_drag = (HorizontalRulerDragState){0};
     redraw_horizontal_ruler_overlay(overlay);
 }
 
 void draw_horizontal_ruler(HWND ruler, HDC dc) {
-    RECT client{};
+    RECT client = {0};
     GetClientRect(ruler, &client);
     if (client.right <= client.left || client.bottom <= client.top) {
         return;
@@ -2089,13 +2241,14 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
     int right_indent = 0;
     int default_tab = 0;
     int tab_count = 0;
-    std::array<int, 32> tab_positions{};
-    std::array<unsigned char, 32> tab_types{};
+    int tab_positions[32] = {0};
+    unsigned char tab_types[32] = {0};
     if (!OpusGetWin95HorizontalRulerMetrics(
             ruler, &zero, &active_left, &active_right, &pixels_per_inch,
             &left_indent, &first_indent, &right_indent, &default_tab,
-            &tab_count, tab_positions.data(), tab_types.data(),
-            static_cast<int>(tab_positions.size())) || pixels_per_inch <= 0) {
+            &tab_count, tab_positions, tab_types,
+            (int) (sizeof(tab_positions) / sizeof(tab_positions[0]))) ||
+        pixels_per_inch <= 0) {
         return;
     }
 
@@ -2117,17 +2270,15 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
         }
     }
 
-    active_left = std::max<int>(static_cast<int>(client.left),
-                                std::min<int>(active_left,
-                                              static_cast<int>(client.right)));
-    active_right = std::max<int>(static_cast<int>(client.left),
-                                 std::min<int>(active_right,
-                                               static_cast<int>(client.right)));
+    active_left = max_int((int) client.left,
+                          min_int(active_left, (int) client.right));
+    active_right = max_int((int) client.left,
+                           min_int(active_right, (int) client.right));
     HBRUSH outside_brush = CreateSolidBrush(kButtonFace);
     FillRect(dc, &client, outside_brush);
     DeleteObject(outside_brush);
 
-    RECT active{active_left, client.top, active_right, client.bottom};
+    RECT active = {active_left, client.top, active_right, client.bottom};
     if (active.right > active.left) {
         HBRUSH active_brush = CreateSolidBrush(RGB(255, 255, 255));
         FillRect(dc, &active, active_brush);
@@ -2138,16 +2289,16 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
 
     HPEN active_pen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
     HPEN subdued_pen = CreatePen(PS_SOLID, 1, RGB(96, 96, 96));
-    HPEN previous_pen = static_cast<HPEN>(SelectObject(dc, active_pen));
-    HFONT previous_font = static_cast<HFONT>(
+    HPEN previous_pen = ((HPEN) SelectObject(dc, active_pen));
+    HFONT previous_font = ((HFONT)
         SelectObject(dc, GetStockObject(DEFAULT_GUI_FONT)));
     const int previous_bk = SetBkMode(dc, TRANSPARENT);
     const COLORREF previous_text = SetTextColor(dc, RGB(0, 0, 0));
 
-    const int scale_line = std::max(client.top + 8, client.bottom - 8);
-    MoveToEx(dc, client.left, scale_line, nullptr);
+    const int scale_line = max_int(client.top + 8, client.bottom - 8);
+    MoveToEx(dc, client.left, scale_line, NULL);
     LineTo(dc, client.right, scale_line);
-    const int eighth = std::max(1, pixels_per_inch / 8);
+    const int eighth = max_int(1, pixels_per_inch / 8);
     int first_tick = (client.left - zero) / eighth;
     if (zero + first_tick * eighth > client.left) {
         --first_tick;
@@ -2170,17 +2321,14 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
         } else if (tick % 2 == 0) {
             length = 3;
         }
-        MoveToEx(dc, x, scale_line, nullptr);
+        MoveToEx(dc, x, scale_line, NULL);
         LineTo(dc, x, scale_line - length);
         if (tick % 8 == 0) {
-            std::basic_string<WCHAR> label;
-            for (const char digit : std::to_string(tick / 8)) {
-                label.push_back(static_cast<WCHAR>(
-                    static_cast<unsigned char>(digit)));
-            }
+            WCHAR label[16] = {0};
+            const int label_length = format_wide_decimal(
+                label, sizeof(label) / sizeof(label[0]), tick / 8, NULL);
             SetTextColor(dc, writable ? RGB(0, 0, 0) : RGB(80, 80, 80));
-            TextOutW(dc, x + 3, client.top - 1, label.c_str(),
-                     static_cast<int>(label.size()));
+            TextOutW(dc, x + 3, client.top - 1, label, label_length);
         }
     }
 
@@ -2198,21 +2346,21 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
         const int x = tab_positions[index];
         const int top = scale_line + 1;
         const int bottom = client.bottom - 2;
-        MoveToEx(dc, x, top, nullptr);
+        MoveToEx(dc, x, top, NULL);
         LineTo(dc, x, bottom);
         switch (tab_types[index] & 7) {
         case 0:
             LineTo(dc, x + 5, bottom);
             break;
         case 1:
-            MoveToEx(dc, x - 4, bottom, nullptr);
+            MoveToEx(dc, x - 4, bottom, NULL);
             LineTo(dc, x + 5, bottom);
             break;
         case 2:
             LineTo(dc, x - 5, bottom);
             break;
         default:
-            MoveToEx(dc, x - 3, bottom, nullptr);
+            MoveToEx(dc, x - 3, bottom, NULL);
             LineTo(dc, x + 2, bottom);
             SetPixel(dc, x + 4, bottom - 1, RGB(0, 0, 0));
             break;
@@ -2220,28 +2368,13 @@ void draw_horizontal_ruler(HWND ruler, HDC dc) {
     }
 
     HBRUSH marker_brush = CreateSolidBrush(RGB(255, 255, 255));
-    HBRUSH previous_brush = static_cast<HBRUSH>(
+    HBRUSH previous_brush = ((HBRUSH)
         SelectObject(dc, marker_brush));
     const int marker_top = scale_line + 1;
     const int marker_bottom = client.bottom - 1;
-    auto down_triangle = [&](int x) {
-        POINT points[3]{{x - 5, marker_top}, {x + 5, marker_top},
-                        {x, std::min(marker_bottom, marker_top + 6)}};
-        Polygon(dc, points, 3);
-    };
-    auto up_triangle = [&](int x, bool with_base) {
-        POINT points[3]{{x - 5, marker_bottom - 2},
-                        {x + 5, marker_bottom - 2},
-                        {x, std::max(marker_top, marker_bottom - 8)}};
-        Polygon(dc, points, 3);
-        if (with_base) {
-            Rectangle(dc, x - 3, marker_bottom - 2,
-                      x + 4, marker_bottom + 1);
-        }
-    };
-    down_triangle(first_indent);
-    up_triangle(left_indent, true);
-    up_triangle(right_indent, false);
+    draw_down_triangle(dc, first_indent, marker_top, marker_bottom);
+    draw_up_triangle(dc, left_indent, marker_top, marker_bottom, true);
+    draw_up_triangle(dc, right_indent, marker_top, marker_bottom, false);
     SelectObject(dc, previous_brush);
     DeleteObject(marker_brush);
 
@@ -2261,7 +2394,7 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
             g_horizontal_ruler_drag.overlay == overlay) {
             return HTCLIENT;
         }
-        POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         ScreenToClient(overlay, &point);
         bool left_boundary = false;
         return horizontal_margin_boundary_at(
@@ -2271,10 +2404,10 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
     case WM_MOUSEACTIVATE:
         return MA_NOACTIVATE;
     case WM_SETCURSOR:
-        SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32644)));
+        SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32644)));
         return TRUE;
     case WM_LBUTTONDOWN: {
-        POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         bool left_boundary = false;
         if (!horizontal_margin_boundary_at(
                 overlay, point, &left_boundary)) {
@@ -2290,13 +2423,13 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
         int right_indent = 0;
         int default_tab = 0;
         int tab_count = 0;
-        std::array<int, 1> tab_positions{};
-        std::array<unsigned char, 1> tab_types{};
+        int tab_positions[1] = {0};
+        unsigned char tab_types[1] = {0};
         if (OpusGetWin95HorizontalRulerMetrics(
                 ruler, &zero, &active_left, &active_right,
                 &pixels_per_inch, &left_indent, &first_indent,
                 &right_indent, &default_tab, &tab_count,
-                tab_positions.data(), tab_types.data(), 0)) {
+                tab_positions, tab_types, 0)) {
             g_horizontal_ruler_drag.overlay = overlay;
             g_horizontal_ruler_drag.ruler = ruler;
             g_horizontal_ruler_drag.active = true;
@@ -2306,7 +2439,7 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
             g_horizontal_ruler_drag.preview_x =
                 g_horizontal_ruler_drag.origin_x;
             SetCapture(overlay);
-            SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32644)));
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32644)));
         }
         return 0;
     }
@@ -2314,7 +2447,7 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
         if (g_horizontal_ruler_drag.active &&
             g_horizontal_ruler_drag.overlay == overlay) {
             update_horizontal_margin_drag(overlay, GET_X_LPARAM(l_param));
-            SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32644)));
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32644)));
             return 0;
         }
         break;
@@ -2326,7 +2459,7 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
             const bool left_boundary = g_horizontal_ruler_drag.left;
             const int delta = g_horizontal_ruler_drag.preview_x -
                               g_horizontal_ruler_drag.origin_x;
-            g_horizontal_ruler_drag = {};
+            g_horizontal_ruler_drag = (HorizontalRulerDragState){0};
             if (GetCapture() == overlay) {
                 ReleaseCapture();
             }
@@ -2335,11 +2468,11 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
             if (!changed) {
                 MessageBeep(MB_ICONEXCLAMATION);
             } else {
-                HWND pane = nullptr;
+                HWND pane = NULL;
                 EnumChildWindows(GetAncestor(ruler, GA_ROOT),
                                  find_document_pane,
-                                 reinterpret_cast<LPARAM>(&pane));
-                if (pane != nullptr) {
+                                 ((LPARAM) &pane));
+                if (pane != NULL) {
                     clear_page_snapshots(pane);
                 }
             }
@@ -2352,14 +2485,14 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
     case WM_CAPTURECHANGED:
         if (g_horizontal_ruler_drag.active &&
             g_horizontal_ruler_drag.overlay == overlay &&
-            reinterpret_cast<HWND>(l_param) != overlay) {
+            ((HWND) l_param) != overlay) {
             cancel_horizontal_margin_drag(overlay);
         }
         break;
     case WM_CANCELMODE:
         if (g_horizontal_ruler_drag.active &&
             g_horizontal_ruler_drag.overlay == overlay) {
-            g_horizontal_ruler_drag = {};
+            g_horizontal_ruler_drag = (HorizontalRulerDragState){0};
             if (GetCapture() == overlay) {
                 ReleaseCapture();
             }
@@ -2370,9 +2503,9 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
     case WM_ERASEBKGND:
         return 1;
     case WM_PAINT: {
-        PAINTSTRUCT paint{};
+        PAINTSTRUCT paint = {0};
         HDC dc = BeginPaint(overlay, &paint);
-        if (dc != nullptr) {
+        if (dc != NULL) {
             draw_horizontal_ruler(GetParent(overlay), dc);
         }
         EndPaint(overlay, &paint);
@@ -2383,50 +2516,50 @@ LRESULT CALLBACK ruler_overlay_proc(HWND overlay, UINT message,
 }
 
 void ensure_horizontal_ruler_overlay(HWND ruler) {
-    RECT client{};
+    RECT client = {0};
     GetClientRect(ruler, &client);
-    HWND overlay = FindWindowExW(ruler, nullptr, kRulerOverlayClass, nullptr);
-    if (overlay == nullptr) {
+    HWND overlay = FindWindowExW(ruler, NULL, kRulerOverlayClass, NULL);
+    if (overlay == NULL) {
         const LONG_PTR style = GetWindowLongPtrW(ruler, GWL_STYLE);
         if ((style & WS_CLIPCHILDREN) == 0) {
             SetWindowLongPtrW(ruler, GWL_STYLE, style | WS_CLIPCHILDREN);
-            SetWindowPos(ruler, nullptr, 0, 0, 0, 0,
+            SetWindowPos(ruler, NULL, 0, 0, 0, 0,
                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                          SWP_NOACTIVATE | SWP_FRAMECHANGED);
         }
         overlay = CreateWindowExW(
             WS_EX_NOACTIVATE,
-            kRulerOverlayClass, nullptr, WS_CHILD | WS_VISIBLE,
+            kRulerOverlayClass, NULL, WS_CHILD | WS_VISIBLE,
             0, 0, client.right - client.left, client.bottom - client.top,
-            ruler, nullptr, GetModuleHandleW(nullptr), nullptr);
+            ruler, NULL, GetModuleHandleW(NULL), NULL);
     }
-    if (overlay != nullptr) {
+    if (overlay != NULL) {
         SetWindowPos(overlay, HWND_TOP, 0, 0,
                      client.right - client.left, client.bottom - client.top,
                      SWP_NOACTIVATE | SWP_SHOWWINDOW);
-        InvalidateRect(overlay, nullptr, FALSE);
+        InvalidateRect(overlay, NULL, FALSE);
         UpdateWindow(overlay);
     }
 }
 
 void show_document_context_menu(HWND pane, POINT screen_point) {
     HMENU popup = CreatePopupMenu();
-    if (popup == nullptr) {
+    if (popup == NULL) {
         return;
     }
     AppendMenuW(popup, MF_STRING, bcmUndo, OPUSW("&Undo"));
-    AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(popup, MF_SEPARATOR, 0, NULL);
     AppendMenuW(popup, MF_STRING, bcmCut, OPUSW("Cu&t"));
     AppendMenuW(popup, MF_STRING, bcmCopy, OPUSW("&Copy"));
     AppendMenuW(popup, MF_STRING, bcmPaste, OPUSW("&Paste"));
     AppendMenuW(popup, MF_STRING, bcmSelectAll, OPUSW("Select &All"));
-    AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(popup, MF_SEPARATOR, 0, NULL);
     AppendMenuW(popup, MF_STRING, bcmCharacter, OPUSW("&Font..."));
     AppendMenuW(popup, MF_STRING, bcmParagraph, OPUSW("&Paragraph..."));
     AppendMenuW(popup, MF_STRING, bcmTabs, OPUSW("&Tabs..."));
     AppendMenuW(popup, MF_STRING, imiRenumParas,
                 OPUSW("&Bullets and Numbering..."));
-    AppendMenuW(popup, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(popup, MF_SEPARATOR, 0, NULL);
     AppendMenuW(popup, MF_STRING, bcmInsTable, OPUSW("Insert &Table..."));
     AppendMenuW(popup, MF_STRING, bcmFormatTable,
                 OPUSW("Table &Properties..."));
@@ -2436,7 +2569,7 @@ void show_document_context_menu(HWND pane, POINT screen_point) {
     const HWND app = GetAncestor(pane, GA_ROOT);
     const UINT command = TrackPopupMenu(
         popup, TPM_RETURNCMD | TPM_RIGHTBUTTON,
-        screen_point.x, screen_point.y, 0, app, nullptr);
+        screen_point.x, screen_point.y, 0, app, NULL);
     DestroyMenu(popup);
     if (command != 0) {
         PostMessageW(app, WM_COMMAND, MAKEWPARAM(command, 0), 0);
@@ -2444,42 +2577,41 @@ void show_document_context_menu(HWND pane, POINT screen_point) {
 }
 
 void update_language_menu_check() {
-    if (g_language_menu == nullptr) return;
-    char selected[32]{};
-    OpusUnicodeGetInputLanguage(selected, static_cast<int>(sizeof(selected)));
+    if (g_language_menu == NULL) return;
+    char selected[32] = {0};
+    OpusUnicodeGetInputLanguage(selected, (int) sizeof(selected));
     UINT command = kCmdLanguageBase;
-    for (const LanguageChoice& choice : kLanguageChoices) {
-        if (_stricmp(selected, choice.tag) == 0) {
-            command = choice.command;
+    for (int index = 0; index < kLanguageChoiceCount; ++index) {
+        if (_stricmp(selected, kLanguageChoices[index].tag) == 0) {
+            command = kLanguageChoices[index].command;
             break;
         }
     }
     CheckMenuRadioItem(g_language_menu, kCmdLanguageBase,
                        kCmdLanguageBase +
-                           static_cast<UINT>(kLanguageChoices.size() - 1),
+                           ((UINT) kLanguageChoiceCount - 1),
                        command, MF_BYCOMMAND);
 }
 
 bool start_next_unicode_input(HWND pane) {
-    if (g_unicode_input_active || g_pending_unicode_inputs.empty())
+    if (g_unicode_input_active || pending_unicode_empty())
         return true;
     int doc_before = -1;
     long cp_before = 0;
     long cp_lim_before = 0;
     if (!OpusGetUnicodeSelection(&doc_before, &cp_before, &cp_lim_before)) {
-        g_pending_unicode_inputs.pop_front();
+        pending_unicode_pop_front();
         return false;
     }
-    g_active_unicode_input = g_pending_unicode_inputs.front();
-    g_pending_unicode_inputs.pop_front();
+    g_active_unicode_input = pending_unicode_pop_front();
     g_active_unicode_input.doc = doc_before;
     g_active_unicode_input.cp = cp_before;
     g_active_unicode_input.retries = 0;
     g_unicode_input_active = true;
     const WPARAM legacy = g_active_unicode_input.scalar < 0x20 ?
-        static_cast<WPARAM>(g_active_unicode_input.scalar) :
-        static_cast<WPARAM>(OpusUnicodeLegacyByteForScalar(
-            g_active_unicode_input.scalar) & 0xff);
+        (WPARAM) g_active_unicode_input.scalar :
+        ((WPARAM) (OpusUnicodeLegacyByteForScalar(
+            g_active_unicode_input.scalar) & 0xff));
     if (!PostMessageW(pane, WM_CHAR, legacy, 1) ||
         !PostMessageW(pane, WM_LBUTTONUP, 0, 0) ||
         !PostMessageW(pane, kWmCommitUnicodeScalar, 0, 0)) {
@@ -2489,28 +2621,25 @@ bool start_next_unicode_input(HWND pane) {
     return true;
 }
 
-bool queue_unicode_input(HWND pane, const std::uint32_t scalar) {
-    if (pane == nullptr || scalar == 0 || scalar > 0x10ffff ||
+bool queue_unicode_input(HWND pane, const uint32_t scalar) {
+    if (pane == NULL || scalar == 0 || scalar > 0x10ffff ||
         (scalar >= 0xd800 && scalar <= 0xdfff)) return false;
-    if (g_pending_unicode_inputs.size() >= kMaxPendingUnicodeInput)
-        return false;
-    try {
-        g_pending_unicode_inputs.push_back({-1, 0, scalar, 0});
-    } catch (...) {
+    PendingUnicodeInput input = {-1, 0, scalar, 0};
+    if (!pending_unicode_push(input)) {
         return false;
     }
     return start_next_unicode_input(pane);
 }
 
-bool insert_unicode_scalar(HWND pane, const std::uint32_t scalar) {
+bool insert_unicode_scalar(HWND pane, const uint32_t scalar) {
     return scalar >= 0x20 && queue_unicode_input(pane, scalar);
 }
 
-void insert_unicode_text(HWND pane, const std::basic_string<WCHAR>& text) {
-    for (std::size_t index = 0; index < text.size();) {
-        std::uint32_t scalar = static_cast<std::uint16_t>(text[index++]);
-        if (scalar >= 0xd800 && scalar <= 0xdbff && index < text.size()) {
-            const std::uint32_t low = static_cast<std::uint16_t>(text[index]);
+void insert_unicode_text(HWND pane, const WCHAR* text, size_t length) {
+    for (size_t index = 0; index < length;) {
+        uint32_t scalar = (uint16_t) text[index++];
+        if (scalar >= 0xd800 && scalar <= 0xdbff && index < length) {
+            const uint32_t low = (uint16_t) text[index];
             if (low >= 0xdc00 && low <= 0xdfff) {
                 ++index;
                 scalar = 0x10000 + ((scalar - 0xd800) << 10) +
@@ -2543,7 +2672,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
                         g_active_unicode_input.cp,
                         g_active_unicode_input.scalar);
                 g_unicode_input_active = false;
-                InvalidateRect(pane, nullptr, FALSE);
+                InvalidateRect(pane, NULL, FALSE);
                 start_next_unicode_input(pane);
             } else if (doc_after == g_active_unicode_input.doc &&
                        g_active_unicode_input.retries++ < 8) {
@@ -2558,7 +2687,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
     }
     if (message == WM_UNICHAR) {
         if (w_param == UNICODE_NOCHAR) return TRUE;
-        insert_unicode_scalar(pane, static_cast<std::uint32_t>(w_param));
+        insert_unicode_scalar(pane, (uint32_t) w_param);
         return 0;
     }
 
@@ -2568,26 +2697,25 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
      */
     if (message == WM_CHAR && (w_param & 0xff00) != 0x8000 &&
         w_param >= 0x80) {
-        OpusQueueUnicodeWmChar(
-            pane, static_cast<unsigned int>(w_param));
+        OpusQueueUnicodeWmChar(pane, (unsigned int) w_param);
         return 0;
     }
     if (message == WM_IME_COMPOSITION &&
         (l_param & GCS_RESULTSTR) != 0) {
         HIMC context = ImmGetContext(pane);
-        if (context != nullptr) {
+        if (context != NULL) {
             const LONG byte_count = ImmGetCompositionStringW(
-                context, GCS_RESULTSTR, nullptr, 0);
+                context, GCS_RESULTSTR, NULL, 0);
             if (byte_count > 0 && byte_count <= 1024 * 1024 &&
                 (byte_count % sizeof(WCHAR)) == 0) {
-                std::basic_string<WCHAR> result(
-                    static_cast<std::size_t>(byte_count) / sizeof(WCHAR),
-                    WCHAR{});
+                const size_t length = (size_t) byte_count / sizeof(WCHAR);
+                WCHAR* result = (WCHAR*) calloc(length, sizeof(WCHAR));
                 if (ImmGetCompositionStringW(context, GCS_RESULTSTR,
-                        &result[0], static_cast<DWORD>(byte_count)) ==
+                        result, (DWORD) byte_count) ==
                     byte_count) {
-                    insert_unicode_text(pane, result);
+                    insert_unicode_text(pane, result, length);
                 }
+                free(result);
             }
             ImmReleaseContext(pane, context);
             return 0;
@@ -2595,7 +2723,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
     }
     if (message == WM_MOUSEWHEEL) {
         if (g_document_wheel.pane != pane) {
-            g_document_wheel = {};
+            g_document_wheel = (DocumentWheelState){0};
             g_document_wheel.pane = pane;
         }
         const int wheel_delta = GET_WHEEL_DELTA_WPARAM(w_param);
@@ -2629,7 +2757,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         }
     }
     if (message == WM_LBUTTONDOWN) {
-        POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         bool top_marker = false;
         int page_offset = 0;
         if (vertical_margin_marker_at(
@@ -2651,7 +2779,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
                     page_bottom + page_offset - bottom_margin;
                 SetFocus(pane);
                 SetCapture(pane);
-                SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32645)));
+                SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32645)));
                 return 0;
             }
         }
@@ -2660,14 +2788,14 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         if (g_vertical_ruler_drag.active &&
             g_vertical_ruler_drag.pane == pane) {
             update_vertical_margin_drag(pane, GET_Y_LPARAM(l_param));
-            SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32645)));
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32645)));
             return 0;
         }
-        POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         bool top_marker = false;
         if (vertical_margin_marker_at(
-                pane, point, &top_marker, nullptr)) {
-            SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32645)));
+                pane, point, &top_marker, NULL)) {
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32645)));
             return 0;
         }
     }
@@ -2685,7 +2813,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         const bool top_marker = g_vertical_ruler_drag.top;
         const int preview_y = g_vertical_ruler_drag.preview_y;
         const int page_offset = g_vertical_ruler_drag.page_offset;
-        g_vertical_ruler_drag = {};
+        g_vertical_ruler_drag = (VerticalRulerDragState){0};
         if (GetCapture() == pane) {
             ReleaseCapture();
         }
@@ -2707,7 +2835,7 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
     if (message == WM_KEYDOWN && w_param == VK_ESCAPE &&
         g_vertical_ruler_drag.active &&
         g_vertical_ruler_drag.pane == pane) {
-        g_vertical_ruler_drag = {};
+        g_vertical_ruler_drag = (VerticalRulerDragState){0};
         if (GetCapture() == pane) {
             ReleaseCapture();
         }
@@ -2717,12 +2845,12 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
     if (message == WM_CAPTURECHANGED &&
         g_vertical_ruler_drag.active &&
         g_vertical_ruler_drag.pane == pane &&
-        reinterpret_cast<HWND>(l_param) != pane) {
+        ((HWND) l_param) != pane) {
         cancel_vertical_margin_drag(pane);
     }
     if (message == WM_CANCELMODE && g_vertical_ruler_drag.active &&
         g_vertical_ruler_drag.pane == pane) {
-        g_vertical_ruler_drag = {};
+        g_vertical_ruler_drag = (VerticalRulerDragState){0};
         if (GetCapture() == pane) {
             ReleaseCapture();
         }
@@ -2730,24 +2858,24 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         return 0;
     }
     if (message == WM_SETCURSOR && LOWORD(l_param) == HTCLIENT) {
-        POINT point{};
+        POINT point = {0};
         GetCursorPos(&point);
         ScreenToClient(pane, &point);
         bool top_marker = false;
         if ((g_vertical_ruler_drag.active &&
              g_vertical_ruler_drag.pane == pane) ||
             vertical_margin_marker_at(
-                pane, point, &top_marker, nullptr)) {
-            SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(32645)));
+                pane, point, &top_marker, NULL)) {
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(32645)));
             return TRUE;
         }
     }
     if (message == WM_PAINT) {
-        const LRESULT result = original != nullptr ?
+        const LRESULT result = original != NULL ?
             CallWindowProcW(original, pane, message, w_param, l_param) :
             DefWindowProcW(pane, message, w_param, l_param);
         HDC dc = GetDC(pane);
-        if (dc != nullptr) {
+        if (dc != NULL) {
             update_current_page_snapshot(pane, dc);
             draw_continuous_page_workspace(pane, dc);
             draw_continuous_page_neighbors(pane, dc);
@@ -2757,11 +2885,11 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         return result;
     }
     if (message == WM_SIZE) {
-        const LRESULT result = original != nullptr ?
+        const LRESULT result = original != NULL ?
             CallWindowProcW(original, pane, message, w_param, l_param) :
             DefWindowProcW(pane, message, w_param, l_param);
         OpusRecenterWin95PageView(pane);
-        InvalidateRect(pane, nullptr, TRUE);
+        InvalidateRect(pane, NULL, TRUE);
         return result;
     }
     if (message == WM_RBUTTONDOWN) {
@@ -2769,13 +2897,13 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
         return 0;
     }
     if (message == WM_RBUTTONUP) {
-        POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         ClientToScreen(pane, &point);
         show_document_context_menu(pane, point);
         return 0;
     }
     if (message == WM_CONTEXTMENU) {
-        POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
         if (point.x == -1 && point.y == -1) {
             GetCursorPos(&point);
         }
@@ -2784,59 +2912,62 @@ LRESULT CALLBACK document_pane_proc(HWND pane, UINT message,
     }
     if (message == WM_NCDESTROY) {
         if (g_document_wheel.pane == pane) {
-            g_document_wheel = {};
+            g_document_wheel = (DocumentWheelState){0};
         }
-        g_pending_unicode_inputs.clear();
+        pending_unicode_clear();
         g_unicode_input_active = false;
         g_pending_high_surrogate = 0;
         clear_page_snapshots(pane);
         RemovePropW(pane, kOriginalPaneProcProperty);
-        if (original != nullptr) {
+        if (original != NULL) {
             SetWindowLongPtrW(pane, GWLP_WNDPROC,
-                              reinterpret_cast<LONG_PTR>(original));
+                              (LONG_PTR) original);
         }
     }
-    return original != nullptr ?
+    return original != NULL ?
         CallWindowProcW(original, pane, message, w_param, l_param) :
         DefWindowProcW(pane, message, w_param, l_param);
 }
 
-BOOL CALLBACK subclass_document_pane(HWND candidate, LPARAM) {
-    WCHAR class_name[64]{};
+BOOL CALLBACK subclass_document_pane(HWND candidate, LPARAM parameter) {
+    (void) parameter;
+    WCHAR class_name[64] = {0};
     GetClassNameW(candidate, class_name,
-                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
+                  (int) (sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpiW(class_name, kDocumentPaneClass) == 0 &&
-        original_pane_proc(candidate) == nullptr) {
+        original_pane_proc(candidate) == NULL) {
         SetLastError(0);
-        WNDPROC original = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(
+        WNDPROC original = ((WNDPROC) SetWindowLongPtrW(
             candidate, GWLP_WNDPROC,
-            reinterpret_cast<LONG_PTR>(document_pane_proc)));
-        if (original != nullptr || GetLastError() == 0) {
+            (LONG_PTR) document_pane_proc));
+        if (original != NULL || GetLastError() == 0) {
             SetPropW(candidate, kOriginalPaneProcProperty,
-                     reinterpret_cast<HANDLE>(original));
-            RedrawWindow(candidate, nullptr, nullptr,
+                     (HANDLE) original);
+            RedrawWindow(candidate, NULL, NULL,
                          RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
         }
     }
     return TRUE;
 }
 
-BOOL CALLBACK redraw_word95_ruler_window(HWND candidate, LPARAM) {
-    WCHAR class_name[64]{};
+BOOL CALLBACK redraw_word95_ruler_window(HWND candidate, LPARAM parameter) {
+    (void) parameter;
+    WCHAR class_name[64] = {0};
     GetClassNameW(candidate, class_name,
-                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
+                  (int) (sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpiW(class_name, kRulerClass) == 0 ||
         lstrcmpiW(class_name, kDocumentPaneClass) == 0) {
-        RedrawWindow(candidate, nullptr, nullptr,
+        RedrawWindow(candidate, NULL, NULL,
                      RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
     }
     return TRUE;
 }
 
-BOOL CALLBACK paint_word95_horizontal_ruler(HWND candidate, LPARAM) {
-    WCHAR class_name[64]{};
+BOOL CALLBACK paint_word95_horizontal_ruler(HWND candidate, LPARAM parameter) {
+    (void) parameter;
+    WCHAR class_name[64] = {0};
     GetClassNameW(candidate, class_name,
-                  static_cast<int>(sizeof(class_name) / sizeof(class_name[0])));
+                  (int) (sizeof(class_name) / sizeof(class_name[0])));
     if (lstrcmpiW(class_name, kRulerClass) == 0) {
         ensure_horizontal_ruler_overlay(candidate);
     }
@@ -2852,7 +2983,7 @@ LRESULT CALLBACK app_window_proc(HWND app, UINT message,
     WNDPROC original = g_original_app_proc;
     if (message == WM_COMMAND) {
         const UINT command = LOWORD(w_param);
-        HWND toolbar = FindWindowExW(app, nullptr, kToolbarClass, nullptr);
+        HWND toolbar = FindWindowExW(app, NULL, kToolbarClass, NULL);
         if (command == bcmPageView) {
             /* CmdPageView is a legacy toggle. The restored shell treats the
              * startup Page View choice as a stable document mode, so repeated
@@ -2872,10 +3003,10 @@ LRESULT CALLBACK app_window_proc(HWND app, UINT message,
             return 0;
         }
         if (command >= kCmdLanguageBase &&
-            command < kCmdLanguageBase + kLanguageChoices.size()) {
-            const LanguageChoice& choice =
-                kLanguageChoices[command - kCmdLanguageBase];
-            OpusUnicodeSetInputLanguage(choice.tag);
+            command < kCmdLanguageBase + kLanguageChoiceCount) {
+            const LanguageChoice* choice =
+                &kLanguageChoices[command - kCmdLanguageBase];
+            OpusUnicodeSetInputLanguage(choice->tag);
             update_language_menu_check();
             DrawMenuBar(app);
             return 0;
@@ -2890,10 +3021,10 @@ LRESULT CALLBACK app_window_proc(HWND app, UINT message,
         }
     } else if (message == WM_INITMENUPOPUP) {
         update_language_menu_check();
-        HWND toolbar = FindWindowExW(app, nullptr, kToolbarClass, nullptr);
+        HWND toolbar = FindWindowExW(app, NULL, kToolbarClass, NULL);
         ToolbarState* state = toolbar_state(toolbar);
-        if (state != nullptr) {
-            update_toolbar_menu_checks(app, *state);
+        if (state != NULL) {
+            update_toolbar_menu_checks(app, state);
         }
 
         /* On current Windows versions a popup using a classic background brush
@@ -2901,31 +3032,31 @@ LRESULT CALLBACK app_window_proc(HWND app, UINT message,
          * invalidated. Repaint once the #32768 popup exists so the complete
          * File menu is visible without requiring mouse hover.
          */
-        SetTimer(app, kMenuRepaintTimer, 15, nullptr);
+        SetTimer(app, kMenuRepaintTimer, 15, NULL);
     } else if (message == WM_TIMER && w_param == kMenuRepaintTimer) {
         KillTimer(app, kMenuRepaintTimer);
         EnumThreadWindows(GetCurrentThreadId(), repaint_menu_popup, 0);
         return 0;
     } else if (message == WM_NCDESTROY) {
-        g_original_app_proc = nullptr;
-        if (original != nullptr) {
+        g_original_app_proc = NULL;
+        if (original != NULL) {
             SetWindowLongPtrW(app, GWLP_WNDPROC,
-                              reinterpret_cast<LONG_PTR>(original));
+                              (LONG_PTR) original);
         }
     }
-    return original != nullptr ?
+    return original != NULL ?
         CallWindowProcW(original, app, message, w_param, l_param) :
         DefWindowProcW(app, message, w_param, l_param);
 }
 
 bool subclass_app_window(HWND app) {
-    if (g_original_app_proc != nullptr) {
+    if (g_original_app_proc != NULL) {
         return true;
     }
     SetLastError(0);
-    WNDPROC original = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(
-        app, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(app_window_proc)));
-    if (original == nullptr && GetLastError() != 0) {
+    WNDPROC original = ((WNDPROC) SetWindowLongPtrW(
+        app, GWLP_WNDPROC, (LONG_PTR) app_window_proc));
+    if (original == NULL && GetLastError() != 0) {
         return false;
     }
     g_original_app_proc = original;
@@ -2934,17 +3065,18 @@ bool subclass_app_window(HWND app) {
 
 LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
                                      WPARAM w_param, LPARAM l_param) {
-    auto* state = reinterpret_cast<ToolbarState*>(
-        GetWindowLongPtrW(window, GWLP_USERDATA));
+    ToolbarState* state = (ToolbarState*) GetWindowLongPtrW(
+        window, GWLP_USERDATA);
     switch (message) {
     case WM_CREATE: {
-        auto* created = new ToolbarState{};
-        SetWindowLongPtrW(window, GWLP_USERDATA,
-                          reinterpret_cast<LONG_PTR>(created));
-        created->sprite = static_cast<HBITMAP>(LoadImageW(
-            GetModuleHandleW(nullptr), MAKEINTRESOURCEW(kToolbarBitmap),
+        ToolbarState* created = (ToolbarState*) calloc(1, sizeof(*created));
+        if (created == NULL) return -1;
+        toolbar_state_init(created);
+        SetWindowLongPtrW(window, GWLP_USERDATA, (LONG_PTR) created);
+        created->sprite = ((HBITMAP) LoadImageW(
+            GetModuleHandleW(NULL), MAKEINTRESOURCEW(kToolbarBitmap),
             IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-        LOGFONTW logical{};
+        LOGFONTW logical = {0};
         logical.lfHeight = -MulDiv(8, dpi_for_window(window), 72);
         logical.lfWeight = FW_NORMAL;
         logical.lfCharSet = DEFAULT_CHARSET;
@@ -2958,27 +3090,27 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
         SetWindowTextW(created->font_combo, kArialFace);
         SetWindowTextW(created->size_combo, kDefaultSize);
         SendMessageW(created->style_combo, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(created->font), FALSE);
+                     (WPARAM) created->font, FALSE);
         SendMessageW(created->font_combo, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(created->font), FALSE);
+                     (WPARAM) created->font, FALSE);
         SendMessageW(created->size_combo, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(created->font), FALSE);
+                     (WPARAM) created->font, FALSE);
         SendMessageW(created->zoom_combo, WM_SETFONT,
-                     reinterpret_cast<WPARAM>(created->font), FALSE);
-        position_combos(window, *created);
-        sync_mirrors(window, *created);
-        SetTimer(window, kSyncTimer, 350, nullptr);
+                     (WPARAM) created->font, FALSE);
+        position_combos(window, created);
+        sync_mirrors(window, created);
+        SetTimer(window, kSyncTimer, 350, NULL);
         return 0;
     }
     case WM_SIZE:
-        if (state != nullptr) {
-            position_combos(window, *state);
+        if (state != NULL) {
+            position_combos(window, state);
         }
         return 0;
     case WM_TIMER:
-        if (state != nullptr && w_param == kSyncTimer) {
+        if (state != NULL && w_param == kSyncTimer) {
             if (GetTickCount64() >= state->suppress_sync_until) {
-                sync_mirrors(window, *state);
+                sync_mirrors(window, state);
             }
             HWND app = GetParent(window);
             subclass_all_document_panes(app);
@@ -2989,10 +3121,10 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
             if (!state->startup_page_view_requested &&
                 state->page_view_start_after != 0 &&
                 GetTickCount64() >= state->page_view_start_after) {
-                HWND pane = nullptr;
+                HWND pane = NULL;
                 EnumChildWindows(app, find_document_pane,
-                                 reinterpret_cast<LPARAM>(&pane));
-                if (pane != nullptr) {
+                                 ((LPARAM) &pane));
+                if (pane != NULL) {
                     state->startup_page_view_requested = true;
                     state->ruler_refreshes_remaining = 6;
                     SendMessageW(state->zoom_combo, CB_SETCURSEL, 1, 0);
@@ -3006,7 +3138,7 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
         }
         return 0;
     case WM_COMMAND:
-        if (state != nullptr) {
+        if (state != NULL) {
             const UINT id = LOWORD(w_param);
             const int notification = HIWORD(w_param);
             if (notification == CBN_SELCHANGE ||
@@ -3016,17 +3148,17 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
             }
             if (id == kComboStyle) {
                 forward_combo(state->style_combo, state->source_style,
-                              notification, state->style_edit_dirty);
+                              notification, &state->style_edit_dirty);
                 return 0;
             }
             if (id == kComboFont) {
                 forward_combo(state->font_combo, state->source_font,
-                              notification, state->font_edit_dirty);
+                              notification, &state->font_edit_dirty);
                 return 0;
             }
             if (id == kComboSize) {
                 forward_combo(state->size_combo, state->source_size,
-                              notification, state->size_edit_dirty);
+                              notification, &state->size_edit_dirty);
                 return 0;
             }
             if (id == kComboZoom && notification == CBN_SELENDOK) {
@@ -3045,18 +3177,18 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
         }
         break;
     case WM_LBUTTONDOWN:
-        if (state != nullptr) {
-            POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
-            state->pressed = hit_test(window, *state, point);
+        if (state != NULL) {
+            POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            state->pressed = hit_test(window, state, point);
             if (state->pressed.hit) {
                 SetCapture(window);
-                InvalidateRect(window, nullptr, FALSE);
+                InvalidateRect(window, NULL, FALSE);
             }
         }
         return 0;
     case WM_CONTEXTMENU:
-        if (state != nullptr) {
-            POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        if (state != NULL) {
+            POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             if (point.x == -1 && point.y == -1) {
                 GetCursorPos(&point);
             }
@@ -3066,18 +3198,18 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
     case WM_RBUTTONDOWN:
         return 0;
     case WM_RBUTTONUP:
-        if (state != nullptr) {
-            POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+        if (state != NULL) {
+            POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
             ClientToScreen(window, &point);
             show_toolbar_context_menu(window, point);
         }
         return 0;
     case WM_LBUTTONUP:
-        if (state != nullptr && state->pressed.hit) {
-            POINT point{GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
-            const HitResult released = hit_test(window, *state, point);
+        if (state != NULL && state->pressed.hit) {
+            POINT point = {GET_X_LPARAM(l_param), GET_Y_LPARAM(l_param)};
+            const HitResult released = hit_test(window, state, point);
             const HitResult pressed = state->pressed;
-            state->pressed = {};
+            state->pressed = (HitResult){false, false, -1, 0};
             if (GetCapture() == window) {
                 ReleaseCapture();
             }
@@ -3100,33 +3232,33 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
                 PostMessageW(GetParent(window), WM_COMMAND,
                              MAKEWPARAM(pressed.command, 0), 0);
             }
-            InvalidateRect(window, nullptr, FALSE);
+            InvalidateRect(window, NULL, FALSE);
         }
         return 0;
     case WM_CAPTURECHANGED:
-        if (state != nullptr && state->pressed.hit) {
-            state->pressed = {};
-            InvalidateRect(window, nullptr, FALSE);
+        if (state != NULL && state->pressed.hit) {
+            state->pressed = (HitResult){false, false, -1, 0};
+            InvalidateRect(window, NULL, FALSE);
         }
         return 0;
     case WM_ERASEBKGND:
         return 1;
     case WM_PAINT:
-        if (state != nullptr) {
-            paint_toolbar(window, *state);
+        if (state != NULL) {
+            paint_toolbar(window, state);
             return 0;
         }
         break;
     case WM_DESTROY:
-        if (state != nullptr) {
+        if (state != NULL) {
             KillTimer(window, kSyncTimer);
-            if (state->sprite != nullptr) {
+            if (state->sprite != NULL) {
                 DeleteObject(state->sprite);
             }
-            if (state->font != nullptr) {
+            if (state->font != NULL) {
                 DeleteObject(state->font);
             }
-            delete state;
+            free(state);
             SetWindowLongPtrW(window, GWLP_USERDATA, 0);
         }
         break;
@@ -3135,37 +3267,35 @@ LRESULT CALLBACK toolbar_window_proc(HWND window, UINT message,
 }
 
 bool register_toolbar_class() {
-    WNDCLASSEXW window_class{};
+    WNDCLASSEXW window_class = {0};
     window_class.cbSize = sizeof(window_class);
     window_class.style = CS_DBLCLKS;
     window_class.lpfnWndProc = toolbar_window_proc;
-    window_class.hInstance = GetModuleHandleW(nullptr);
-    window_class.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));
+    window_class.hInstance = GetModuleHandleW(NULL);
+    window_class.hCursor = LoadCursorW(NULL, MAKEINTRESOURCEW(32512));
     window_class.lpszClassName = kToolbarClass;
     return RegisterClassExW(&window_class) != 0 ||
            GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
 }
 
 bool register_ruler_overlay_class() {
-    WNDCLASSEXW window_class{};
+    WNDCLASSEXW window_class = {0};
     window_class.cbSize = sizeof(window_class);
     window_class.lpfnWndProc = ruler_overlay_proc;
-    window_class.hInstance = GetModuleHandleW(nullptr);
-    window_class.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));
+    window_class.hInstance = GetModuleHandleW(NULL);
+    window_class.hCursor = LoadCursorW(NULL, MAKEINTRESOURCEW(32512));
     window_class.lpszClassName = kRulerOverlayClass;
     return RegisterClassExW(&window_class) != 0 ||
            GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
 }
 
-}  // namespace
-
-extern "C" int OpusQueueUnicodeWmChar(
+int OpusQueueUnicodeWmChar(
     HWND pane, const unsigned int code_unit) {
     if (code_unit >= 0xd800 && code_unit <= 0xdbff) {
-        g_pending_high_surrogate = static_cast<WCHAR>(code_unit);
+        g_pending_high_surrogate = (WCHAR) code_unit;
         return TRUE;
     }
-    std::uint32_t scalar = code_unit;
+    uint32_t scalar = code_unit;
     if (code_unit >= 0xdc00 && code_unit <= 0xdfff) {
         if (g_pending_high_surrogate < 0xd800 ||
             g_pending_high_surrogate > 0xdbff) {
@@ -3173,50 +3303,50 @@ extern "C" int OpusQueueUnicodeWmChar(
             return FALSE;
         }
         scalar = 0x10000 +
-            ((static_cast<std::uint32_t>(g_pending_high_surrogate) -
-              0xd800) << 10) + (code_unit - 0xdc00);
+            (((uint32_t) g_pending_high_surrogate - 0xd800) << 10) +
+            (code_unit - 0xdc00);
     }
     g_pending_high_surrogate = 0;
     return insert_unicode_scalar(pane, scalar);
 }
 
-extern "C" void OpusDrawWin95HorizontalRuler(HWND ruler) {
+void OpusDrawWin95HorizontalRuler(HWND ruler) {
     HDC dc = GetDC(ruler);
-    if (dc != nullptr) {
+    if (dc != NULL) {
         draw_horizontal_ruler(ruler, dc);
         ReleaseDC(ruler, dc);
     }
 }
 
-extern "C" HWND vhwndWin95Toolbar = nullptr;
+HWND vhwndWin95Toolbar = NULL;
 
-extern "C" int OpusWin95ToolbarHeight(void) {
+int OpusWin95ToolbarHeight(void) {
     return toolbar_height(vhwndWin95Toolbar);
 }
 
-extern "C" int OpusWin95ChromeActive(void) {
-    return vhwndWin95Toolbar != nullptr && IsWindow(vhwndWin95Toolbar);
+int OpusWin95ChromeActive(void) {
+    return vhwndWin95Toolbar != NULL && IsWindow(vhwndWin95Toolbar);
 }
 
-extern "C" void OpusSyncWin95Toolbar(void) {
+void OpusSyncWin95Toolbar(void) {
     if (OpusWin95ChromeActive()) {
         SendMessageW(vhwndWin95Toolbar, WM_TIMER, kSyncTimer, 0);
         configure_word95_menus(GetParent(vhwndWin95Toolbar));
         style_menu_tree(GetMenu(GetParent(vhwndWin95Toolbar)));
         ToolbarState* state = toolbar_state(vhwndWin95Toolbar);
-        if (state != nullptr) {
-            update_toolbar_menu_checks(GetParent(vhwndWin95Toolbar), *state);
+        if (state != NULL) {
+            update_toolbar_menu_checks(GetParent(vhwndWin95Toolbar), state);
         }
         subclass_all_document_panes(GetParent(vhwndWin95Toolbar));
         DrawMenuBar(GetParent(vhwndWin95Toolbar));
     }
 }
 
-extern "C" void OpusSizeWin95Toolbar(HWND parent) {
+void OpusSizeWin95Toolbar(HWND parent) {
     if (!OpusWin95ChromeActive()) {
         return;
     }
-    RECT client{};
+    RECT client = {0};
     GetClientRect(parent, &client);
     const int height = OpusWin95ToolbarHeight();
     ShowWindow(vhwndWin95Toolbar,
@@ -3225,14 +3355,14 @@ extern "C" void OpusSizeWin95Toolbar(HWND parent) {
                height, TRUE);
 }
 
-extern "C" int OpusCreateWin95Chrome(HWND parent) {
+int OpusCreateWin95Chrome(HWND parent) {
     if (OpusWin95ChromeActive()) {
         return TRUE;
     }
     if (!register_toolbar_class() || !register_ruler_overlay_class()) {
         return FALSE;
     }
-    if (g_menu_brush == nullptr) {
+    if (g_menu_brush == NULL) {
         g_menu_brush = CreateSolidBrush(kButtonFace);
     }
     configure_word95_menus(parent);
@@ -3242,40 +3372,40 @@ extern "C" int OpusCreateWin95Chrome(HWND parent) {
     set_window_classic(parent);
 
     vhwndWin95Toolbar = CreateWindowExW(
-        0, kToolbarClass, nullptr,
+        0, kToolbarClass, NULL,
         WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-        0, 0, 1, scale(parent, 64), parent, nullptr,
-        GetModuleHandleW(nullptr), nullptr);
-    if (vhwndWin95Toolbar == nullptr) {
+        0, 0, 1, scale(parent, 64), parent, NULL,
+        GetModuleHandleW(NULL), NULL);
+    if (vhwndWin95Toolbar == NULL) {
         return FALSE;
     }
     if (!subclass_app_window(parent)) {
         DestroyWindow(vhwndWin95Toolbar);
-        vhwndWin95Toolbar = nullptr;
+        vhwndWin95Toolbar = NULL;
         return FALSE;
     }
     subclass_all_document_panes(parent);
     OpusSizeWin95Toolbar(parent);
     ToolbarState* state = toolbar_state(vhwndWin95Toolbar);
-    if (state != nullptr) {
-        update_toolbar_menu_checks(parent, *state);
+    if (state != NULL) {
+        update_toolbar_menu_checks(parent, state);
     }
     SetWindowPos(vhwndWin95Toolbar, HWND_TOP, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     return TRUE;
 }
 
-extern "C" void OpusRequestWin95PageView(HWND parent) {
-    HWND pane = nullptr;
+void OpusRequestWin95PageView(HWND parent) {
+    HWND pane = NULL;
     EnumChildWindows(parent, find_document_pane,
-                     reinterpret_cast<LPARAM>(&pane));
-    if (pane == nullptr) {
+                     ((LPARAM) &pane));
+    if (pane == NULL) {
         return;
     }
 
-    HWND toolbar = FindWindowExW(parent, nullptr, kToolbarClass, nullptr);
+    HWND toolbar = FindWindowExW(parent, NULL, kToolbarClass, NULL);
     ToolbarState* state = toolbar_state(toolbar);
-    if (state != nullptr) {
+    if (state != NULL) {
         state->page_view_start_after = GetTickCount64() + 750;
         state->startup_page_view_requested = false;
     }
