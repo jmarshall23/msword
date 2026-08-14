@@ -58,6 +58,25 @@ and `opus_win95_chrome.cpp` (`<windowsx.h>`, `uxtheme.dll`). The dead
 `opus_product_entry.cpp` stub is gone; every file named here is compiled by a
 live target.
 
+## Finish the C11 port surface
+
+Most `src/port/original/` C++ adapters have been converted to C11. Two large
+feature islands remain and should be handled as separate migration batches:
+`src/port/original/opus_win95_chrome.cpp` owns the toolbar, ruler, page-view
+chrome, and Unicode input queue; `src/port/original/opus_modern_formats.cpp`
+owns DOCX/ODT/RTF/PDF conversion, Unicode document tracking, and PDF export.
+
+Do: convert one island at a time to C11, rename new source files with hyphenated
+names, keep exported symbols stable, and update `src/CMakeLists.txt` source
+lists and target language settings after each conversion.
+
+Done when: `rg --files src/port | rg '\.(cpp|cc|cxx|hpp|hh|hxx)$'` returns no
+matches, `cmake --build out/macos-debug --target opus_x64_runtime
+opus_modern_formats_test WORD1 -j2` passes, `ctest --test-dir out/macos-debug
+-R '^opus_modern_formats_test$|^opus_x64_runtime_test$' --output-on-failure`
+passes, and `ctest --test-dir out/macos-debug -L ui --output-on-failure`
+passes.
+
 ## What the five reference trees were worth
 
 | Tree | Taken | Left |
