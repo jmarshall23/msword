@@ -1,5 +1,28 @@
 # DONE
 
+## Convert RESN PLC adapter to C11
+
+The foundational PLC adapter now builds from
+`src/port/original/opus-asm-resn-plc.c`. The conversion keeps the exported C
+ABI entry points for PLC CP access, foo get/put, `PutPlcLastProc` cache writes,
+PLC binary search helpers, full and partial CP adjustment, raw PLC block moves,
+and the `LprgcpForPlc` accessor.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, C++ casts,
+`nullptr`, `auto`, `std::memmove`, and line comments, and keeps the target
+source name hyphenated for the new C file.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_original_plc_test opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir
+out/macos-debug -R '^opus_original_plc_test$' --output-on-failure`, `ctest
+--test-dir out/macos-debug -R '^opus_x64_runtime_test$' --output-on-failure`,
+`ctest --test-dir out/macos-debug -L ui --output-on-failure`, the C++ surface
+grep over `src/port/original/opus-asm-resn-plc.c`, the `nm` symbol check in
+`libopus_x64_runtime.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert RESN core utilities to C11
 
 The RESN core utility adapter now builds from
