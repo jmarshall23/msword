@@ -12,7 +12,11 @@
 #define cpWarnTooBig 	((CP)fcMax)
 
 /* size of Word file header. cbFIB expanded to 128byte boundry */
+#ifdef OPUS_X64
+#define cbFileHeader    512
+#else
 #define cbFileHeader    (((cbFIB + 127) >>7) <<7)
+#endif
 
 /* F I B  V E R S I O N S */
 

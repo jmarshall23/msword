@@ -939,10 +939,18 @@ PN pn;
 {
 	struct FIB HUGE *hpfib;
 	int cbFib;
+#ifdef OPUS_X64
+	int cbDiskFib;
+#endif
 
 	Mac( Assert(cbFIB30 <= cbFIB) );
+#ifdef OPUS_X64
+	Assert(OpusDiskFibSize() <= cbFileHeader);
+	Assert(OpusDiskFibSize() <= cbSector);
+#else
 	Assert(cbFIB <= cbFileHeader);
 	Assert(cbFIB <= cbSector);
+#endif
 	Win( Assert(PfcbFn(fn)->fHasFib) ); /* MAC calls before fcb is done */
 
 	/* Fib is read starting at pn.  It has length fib.fcMin-FcFromPn(pn)
@@ -951,11 +959,21 @@ PN pn;
 	*/
 	SetBytes(pfib, 0, cbFIB);
 	hpfib = HpchGetPn(fn, pn);
+#ifdef OPUS_X64
+	cbFib = (int)(OpusDiskFibFcMin(hpfib, cbFileHeader) - FcFromPn(pn));
+	cbDiskFib = min(OpusDiskFibSize(), cbFib);
+	if (cbDiskFib > 0)
+		OpusUnpackFibDisk(pfib, hpfib, cbDiskFib);
+#else
 	cbFib = (int)(hpfib->fcMin - FcFromPn(pn));
-
 	bltbh(hpfib, pfib, min(cbFIB, cbFib));
+#endif
 
+#ifdef OPUS_X64
+	Assert(FNativeFormat(pfib, fFalse));
+#else
 	Assert(FNativeFormat(hpfib, fFalse));
+#endif
 	if (pfib->nFib < nFibCurrent)
 		ConvertFib(pfib);
 }

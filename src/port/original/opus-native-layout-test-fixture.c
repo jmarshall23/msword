@@ -11,7 +11,7 @@ typedef char OpusAssertCurrentFibSize[
 	((sizeof(CP) == 8 && sizeof(struct FIB) == 768) ||
 	 (sizeof(CP) == 4 && sizeof(struct FIB) == 420)) ? 1 : -1];
 typedef char OpusAssertCurrentFileHeaderSize[
-	((sizeof(CP) == 8 && cbFileHeader == 768) ||
+	((sizeof(CP) == 8 && cbFileHeader == 512) ||
 	 (sizeof(CP) == 4 && cbFileHeader == 512)) ? 1 : -1];
 typedef char OpusAssertCurrentPlcBaseSize[
 	((sizeof(CP) == 8 && sizeof(void *) == 8 && cbPLCBase == 32) ||

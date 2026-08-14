@@ -127,7 +127,9 @@ static int FExerciseDiskPacking(void)
 	struct PCD pcdCopy;
 	struct SED sed;
 	struct SED sedCopy;
-	unsigned char rgch[32];
+	struct FIB fib;
+	struct FIB fibCopy;
+	unsigned char rgch[512];
 	struct TESTFOO foo0 = {11, 22};
 	struct TESTFOO foo1 = {33, 44};
 	struct PLC** hplc;
@@ -161,6 +163,50 @@ static int FExerciseDiskPacking(void)
 	if (!sedCopy.fSpare || sedCopy.fUnk || sedCopy.fn != -1 ||
 			sedCopy.fcSepx != fcNil)
 		return 24;
+
+	memset(&fib, 0, sizeof(fib));
+	fib.wIdent = 0xfe37;
+	fib.nFib = nFibCurrent;
+	fib.nProduct = 3;
+	fib.nLocale = 1;
+	fib.pnNext = 2;
+	fib.fDot = fTrue;
+	fib.fComplex = fTrue;
+	fib.fHasPic = fTrue;
+	fib.cQuickSaves = 7;
+	fib.nFibBack = nFibBackCurrent;
+	fib.fcMin = cbFileHeader;
+	fib.fcMac = (FC)1234;
+	fib.cbMac = (FC)2048;
+	fib.ccpText = (CP)77;
+	fib.fcStshf = (FC)600;
+	fib.cbStshf = 12;
+	fib.fcClx = (FC)700;
+	fib.cbClx = 34;
+	fib.pnChpFirst = 3;
+	fib.cpnBtePap = 5;
+	if (OpusDiskFibSize() != 420 || OpusDiskFileHeaderSize() != 512)
+		return 29;
+	if (OpusPackFibDisk(&fib, rgch, sizeof(rgch)) != 420)
+		return 30;
+	if (rgch[0] != 0x37 || rgch[1] != 0xfe || rgch[2] != 0 ||
+			rgch[3] != 0 || rgch[20] != 0x7d || rgch[21] != 0 ||
+			rgch[48] != 0 || rgch[49] != 2 || rgch[50] != 0 ||
+			rgch[51] != 0 || rgch[420] != 0)
+		return 31;
+	if (OpusDiskFibFcMin(rgch, sizeof(rgch)) != cbFileHeader)
+		return 32;
+	OpusUnpackFibDisk(&fibCopy, rgch, OpusDiskFibSize());
+	if (fibCopy.wIdent != 0xfe37 || fibCopy.nFib != nFibCurrent ||
+			fibCopy.pnNext != 2 || !fibCopy.fDot || fibCopy.fGlsy ||
+			!fibCopy.fComplex || !fibCopy.fHasPic ||
+			fibCopy.cQuickSaves != 7 || fibCopy.fcMin != cbFileHeader ||
+			fibCopy.fcMac != (FC)1234 || fibCopy.cbMac != (FC)2048 ||
+			fibCopy.ccpText != (CP)77 || fibCopy.fcStshf != (FC)600 ||
+			fibCopy.cbStshf != 12 || fibCopy.fcClx != (FC)700 ||
+			fibCopy.cbClx != 34 || fibCopy.pnChpFirst != 3 ||
+			fibCopy.cpnBtePap != 5)
+		return 33;
 
 	hplc = HplcInit(sizeof(struct TESTFOO), 3, 100, fTrue);
 	if (hplc == 0)

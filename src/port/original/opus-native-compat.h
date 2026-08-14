@@ -103,6 +103,11 @@ int OpusPackPcdDisk(const void *pcd, void *bytes);
 int OpusUnpackPcdDisk(void *pcd, const void *bytes);
 int OpusPackSedDisk(const void *sed, void *bytes);
 int OpusUnpackSedDisk(void *sed, const void *bytes);
+int OpusDiskFibSize(void);
+int OpusDiskFileHeaderSize(void);
+long OpusDiskFibFcMin(const void *bytes, int byte_count);
+int OpusPackFibDisk(const void *fib, void *bytes, int byte_count);
+int OpusUnpackFibDisk(void *fib, const void *bytes, int byte_count);
 long LPushMacroArgs(void *procedure, const int *arguments, int argument_count);
 long LPushMacroArgsTyped(void *procedure, const int *arguments,
 		int argument_count, const int *types, int type_count);

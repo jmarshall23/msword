@@ -337,7 +337,7 @@ terminator) in FNextDMFile where this is called. */
 		struct DOP dop;
 		struct FIB fib;
 /* gather summary info */
-		bltbh(HpchGetPn(fn, pn0), &fib, min(cbSector, cbFIB));
+		FetchFib(fn, &fib, pn0);
 		pSumd->cchDoc = fib.ccpText;
 		pSumd->fQuickSave = fib.fComplex;
 

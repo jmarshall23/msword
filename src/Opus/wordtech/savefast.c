@@ -4335,9 +4335,16 @@ PN pn;
 	Mac( vfWritingFib = fFalse );
 	if (!vmerr.fDiskWriteErr)
 		{
+#ifdef OPUS_X64
+		Assert(OpusDiskFibSize() <= cbFileHeader);
+		OpusPackFibDisk(pfib, hpch, cbFileHeader);
+		SetBytes(LpOfHp(hpch + OpusDiskFibSize()), 0,
+				cbFileHeader - OpusDiskFibSize());
+#else
 		bltbh(pfib, hpch, cbFIB);
 		Assert(cbFIB <= cbFileHeader);
 		SetBytes(LpOfHp(hpch+cbFIB), 0, cbFileHeader-cbFIB);
+#endif
 		SetDirty(vibp);
 		}
 }

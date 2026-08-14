@@ -10,7 +10,10 @@ DEBUGASSERTSZ
 enum {
 	kOpusDiskCpSize = 4,
 	kOpusDiskPcdSize = 8,
-	kOpusDiskSedSize = 6
+	kOpusDiskSedSize = 6,
+	kOpusDiskFibSize = 420,
+	kOpusDiskFileHeaderSize = 512,
+	kOpusDiskFibFcMinOffset = 48
 };
 
 static unsigned OpusReadU16(const unsigned char* bytes)
@@ -274,6 +277,257 @@ int OpusUnpackSedDisk(void* sedVoid, const void* bytesVoid)
 	sed->fn = fn;
 	sed->fcSepx = (FC)OpusReadI32(bytes + 2);
 	return kOpusDiskSedSize;
+}
+
+int OpusDiskFibSize(void)
+{
+	return kOpusDiskFibSize;
+}
+
+int OpusDiskFileHeaderSize(void)
+{
+	return kOpusDiskFileHeaderSize;
+}
+
+long OpusDiskFibFcMin(const void* bytesVoid, int byte_count)
+{
+	const unsigned char* bytes = (const unsigned char*)bytesVoid;
+	if (byte_count < kOpusDiskFibFcMinOffset + 4)
+		return 0;
+	return OpusReadI32(bytes + kOpusDiskFibFcMinOffset);
+}
+
+int OpusPackFibDisk(const void* fibVoid, void* bytesVoid, int byte_count)
+{
+	const struct FIB* fib = (const struct FIB*)fibVoid;
+	unsigned char* bytes = (unsigned char*)bytesVoid;
+	unsigned long flags;
+	int offset = 0;
+	int i;
+
+	if (byte_count < kOpusDiskFibSize)
+		return 0;
+	memset(bytes, 0, (size_t)byte_count);
+
+#define OPUS_PACK_U32(value) \
+	do { \
+		OpusWriteU32(bytes + offset, (unsigned long)(uint32_t)(value)); \
+		offset += 4; \
+	} while (0)
+#define OPUS_PACK_I32(value) \
+	OPUS_PACK_U32((int32_t)(value))
+#define OPUS_PACK_U32_FIELD(field) OPUS_PACK_U32(fib->field)
+#define OPUS_PACK_I32_FIELD(field) OPUS_PACK_I32(fib->field)
+#define OPUS_PACK_FC_CB(name) \
+	do { \
+		OPUS_PACK_I32_FIELD(fc##name); \
+		OPUS_PACK_U32_FIELD(cb##name); \
+	} while (0)
+
+	OPUS_PACK_U32_FIELD(wIdent);
+	OPUS_PACK_U32_FIELD(nFib);
+	OPUS_PACK_U32_FIELD(nProduct);
+	OPUS_PACK_U32_FIELD(nLocale);
+	OPUS_PACK_U32_FIELD(pnNext);
+	flags = 0;
+	if (fib->fDot)
+		flags |= 0x00000001ul;
+	if (fib->fGlsy)
+		flags |= 0x00000002ul;
+	if (fib->fComplex)
+		flags |= 0x00000004ul;
+	if (fib->fHasPic)
+		flags |= 0x00000008ul;
+	flags |= ((unsigned long)fib->cQuickSaves & 0x0ful) << 4;
+	OPUS_PACK_U32(flags);
+	OPUS_PACK_U32_FIELD(nFibBack);
+	for (i = 0; i < 5; ++i)
+		OPUS_PACK_U32(fib->rgwSpare0[i]);
+
+	OPUS_PACK_I32_FIELD(fcMin);
+	OPUS_PACK_I32_FIELD(fcMac);
+	OPUS_PACK_I32_FIELD(cbMac);
+	OPUS_PACK_I32_FIELD(fcSpare0);
+	OPUS_PACK_I32_FIELD(fcSpare1);
+	OPUS_PACK_I32_FIELD(fcSpare2);
+	OPUS_PACK_I32_FIELD(fcSpare3);
+
+	OPUS_PACK_I32_FIELD(ccpText);
+	OPUS_PACK_I32_FIELD(ccpFtn);
+	OPUS_PACK_I32_FIELD(ccpHdd);
+	OPUS_PACK_I32_FIELD(ccpMcr);
+	OPUS_PACK_I32_FIELD(ccpAtn);
+	OPUS_PACK_I32_FIELD(ccpSpare0);
+	OPUS_PACK_I32_FIELD(ccpSpare1);
+	OPUS_PACK_I32_FIELD(ccpSpare2);
+	OPUS_PACK_I32_FIELD(ccpSpare3);
+
+	OPUS_PACK_I32_FIELD(fcStshfOrig);
+	OPUS_PACK_U32_FIELD(cbStshfOrig);
+	OPUS_PACK_FC_CB(Stshf);
+	OPUS_PACK_FC_CB(PlcffndRef);
+	OPUS_PACK_FC_CB(PlcffndTxt);
+	OPUS_PACK_FC_CB(PlcfandRef);
+	OPUS_PACK_FC_CB(PlcfandTxt);
+	OPUS_PACK_FC_CB(Plcfsed);
+	OPUS_PACK_FC_CB(Plcfpgd);
+	OPUS_PACK_FC_CB(Plcfphe);
+	OPUS_PACK_FC_CB(Sttbfglsy);
+	OPUS_PACK_FC_CB(Plcfglsy);
+	OPUS_PACK_FC_CB(Plcfhdd);
+	OPUS_PACK_FC_CB(PlcfbteChpx);
+	OPUS_PACK_FC_CB(PlcfbtePapx);
+	OPUS_PACK_FC_CB(Plcfsea);
+	OPUS_PACK_FC_CB(Sttbfffn);
+	OPUS_PACK_FC_CB(PlcffldMom);
+	OPUS_PACK_FC_CB(PlcffldHdr);
+	OPUS_PACK_FC_CB(PlcffldFtn);
+	OPUS_PACK_FC_CB(PlcffldAtn);
+	OPUS_PACK_FC_CB(PlcffldMcr);
+	OPUS_PACK_FC_CB(Sttbfbkmk);
+	OPUS_PACK_FC_CB(Plcfbkf);
+	OPUS_PACK_FC_CB(Plcfbkl);
+	OPUS_PACK_FC_CB(Cmds);
+	OPUS_PACK_FC_CB(Plcmcr);
+	OPUS_PACK_FC_CB(Sttbfmcr);
+	OPUS_PACK_FC_CB(PrEnv);
+	OPUS_PACK_FC_CB(Wss);
+	OPUS_PACK_FC_CB(Dop);
+	OPUS_PACK_FC_CB(SttbfAssoc);
+	OPUS_PACK_FC_CB(Clx);
+	OPUS_PACK_FC_CB(PlcfpgdFtn);
+	OPUS_PACK_FC_CB(Spare4);
+	OPUS_PACK_FC_CB(Spare5);
+	OPUS_PACK_FC_CB(Spare6);
+	OPUS_PACK_U32_FIELD(wSpare4);
+	OPUS_PACK_U32_FIELD(pnChpFirst);
+	OPUS_PACK_U32_FIELD(pnPapFirst);
+	OPUS_PACK_U32_FIELD(cpnBteChp);
+	OPUS_PACK_U32_FIELD(cpnBtePap);
+
+#undef OPUS_PACK_FC_CB
+#undef OPUS_PACK_I32_FIELD
+#undef OPUS_PACK_U32_FIELD
+#undef OPUS_PACK_I32
+#undef OPUS_PACK_U32
+	return offset == kOpusDiskFibSize ? offset : 0;
+}
+
+int OpusUnpackFibDisk(void* fibVoid, const void* bytesVoid, int byte_count)
+{
+	struct FIB* fib = (struct FIB*)fibVoid;
+	const unsigned char* bytes = (const unsigned char*)bytesVoid;
+	unsigned long flags;
+	int offset = 0;
+	int i;
+
+	memset(fib, 0, sizeof(*fib));
+
+#define OPUS_HAVE_U32() (offset + 4 <= byte_count)
+#define OPUS_UNPACK_U32_TO(lvalue) \
+	do { \
+		if (OPUS_HAVE_U32()) \
+			(lvalue) = OpusReadU32(bytes + offset); \
+		offset += 4; \
+	} while (0)
+#define OPUS_UNPACK_I32_TO(lvalue) \
+	do { \
+		if (OPUS_HAVE_U32()) \
+			(lvalue) = OpusReadI32(bytes + offset); \
+		offset += 4; \
+	} while (0)
+#define OPUS_UNPACK_U32_FIELD(field) OPUS_UNPACK_U32_TO(fib->field)
+#define OPUS_UNPACK_I32_FIELD(field) OPUS_UNPACK_I32_TO(fib->field)
+#define OPUS_UNPACK_FC_CB(name) \
+	do { \
+		OPUS_UNPACK_I32_FIELD(fc##name); \
+		OPUS_UNPACK_U32_FIELD(cb##name); \
+	} while (0)
+
+	OPUS_UNPACK_U32_FIELD(wIdent);
+	OPUS_UNPACK_U32_FIELD(nFib);
+	OPUS_UNPACK_U32_FIELD(nProduct);
+	OPUS_UNPACK_U32_FIELD(nLocale);
+	OPUS_UNPACK_U32_FIELD(pnNext);
+	flags = 0;
+	OPUS_UNPACK_U32_TO(flags);
+	fib->fDot = (flags & 0x00000001ul) != 0;
+	fib->fGlsy = (flags & 0x00000002ul) != 0;
+	fib->fComplex = (flags & 0x00000004ul) != 0;
+	fib->fHasPic = (flags & 0x00000008ul) != 0;
+	fib->cQuickSaves = (flags >> 4) & 0x0ful;
+	OPUS_UNPACK_U32_FIELD(nFibBack);
+	for (i = 0; i < 5; ++i)
+		OPUS_UNPACK_U32_TO(fib->rgwSpare0[i]);
+
+	OPUS_UNPACK_I32_FIELD(fcMin);
+	OPUS_UNPACK_I32_FIELD(fcMac);
+	OPUS_UNPACK_I32_FIELD(cbMac);
+	OPUS_UNPACK_I32_FIELD(fcSpare0);
+	OPUS_UNPACK_I32_FIELD(fcSpare1);
+	OPUS_UNPACK_I32_FIELD(fcSpare2);
+	OPUS_UNPACK_I32_FIELD(fcSpare3);
+
+	OPUS_UNPACK_I32_FIELD(ccpText);
+	OPUS_UNPACK_I32_FIELD(ccpFtn);
+	OPUS_UNPACK_I32_FIELD(ccpHdd);
+	OPUS_UNPACK_I32_FIELD(ccpMcr);
+	OPUS_UNPACK_I32_FIELD(ccpAtn);
+	OPUS_UNPACK_I32_FIELD(ccpSpare0);
+	OPUS_UNPACK_I32_FIELD(ccpSpare1);
+	OPUS_UNPACK_I32_FIELD(ccpSpare2);
+	OPUS_UNPACK_I32_FIELD(ccpSpare3);
+
+	OPUS_UNPACK_I32_FIELD(fcStshfOrig);
+	OPUS_UNPACK_U32_FIELD(cbStshfOrig);
+	OPUS_UNPACK_FC_CB(Stshf);
+	OPUS_UNPACK_FC_CB(PlcffndRef);
+	OPUS_UNPACK_FC_CB(PlcffndTxt);
+	OPUS_UNPACK_FC_CB(PlcfandRef);
+	OPUS_UNPACK_FC_CB(PlcfandTxt);
+	OPUS_UNPACK_FC_CB(Plcfsed);
+	OPUS_UNPACK_FC_CB(Plcfpgd);
+	OPUS_UNPACK_FC_CB(Plcfphe);
+	OPUS_UNPACK_FC_CB(Sttbfglsy);
+	OPUS_UNPACK_FC_CB(Plcfglsy);
+	OPUS_UNPACK_FC_CB(Plcfhdd);
+	OPUS_UNPACK_FC_CB(PlcfbteChpx);
+	OPUS_UNPACK_FC_CB(PlcfbtePapx);
+	OPUS_UNPACK_FC_CB(Plcfsea);
+	OPUS_UNPACK_FC_CB(Sttbfffn);
+	OPUS_UNPACK_FC_CB(PlcffldMom);
+	OPUS_UNPACK_FC_CB(PlcffldHdr);
+	OPUS_UNPACK_FC_CB(PlcffldFtn);
+	OPUS_UNPACK_FC_CB(PlcffldAtn);
+	OPUS_UNPACK_FC_CB(PlcffldMcr);
+	OPUS_UNPACK_FC_CB(Sttbfbkmk);
+	OPUS_UNPACK_FC_CB(Plcfbkf);
+	OPUS_UNPACK_FC_CB(Plcfbkl);
+	OPUS_UNPACK_FC_CB(Cmds);
+	OPUS_UNPACK_FC_CB(Plcmcr);
+	OPUS_UNPACK_FC_CB(Sttbfmcr);
+	OPUS_UNPACK_FC_CB(PrEnv);
+	OPUS_UNPACK_FC_CB(Wss);
+	OPUS_UNPACK_FC_CB(Dop);
+	OPUS_UNPACK_FC_CB(SttbfAssoc);
+	OPUS_UNPACK_FC_CB(Clx);
+	OPUS_UNPACK_FC_CB(PlcfpgdFtn);
+	OPUS_UNPACK_FC_CB(Spare4);
+	OPUS_UNPACK_FC_CB(Spare5);
+	OPUS_UNPACK_FC_CB(Spare6);
+	OPUS_UNPACK_U32_FIELD(wSpare4);
+	OPUS_UNPACK_U32_FIELD(pnChpFirst);
+	OPUS_UNPACK_U32_FIELD(pnPapFirst);
+	OPUS_UNPACK_U32_FIELD(cpnBteChp);
+	OPUS_UNPACK_U32_FIELD(cpnBtePap);
+
+#undef OPUS_UNPACK_FC_CB
+#undef OPUS_UNPACK_I32_FIELD
+#undef OPUS_UNPACK_U32_FIELD
+#undef OPUS_UNPACK_I32_TO
+#undef OPUS_UNPACK_U32_TO
+#undef OPUS_HAVE_U32
+	return offset <= kOpusDiskFibSize ? offset : kOpusDiskFibSize;
 }
 
 int OpusPackPlcDisk(const void* pplcVoid, int entry_count,

@@ -112,9 +112,10 @@ Complete the `CP`, `FC`, PLC row and `KME` entries in `docs/lp64-audit.tsv` befo
 editing code, then make the item 22 layout test fail on the current serialized layout.
 The generic PLC CP array now packs to 4-byte little-endian values on `OPUS_X64`, and
 the PCD/SED row writers/readers use their historical 8-byte and 6-byte disk shapes.
-Remaining work: fixed-size FIB/file-header serialization, `KME` disk entries, the
-audit rows for those formats, and the Windows/macOS/Linux byte-identical document
-roundtrip.
+The FIB/file-header path now packs the 420-byte disk FIB into a fixed 512-byte header
+while keeping the LP64 runtime FIB layout separate.
+Remaining work: `KME` disk entries and the Windows/macOS/Linux byte-identical
+document roundtrip.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.

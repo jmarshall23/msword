@@ -1,8 +1,8 @@
 file	line	type	serialized_or_runtime	windows_size	host_size	fix
 src/Opus/wordtech/word.h	60	CP	typedef serialized	4	8	Use fixed-width on-disk CP storage before blitting file structures.
 src/Opus/wordtech/word.h	63	FC	typedef serialized	4	8	Use fixed-width on-disk FC storage before blitting file structures.
-src/Opus/wordtech/file.h	15	cbFileHeader	serialized	512	LP64 768, 32-bit long 512	Size follows cbFIB; current values are guarded until the fixed-width file-format pass changes them.
-src/Opus/wordtech/file.h	726	struct FIB	serialized	420	LP64 768, 32-bit long 420	Size follows CP and FC; current values are guarded until the fixed-width file-format pass changes them.
+src/Opus/wordtech/file.h	15	cbFileHeader	serialized	512	LP64 runtime FIB 768, disk header 512	OPUS_X64 keeps the disk file header fixed at 512 bytes while runtime cbFIB remains host layout.
+src/Opus/wordtech/file.h	726	struct FIB	serialized	420	LP64 runtime 768, disk FIB 420	OPUS_X64 packs and unpacks the disk FIB as 420 fixed 4-byte little-endian cells.
 src/port/win32/windows.h	53	LONG	typedef runtime ABI	4	4	Already int32_t; guarded by opus_native_runtime_test static assertions.
 src/Opus/wordwin.h	195	MAKELONG macro	runtime ABI	4	4	Under OPUS_X64, returns LONG through WORD/DWORD packing instead of host long.
 src/Opus/wordtech/file.h	661	struct BKINFO.lCreation	runtime	4	8	MAC-only backup metadata; not compiled in the WIN build and no fread/fwrite path found.
