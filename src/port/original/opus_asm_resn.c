@@ -1,4 +1,4 @@
-#include <cstddef>
+#include <stddef.h>
 
 /*
  * AMD64 translation of Opus/asm/resn.asm:LRghEngine and its four exported
@@ -7,36 +7,32 @@
  * movable-handle dereference remains unchanged.
  */
 
-extern "C" void** mpdochdod[];
-extern "C" void** mpfnhfcb[];
-extern "C" void** mpwwhwwd[];
-extern "C" void** mpmwhmwd[];
+extern void** mpdochdod[];
+extern void** mpfnhfcb[];
+extern void** mpwwhwwd[];
+extern void** mpmwhmwd[];
 
-namespace {
-
-void* DescriptorFromTable(void*** table, const int index) {
+static void* DescriptorFromTable(void*** table, const int index) {
     void** handle = table[index];
-    return handle == nullptr ? nullptr : *handle;
+    return handle == NULL ? NULL : *handle;
 }
 
-}  // namespace
-
-extern "C" void* N_PdodDoc(const int doc) {
+void* N_PdodDoc(const int doc) {
     return DescriptorFromTable(mpdochdod, doc);
 }
 
-extern "C" void* N_PfcbFn(const int fn) {
+void* N_PfcbFn(const int fn) {
     return DescriptorFromTable(mpfnhfcb, fn);
 }
 
-extern "C" void* N_PwwdWw(const int ww) {
+void* N_PwwdWw(const int ww) {
     return DescriptorFromTable(mpwwhwwd, ww);
 }
 
-extern "C" void** N_HwwdWw(const int ww) {
+void** N_HwwdWw(const int ww) {
     return mpwwhwwd[ww];
 }
 
-extern "C" void* N_PmwdMw(const int mw) {
+void* N_PmwdMw(const int mw) {
     return DescriptorFromTable(mpmwhmwd, mw);
 }

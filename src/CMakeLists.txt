@@ -895,13 +895,13 @@ add_library(opus_x64_runtime STATIC
     port/original/opus_win16_platform.cpp
     port/original/opus_x64_heap.cpp
     port/original/opus_x64_layout.c
-    port/original/opus_asm_fetchn2.cpp
-    port/original/opus_asm_resn.cpp
+    port/original/opus_asm_fetchn2.c
+    port/original/opus_asm_resn.c
     port/original/opus_asm_resn_core.cpp
     port/original/opus_asm_resn_plc.cpp
     port/original/opus_asm_resn2.cpp
-    port/original/opus_asm_resn2_access.cpp
-    port/original/opus_asm_resn2_pl.cpp
+    port/original/opus_asm_resn2_access.c
+    port/original/opus_asm_resn2_pl.c
     port/original/opus_asm_resn2_sttb.cpp
     port/original/opus_asm_sttb.c
     port/original/opus_asm_search.cpp

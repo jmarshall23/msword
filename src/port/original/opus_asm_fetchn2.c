@@ -6,39 +6,35 @@
  * pointers replace the original segment:offset address calculations.
  */
 
-extern "C" void** mpdochdod[];
+extern void** mpdochdod[];
 
-namespace {
+enum { kDocNil = 0 };
 
-constexpr int kDocNil = 0;
-
-void* DodOrNull(const int doc) {
+static void* DodOrNull(const int doc) {
     void** handle = mpdochdod[doc];
-    return handle == nullptr ? nullptr : *handle;
+    return handle == NULL ? NULL : *handle;
 }
 
-}  // namespace
-
-extern "C" int DocMother(const int doc) {
+int DocMother(const int doc) {
     void* const pdod = DodOrNull(doc);
-    if (pdod == nullptr) {
+    if (pdod == NULL) {
         return kDocNil;
     }
     return OpusDodIsMother(pdod) ? doc : OpusDodMotherDoc(pdod);
 }
 
-extern "C" void* N_PdodMother(const int doc) {
+void* N_PdodMother(const int doc) {
     void* pdod = DodOrNull(doc);
-    if (pdod == nullptr || OpusDodIsMother(pdod)) {
+    if (pdod == NULL || OpusDodIsMother(pdod)) {
         return pdod;
     }
     return DodOrNull(OpusDodMotherDoc(pdod));
 }
 
-extern "C" int DocDotMother(int doc) {
+int DocDotMother(int doc) {
     for (;;) {
         void* const pdod = DodOrNull(doc);
-        if (pdod == nullptr) {
+        if (pdod == NULL) {
             return kDocNil;
         }
         if (OpusDodIsDocument(pdod)) {
