@@ -570,20 +570,6 @@ Wine.
 Done when: nobody has to re-read the Spanish Fedora notes to know which debugging paths
 were already dead ends and which observations may still inform the native shim.
 
-### 29. README is wrong in four places
-
-It claims Windows-only, which item 16 changes; it says "run the complete Debug test
-suite" without noting 8 of 15 tests need a display (`README.md:75`); it documents
-`src/cmake/` as an existing directory, which is the one item 2 says was never committed;
-and `README.md:18` lists PowerShell as a build requirement, which item 2 removes.
-
-Also `src/port/tools/make_win95_toolbar_sprite.ps1` is a second PowerShell script. It is
-not wired into CMake, so it is a manual asset step: leave it or fold it into
-`opus_dibapp_tool` alongside item 10.
-
-Done when: README commands match the current presets and `rg powershell README.md` is
-empty unless documenting Windows-only or manual asset steps.
-
 ### 30. Release packaging is premature
 
 bahree's MSI installs one file with no dependency handling. Revisit when there are three

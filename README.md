@@ -1,67 +1,100 @@
 # Microsoft Word for Windows 1.1a - Native x64 Port
 
-This project is a fully working native Windows x64 port of Microsoft Word for
-Windows 1.1a, whose historical codename was **Opus**. It builds the original
-Word source and resources together with modern replacements for the 16-bit
-assembly, segmented-memory, and Win16 platform boundaries.
+This project is a native x64 port of Microsoft Word for Windows 1.1a, whose
+historical codename was **Opus**. It builds the original Word source and
+resources together with modern replacements for the 16-bit assembly,
+segmented-memory, and Win16 platform boundaries.
 
 The result is the original Word application and user experience running as a
-64-bit Windows executable. This is not an emulator or a reimplementation using
-a modern editor control.
+64-bit Windows executable, with macOS, Linux, and WebAssembly work proceeding
+behind the Win32 shim in `src/port/win32/`. This is not an emulator or a
+reimplementation using a modern editor control.
 
 ## Requirements
 
-- 64-bit Windows
-- Visual Studio 2022 with **Desktop development with C++**
-- A Windows 10 or Windows 11 SDK installed through Visual Studio
 - CMake 3.25 or newer
-- PowerShell
+- For Windows: 64-bit Windows, Visual Studio 2022 with **Desktop development
+  with C++**, and a Windows 10 or Windows 11 SDK installed through Visual
+  Studio
+- For macOS and Linux configure/build probes: Ninja, a C/C++ compiler, and SDL2
+- For WebAssembly configure/build probes: Emscripten
 
 ## Build and run
 
-Clone the repository, configure the included CMake preset, and build it from a
-PowerShell prompt:
+Clone the repository, then configure and build from `src` with the preset for
+your host:
 
-```powershell
+```sh
 git clone https://github.com/jmarshall23/msword.git
-Set-Location msword\src
+cd msword/src
 
 cmake --preset x64-debug
 cmake --build --preset x64-debug
-
-& ..\bin\WORD1.exe
 ```
 
-For an optimized build, use the release preset instead:
+On Windows, run the built application from `src`:
 
-```powershell
+```sh
+../bin/WORD1.exe
+```
+
+For an optimized Windows build, use the release preset instead:
+
+```sh
 cmake --preset x64-release
 cmake --build --preset x64-release
-& ..\bin\WORD1.exe
 ```
 
-The presets use the Visual Studio 2022 x64 generator. After configuration, the
-generated solution can also be opened directly from
-`out\MicrosoftWordX64Port.sln`; use `WORD1` as the startup project.
+The Windows presets use the Visual Studio 2022 x64 generator. After
+configuration, the generated solution can also be opened directly from
+`out/MicrosoftWordX64Port.sln`; use `WORD1` as the startup project.
+
+The non-Windows presets currently build configure probes, native tools, and
+runtime tests used by the porting work:
+
+```sh
+cmake --preset macos-debug
+cmake --build --preset macos-debug
+
+cmake --preset linux-debug
+cmake --build --preset linux-debug
+
+cmake --preset wasm-debug
+cmake --build --preset wasm-debug
+```
 
 ## Test
 
-Run the complete Debug test suite from the repository root:
+Run the configured Debug tests from the repository root:
 
-```powershell
-ctest --test-dir .\out -C Debug --output-on-failure
+```sh
+ctest --test-dir ./out -C Debug --output-on-failure
 ```
 
 Or, when your current directory is `src`:
 
-```powershell
-ctest --test-dir ..\out -C Debug --output-on-failure
+```sh
+ctest --test-dir ../out -C Debug --output-on-failure
 ```
 
-For a release build, replace `Debug` with `Release`. The suite covers the
-ported x64 runtime, original Word data structures and command tables, process
-startup, and automated UI workflows including typing, selection, formatting,
-dialogs, and saving.
+For a release Windows build, replace `Debug` with `Release`. The configured
+suite covers the ported x64 runtime, original Word data structures and command
+tables, process startup, and automated UI workflows including typing,
+selection, formatting, dialogs, and saving.
+
+The `ui` labelled tests drive the desktop application and need a display. For
+headless runs, exclude them:
+
+```sh
+ctest --test-dir ./out -C Debug -LE ui --output-on-failure
+```
+
+Ninja presets use preset-specific build directories under `out/`, for example:
+
+```sh
+ctest --test-dir ./out/macos-debug -LE ui --output-on-failure
+ctest --test-dir ./out/linux-debug -LE ui --output-on-failure
+```
 
 ## Project layout
 
@@ -84,7 +117,7 @@ compilation.
 
 The original C and resource files remain the authoritative implementation.
 The port adds only the platform work needed to build and run that code safely
-on 64-bit Windows:
+on 64-bit hosts:
 
 - 16-bit x86 assembly entry points are translated to fixed-width C or C++.
 - Segmented and double-indirect memory handles are mapped to an x64-safe native
@@ -112,7 +145,7 @@ reference while ensuring all shipped code is valid for AMD64.
 
 Build a specific target with:
 
-```powershell
+```sh
 cmake --build --preset x64-debug --target WORD1
 ```
 

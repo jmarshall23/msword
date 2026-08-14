@@ -1,5 +1,19 @@
 # DONE
 
+## Refresh README build and test commands
+
+`README.md` no longer describes the project as Windows-only, no longer lists
+PowerShell as a general requirement, and uses shell-neutral commands for the current
+CMake presets. It documents the Windows `x64-debug` and `x64-release` presets, the
+non-Windows `macos-debug`, `linux-debug`, and `wasm-debug` porting presets, and the
+`-LE ui` test form for headless runs because the UI-labelled tests need a display.
+
+Validated with `rg -i powershell README.md`, searches for the current preset names
+and `-LE ui`, `cmake --list-presets -S src`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## State license status by source area
 
 `README.md` now separates the license status for the original Microsoft source
