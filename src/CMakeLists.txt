@@ -915,7 +915,7 @@ else()
     target_sources(opus_x64_runtime PRIVATE
         port/original/modernformatsstub.cpp
         port/win32/commdlg.c
-        port/win32/gdi32.cpp
+        port/win32/gdi32.c
         port/win32/kernel32.cpp
         port/win32/module.c
         port/win32/objbase.c
