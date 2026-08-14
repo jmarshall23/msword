@@ -65,6 +65,8 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #include "table.h"
 
 extern MUD ** HmudInit();
+STATIC BOOL NEAR FRegisterWnd();
+STATIC int NEAR FRegisterWinInfo();
 
 extern BOOL             vfScratchFile;
 extern struct DMQD        DMQueryD;
