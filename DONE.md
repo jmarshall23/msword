@@ -1,5 +1,27 @@
 # DONE
 
+## Import Linux reconnaissance notes
+
+`docs/win32-shim/linux-reconnaissance.md` now condenses
+`DONT-MERGE/jphonorato/docs/port-linux/00-reconocimiento.md` into English for the
+Win32-on-SDL shim. It keeps the source-backed findings from sections 1, 4, and 5, plus
+the LP64 audit inventory and the 182-error triage where those make the findings
+actionable.
+
+The import marks Wine-specific build mechanics as historical evidence, not current
+SDL-shim instructions. It also corrects a stale source claim: `qwindows.h` was claimed
+reachable through `sym.c`, but the current `OPUS_X64` tree selects
+`opus_x64_compat.h` instead, so the LP64 audit should target serialized `long` and
+shim Win32 type widths rather than `qwindows.h`.
+
+Validated with searches for the required source-section references, LP64 audit claims,
+the 182-error triage, `BITAPP`, `KME`, `exp.c`, `qwindows`, Wine-only mechanics marked
+historical, a filename check proving no new underscore filenames, a label-text search,
+and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Import jphonorato's probes
 
 `docs/win32-shim/font-probes/` now contains translated Win32 oracle probes for

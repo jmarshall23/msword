@@ -534,13 +534,3 @@ genuinely divergent files, and the Windows build is byte-identical.
 ---
 
 ## Hygiene
-
-### 28. Import `00-reconocimiento.md` in English
-
-2431 lines, every claim backed by a command that was run: per-phase error counts, 182
-GCC errors triaged into 5 families with per-file counts, and the BITAPP `sizeof` failure
-reproduced end to end. Entirely in Spanish. Sections 1, 4, 5 and the phase-5 LP64
-inventory need an English version at minimum.
-
-Done when: the English doc links each retained claim to the original Spanish section and
-omits Winelib-only implementation steps that do not apply to the SDL shim.
