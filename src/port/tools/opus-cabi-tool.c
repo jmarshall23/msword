@@ -1,17 +1,24 @@
 #include "opus_x64_compat.h"
 
 #undef native
-#include <filesystem>
-#include <fstream>
-#include <string>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir_one(path) _mkdir(path)
+#else
+#include <sys/stat.h>
+#define mkdir_one(path) mkdir(path, 0777)
+#endif
 
 #ifndef NEAR
 #define NEAR
 #endif
-extern "C" {
 #include "sdmver.h"
 #include "sdm.h"
-}
 
 /* Reconstructed outputs of Microsoft's missing Dialog Editor compiler.  The
    original MKCMD parser consumes only each header's numeric cabi definition;
@@ -91,37 +98,80 @@ extern "C" {
 #include "viewpref.hs"
 #include "vrfcnvtr.hs"
 
-namespace {
+static int create_directories(const char* path) {
+    char* copy;
+    char* cursor;
+    size_t length;
+    int ok = 1;
 
-bool WriteCabi(const std::filesystem::path& directory, const char* file_name,
-               const char* macro_name, const unsigned value) {
-    std::ofstream output(directory / file_name, std::ios::trunc);
-    if (!output) {
-        return false;
+    if (path == NULL || path[0] == '\0') return 0;
+    length = strlen(path);
+    copy = (char*)malloc(length + 1);
+    if (copy == NULL) return 0;
+    memcpy(copy, path, length + 1);
+
+    cursor = copy;
+    if (length >= 3 && copy[1] == ':' &&
+        (copy[2] == '/' || copy[2] == '\\')) {
+        cursor = copy + 3;
+    } else if (copy[0] == '/' || copy[0] == '\\') {
+        cursor = copy + 1;
     }
-    output << "#define " << macro_name << ' ' << value << '\n';
-    return output.good();
+
+    for (; *cursor != '\0'; ++cursor) {
+        if (*cursor == '/' || *cursor == '\\') {
+            char saved = *cursor;
+            *cursor = '\0';
+            if (copy[0] != '\0' && mkdir_one(copy) != 0 && errno != EEXIST) {
+                ok = 0;
+                break;
+            }
+            *cursor = saved;
+        }
+    }
+    if (ok && mkdir_one(copy) != 0 && errno != EEXIST) ok = 0;
+    free(copy);
+    return ok;
 }
 
-}  // namespace
+static int write_cabi(const char* directory, const char* file_name,
+                      const char* macro_name, unsigned value) {
+    size_t directory_length = strlen(directory);
+    size_t file_length = strlen(file_name);
+    int needs_separator =
+        directory_length != 0 && directory[directory_length - 1] != '/' &&
+        directory[directory_length - 1] != '\\';
+    char* path = (char*)malloc(directory_length + (size_t)needs_separator +
+                               file_length + 1);
+    FILE* output;
+    int ok;
+
+    if (path == NULL) return 0;
+    memcpy(path, directory, directory_length);
+    if (needs_separator) path[directory_length++] = '/';
+    memcpy(path + directory_length, file_name, file_length + 1);
+
+    output = fopen(path, "w");
+    free(path);
+    if (output == NULL) return 0;
+    fprintf(output, "#define %s %u\n", macro_name, value);
+    ok = ferror(output) == 0 && fclose(output) == 0;
+    return ok;
+}
 
 #define WRITE_CABI(file_name, macro_name)                                      \
-    success = WriteCabi(output_directory, file_name, #macro_name,              \
-                        static_cast<unsigned>(macro_name)) &&                   \
+    success = write_cabi(output_directory, file_name, #macro_name,             \
+                         (unsigned)(macro_name)) &&                            \
               success
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        return 2;
-    }
-    const std::filesystem::path output_directory(argv[1]);
-    std::error_code error;
-    std::filesystem::create_directories(output_directory, error);
-    if (error) {
-        return 3;
-    }
+    const char* output_directory;
+    int success = 1;
 
-    bool success = true;
+    if (argc != 2) return 2;
+    output_directory = argv[1];
+    if (!create_directories(output_directory)) return 3;
+
     WRITE_CABI("about.hs", cabiCABABOUT);
     WRITE_CABI("abspos.hs", cabiCABABSPOS);
     WRITE_CABI("apprun.hs", cabiCABAPPRUN);

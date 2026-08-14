@@ -194,9 +194,9 @@ if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
 endif()
 
 add_executable(opus_cabi_tool EXCLUDE_FROM_ALL
-    port/tools/opus_cabi_tool.cpp
+    port/tools/opus-cabi-tool.c
 )
-target_compile_features(opus_cabi_tool PRIVATE cxx_std_20)
+target_compile_features(opus_cabi_tool PRIVATE c_std_11)
 target_compile_definitions(opus_cabi_tool PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )
@@ -209,6 +209,8 @@ target_include_directories(opus_cabi_tool PRIVATE
 if(MSVC)
     target_compile_options(opus_cabi_tool PRIVATE
         /J /W3 /wd4005 /permissive-)
+else()
+    target_compile_options(opus_cabi_tool PRIVATE -Wno-macro-redefined)
 endif()
 set_target_properties(opus_cabi_tool PROPERTIES
     FOLDER "Original Opus x64/build tools"

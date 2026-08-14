@@ -1,5 +1,26 @@
 # DONE
 
+## Convert CABI compatibility tool to C11
+
+`opus_cabi_tool` now builds from `src/port/tools/opus-cabi-tool.c`. The target
+still includes the reconstructed SDM headers to compute native CAB initializer
+values, writes the same `.hs` macro files, and keeps the existing target name
+for generated-command build compatibility.
+
+The C replacement drops `std::filesystem`, `std::ofstream`, `std::string`,
+namespace scope, `extern "C"`, and C++ casts. It uses a small C directory
+creator to preserve the previous create-directories behavior and a target-local
+macro-redefinition warning suppression matching the existing MSVC setting.
+
+Validated with `cmake --build out/macos-debug --target opus_cabi_tool
+opus_generated_commands -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_original_command_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -R '^opus_sdm_cab_test$|^opus_x64_runtime_test$'
+--output-on-failure`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert DIBAPP compatibility tool to C11
 
 `opus_dibapp_tool` now builds from
