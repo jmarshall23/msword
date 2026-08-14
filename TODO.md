@@ -179,6 +179,15 @@ out of process with `SendInput` and `GetGUIThreadInfo`
 (`opus_word1_ui_test.cpp:391, 297`), which has no meaning under a self-contained shim;
 they become in-process scripted-event tests against the same harness.
 
+Current finding: `word1_port_smoke_test` passes, but
+`OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy ctest -R '^opus_word1_typing_test$'`
+segfaults in the UI harness before logging because macOS builds
+`opus_word1_ui_test` with unresolved Win32 symbols via `dynamic_lookup`. Linking that
+harness to `opus_x64_runtime` is not the fix: it exposes more missing native-style
+process/window APIs, and even if those linked, the harness and WORD1 would still have
+separate process-local shim state. Replace this with an in-process scripted typing
+test that drives the same queue `PostMessage`/`GetMessage` use.
+
 Message ordering is where ports like this actually fail. Word assumes Windows 2/3
 delivery order around focus, capture and paint. Expect more time there than on any
 individual entry point.
