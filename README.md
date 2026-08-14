@@ -123,9 +123,17 @@ interfaces pointer-width safe. Prefer source-equivalent translations of
 historical routines, isolate unavoidable Windows API adaptation at the port
 boundary, and add focused tests for newly translated behavior.
 
-## Copyright
+## License Status
 
-The historical source files retain their original Microsoft and third-party
-copyright notices. This repository does not currently include a top-level
-license file; review the applicable rights before redistributing the source or
-binaries.
+This repository does not currently include a top-level license file. Review the
+applicable rights before redistributing source or binaries.
+
+- `src/Opus/`, `src/OpusEtAl/`, and the other original Microsoft Word source
+  trees retain their historical Microsoft and third-party copyright notices.
+  They are not covered by a new project license in this repository.
+- `src/port/**` contains porting code added around the original sources. Its
+  intended license still needs to be stated explicitly before redistribution.
+- Build-system files, including CMake scripts and workflow files, also need an
+  explicit project license before redistribution.
+- `docs/win32-shim/**` is derived from MIT-licensed Win32Emu reference
+  material, with attribution and scope details in `docs/win32-shim/README.md`.

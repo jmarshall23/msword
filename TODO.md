@@ -535,18 +535,6 @@ genuinely divergent files, and the Windows build is byte-identical.
 
 ## Hygiene
 
-### 27. Do not copy jphonorato's LICENSE
-
-That fork put a top-level MIT license over a tree carrying Microsoft's copyright notices
-in nearly every file. The README is currently correct that no license file exists and
-rights need review before redistribution. A license can cover `src/port/**` and the
-build system with the scope stated. This gets more pressing once there are macOS and
-Linux binaries to hand out. Separately, `docs/win32-shim/` is derived from MIT-licensed
-Win32Emu and its README carries that attribution.
-
-Done when: `README.md` states license status separately for `src/port/**`, build files,
-`docs/win32-shim/**`, and Microsoft's original sources.
-
 ### 28. Import `00-reconocimiento.md` in English
 
 2431 lines, every claim backed by a command that was run: per-phase error counts, 182

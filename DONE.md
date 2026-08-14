@@ -1,5 +1,19 @@
 # DONE
 
+## State license status by source area
+
+`README.md` now separates the license status for the original Microsoft source
+trees, `src/port/**`, build-system files, and `docs/win32-shim/**`. It keeps the
+top-level no-license warning, avoids copying jphonorato's MIT license, and points the
+win32-shim attribution to `docs/win32-shim/README.md`.
+
+Validated with source searches for `src/port/**`, build-system files,
+`docs/win32-shim/**`, original Microsoft source trees, `MIT-licensed Win32Emu`,
+and the absence of a top-level `LICENSE` file.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Fix CLIPBRD2 CHR stride
 
 `src/Opus/CLIPBRD2.C` now advances the `CHR` scan with
