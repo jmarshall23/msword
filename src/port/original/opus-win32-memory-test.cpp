@@ -48,6 +48,22 @@ int main() {
     char explicit_name[MAX_PATH]{};
     FILE* generated_file = nullptr;
     if (GetCurrentThreadId() == 0 ||
+        GetProfileIntA("WinWord", "NewLook", 2) != 2 ||
+        GetProfileStringA("WinWord", "Missing", "fallback", narrow,
+                          sizeof(narrow)) != 8 ||
+        std::strcmp(narrow, "fallback") != 0 ||
+        !WriteProfileStringA("WinWord", "Missing", "value") ||
+        AnsiLower(reinterpret_cast<LPSTR>('Q')) !=
+            reinterpret_cast<LPSTR>('q') ||
+        AnsiUpper(reinterpret_cast<LPSTR>('q')) !=
+            reinterpret_cast<LPSTR>('Q') ||
+        std::strcpy(narrow, "Az") == nullptr ||
+        AnsiLower(narrow) != narrow || std::strcmp(narrow, "az") != 0 ||
+        AnsiUpper(narrow) != narrow || std::strcmp(narrow, "AZ") != 0 ||
+        AnsiNext(narrow) != narrow + 1 || AnsiPrev(narrow, narrow + 1) != narrow ||
+        !AnsiToOem("copy", narrow) || std::strcmp(narrow, "copy") != 0 ||
+        !OemToAnsi("back", narrow) || std::strcmp(narrow, "back") != 0 ||
+        GetTickCount() == 0 ||
         !GlobalMemoryStatusEx(&memory_status) ||
         memory_status.ullTotalPhys == 0 ||
         memory_status.ullAvailPhys > memory_status.ullTotalPhys ||

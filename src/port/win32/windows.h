@@ -106,6 +106,7 @@ typedef HANDLE HRGN;
 typedef HANDLE HMETAFILE;
 typedef HANDLE HICON;
 typedef HANDLE HCURSOR;
+typedef HANDLE HHOOK;
 typedef int(FAR PASCAL *FARPROC)();
 typedef WORD ATOM;
 typedef int HFILE;
@@ -2920,6 +2921,37 @@ DWORD FormatMessageA(DWORD flags, LPCVOID source, DWORD message_id,
                      DWORD language_id, LPSTR buffer, DWORD size,
                      LPVOID arguments);
 DWORD GetModuleFileNameA(HMODULE module, LPSTR file_name, DWORD size);
+UINT GetProfileIntA(LPCSTR application_name, LPCSTR key_name,
+                    int default_value);
+DWORD GetProfileStringA(LPCSTR application_name, LPCSTR key_name,
+                        LPCSTR default_value, LPSTR returned_string,
+                        DWORD size);
+BOOL WriteProfileStringA(LPCSTR application_name, LPCSTR key_name,
+                         LPCSTR string);
+#ifdef __cplusplus
+LPSTR AnsiUpper(LPSTR string);
+LPSTR AnsiLower(LPSTR string);
+LPSTR AnsiNext(LPCSTR current);
+LPSTR AnsiPrev(LPCSTR start, LPCSTR current);
+BOOL AnsiToOem(LPCSTR ansi, LPSTR oem);
+BOOL OemToAnsi(LPCSTR oem, LPSTR ansi);
+#else
+LPSTR AnsiUpper();
+LPSTR AnsiLower();
+LPSTR AnsiNext();
+LPSTR AnsiPrev();
+BOOL AnsiToOem();
+BOOL OemToAnsi();
+#endif
+#ifndef GetProfileInt
+#define GetProfileInt GetProfileIntA
+#endif
+#ifndef GetProfileString
+#define GetProfileString GetProfileStringA
+#endif
+#ifndef WriteProfileString
+#define WriteProfileString WriteProfileStringA
+#endif
 HANDLE GetCurrentProcess(void);
 BOOL TerminateProcess(HANDLE process, UINT exit_code);
 BOOL GetExitCodeProcess(HANDLE process, DWORD* exit_code);
@@ -3118,6 +3150,20 @@ HANDLE LoadImageW(HINSTANCE instance, LPCWSTR name, UINT type, int desired_x,
 #define LoadImage LoadImageA
 HICON LoadIconA(HINSTANCE instance, LPCSTR icon_name);
 HICON LoadIconW(HINSTANCE instance, LPCWSTR icon_name);
+HCURSOR CreateCursor(HINSTANCE instance, int hot_spot_x, int hot_spot_y,
+                     int width, int height, LPCVOID and_plane,
+                     LPCVOID xor_plane);
+HICON CreateIcon(HINSTANCE instance, int width, int height, BYTE planes,
+                 BYTE bits_pixel, LPCVOID and_bits, LPCVOID xor_bits);
+#ifdef __cplusplus
+HHOOK SetWindowsHook(int hook, FARPROC procedure);
+BOOL UnhookWindowsHook(int hook, FARPROC procedure);
+LRESULT DefHookProc(int code, WPARAM wparam, LPARAM lparam, HHOOK* hook);
+#else
+HHOOK SetWindowsHook();
+BOOL UnhookWindowsHook();
+LRESULT DefHookProc();
+#endif
 BOOL DrawIconEx(HDC device_context, int x, int y, HICON icon, int width,
                 int height, UINT step_if_ani_cur, HBRUSH flicker_free_draw,
                 UINT flags);
@@ -3153,6 +3199,8 @@ BOOL PatBlt(HDC device_context, int x, int y, int width, int height,
             DWORD raster_operation);
 BOOL SetCursorPos(int x, int y);
 BOOL GetCursorPos(LPPOINT point);
+LONG GetMessageTime(void);
+UINT GetDoubleClickTime(void);
 HWND FindWindowA(LPCSTR class_name, LPCSTR window_name);
 BOOL IsIconic(HWND window);
 BOOL OpenIcon(HWND window);
@@ -3316,6 +3364,7 @@ BOOL Ellipse(HDC device_context, int left, int top, int right, int bottom);
 BOOL Polygon(HDC device_context, const POINT* points, int count);
 BOOL DrawEdge(HDC device_context, RECT* rect, UINT edge, UINT flags);
 ULONGLONG GetTickCount64(void);
+DWORD GetTickCount(void);
 VOID Sleep(DWORD milliseconds);
 
 HANDLE CreateFileA(LPCSTR file_name, DWORD desired_access, DWORD share_mode,

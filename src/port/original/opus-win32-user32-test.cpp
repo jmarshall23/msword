@@ -340,10 +340,20 @@ int main() {
 
     HCURSOR cursor_a = reinterpret_cast<HCURSOR>(0x1010);
     HCURSOR cursor_b = reinterpret_cast<HCURSOR>(0x2020);
+    BYTE cursor_and_bits[4]{};
+    BYTE cursor_xor_bits[4]{};
     POINT cursor_position{};
-    if (SetCursor(cursor_a) != nullptr || SetCursor(cursor_b) != cursor_a ||
+    if (CreateCursor(nullptr, 0, 0, 1, 1, cursor_and_bits,
+                     cursor_xor_bits) == nullptr ||
+        CreateIcon(nullptr, 1, 1, 1, 1, cursor_and_bits,
+                   cursor_xor_bits) == nullptr ||
+        SetWindowsHook(WH_MSGFILTER, nullptr) != nullptr ||
+        !UnhookWindowsHook(WH_MSGFILTER, nullptr) ||
+        DefHookProc(0, 0, 0, nullptr) != 0 ||
+        SetCursor(cursor_a) != nullptr || SetCursor(cursor_b) != cursor_a ||
         ShowCursor(FALSE) != -1 || GetSystemMetrics(SM_CURSORLEVEL) != -1 ||
         ShowCursor(TRUE) != 0 || GetSystemMetrics(SM_CURSORLEVEL) != 0 ||
+        GetMessageTime() == 0 || GetDoubleClickTime() != 500 ||
         SetCapture(window) != nullptr || GetCapture() != window ||
         SetCapture(child) != window || GetCapture() != child ||
         !ReleaseCapture() || GetCapture() != nullptr ||

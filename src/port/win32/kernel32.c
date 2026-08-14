@@ -108,6 +108,23 @@ static char* xstrdup(const char* text) {
     return copy;
 }
 
+static BOOL is_int_resource_pointer(const void* value) {
+    return ((uintptr_t)value >> 16u) == 0;
+}
+
+static LPSTR map_ansi_case(LPSTR string, int (*map)(int)) {
+    if (string == NULL) return NULL;
+    if (is_int_resource_pointer(string)) {
+        unsigned char ch = (unsigned char)(uintptr_t)string;
+        return (LPSTR)(uintptr_t)(unsigned char)map(ch);
+    }
+    char* cursor;
+    for (cursor = string; *cursor != '\0'; ++cursor) {
+        *cursor = (char)map((unsigned char)*cursor);
+    }
+    return string;
+}
+
 static int grow_array(void** array, size_t* capacity, size_t item_size) {
     size_t next = *capacity == 0 ? 16 : *capacity * 2;
     void* resized = realloc(*array, next * item_size);
@@ -651,6 +668,56 @@ DWORD GetModuleFileNameA(HMODULE module, LPSTR file_name, DWORD size) {
     }
     lstrcpynA(file_name, path, (int)size);
     return (DWORD)strlen(file_name);
+}
+
+UINT GetProfileIntA(LPCSTR application_name, LPCSTR key_name, int default_value) {
+    (void)application_name;
+    (void)key_name;
+    return (UINT)default_value;
+}
+
+DWORD GetProfileStringA(LPCSTR application_name, LPCSTR key_name,
+                        LPCSTR default_value, LPSTR returned_string,
+                        DWORD size) {
+    (void)application_name;
+    (void)key_name;
+    if (returned_string == NULL || size == 0) return 0;
+    lstrcpynA(returned_string, default_value != NULL ? default_value : "",
+              (int)size);
+    return (DWORD)strlen(returned_string);
+}
+
+BOOL WriteProfileStringA(LPCSTR application_name, LPCSTR key_name,
+                         LPCSTR string) {
+    (void)application_name;
+    (void)key_name;
+    (void)string;
+    return TRUE;
+}
+
+LPSTR AnsiUpper(LPSTR string) { return map_ansi_case(string, toupper); }
+
+LPSTR AnsiLower(LPSTR string) { return map_ansi_case(string, tolower); }
+
+LPSTR AnsiNext(LPCSTR current) {
+    return current == NULL ? NULL : (LPSTR)(current + 1);
+}
+
+LPSTR AnsiPrev(LPCSTR start, LPCSTR current) {
+    if (start == NULL || current == NULL || current <= start) return (LPSTR)start;
+    return (LPSTR)(current - 1);
+}
+
+BOOL AnsiToOem(LPCSTR ansi, LPSTR oem) {
+    if (ansi == NULL || oem == NULL) return FALSE;
+    if (ansi != oem) strcpy(oem, ansi);
+    return TRUE;
+}
+
+BOOL OemToAnsi(LPCSTR oem, LPSTR ansi) {
+    if (oem == NULL || ansi == NULL) return FALSE;
+    if (oem != ansi) strcpy(ansi, oem);
+    return TRUE;
 }
 
 HANDLE GetCurrentProcess(void) { return (HANDLE)(uintptr_t)2; }
@@ -1446,6 +1513,8 @@ ULONGLONG GetTickCount64(void) {
     gettimeofday(&now, NULL);
     return (ULONGLONG)now.tv_sec * 1000ull + (ULONGLONG)now.tv_usec / 1000ull;
 }
+
+DWORD GetTickCount(void) { return (DWORD)GetTickCount64(); }
 
 VOID Sleep(DWORD milliseconds) { usleep(milliseconds * 1000u); }
 

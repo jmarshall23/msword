@@ -188,6 +188,13 @@ process/window APIs, and even if those linked, the harness and WORD1 would still
 separate process-local shim state. Replace this with an in-process scripted typing
 test that drives the same queue `PostMessage`/`GetMessage` use.
 
+Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
+quit messages before entering Microsoft's `OpusOriginalWinMain`, and the shim can
+retarget scripted messages with no explicit HWND to the active/focused window. Do not
+enable a CTest for it yet: the run reaches `FInitScreenConstants` and fails before the
+main window/message loop exists. The next blocker is the screen-constants/GDI startup
+slice, not the old out-of-process UI harness.
+
 Message ordering is where ports like this actually fail. Word assumes Windows 2/3
 delivery order around focus, capture and paint. Expect more time there than on any
 individual entry point.

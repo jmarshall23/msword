@@ -685,6 +685,9 @@ static BOOL pump_once(void) {
     memmove(&g_scripted_messages[0], &g_scripted_messages[1],
             (g_scripted_count - 1) * sizeof(g_scripted_messages[0]));
     --g_scripted_count;
+    if (message.hwnd == NULL && message.message != WM_QUIT) {
+        message.hwnd = g_focus_window != NULL ? g_focus_window : g_active_window;
+    }
     update_key_state(message.message, message.wParam);
     queue_push(&g_messages, &g_message_count, &g_message_capacity, &message, FALSE);
     return TRUE;
@@ -1560,6 +1563,49 @@ HCURSOR LoadCursorW(HINSTANCE instance, LPCWSTR cursor_name) {
     return (HCURSOR)cursor_name;
 }
 
+HCURSOR CreateCursor(HINSTANCE instance, int hot_spot_x, int hot_spot_y,
+                     int width, int height, LPCVOID and_plane,
+                     LPCVOID xor_plane) {
+    (void)instance;
+    (void)hot_spot_x;
+    (void)hot_spot_y;
+    (void)width;
+    (void)height;
+    (void)xor_plane;
+    return and_plane != NULL ? (HCURSOR)and_plane : (HCURSOR)(uintptr_t)1;
+}
+
+HICON CreateIcon(HINSTANCE instance, int width, int height, BYTE planes,
+                 BYTE bits_pixel, LPCVOID and_bits, LPCVOID xor_bits) {
+    (void)instance;
+    (void)width;
+    (void)height;
+    (void)planes;
+    (void)bits_pixel;
+    (void)xor_bits;
+    return and_bits != NULL ? (HICON)and_bits : (HICON)(uintptr_t)1;
+}
+
+HHOOK SetWindowsHook(int hook, FARPROC procedure) {
+    (void)hook;
+    (void)procedure;
+    return NULL;
+}
+
+BOOL UnhookWindowsHook(int hook, FARPROC procedure) {
+    (void)hook;
+    (void)procedure;
+    return TRUE;
+}
+
+LRESULT DefHookProc(int code, WPARAM wparam, LPARAM lparam, HHOOK* hook) {
+    (void)code;
+    (void)wparam;
+    (void)lparam;
+    (void)hook;
+    return 0;
+}
+
 HWND GetActiveWindow(void) {
     return g_active_window;
 }
@@ -1891,6 +1937,10 @@ BOOL GetCursorPos(LPPOINT point) {
     *point = g_cursor_position;
     return TRUE;
 }
+
+LONG GetMessageTime(void) { return (LONG)GetTickCount(); }
+
+UINT GetDoubleClickTime(void) { return 500; }
 
 HWND WindowFromPoint(POINT point) {
     size_t index = g_window_count;

@@ -3,6 +3,7 @@
 #if defined(_MSC_VER)
 #include "rtcapi.h"
 #endif
+#include "opusinputscript.h"
 #include "opus_x64_compat.h"
 #include <algorithm>
 #include <cstdarg>
@@ -433,10 +434,14 @@ LONG WINAPI ObserveVectoredException(EXCEPTION_POINTERS* exception) {
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                     PWSTR command_line, int show_command) {
     const LPCWSTR self_test = OPUSW("--self-test");
+    const LPCWSTR scripted_key_test = OPUSW("--scripted-key-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
     }
+    const bool run_scripted_key_test =
+        OpusWideContains(command_line, scripted_key_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_key_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -469,6 +474,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         WideCharToMultiByte(CP_ACP, 0, command_line, -1, command_line_ansi,
                             static_cast<int>(sizeof(command_line_ansi)),
                             nullptr, nullptr);
+    }
+    if (run_scripted_key_test) {
+        OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 1);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 2);
+        OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     return OpusOriginalWinMain(instance, previous, command_line_ansi,
                                show_command);
