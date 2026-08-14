@@ -34,6 +34,7 @@ extern struct CA caPara;
 extern struct WWD ** mpwwhwwd [];
 extern struct WWD ** hwwdCur;
 extern SB sbTds;
+void ModeError();
 
 SB sbMacSavEdMacro = sbNil;
 BOOL vfElDisableInput;
