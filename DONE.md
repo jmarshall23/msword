@@ -1,5 +1,25 @@
 # DONE
 
+## Replace WORD1 Save As UI harness
+
+`opus_word1_save_as_test` now runs `WORD1 --scripted-save-as-test` in process
+with `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. The scripted mode exits the
+normal startup loop, sends the File/Save As command to the live `OpusApp`
+window, and fails unless the SDM file-dialog path reaches its test-hook
+auto-cancel stage and returns with no dialog windows left open.
+
+Validated with `cmake --build build-chrstride --target WORD1 -j2`,
+`ctest --test-dir build-chrstride -R '^opus_word1_save_as_test$'
+--output-on-failure`, the scripted group
+`ctest --test-dir build-chrstride -R '^opus_word1_save_as_test$|^opus_word1_interaction_test$|^opus_word1_selection_test$|^opus_word1_about_test$|^opus_word1_unicode_test$|^opus_word1_clipboard_shortcut_test$|^opus_word1_typing_test$|^word1_scripted_key_test$'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test|opus_word1_about_test|opus_word1_selection_test|opus_word1_interaction_test|opus_word1_save_as_test'
+--output-on-failure` sweep, `ctest --test-dir build-chrstride -N -L ui`
+showing 3 remaining UI-labelled tests, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Replace WORD1 interaction UI harness
 
 `opus_word1_interaction_test` now runs `WORD1 --scripted-interaction-test` in

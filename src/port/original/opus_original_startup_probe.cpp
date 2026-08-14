@@ -51,6 +51,7 @@ constexpr LRESULT kEditCopy = 2274;
 constexpr LRESULT kEditPaste = 2297;
 constexpr LRESULT kEditSelectAll = 5106;
 constexpr WPARAM kFileNew = 1813;
+constexpr WPARAM kFileSaveAs = 1897;
 constexpr WPARAM kHelpAbout = 182;
 
 bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
@@ -236,6 +237,21 @@ bool ScriptedInteractionMatched() {
     OpusUser32PushScriptedInput(nullptr, WM_COMMAND, 2, 0);
     SendMessageW(app, WM_COMMAND, kFileNew, 0);
     return IsWindow(app) && FindWindowA("OpusSdmDialog", nullptr) == nullptr;
+}
+
+bool ScriptedSaveAsMatched() {
+    const HWND app = FindWindowA("OpusApp", nullptr);
+    if (app == nullptr) {
+        return false;
+    }
+    RemovePropW(app, OPUSW("OpusX64SaveAsStage"));
+    SendMessageW(app, WM_COMMAND, kFileSaveAs, 0);
+    const auto stage =
+        reinterpret_cast<INT_PTR>(GetPropW(
+            app, OPUSW("OpusX64SaveAsStage")));
+    return stage == 2 && IsWindow(app) &&
+           FindWindowA("OpusSdmDialog", nullptr) == nullptr &&
+           FindWindowA("#32770", nullptr) == nullptr;
 }
 
 void WriteCrashText(HANDLE file, const char* text) {
@@ -618,6 +634,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const LPCWSTR scripted_about_test = OPUSW("--scripted-about-test");
     const LPCWSTR scripted_selection_test = OPUSW("--scripted-selection-test");
     const LPCWSTR scripted_interaction_test = OPUSW("--scripted-interaction-test");
+    const LPCWSTR scripted_save_as_test = OPUSW("--scripted-save-as-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -643,6 +660,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_interaction_test =
         OpusWideContains(command_line, scripted_interaction_test) ||
         OpusWideContains(GetCommandLineW(), scripted_interaction_test);
+    const bool run_scripted_save_as_test =
+        OpusWideContains(command_line, scripted_save_as_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_save_as_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -693,7 +713,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 6);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     } else if (run_scripted_unicode_test || run_scripted_about_test ||
-               run_scripted_selection_test || run_scripted_interaction_test) {
+               run_scripted_selection_test || run_scripted_interaction_test ||
+               run_scripted_save_as_test) {
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
@@ -712,6 +733,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_about_test && !ScriptedAboutMatched()) return 6;
     if (run_scripted_selection_test && !ScriptedSelectionMatched()) return 7;
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
+    if (run_scripted_save_as_test && !ScriptedSaveAsMatched()) return 9;
     return result;
 }
 

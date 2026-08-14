@@ -1934,6 +1934,12 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
     if (owner == nullptr || !IsWindow(owner)) {
         owner = vhWndMsgBoxParent;
     }
+#ifdef OPUS_TEST_HOOKS
+    if (saving && owner != nullptr) {
+        SetPropW(owner, OPUSW("OpusX64SaveAsStage"),
+                 reinterpret_cast<HANDLE>(1));
+    }
+#endif
 
     std::string initial = opening ?
         dialog.controls[kTmcOpenFileName].text :
@@ -1956,6 +1962,12 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
         const DWORD test_path_length = 0;
 #endif
         if (test_path_length == 0 || test_path_length >= std::size(test_path)) {
+#ifdef OPUS_TEST_HOOKS
+            if (saving && owner != nullptr) {
+                SetPropW(owner, OPUSW("OpusX64SaveAsStage"),
+                         reinterpret_cast<HANDLE>(2));
+            }
+#endif
             invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
             result = kTmcCancel;
             break;

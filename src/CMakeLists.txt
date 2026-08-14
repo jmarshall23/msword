@@ -1540,9 +1540,12 @@ set_tests_properties(opus_word1_about_test PROPERTIES
     TIMEOUT 15
 )
 add_test(NAME opus_word1_save_as_test
-    COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1> --save-as
+    COMMAND $<TARGET_FILE:WORD1> --scripted-save-as-test
 )
-set_tests_properties(opus_word1_save_as_test PROPERTIES TIMEOUT 20)
+set_tests_properties(opus_word1_save_as_test PROPERTIES
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    TIMEOUT 15
+)
 add_test(NAME opus_word1_pdf_export_test
     COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1> --pdf-export
 )
@@ -1551,7 +1554,6 @@ set_tests_properties(opus_word1_pdf_export_test PROPERTIES TIMEOUT 25)
 set(OPUS_WORD1_UI_TESTS
     opus_word1_ui_test
     opus_word1_font_typing_test
-    opus_word1_save_as_test
     opus_word1_pdf_export_test
 )
 set_tests_properties(${OPUS_WORD1_UI_TESTS} PROPERTIES LABELS ui)
