@@ -147,13 +147,15 @@ Cite these as classes, not single lines, since they recur:
   and the SDM parser callback declarations with their existing call signatures.
   Locate any remaining instances by compiling, not by line number; the four
   cited in an earlier draft were jphonorato's post-patch positions.
+- Flexible array spellings inside `PLDR`, `RSBI` and `GRPZPP` now use the
+  existing zero-length member form unconditionally, removing the last local
+  `__GNUC__` source guards from `src/Opus/`.
 
 While doing this, fix the formatting the guards introduced in jphonorato's tree before
 adopting: a typedef block landed inside a function body at `eldde.c:1279`, and
 `GRSPEC.C:1432` lost the indentation of an `if`.
 
-Done when: the non-MSVC build has no `__GNUC__` guard in `src/Opus/` outside the four
-genuinely divergent files, and the Windows build is byte-identical.
+Done when: the Windows build is byte-identical.
 
 ---
 

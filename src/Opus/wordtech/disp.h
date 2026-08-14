@@ -245,11 +245,7 @@ struct PLDR
 	int     dyl;
 	union   {
 		HQ	hqpldre;    /* when fExternal true */
-#if defined(__GNUC__) && !defined(__clang__)
-		struct DR rgdr[0];  /* GCC rejects flexible arrays in unions */
-#else
-		struct DR rgdr[];   /* when fExternal false */
-#endif
+		struct DR rgdr[0];  /* variable tail array when fExternal false */
 		};
 	};
 #define cwPLDR   (sizeof(struct PLDR) / sizeof(int))
