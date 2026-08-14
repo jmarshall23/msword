@@ -951,7 +951,9 @@ endif()
 if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string
     # and international-character assembly routines depend on that behavior.
-    target_compile_options(opus_x64_runtime PRIVATE /J /W4 /permissive- /guard:cf /sdl)
+    target_compile_options(opus_x64_runtime PRIVATE
+        /J /W4 /permissive- /guard:cf /sdl /experimental:c11atomics
+    )
 else()
     target_compile_options(opus_x64_runtime PRIVATE
         $<$<COMPILE_LANGUAGE:C>:-std=gnu89>
