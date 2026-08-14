@@ -916,7 +916,7 @@ else()
         port/original/modernformatsstub.cpp
         port/win32/commdlg.c
         port/win32/gdi32.c
-        port/win32/kernel32.cpp
+        port/win32/kernel32.c
         port/win32/module.c
         port/win32/objbase.c
         port/win32/resource.c
