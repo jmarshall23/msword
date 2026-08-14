@@ -100,6 +100,11 @@ HANDLE GhMySpellGetrgchCase();
 void MyResetRepeatWord(void);
 
 char *PchNormDict (char * );
+static BOOL FUpdateDictOK();
+static BOOL FUserDictOK();
+static FTryDict();
+static FCreateDict();
+static SpellDllFree();
 
 #define ichLexCh1	4	/* location of wildcards in lex-?? filename */
 #define ichLexCh2	5
