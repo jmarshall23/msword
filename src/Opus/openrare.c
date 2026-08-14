@@ -875,6 +875,9 @@ struct DOD ** hdod;
 	struct DOD * pdod;
 	int i, iMac, ibst;
 	CHAR stT[cchMaxSt];
+#ifdef OPUS_X64
+	char rgchKme[4];
+#endif
 
 	if (FNoHeap(hsttb = HsttbReadSttbfFromFile(fn, fc, fTrue, fFalse,0)))
 		return fFalse;
@@ -931,7 +934,15 @@ LErr:
 
 	(*hkmp)->hkmpNext = vhkmpUser;
 
+#ifdef OPUS_X64
+	for (i = 0, pkme = &(*hkmp)->rgkme[0]; i < iMac; ++i, ++pkme)
+		{
+		ReadRgchFromFn(fn, rgchKme, OpusDiskKmeSize());
+		OpusUnpackKmeDisk(pkme, rgchKme);
+		}
+#else
 	ReadRgchFromFn(fn, &(*hkmp)->rgkme[0], iMac * cwKME * 2);
+#endif
 	(*hkmp)->ikmeMac = iMac;
 
 	FreezeHp();

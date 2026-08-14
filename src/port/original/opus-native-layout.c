@@ -13,7 +13,8 @@ enum {
 	kOpusDiskSedSize = 6,
 	kOpusDiskFibSize = 420,
 	kOpusDiskFileHeaderSize = 512,
-	kOpusDiskFibFcMinOffset = 48
+	kOpusDiskFibFcMinOffset = 48,
+	kOpusDiskKmeSize = 4
 };
 
 static unsigned OpusReadU16(const unsigned char* bytes)
@@ -528,6 +529,33 @@ int OpusUnpackFibDisk(void* fibVoid, const void* bytesVoid, int byte_count)
 #undef OPUS_UNPACK_U32_TO
 #undef OPUS_HAVE_U32
 	return offset <= kOpusDiskFibSize ? offset : kOpusDiskFibSize;
+}
+
+int OpusDiskKmeSize(void)
+{
+	return kOpusDiskKmeSize;
+}
+
+int OpusPackKmeDisk(const void* kmeVoid, int value, void* bytesVoid)
+{
+	const KME* kme = (const KME*)kmeVoid;
+	unsigned char* bytes = (unsigned char*)bytesVoid;
+	unsigned key = (kme->kc & 0x0fff) | ((kme->kt & 0x0007) << 12);
+	OpusWriteU16(bytes, key);
+	OpusWriteU16(bytes + 2, (unsigned)value);
+	return kOpusDiskKmeSize;
+}
+
+int OpusUnpackKmeDisk(void* kmeVoid, const void* bytesVoid)
+{
+	KME* kme = (KME*)kmeVoid;
+	const unsigned char* bytes = (const unsigned char*)bytesVoid;
+	unsigned key = OpusReadU16(bytes);
+	memset(kme, 0, sizeof(*kme));
+	kme->kc = key & 0x0fff;
+	kme->kt = (key >> 12) & 0x0007;
+	kme->ibst = OpusReadI16(bytes + 2);
+	return kOpusDiskKmeSize;
 }
 
 int OpusPackPlcDisk(const void* pplcVoid, int entry_count,

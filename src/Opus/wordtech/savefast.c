@@ -3721,7 +3721,11 @@ QuicksaveCommands()
 					}
 				}
 
+#ifdef OPUS_X64
+			cbKmp += OpusDiskKmeSize() * ikmeMac;
+#else
 			cbKmp += sizeof(int) * ikmeMac * 2;
+#endif
 			}
 
 		if (hmud != hNil)
@@ -3879,12 +3883,27 @@ QuicksaveCommands()
 			int ikme, ikmeMac = (*hkmp)->ikmeMac, iRef;
 			KME * pkme;
 			Debug(int cbWritten=sizeof(int));
+#ifdef OPUS_X64
+			char rgchKme[4];
+#endif
 
 			WriteRgchToFn(fn, &ikmeMac, sizeof (int));
 
 			pkme = &(*hkmp)->rgkme[0];
 			for (ikme = 0; ikme < ikmeMac; ++ikme, ++pkme)
 				{
+#ifdef OPUS_X64
+				if ((int) pkme->bcm >= 0)
+					{
+					iRef = IRefFromBcm(pkme->bcm,
+							&iRefMinUser);
+					}
+				else
+					iRef = -1;
+				OpusPackKmeDisk(pkme, iRef, rgchKme);
+				WriteRgchToFn(fn, rgchKme, OpusDiskKmeSize());
+				Debug(cbWritten+=OpusDiskKmeSize());
+#else
 				WriteRgchToFn(fn, pkme, sizeof (int));
 				if ((int) pkme->bcm >= 0)
 					{
@@ -3895,6 +3914,7 @@ QuicksaveCommands()
 					iRef = -1;
 				WriteRgchToFn(fn, &iRef, sizeof (int));
 				Debug(cbWritten+=2*sizeof(int));
+#endif
 				}
 			Assert(cbWritten==cbKmp);
 			}

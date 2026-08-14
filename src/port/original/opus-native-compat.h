@@ -108,6 +108,9 @@ int OpusDiskFileHeaderSize(void);
 long OpusDiskFibFcMin(const void *bytes, int byte_count);
 int OpusPackFibDisk(const void *fib, void *bytes, int byte_count);
 int OpusUnpackFibDisk(void *fib, const void *bytes, int byte_count);
+int OpusDiskKmeSize(void);
+int OpusPackKmeDisk(const void *kme, int value, void *bytes);
+int OpusUnpackKmeDisk(void *kme, const void *bytes);
 long LPushMacroArgs(void *procedure, const int *arguments, int argument_count);
 long LPushMacroArgsTyped(void *procedure, const int *arguments,
 		int argument_count, const int *types, int type_count);

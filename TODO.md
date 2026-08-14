@@ -114,8 +114,10 @@ The generic PLC CP array now packs to 4-byte little-endian values on `OPUS_X64`,
 the PCD/SED row writers/readers use their historical 8-byte and 6-byte disk shapes.
 The FIB/file-header path now packs the 420-byte disk FIB into a fixed 512-byte header
 while keeping the LP64 runtime FIB layout separate.
-Remaining work: `KME` disk entries and the Windows/macOS/Linux byte-identical
-document roundtrip.
+Persisted keymap entries now pack to their fixed 4-byte disk shape instead of following
+the host pointer-sized runtime `KME`.
+Remaining work: add or run the document save/open roundtrip with PLC, FIB and keymap
+data present, then compare the saved bytes across Windows, macOS and Linux.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.

@@ -129,6 +129,8 @@ static int FExerciseDiskPacking(void)
 	struct SED sedCopy;
 	struct FIB fib;
 	struct FIB fibCopy;
+	KME kme;
+	KME kmeCopy;
 	unsigned char rgch[512];
 	struct TESTFOO foo0 = {11, 22};
 	struct TESTFOO foo1 = {33, 44};
@@ -207,6 +209,23 @@ static int FExerciseDiskPacking(void)
 			fibCopy.cbClx != 34 || fibCopy.pnChpFirst != 3 ||
 			fibCopy.cpnBtePap != 5)
 		return 33;
+
+	memset(&kme, 0, sizeof(kme));
+	kme.kc = 0x345;
+	kme.kt = 6;
+	kme.ibst = -2;
+	if (OpusDiskKmeSize() != 4)
+		return 34;
+	if (OpusPackKmeDisk(&kme, kme.ibst, rgch) != 4)
+		return 35;
+	if (rgch[0] != 0x45 || rgch[1] != 0x63 ||
+			rgch[2] != 0xfe || rgch[3] != 0xff)
+		return 36;
+	memset(&kmeCopy, 0, sizeof(kmeCopy));
+	OpusUnpackKmeDisk(&kmeCopy, rgch);
+	if (kmeCopy.kc != 0x345 || kmeCopy.kt != 6 ||
+			kmeCopy.ibst != -2)
+		return 37;
 
 	hplc = HplcInit(sizeof(struct TESTFOO), 3, 100, fTrue);
 	if (hplc == 0)
