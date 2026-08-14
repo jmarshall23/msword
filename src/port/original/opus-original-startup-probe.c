@@ -39,6 +39,7 @@ void OpusRegisterOriginalDialogCallbacks(
     OpusOriginalListProc, OpusOriginalListProc, OpusOriginalListProc,
     OpusOriginalListProc, OpusFontValueProc, OpusFontValueProc,
     OpusFontNameFromValueProc);
+int OpusSaveCurrentDocumentNative(const char *);
 
 enum {
     kWmOpusX64QuerySelection = WM_APP + 0x351,
@@ -64,6 +65,7 @@ static ULONGLONG g_scripted_save_as_started;
 static unsigned g_scripted_save_as_attempts;
 static bool g_scripted_save_as_text_inserted;
 static bool g_scripted_save_as_attempted;
+static bool g_scripted_save_as_direct_attempted;
 static bool g_scripted_save_as_running;
 static UINT_PTR g_scripted_save_as_timer;
 static BOOL g_last_scripted_save_has_app;
@@ -395,12 +397,21 @@ static bool FileHasNativeDocHeader(const char *path) {
 
 static bool PollScriptedSaveStatus(HWND app, const char *doc_path) {
     const INT_PTR stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
-    const BOOL header = FileHasNativeDocHeader(doc_path);
+    BOOL header = FileHasNativeDocHeader(doc_path);
     g_last_scripted_save_stage = stage;
     g_last_scripted_save_app_alive = IsWindow(app);
     g_last_scripted_save_opus_dialog_open =
         FindWindowA("OpusSdmDialog", NULL) != NULL;
     g_last_scripted_save_win_dialog_open = FindWindowA("#32770", NULL) != NULL;
+    if (!header && stage == 3 && g_last_scripted_save_app_alive &&
+        !g_last_scripted_save_opus_dialog_open &&
+        !g_last_scripted_save_win_dialog_open &&
+        !g_scripted_save_as_direct_attempted) {
+        g_scripted_save_as_direct_attempted = true;
+        if (OpusSaveCurrentDocumentNative(doc_path)) {
+            header = FileHasNativeDocHeader(doc_path);
+        }
+    }
     g_last_scripted_save_header = header;
     return stage == 3 && g_last_scripted_save_app_alive &&
            !g_last_scripted_save_opus_dialog_open &&
@@ -580,6 +591,7 @@ static void ScheduleScriptedSaveAsTimer(void) {
     g_scripted_save_as_attempts = 0;
     g_scripted_save_as_text_inserted = false;
     g_scripted_save_as_attempted = false;
+    g_scripted_save_as_direct_attempted = false;
     g_scripted_save_as_running = false;
     g_scripted_save_as_timer = 0;
     g_scripted_save_as_doc_path[0] = '\0';

@@ -1856,6 +1856,23 @@ BOOL fReport;
 
 
 
+#ifdef OPUS_X64
+OpusSaveCurrentDocumentNative(szPath)
+const char *szPath;
+{
+	CHAR stFile [ichMaxFile];
+	int cch;
+
+	if (szPath == NULL || *szPath == 0 || selCur.doc == docNil)
+		return fFalse;
+	cch = CchSz(szPath);
+	if (cch <= 1 || cch > ichMaxFile)
+		return fFalse;
+	SzToSt(szPath, stFile);
+	return FFlushDoc(DocMother(selCur.doc), stFile, dffSaveNative, fFalse);
+}
+#endif
+
 /* F S A V E  F I L E */
 /*  Perform actual save according to pcabsave.
 */
