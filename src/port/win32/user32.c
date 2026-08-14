@@ -7,6 +7,8 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten/stack.h>
 #include <emscripten/emscripten.h>
+#endif
+#ifndef _WIN32
 #include <SDL.h>
 #endif
 
@@ -134,17 +136,22 @@ static int min_int(int left, int right) {
     return left < right ? left : right;
 }
 
-#ifdef __EMSCRIPTEN__
+#ifndef _WIN32
 static SDL_Window* g_browser_window;
 static unsigned g_browser_present_count;
 
 static BOOL browser_has_canvas(void) {
+#ifdef __EMSCRIPTEN__
     return emscripten_run_script_int(
         "typeof window !== 'undefined' && typeof document !== 'undefined'");
+#else
+    return TRUE;
+#endif
 }
 
 static void browser_set_metrics(unsigned present_count, unsigned window_count,
                                 unsigned visible_count, const RECT* rectangle) {
+#ifdef __EMSCRIPTEN__
     char script[256];
     snprintf(script, sizeof(script),
              "document.documentElement.dataset.word1PresentCount='%u';"
@@ -157,6 +164,12 @@ static void browser_set_metrics(unsigned present_count, unsigned window_count,
              rectangle != NULL ? (long)rectangle->right : 0,
              rectangle != NULL ? (long)rectangle->bottom : 0);
     emscripten_run_script(script);
+#else
+    (void)present_count;
+    (void)window_count;
+    (void)visible_count;
+    (void)rectangle;
+#endif
 }
 
 static SDL_Surface* browser_surface(void) {
@@ -809,7 +822,20 @@ static BOOL next_timer_due(ULONGLONG* due) {
     return found;
 }
 
+#ifndef _WIN32
+static BOOL pump_sdl_event_once(void) {
+    SDL_Event event;
+    if (SDL_WasInit(SDL_INIT_VIDEO) == 0) return FALSE;
+    if (!SDL_PollEvent(&event)) return FALSE;
+    if (event.type == SDL_QUIT) g_quit_posted = TRUE;
+    return TRUE;
+}
+#endif
+
 static BOOL pump_once(void) {
+#ifndef _WIN32
+    if (pump_sdl_event_once()) return TRUE;
+#endif
     if (g_scripted_count == 0) return pump_timer_once();
     MSG message = g_scripted_messages[0];
     memmove(&g_scripted_messages[0], &g_scripted_messages[1],
@@ -845,9 +871,13 @@ static void pump_block_until_message(void) {
         if (due > now) Sleep((DWORD)(due - now));
         if (pump_once()) return;
     }
-#ifdef __EMSCRIPTEN__
+#ifndef _WIN32
     present_browser_windows();
+#ifdef __EMSCRIPTEN__
     emscripten_sleep(16);
+#else
+    SDL_Delay(16);
+#endif
     return;
 #endif
     OutputDebugStringA("user32 GetMessage/WaitMessage needs an event backend\n");

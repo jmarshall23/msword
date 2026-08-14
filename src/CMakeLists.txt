@@ -964,6 +964,9 @@ if(NOT WIN32)
         port/win32/user32.c
     )
     add_dependencies(opus_native_runtime opus_generated_win32_resources)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        target_link_libraries(opus_native_runtime PUBLIC SDL2::SDL2)
+    endif()
 endif()
 if(MSVC)
     # Opus was built with unsigned plain characters; the byte-oriented string
