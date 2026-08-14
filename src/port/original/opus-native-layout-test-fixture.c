@@ -19,6 +19,8 @@ typedef char OpusAssertCurrentPlcBaseSize[
 	 (sizeof(CP) == 4 && sizeof(void *) == 4 && cbPLCBase == 28)) ? 1 : -1];
 typedef char OpusAssertCurrentPcdSize[
 	((sizeof(CP) == 8 && sizeof(struct PCD) == 24) ||
+	 (sizeof(CP) == 4 && sizeof(long) == 4 && sizeof(void *) == 8 &&
+	  sizeof(struct PCD) == 16) ||
 	 (sizeof(CP) == 4 && sizeof(struct PCD) == 12)) ? 1 : -1];
 typedef char OpusAssertCurrentSedSize[
 	((sizeof(CP) == 8 && sizeof(struct SED) == 16) ||

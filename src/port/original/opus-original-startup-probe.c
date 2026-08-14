@@ -366,7 +366,7 @@ static bool ScriptedSaveCurrentDocumentAs(HWND app, const char *doc_path) {
            FileHasNativeDocHeader(doc_path);
 }
 
-static bool ScriptedSaveAsMatched(void) {
+static bool ScriptedSaveAsMatched(bool *text_inserted) {
     const HWND app = FindWindowA("OpusApp", NULL);
     const HWND pane = FindDocumentPane();
     char temporary_directory[MAX_PATH] = {0};
@@ -381,8 +381,12 @@ static bool ScriptedSaveAsMatched(void) {
     if (app == NULL || pane == NULL) {
         return false;
     }
-    if (!InsertText(pane, "native save as text")) {
+    if ((text_inserted == NULL || !*text_inserted) &&
+        !InsertText(pane, "native save as text")) {
         return false;
+    }
+    if (text_inserted != NULL) {
+        *text_inserted = true;
     }
     if (g_scripted_save_as_output[0] != '\0') {
         path_length = snprintf(doc_path, sizeof(doc_path), "%s",
@@ -430,16 +434,20 @@ static bool ScriptedSaveAsMatched(void) {
 static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
                                          UINT_PTR timer, DWORD time) {
     static unsigned attempts;
+    static bool text_inserted;
     (void)message;
     (void)time;
     (void)window;
-    if ((FindWindowA("OpusApp", NULL) == NULL || FindDocumentPane() == NULL) &&
-        attempts++ < 1000) {
+    if (ScriptedSaveAsMatched(&text_inserted)) {
+        PostQuitMessage(0);
+        return;
+    }
+    if (attempts++ < 1000) {
         OpusUser32PushScriptedInput(NULL, WM_TIMER, timer,
                                     (LPARAM)ScriptedSaveAsTimer);
         return;
     }
-    PostQuitMessage(ScriptedSaveAsMatched() ? 0 : 9);
+    PostQuitMessage(9);
 }
 
 static bool FileStartsWithPdfHeader(const char *path) {
@@ -1189,7 +1197,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_selection_test && !ScriptedSelectionMatched()) return 7;
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
     if (run_scripted_save_as_test && !save_as_output_requested &&
-        !ScriptedSaveAsMatched()) return 9;
+        !ScriptedSaveAsMatched(NULL)) return 9;
     if (g_scripted_save_as_output[0] != '\0' &&
         !FileHasNativeDocHeader(g_scripted_save_as_output)) {
         return 13;

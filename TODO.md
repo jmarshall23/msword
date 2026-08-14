@@ -122,10 +122,15 @@ the Win3 `SC_TASKLIST` command that `FCreateMw` rewrites. The explicit SDL headl
 Save As harness now exits 0 on macOS, writes the requested native `.doc` artifact,
 and produces byte-identical output across repeated local runs. The macOS CTest suite
 now also creates a native `.doc`, reopens it by launching `WORD1` with the file path,
-resaves it through the same scripted Save As hook, and compares SHA-256 hashes. Next
-the GitHub Actions workflow uploads that saved `.doc` from Windows, macOS and Linux
-and compares hashes in a dependent job. Run CI and use the three-platform result to
-close this item or debug the first platform-specific byte delta.
+resaves it through the same scripted Save As hook, and compares SHA-256 hashes. The
+GitHub Actions workflow uploads that saved `.doc` from Windows, macOS and Linux and
+compares hashes in a dependent job. The first CI run exposed two gate issues before
+the byte comparison could run: Linux spent its explicit-output Save As attempt too
+early and exited 9, and Windows rejected the native-layout fixture's PCD size
+assertion under LLP64. The harness now retries the Save As command until the output
+file is present without inserting duplicate text, and the fixture accepts the
+16-byte LLP64 PCD runtime layout. Run CI again and use the three-platform artifact
+comparison to close this item or debug the first platform-specific byte delta.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.
