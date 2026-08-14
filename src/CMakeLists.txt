@@ -920,7 +920,7 @@ else()
         port/win32/module.c
         port/win32/objbase.c
         port/win32/resource.c
-        port/win32/user32.cpp
+        port/win32/user32.c
     )
     add_dependencies(opus_x64_runtime opus_generated_win32_resources)
 endif()
