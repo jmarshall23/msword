@@ -1,4 +1,4 @@
-#include "opus_x64_layout.h"
+#include "opus-native-layout.h"
 
 /* AMD64 translation of Opus/asm/resn2.asm:N_PmwdWw. */
 

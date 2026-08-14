@@ -5,7 +5,7 @@ DEBUGASSERTSZ
 #include "file.h"
 #include "disp.h"
 
-#include "opus_x64_layout.h"
+#include "opus-native-layout.h"
 
 int OpusDodIsMother(const void* pdod)
 {

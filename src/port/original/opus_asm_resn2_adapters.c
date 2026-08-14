@@ -1,4 +1,4 @@
-#include "opus_x64_layout.h"
+#include "opus-native-layout.h"
 
 /*
  * AMD64 translations and entry adapters for the remaining resident/resn2

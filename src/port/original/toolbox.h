@@ -3,7 +3,7 @@
 /*
  * The original toolbox.h was generated from Opus/resource/toolbox.txt and
  * redeclared the complete Win16 API plus Opus's assembly thunks. Modern
- * Windows declarations come from opus_x64_compat.h. Custom Opus services are
+ * Windows declarations come from opus-native-compat.h. Custom Opus services are
  * introduced here as their owning modules are migrated.
  */
 

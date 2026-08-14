@@ -1,4 +1,4 @@
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 
 #include <stdio.h>
 #include <string.h>

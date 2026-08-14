@@ -98,7 +98,7 @@ set(opus_header
 /*
  * Opus/menuhelp.c:287 resuelve el texto de ayuda de la barra de menus con
  * OPUS_X64_MENU_HELP_STRING(hpsy->iidstr) y lo pasa a
- * CchCopySz(const CHAR *, CHAR *) (port/original/opus_x64_compat.h:367).
+ * CchCopySz(const CHAR *, CHAR *) (port/original/opus-native-compat.h:367).
  *
  * El indice es el iidstr de 9 bits de la tabla de simbolos (Opus/cmdtbl.h:189
  * define iidstrNil como 0x1ff). menuhelp.c descarta iidstrNil antes de indexar,

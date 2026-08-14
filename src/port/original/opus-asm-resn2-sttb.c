@@ -1,5 +1,5 @@
-#include "opus_x64_layout.h"
-#include "opus_x64_compat.h"
+#include "opus-native-layout.h"
+#include "opus-native-compat.h"
 
 #include <stdint.h>
 #include <stdio.h>

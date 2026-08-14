@@ -1,4 +1,4 @@
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 
 #if defined(_MSC_VER)
 int _chdir(const char *path);

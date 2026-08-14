@@ -1,6 +1,6 @@
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 #include "opus_elx_dispatch.h"
-#include "opus_x64_heap.h"
+#include "opus-native-heap.h"
 #include "inter.h"
 
 #include <stdint.h>
@@ -9,6 +9,8 @@
 
 struct ITR vitr = {0};
 
+HANDLE *lphevtHead = NULL;
+HANDLE *lphrgbKeyState = NULL;
 void **mpdochdod[8] = {0};
 void **mpfnhfcb[8] = {0};
 void **mpwwhwwd[8] = {0};
@@ -45,6 +47,9 @@ TestCa *PcaSet(TestCa *range, int doc, long cpFirst, long cpLim);
 TestCa *PcaSetDcp(TestCa *range, int doc, long cpFirst, long dcp);
 long DcpCa(const TestCa *range);
 int FInCa(int doc, long cp, const TestCa *range);
+long LPushMacroArgsTyped(void *procedure, const int *arguments,
+                         int argument_count, const int *types,
+                         int type_count);
 
 void AddDcbToLprgbst(int *offsets, int count, int delta, int threshold);
 
@@ -109,6 +114,11 @@ int OpusSaveDocumentAsDocx(int doc, const char *path) {
     (void)doc;
     (void)path;
     return 0;
+}
+
+int N_WCompSzSrt(char *first, char *second, int case_sensitive) {
+    (void)case_sensitive;
+    return strcmp(first, second);
 }
 
 typedef struct TestCabSaveNative {
@@ -229,6 +239,30 @@ static uintptr_t TestElxReturnPointer(void *pointer) {
 static int elx_void_called = 0;
 static void TestElxVoid(int value, void *pointer, TestElxNum num) {
     elx_void_called = value + (pointer != NULL ? 5 : 0) + (int)num.num.d;
+}
+
+static const char *macro_string_seen = NULL;
+static long __cdecl TestMacroString(const char *text) {
+    macro_string_seen = text;
+    return text != NULL && strcmp(text, "macro string") == 0 ? 47 : 0;
+}
+
+static int RunMacroStringBridgeTest(void) {
+    enum { testDktString = 4 };
+    char text[] = "macro string";
+    uintptr_t pointer = (uintptr_t)text;
+    int arguments[2];
+    int types[1] = {testDktString};
+
+    arguments[0] = (int)(pointer & UINT32_MAX);
+#if UINTPTR_MAX > UINT32_MAX
+    arguments[1] = (int)(pointer >> 32);
+#else
+    arguments[1] = 0;
+#endif
+    return LPushMacroArgsTyped((void *)TestMacroString, arguments, 2, types,
+                               1) == 47 &&
+           macro_string_seen == text;
 }
 
 static int RunElxDispatchTest(void) {
@@ -378,6 +412,9 @@ int main(void) {
 
     if (!RunElxDispatchTest()) {
         return 31;
+    }
+    if (!RunMacroStringBridgeTest()) {
+        return 32;
     }
 
     AddDcbToLprgbst(offsets, (int)(sizeof(offsets) / sizeof(offsets[0])), 5,

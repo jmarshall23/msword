@@ -94,6 +94,9 @@ void FillBytePattern(unsigned char *destination, const unsigned char *pattern,
 void MoveCmds(void *syt, void *kmp, void *mud, void *bsy_sab,
 		void *bkme_sab);
 void CopyRgbLcb(const void *source, void *destination, long byte_count);
+long LPushMacroArgs(void *procedure, const int *arguments, int argument_count);
+long LPushMacroArgsTyped(void *procedure, const int *arguments,
+		int argument_count, const int *types, int type_count);
 struct STTB;
 void FreeHsttb(struct STTB **hsttb);
 void CacheParaCa(void *range);

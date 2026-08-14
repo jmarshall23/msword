@@ -4,7 +4,7 @@
 #include "rtcapi.h"
 #endif
 #include "../win32/opusinputscript.h"
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>

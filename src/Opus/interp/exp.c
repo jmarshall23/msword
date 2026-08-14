@@ -1,7 +1,7 @@
 /* exp.c: top level routines for the EXP subsystem.
 */
 #ifdef OPUS_X64
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 #else
 #include <qwindows.h>
 #endif
@@ -1426,6 +1426,7 @@ FDoSubscript()
 			int cwArgs;
 			int * pwArgs;
 			struct EV huge * hpev;
+			BOOL fTypedArgs = FALSE;
 			RERR rerr = rerrNil;
 			int rgwArgs [celpMax];
 			char ** rghszArgs [celpMax];
@@ -1530,8 +1531,16 @@ LTmError:
 					(*hsz)[cch] = '\0';
 
 					lpstr = (LPSTR) *hsz;
-					*pwArgs++ = HIWORD(lpstr);
-					*pwArgs++ = LOWORD(lpstr);
+					{
+					uintptr_t ulpstr = (uintptr_t) lpstr;
+					*pwArgs++ = (int)(ulpstr & UINT32_MAX);
+#if UINTPTR_MAX > UINT32_MAX
+					*pwArgs++ = (int)(ulpstr >> 32);
+#else
+					*pwArgs++ = 0;
+#endif
+					}
+					fTypedArgs = TRUE;
 					}
 					break;
 					}
@@ -1542,7 +1551,10 @@ LTmError:
 			Assert(hpdkd->hLib != NULL);
 
 			/* Push the args, call the func, and pop the args. */
-			lT = LPushMacroArgs(hpdkd->lppasproc, rgwArgs, cwArgs);
+			lT = fTypedArgs ?
+					LPushMacroArgsTyped(hpdkd->lppasproc, rgwArgs, cwArgs,
+						hpdkd->rgdkt, hpdkd->idktMacParam) :
+					LPushMacroArgs(hpdkd->lppasproc, rgwArgs, cwArgs);
 
 			if (!fSubCall)
 				{

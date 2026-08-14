@@ -36,7 +36,7 @@ the following can be specified on the make statement to control compilation:
 #define NATIVE	EXPORT
 #endif
 #ifdef OPUS_X64
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 #else
 #include "qwindows.h"	/* The standard p-code windows.h */
 #include "sbmgr.h"

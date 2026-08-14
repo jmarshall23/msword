@@ -2,7 +2,7 @@
 
 #ifdef OPUS_X64
 
-#include "opus_x64_heap.h"
+#include "opus-native-heap.h"
 
 #else /* legacy segmented heap */
 

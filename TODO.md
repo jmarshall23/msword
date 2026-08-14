@@ -100,37 +100,13 @@ Real defects in the current x64 build. All line numbers below were re-derived ag
 this tree; an earlier draft carried jphonorato's post-patch numbers, which are offset by
 roughly 18 lines in `exp.c` and 29 in `CLIPBRD2.C`.
 
-### 19. WordBasic `Declare ... As String` truncates the pointer to 32 bits
-
-`src/Opus/interp/exp.c:1530-1531`:
-
-```c
-*pwArgs++ = HIWORD(lpstr);
-*pwArgs++ = LOWORD(lpstr);
-```
-
-Both macros take 16-bit halves, so a heap pointer loses its top 32 bits before
-`LPushMacroArgs` sees it. Note where they come from, because an earlier draft said
-`qwindows.h:143-144` and item 22 has since established that file is not compiled:
-`exp.c:3-7` takes `opus_x64_compat.h` under `OPUS_X64` and `<qwindows.h>` only in the
-`#else`, and `opus_x64_compat.h` defines `LOWORDX`/`HIWORDX` at `:239, 242` but not
-`LOWORD`/`HIWORD`. So these resolve to the Windows SDK's `windef.h` definitions, which
-are 16-bit halves of a `DWORD_PTR`. The defect is identical either way; only the file to
-open changes.
-
-jphonorato's fix: pack `uintptr_t` as lo32/hi32 into two `int` slots and add
-`LPushMacroArgsTyped(proc, args, cwArgs, rgdkt, idktMacParam)` in
-`opus_asm_misc.cpp` to reassemble it. Adopt unguarded. On wasm32 the hi32 slot is always
-zero, which is correct and costs nothing.
-
-Done when: a test declares a macro function taking a string, calls it, and asserts the
-callee sees the full pointer.
-
 ### 20. `dktDouble` arguments are passed in integer registers
 
 Same path. `exp.c` writes an 8-byte `NUM` into `int rgwArgs[]` and `invoke_macro` passes
 one `int` per slot, so a `double` parameter arrives as two integer arguments where the
-ABI wants one XMM register. Fix once item 19's per-argument DKT table exists.
+ABI wants one XMM register. `LPushMacroArgsTyped` now receives the per-argument DKT
+table; extend it to materialize `dktDouble` as the ABI's floating-point argument type
+instead of copying it into an integer slot.
 
 Done when: the same test covers a `Declare ... As Double`.
 

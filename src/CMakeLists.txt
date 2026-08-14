@@ -827,7 +827,7 @@ add_library(opus_original_engine STATIC
     port/original/opus_asm_native_adapters.c
     port/original/opus_asm_wproc.c
     port/original/opus-win95-chrome.c
-    port/original/opus_x64_segment_anchors.c
+    port/original/opus-native-segment-anchors.c
 )
 add_dependencies(opus_original_engine
     opus_generated_commands
@@ -919,8 +919,8 @@ add_library(opus_x64_runtime STATIC
     port/original/opus-elx-dispatch.c
     port/original/opus_startup_diagnostics.c
     port/original/opus-win16-platform.c
-    port/original/opus-x64-heap.c
-    port/original/opus_x64_layout.c
+    port/original/opus-native-heap.c
+    port/original/opus-native-layout.c
     port/original/opus_asm_fetchn2.c
     port/original/opus_asm_resn.c
     port/original/opus-asm-resn-core.c
@@ -978,7 +978,7 @@ else()
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
     )
 endif()
-set_source_files_properties(port/original/opus-x64-heap.c PROPERTIES
+set_source_files_properties(port/original/opus-native-heap.c PROPERTIES
     COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
 )
 set_source_files_properties(port/original/opus-sdm-runtime.c PROPERTIES
@@ -1446,8 +1446,9 @@ if(NOT WIN32)
 endif()
 
 add_executable(opus_x64_runtime_test
-    port/original/opus-x64-runtime-test.c
-    port/original/opus_x64_layout_test_fixture.c
+    port/original/opus-native-runtime-test.c
+    port/original/opus_asm_misc.c
+    port/original/opus-native-layout-test-fixture.c
 )
 target_compile_features(opus_x64_runtime_test PRIVATE c_std_11)
 target_compile_definitions(opus_x64_runtime_test PRIVATE
@@ -1455,7 +1456,7 @@ target_compile_definitions(opus_x64_runtime_test PRIVATE
 )
 target_include_directories(opus_x64_runtime_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 target_link_libraries(opus_x64_runtime_test PRIVATE opus_x64_runtime)
-set_source_files_properties(port/original/opus_x64_layout_test_fixture.c PROPERTIES
+set_source_files_properties(port/original/opus-native-layout-test-fixture.c PROPERTIES
     COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu89>"
 )
 if(WIN32)

@@ -1,5 +1,5 @@
-#include "opus_x64_compat.h"
-#include "opus_x64_heap.h"
+#include "opus-native-compat.h"
+#include "opus-native-heap.h"
 
 #include <limits.h>
 #include <stdint.h>

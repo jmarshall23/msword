@@ -1,5 +1,29 @@
 # DONE
 
+## Preserve WordBasic string pointers in native Declare calls
+
+WordBasic `Declare ... As String` now preserves full native pointers. The
+interpreter packs string arguments as low/high 32-bit `uintptr_t` slots, with a
+zero high slot on wasm32, and routes only string-bearing declarations through
+`LPushMacroArgsTyped`. The old untyped bridge remains for existing integer-slot
+callers such as `LCallOtherStack`.
+
+The portable native support files in `src/port/original` no longer carry `x64`
+filenames; they now use `opus-native-*` names while the existing CMake targets
+and `OPUS_X64` compatibility define remain unchanged.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime_test
+-j2`, `cmake --build out/macos-debug --target WORD1 -j2`, and `ctest
+--test-dir out/macos-debug -R
+'^opus_x64_runtime_test$|^word1_port_smoke_test$|^opus_original_command_test$'
+--output-on-failure`. The wasm path was validated with `cmake --build
+out/wasm-debug --target opus_x64_runtime_test WORD1 -j2` and `ctest
+--test-dir out/wasm-debug -R '^opus_x64_runtime_test$'
+--output-on-failure`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## WebAssembly
 
 `wasm-debug` now builds `bin/wasm/WORD1.js`, `bin/wasm/WORD1.wasm`, and
@@ -39,7 +63,7 @@ The CI follow-up fixed the C11 port fallout that blocked the green run:
 `opus-sdm-runtime.c` now uses enum constants where C requires integer constant
 expressions, `opus-modern-formats.c` opts out of MSVC secure CRT deprecation
 diagnostics, and `opus_x64_runtime` enables MSVC C11 atomics for
-`opus-x64-heap.c`.
+`opus-native-heap.c`.
 
 Validated with `gh run watch 31793750969 --repo jserv/msword --exit-status`,
 `gh run view 31793750969 --repo jserv/msword --json
@@ -179,7 +203,7 @@ to open `/dev/tty`; claude stalled without output and was stopped.
 ## Convert x64 runtime smoke test to C11
 
 The x64 runtime smoke test now builds from
-`src/port/original/opus-x64-runtime-test.c`. The conversion keeps the existing
+`src/port/original/opus-native-runtime-test.c`. The conversion keeps the existing
 coverage for heap handles, PRC tokens, string helpers, document/window lookup
 adapters, RESN arithmetic and range helpers, SDM dialog lifetimes, CAB-backed
 file dialog paths, and Win95 save-alias handling.
@@ -194,7 +218,7 @@ Validated with `cmake --build out/macos-debug --target
 opus_x64_runtime_test -j2`, `ctest --test-dir out/macos-debug -R
 '^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
 out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
-`src/port/original/opus-x64-runtime-test.c`, and `git diff --check`.
+`src/port/original/opus-native-runtime-test.c`, and `git diff --check`.
 
 Reviewed before implementation: agy could not start because its TTY UI failed
 to open `/dev/tty`; claude stalled without output and was stopped.
@@ -1332,7 +1356,7 @@ actionable.
 The import marks Wine-specific build mechanics as historical evidence, not current
 SDL-shim instructions. It also corrects a stale source claim: `qwindows.h` was claimed
 reachable through `sym.c`, but the current `OPUS_X64` tree selects
-`opus_x64_compat.h` instead, so the LP64 audit should target serialized `long` and
+`opus-native-compat.h` instead, so the LP64 audit should target serialized `long` and
 shim Win32 type widths rather than `qwindows.h`.
 
 Validated with searches for the required source-section references, LP64 audit claims,
@@ -1523,12 +1547,12 @@ injects a selected path, and otherwise the SDM path cancels until the later file
 is drawn over the shim.
 
 `HwndOfTmc` keeps its ABI but now returns `nullptr` for SDM controls, and
-`opus_x64_runtime_test.cpp` checks the control records through `GetTmcRec` instead of
+`opus-native-runtime-test.c` checks the control records through `GetTmcRec` instead of
 expecting child HWND classes.
 
 Validated with the done-condition grep for `CreateWindowExA` in
 `opus_sdm_runtime.cpp`, which now finds only the two `OpusSdmDialog` host-window calls.
-`opus_sdm_runtime.cpp` and `opus_x64_runtime_test.cpp` compile in the focused runtime
+`opus_sdm_runtime.cpp` and `opus-native-runtime-test.c` compile in the focused runtime
 target. `win32_coverage` passes after removing the now-stale uncovered entries
 `GetClassNameA`, `GetComboBoxInfo`, `GetFileAttributesExA`, and
 `SetEnvironmentVariableA`.
@@ -1585,7 +1609,7 @@ both, and running the macOS probe with `SDL_VIDEODRIVER=dummy`.
 
 The macOS native tool gate now builds `mkcmd`, `mkdlg`, `mergeelx`, `bitapp`, `dibapp`
 and `opus_cabi_tool` from the `macos-debug` preset. The non-Windows shim header has the
-minimal Win32 base types needed by `opus_cabi_tool`, and `opus_x64_compat.h` only includes
+minimal Win32 base types needed by `opus_cabi_tool`, and `opus-native-compat.h` only includes
 `malloc.h` under MSVC.
 
 `opus_bitapp_8hdr_test` runs `opus_bitapp_tool` on `Opus/resource/8hdr.bmp` and compares
@@ -2531,8 +2555,8 @@ new wide-literal behavior.
 
 ## Convert x64 heap bridge to C11
 
-`src/port/original/opus_x64_heap.cpp` is now
-`src/port/original/opus-x64-heap.c`. The native movable-handle, compact-handle,
+`src/port/original/opus-native-heap.c` is now
+`src/port/original/opus-native-heap.c`. The native movable-handle, compact-handle,
 PRC token, segment-table, guard-byte, and heap-accounting code now uses C
 structs, static arrays, C casts, and C11 atomics instead of C++ namespaces,
 `std::array`, `std::atomic_size_t`, `constexpr`, and C++ casts.

@@ -1,7 +1,7 @@
 /* elcore.c -- resident portion of OpEL */
 
 #ifdef OPUS_X64
-#include "opus_x64_compat.h"
+#include "opus-native-compat.h"
 #include "opus_elx_dispatch.h"
 #else
 #include <qwindows.h>
