@@ -1,5 +1,27 @@
 # DONE
 
+## Convert math-pack adapter to C11
+
+The original-engine math-pack adapter now builds from
+`src/port/original/opus-asm-math.c`. The conversion keeps the exported C ABI
+entry points and globals for the 8087 diagnostic flag, math-pack init/term,
+accumulator load/store/arithmetic, transcendental helpers, integer conversion,
+unpacking, and the historical `CnumInt` spelling bridge.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, `constexpr`,
+`static_assert`, C++ casts, `nullptr`, `auto`, `std::` math calls, and line
+comments, and keeps the target source name hyphenated for the new C file.
+
+Validated with `cmake --build out/macos-debug --target WORD1
+opus_x64_runtime_test -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-asm-math.c`, the `nm` symbol check in
+`libopus_original_engine.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert Win16 platform adapter to C11
 
 The Win16 platform compatibility adapter now builds from
