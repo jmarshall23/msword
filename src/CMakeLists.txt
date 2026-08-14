@@ -1413,33 +1413,6 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
     )
 endforeach()
 
-add_executable(opus_word1_ui_test
-    port/original/opus_word1_ui_test.cpp
-)
-add_dependencies(opus_word1_ui_test WORD1)
-target_compile_features(opus_word1_ui_test PRIVATE cxx_std_20)
-target_compile_definitions(opus_word1_ui_test PRIVATE NOMINMAX UNICODE _UNICODE)
-target_include_directories(opus_word1_ui_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
-if(WIN32)
-    target_link_libraries(opus_word1_ui_test PRIVATE user32 gdi32)
-elseif(APPLE)
-    target_link_options(opus_word1_ui_test PRIVATE -Wl,-undefined,dynamic_lookup)
-endif()
-if(MSVC)
-    target_compile_options(opus_word1_ui_test PRIVATE /W4 /utf-8)
-endif()
-set_target_properties(opus_word1_ui_test PROPERTIES
-    FOLDER "Original Opus x64/tests"
-    RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
-    VS_GLOBAL_VcpkgApplocalDeps "false"
-)
-foreach(config Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${config}" config_upper)
-    set_target_properties(opus_word1_ui_test PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${MSWORD_BUILD_ROOT}/tests/${config}"
-    )
-endforeach()
-
 enable_testing()
 file(RELATIVE_PATH OPUS_BITAPP_TEST_OUTPUT
     "${CMAKE_CURRENT_SOURCE_DIR}"

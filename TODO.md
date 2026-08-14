@@ -181,11 +181,12 @@ under that headless path.
 Current finding: `word1_port_smoke_test` passes, and the typing, clipboard,
 Unicode, About, selection, interaction, font-typing, Save As, and PDF export
 UI harnesses, plus the base File/New/Exit smoke harness, now run in process
-under the headless scripted environment. `ctest -L ui` is empty. The old
-interaction test's out-of-process caption-drag coverage is not preserved yet;
-add an in-process nonclient mouse drag gate when the shim has a scripted
-cursor/capture path for native window movement. The old font-typing test's
-screen-pixel paint assertions are not preserved under SDL dummy; add a
+under the headless scripted environment. The obsolete out-of-process
+`opus_word1_ui_test` executable has been removed, and `ctest -L ui` is empty.
+The old interaction test's out-of-process caption-drag coverage is not
+preserved yet; add an in-process nonclient mouse drag gate when the shim has a
+scripted cursor/capture path for native window movement. The old font-typing
+test's screen-pixel paint assertions are not preserved under SDL dummy; add a
 headless paint-buffer oracle if line rendering regresses without
 formatter-state failures.
 

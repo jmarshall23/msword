@@ -1,5 +1,23 @@
 # DONE
 
+## Remove dead WORD1 UI harness executable
+
+The former out-of-process `opus_word1_ui_test` executable and its
+`src/port/original/opus_word1_ui_test.cpp` source are gone. Every CTest entry
+that used it already runs `WORD1 --scripted-*` directly, so the target had no
+remaining test coverage responsibility. README no longer lists the removed
+target.
+
+Validated with `cmake --build build-chrstride --target WORD1 -j2`,
+`ctest --test-dir build-chrstride -R '^opus_word1_ui_test$|^opus_word1_font_typing_test$|^opus_word1_pdf_export_test$|^opus_word1_save_as_test$|^opus_word1_interaction_test$|^opus_word1_selection_test$|^opus_word1_about_test$|^opus_word1_unicode_test$|^opus_word1_clipboard_shortcut_test$|^opus_word1_typing_test$|^word1_scripted_key_test$'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|opus_word1_ui_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test|opus_word1_about_test|opus_word1_selection_test|opus_word1_interaction_test|opus_word1_save_as_test|opus_word1_pdf_export_test|opus_word1_font_typing_test'
+--output-on-failure` sweep, `ctest --test-dir build-chrstride -N -L ui`
+showing 0 UI-labelled tests, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Replace WORD1 base UI harness
 
 `opus_word1_ui_test` now runs `WORD1 --scripted-ui-test` in process with

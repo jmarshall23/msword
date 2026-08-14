@@ -140,7 +140,6 @@ reference while ensuring all shipped code is valid for AMD64.
 | `WORD1` | The native x64 Microsoft Word executable |
 | `opus_original_engine` | Original Word application engine compiled for x64 |
 | `opus_x64_runtime` | Native runtime and translated assembly behavior |
-| `opus_word1_ui_test` | Automated end-to-end UI test driver |
 | `legacy_sources` | IDE-visible reference collection of the original assembly |
 
 Build a specific target with:
