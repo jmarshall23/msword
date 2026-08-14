@@ -1,5 +1,22 @@
 # DONE
 
+## Convert DIBAPP compatibility tool to C11
+
+`opus_dibapp_tool` now builds from
+`src/port/tools/opus-dibapp-tool.c`. The conversion keeps the same bitmap-array
+validation, scan-line extraction, generated header formatting, and target name
+while replacing C++ streams, vectors, namespaces, and casts with C file I/O and
+explicit heap storage.
+
+Validated with `cmake --build out/macos-debug --target opus_dibapp_tool
+opus_generated_dib_resources -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_bitapp_8hdr_test$' --output-on-failure`, `cmp -s
+out/macos-debug/generated/tests/8hdr.hb
+src/port/tools/references/8hdr.hb`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert SDM CAB test to C11
 
 `opus_sdm_cab_test` now compiles from

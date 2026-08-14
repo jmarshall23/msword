@@ -364,9 +364,9 @@ set_target_properties(opus_generated_embedded_resources PROPERTIES
 # Microsoft's rcbmp13/23/43 modules.
 if(NOT OPUS_IMPORT_NATIVE_HOST_TOOLS)
     add_executable(opus_dibapp_tool EXCLUDE_FROM_ALL
-        port/tools/opus_dibapp_tool.cpp
+        port/tools/opus-dibapp-tool.c
     )
-    target_compile_features(opus_dibapp_tool PRIVATE cxx_std_20)
+    target_compile_features(opus_dibapp_tool PRIVATE c_std_11)
     if(MSVC)
         target_compile_options(opus_dibapp_tool PRIVATE /W4 /permissive-)
     endif()
