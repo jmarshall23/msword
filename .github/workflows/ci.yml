@@ -42,6 +42,15 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           ctest --test-dir ..\out -C Release -R '^opus_disk_layout_proof_test$' --output-on-failure
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ctest --test-dir ..\out -C Release -R '^opus_word1_open_save_roundtrip_test$' --output-on-failure
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Upload saved doc artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: word1-doc-windows
+          path: build/save-proof/word1-open-save-input.doc
+          if-no-files-found: error
 
       - name: Upload layout artifact
         uses: actions/upload-artifact@v4
@@ -49,24 +58,6 @@ jobs:
           name: word1-layout-windows
           path: build/word1-layout-proof.bin
           if-no-files-found: error
-
-      - name: Probe Windows Save As
-        continue-on-error: true
-        shell: pwsh
-        working-directory: src
-        run: |
-          $PSNativeCommandUseErrorActionPreference = $false
-          ctest --test-dir ..\out -C Release -R '^opus_word1_open_save_roundtrip_test$' --output-on-failure
-          if (Test-Path ..\build\WORD1-port-trace.txt) {
-            Get-Content ..\build\WORD1-port-trace.txt
-          }
-
-      - name: Upload Windows Save As trace
-        uses: actions/upload-artifact@v4
-        with:
-          name: word1-save-as-windows-trace
-          path: build/WORD1-port-trace.txt
-          if-no-files-found: ignore
 
   macos:
     runs-on: macos-latest
@@ -171,8 +162,10 @@ jobs:
       - name: Check saved doc artifacts
         run: |
           set -eu
+          win_size=$(wc -c < saved-docs/word1-doc-windows/word1-open-save-input.doc)
           mac_size=$(wc -c < saved-docs/word1-doc-macos/word1-open-save-input.doc)
           linux_size=$(wc -c < saved-docs/word1-doc-linux/word1-open-save-input.doc)
+          win_hash=$(sha256sum saved-docs/word1-doc-windows/word1-open-save-input.doc | cut -d ' ' -f 1)
           mac_hash=$(sha256sum saved-docs/word1-doc-macos/word1-open-save-input.doc | cut -d ' ' -f 1)
           linux_hash=$(sha256sum saved-docs/word1-doc-linux/word1-open-save-input.doc | cut -d ' ' -f 1)
           win_layout_size=$(wc -c < saved-docs/word1-layout-windows/word1-layout-proof.bin)
@@ -181,8 +174,9 @@ jobs:
           win_layout_hash=$(sha256sum saved-docs/word1-layout-windows/word1-layout-proof.bin | cut -d ' ' -f 1)
           mac_layout_hash=$(sha256sum saved-docs/word1-layout-macos/word1-layout-proof.bin | cut -d ' ' -f 1)
           linux_layout_hash=$(sha256sum saved-docs/word1-layout-linux/word1-layout-proof.bin | cut -d ' ' -f 1)
-          printf 'macos   %s bytes %s\nlinux   %s bytes %s\n' "$mac_size" "$mac_hash" "$linux_size" "$linux_hash"
+          printf 'windows %s bytes %s\nmacos   %s bytes %s\nlinux   %s bytes %s\n' "$win_size" "$win_hash" "$mac_size" "$mac_hash" "$linux_size" "$linux_hash"
           printf 'layout windows %s bytes %s\nlayout macos   %s bytes %s\nlayout linux   %s bytes %s\n' "$win_layout_size" "$win_layout_hash" "$mac_layout_size" "$mac_layout_hash" "$linux_layout_size" "$linux_layout_hash"
+          test "$win_size" -gt 0
           test "$mac_size" -gt 0
           test "$linux_size" -gt 0
           test "$win_layout_size" -gt 0
