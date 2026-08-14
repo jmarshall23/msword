@@ -1,5 +1,30 @@
 # DONE
 
+## Convert port modern formats to C11
+
+The last `src/port` C++ source is gone. `opus_x64_runtime` now builds the
+modern-format boundary from `src/port/original/opus-modern-formats.c`, and the
+dead non-Windows `modernformatsstub.c` fallback has been removed.
+
+The C11 replacement keeps the exported DOCX/ODT/RTF/PDF, Unicode sidecar,
+clipboard, text drawing, and PDF snapshot entry points. It preserves the tested
+modern-format paths with stored DOCX/ODT package writing, ZIP/deflate import,
+RTF text and Unicode sidecar extraction, minimal PDF generation, and explicit C
+ownership for byte buffers, Unicode cells, document bindings, and PDF snapshot
+state.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test opus_modern_formats_test WORD1 -j2`, `ctest --test-dir
+out/macos-debug -R '^opus_modern_formats_test$|^opus_x64_runtime_test$'
+--output-on-failure`, `ctest --test-dir out/macos-debug -L ui
+--output-on-failure`, `rg --files src/port | rg
+'\.(cpp|cc|cxx|hpp|hh|hxx)$'`, the C++ surface grep over the converted port C
+files, the `nm` symbol check in `libopus_x64_runtime.a`, and `git diff
+--check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert Win95 chrome to C11
 
 The Win95 toolbar, ruler, page-view chrome, menu repaint, text color, input
@@ -347,13 +372,13 @@ out/macos-debug -L ui --output-on-failure`, and `git diff --check`.
 Reviewed before implementation: agy could not start because its TTY UI failed
 to open `/dev/tty`; claude stalled without output and was stopped.
 
-## Convert modern formats stub to C11
+## Convert modern formats fallback to C11
 
-The non-Windows modern-format fallback now builds from
-`src/port/original/modernformatsstub.c` instead of the former C++ source. The
-stub keeps the same C ABI exports and fallback behavior while dropping the
-anonymous namespace, `extern "C"`, C++ headers, `std::` calls, `nullptr`,
-`bool`, and `static_cast`.
+The former non-Windows modern-format fallback was converted to C11 during the
+early port work, then removed when `opus-modern-formats.c` became the shared
+implementation. That earlier conversion kept the same C ABI exports and
+fallback behavior while dropping the anonymous namespace, `extern "C"`, C++
+headers, `std::` calls, `nullptr`, `bool`, and `static_cast`.
 
 Validated with `cmake --build out/macos-debug --target opus_x64_runtime
 opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
@@ -2483,11 +2508,10 @@ format API probes and assertions while replacing C++ streams, strings,
 iterators, and base64 helpers with C11 stdio/stdlib helpers and byte-buffer
 search routines.
 
-`opus_modern_formats_test` now builds the C source with `c_std_11`, includes
-the original port headers explicitly, and keeps C++ link language because
-`opus_x64_runtime` can contain C++ objects on Windows. Its CTest registration
-is Windows-only because non-Windows builds link `modernformatsstub.c`, not the
-real modern-format implementation.
+`opus_modern_formats_test` now builds the C source with `c_std_11` and includes
+the original port headers explicitly. Its CTest registration now runs on
+non-Windows too because `opus_x64_runtime` links the shared C11 modern-format
+implementation instead of the old stub.
 
 Validated with `cmake --build out/macos-debug --target
 opus_modern_formats_test -j2`, `ctest --test-dir out/macos-debug -R

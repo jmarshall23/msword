@@ -931,11 +931,12 @@ target_include_directories(opus_x64_runtime PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS
 if(WIN32)
     target_link_libraries(opus_x64_runtime PUBLIC ole32 comdlg32 gdi32)
 endif()
-if(WIN32)
-    target_sources(opus_x64_runtime PRIVATE port/original/opus_modern_formats.cpp)
-else()
+target_sources(opus_x64_runtime PRIVATE port/original/opus-modern-formats.c)
+set_source_files_properties(port/original/opus-modern-formats.c PROPERTIES
+    COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
+)
+if(NOT WIN32)
     target_sources(opus_x64_runtime PRIVATE
-        port/original/modernformatsstub.c
         port/win32/commdlg.c
         port/win32/fallback.c
         port/win32/gdi32.c
@@ -1524,9 +1525,7 @@ if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckWin32Coverage.cmake"
     )
 endif()
-if(WIN32)
-    add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
-endif()
+add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
 add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_test>)
 add_test(NAME opus_sdm_cab_test COMMAND $<TARGET_FILE:opus_sdm_cab_test>)
