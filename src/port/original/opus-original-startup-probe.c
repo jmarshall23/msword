@@ -512,12 +512,10 @@ static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
 }
 
 static void FinishScriptedSaveAs(int exit_code) {
-#ifdef _WIN32
     if (g_scripted_save_as_timer != 0) {
         KillTimer(NULL, g_scripted_save_as_timer);
         g_scripted_save_as_timer = 0;
     }
-#endif
     if (!g_scripted_save_as_keep_output &&
         g_scripted_save_as_doc_path[0] != '\0') {
         DeleteFileA(g_scripted_save_as_doc_path);
@@ -544,10 +542,6 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
         return;
     }
     if (GetTickCount64() - g_scripted_save_as_started < 25000) {
-#ifndef _WIN32
-        OpusUser32PushScriptedInput(NULL, WM_TIMER, timer,
-                                    (LPARAM)ScriptedSaveAsTimer);
-#endif
         g_scripted_save_as_running = false;
         return;
     }
@@ -606,12 +600,7 @@ static void ScheduleScriptedSaveAsTimer(void) {
     g_last_scripted_save_header4 = 0;
     g_last_scripted_save_header24 = 0;
     g_last_scripted_save_header48 = 0;
-#ifdef _WIN32
     g_scripted_save_as_timer = SetTimer(NULL, 1, 1, ScriptedSaveAsTimer);
-#else
-    OpusUser32PushScriptedInput(NULL, WM_TIMER, 1,
-                                (LPARAM)ScriptedSaveAsTimer);
-#endif
 }
 
 static bool FileStartsWithPdfHeader(const char *path) {
