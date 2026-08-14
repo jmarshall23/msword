@@ -17,9 +17,7 @@ void OpusUser32PushScriptedInput(HWND window, UINT message, WPARAM wparam,
         --g_expected_scripted_char_count;
         g_matched_scripted_char = g_expected_scripted_char_count == 0;
     }
-    if (message == WM_QUIT) {
-        PostQuitMessage((int)wparam);
-    } else if (window != NULL) {
+    if (window != NULL) {
         PostMessageA(window, message, wparam, lparam);
     } else {
         PostThreadMessageA(GetCurrentThreadId(), message, wparam, lparam);

@@ -1168,9 +1168,15 @@ endif()
 # Product executable for Visual Studio's Startup Item list. The Unicode entry
 # adapter converts the modern process command line, then transfers control to
 # Microsoft's original Opus WinMain and its original window/message loop.
-add_executable(WORD1 WIN32
-    port/original/opus-original-startup-probe.c
-)
+if(WIN32)
+    add_executable(WORD1 WIN32
+        port/original/opus-original-startup-probe.c
+    )
+else()
+    add_executable(WORD1
+        port/original/opus-original-startup-probe.c
+    )
+endif()
 if(WIN32)
     target_sources(WORD1 PRIVATE
         port/original/opus-native-scripted-input.c
@@ -1204,9 +1210,15 @@ set_target_properties(WORD1 PROPERTIES
 
 # Diagnostic executable that force-links the same original startup graph as
 # WORD1 without product resources. It remains useful as an all-symbol gate.
-add_executable(opus_original_startup_probe EXCLUDE_FROM_ALL WIN32
-    port/original/opus-original-startup-probe.c
-)
+if(WIN32)
+    add_executable(opus_original_startup_probe EXCLUDE_FROM_ALL WIN32
+        port/original/opus-original-startup-probe.c
+    )
+else()
+    add_executable(opus_original_startup_probe EXCLUDE_FROM_ALL
+        port/original/opus-original-startup-probe.c
+    )
+endif()
 if(WIN32)
     target_sources(opus_original_startup_probe PRIVATE
         port/original/opus-native-scripted-input.c

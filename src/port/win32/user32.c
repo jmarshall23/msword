@@ -842,7 +842,9 @@ static BOOL pump_once(void) {
             (g_scripted_count - 1) * sizeof(g_scripted_messages[0]));
     --g_scripted_count;
     if (message.hwnd == NULL && message.message != WM_QUIT) {
-        message.hwnd = g_focus_window != NULL ? g_focus_window : g_active_window;
+        message.hwnd = message.message == WM_COMMAND && g_active_window != NULL ?
+            g_active_window :
+            g_focus_window != NULL ? g_focus_window : g_active_window;
     }
     update_key_state(message.message, message.wParam);
     queue_push(&g_messages, &g_message_count, &g_message_capacity, &message, FALSE);
@@ -2398,6 +2400,13 @@ LRESULT SendMessageW(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 
 LRESULT DispatchMessageA(const MSG* message) {
     if (message == NULL) return 0;
+    if (message->message == WM_TIMER && message->lParam != 0) {
+        void (CALLBACK *timer_callback)(HWND, UINT, UINT_PTR, DWORD) =
+            (void (CALLBACK *)(HWND, UINT, UINT_PTR, DWORD))message->lParam;
+        timer_callback(message->hwnd, message->message,
+                       (UINT_PTR)message->wParam, GetTickCount());
+        return 0;
+    }
     return SendMessageA(message->hwnd, message->message, message->wParam,
                         message->lParam);
 }

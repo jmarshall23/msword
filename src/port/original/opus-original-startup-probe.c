@@ -56,6 +56,8 @@ enum {
     kComboSize = 0x7503
 };
 
+static char g_scripted_save_as_output[MAX_PATH];
+
 typedef struct ControlSearch {
     int control_id;
     HWND result;
@@ -77,6 +79,44 @@ static bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
         }
     }
     return false;
+}
+
+static LPCWSTR OpusWideFind(LPCWSTR text, LPCWSTR needle) {
+    if (text == NULL || needle == NULL || *needle == 0) {
+        return NULL;
+    }
+    for (; *text != 0; ++text) {
+        LPCWSTR cursor = text;
+        LPCWSTR wanted = needle;
+        while (*cursor != 0 && *wanted != 0 && *cursor == *wanted) {
+            ++cursor;
+            ++wanted;
+        }
+        if (*wanted == 0) {
+            return text;
+        }
+    }
+    return NULL;
+}
+
+static bool OpusWideReadArgumentValue(LPCWSTR text, LPCWSTR name, char* value,
+                                      DWORD value_size) {
+    LPCWSTR found = OpusWideFind(text, name);
+    DWORD offset = 0;
+    DWORD name_length = 0;
+    if (found == NULL || value == NULL || value_size == 0) {
+        return false;
+    }
+    while (name[name_length] != 0) {
+        ++name_length;
+    }
+    found += name_length;
+    while (*found != 0 && *found != OPUSW(" ")[0] && offset + 1 < value_size) {
+        value[offset++] = (char)(*found & 0xff);
+        ++found;
+    }
+    value[offset] = '\0';
+    return offset != 0;
 }
 
 static BOOL CALLBACK FindDocumentPaneCallback(HWND window, LPARAM parameter) {
@@ -312,9 +352,12 @@ static bool ScriptedSaveAsMatched(void) {
     char temporary_directory[MAX_PATH] = {0};
     char temporary_seed[MAX_PATH] = {0};
     char doc_path[MAX_PATH + 5] = {0};
+    char output_path[MAX_PATH] = {0};
     INT_PTR stage;
     bool matched;
+    bool keep_output = false;
     int path_length;
+    DWORD output_path_length;
     DWORD temporary_directory_length;
     if (app == NULL || pane == NULL) {
         return false;
@@ -322,17 +365,41 @@ static bool ScriptedSaveAsMatched(void) {
     if (!InsertText(pane, "native save as text")) {
         return false;
     }
-    temporary_directory_length = GetTempPathA(
-        (DWORD)sizeof(temporary_directory), temporary_directory);
-    if (temporary_directory_length == 0 ||
-        temporary_directory_length >= (DWORD)sizeof(temporary_directory) ||
-        GetTempFileNameA(temporary_directory, "OWD", 0, temporary_seed) == 0) {
-        return false;
+    if (g_scripted_save_as_output[0] != '\0') {
+        path_length = snprintf(doc_path, sizeof(doc_path), "%s",
+                               g_scripted_save_as_output);
+        if (path_length <= 0 || path_length >= (int)sizeof(doc_path)) {
+            return false;
+        }
+        keep_output = true;
+    } else {
+        output_path_length = GetEnvironmentVariableA(
+            "WORD1_TEST_SAVE_AS_OUTPUT", output_path, (DWORD)sizeof(output_path));
+        if (output_path_length != 0) {
+            if (output_path_length >= (DWORD)sizeof(output_path)) {
+                return false;
+            }
+            path_length = snprintf(doc_path, sizeof(doc_path), "%s", output_path);
+            if (path_length <= 0 || path_length >= (int)sizeof(doc_path)) {
+                return false;
+            }
+            keep_output = true;
+        }
     }
-    DeleteFileA(temporary_seed);
-    path_length = snprintf(doc_path, sizeof(doc_path), "%s.doc", temporary_seed);
-    if (path_length <= 0 || path_length >= (int)sizeof(doc_path)) {
-        return false;
+    if (!keep_output) {
+        temporary_directory_length = GetTempPathA(
+            (DWORD)sizeof(temporary_directory), temporary_directory);
+        if (temporary_directory_length == 0 ||
+            temporary_directory_length >= (DWORD)sizeof(temporary_directory) ||
+            GetTempFileNameA(temporary_directory, "OWD", 0, temporary_seed) == 0) {
+            return false;
+        }
+        DeleteFileA(temporary_seed);
+        path_length = snprintf(doc_path, sizeof(doc_path), "%s.doc",
+                               temporary_seed);
+        if (path_length <= 0 || path_length >= (int)sizeof(doc_path)) {
+            return false;
+        }
     }
     DeleteFileA(doc_path);
     if (!SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", doc_path)) {
@@ -346,8 +413,25 @@ static bool ScriptedSaveAsMatched(void) {
               FindWindowA("OpusSdmDialog", NULL) == NULL &&
               FindWindowA("#32770", NULL) == NULL &&
               FileHasNativeDocHeader(doc_path);
-    DeleteFileA(doc_path);
+    if (!keep_output) {
+        DeleteFileA(doc_path);
+    }
     return matched;
+}
+
+static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
+                                         UINT_PTR timer, DWORD time) {
+    static unsigned attempts;
+    (void)message;
+    (void)time;
+    (void)window;
+    if ((FindWindowA("OpusApp", NULL) == NULL || FindDocumentPane() == NULL) &&
+        attempts++ < 1000) {
+        OpusUser32PushScriptedInput(NULL, WM_TIMER, timer,
+                                    (LPARAM)ScriptedSaveAsTimer);
+        return;
+    }
+    PostQuitMessage(ScriptedSaveAsMatched() ? 0 : 9);
 }
 
 static bool FileStartsWithPdfHeader(const char *path) {
@@ -960,10 +1044,28 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const LPCWSTR scripted_selection_test = OPUSW("--scripted-selection-test");
     const LPCWSTR scripted_interaction_test = OPUSW("--scripted-interaction-test");
     const LPCWSTR scripted_save_as_test = OPUSW("--scripted-save-as-test");
+    const LPCWSTR scripted_save_as_output =
+        OPUSW("--scripted-save-as-output=");
     const LPCWSTR scripted_pdf_export_test =
         OPUSW("--scripted-pdf-export-test");
     const LPCWSTR scripted_font_typing_test =
         OPUSW("--scripted-font-typing-test");
+    char save_as_output_probe[MAX_PATH] = {0};
+    bool save_as_output_requested =
+        GetEnvironmentVariableA("WORD1_TEST_SAVE_AS_OUTPUT",
+                                save_as_output_probe,
+                                (DWORD)sizeof(save_as_output_probe)) != 0;
+    if (OpusWideReadArgumentValue(command_line, scripted_save_as_output,
+                                  save_as_output_probe,
+                                  (DWORD)sizeof(save_as_output_probe)) ||
+        OpusWideReadArgumentValue(GetCommandLineW(), scripted_save_as_output,
+                                  save_as_output_probe,
+                                  (DWORD)sizeof(save_as_output_probe))) {
+        snprintf(g_scripted_save_as_output,
+                 sizeof(g_scripted_save_as_output), "%s",
+                 save_as_output_probe);
+        save_as_output_requested = true;
+    }
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -994,7 +1096,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusWideContains(GetCommandLineW(), scripted_interaction_test);
     const bool run_scripted_save_as_test =
         OpusWideContains(command_line, scripted_save_as_test) ||
-        OpusWideContains(GetCommandLineW(), scripted_save_as_test);
+        OpusWideContains(GetCommandLineW(), scripted_save_as_test) ||
+        save_as_output_requested;
     const bool run_scripted_pdf_export_test =
         OpusWideContains(command_line, scripted_pdf_export_test) ||
         OpusWideContains(GetCommandLineW(), scripted_pdf_export_test);
@@ -1054,7 +1157,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                run_scripted_selection_test || run_scripted_interaction_test ||
                run_scripted_save_as_test || run_scripted_pdf_export_test ||
                run_scripted_font_typing_test) {
-        OpusUser32PushScriptedInput(NULL, WM_QUIT, 0, 0);
+        if (run_scripted_save_as_test && save_as_output_requested) {
+            OpusUser32PushScriptedInput(NULL, WM_TIMER, 1,
+                                        (LPARAM)ScriptedSaveAsTimer);
+        } else {
+            OpusUser32PushScriptedInput(NULL, WM_QUIT, 0, 0);
+        }
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
                                           show_command);
@@ -1073,6 +1181,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_selection_test && !ScriptedSelectionMatched()) return 7;
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
     if (run_scripted_save_as_test && !ScriptedSaveAsMatched()) return 9;
+    if (g_scripted_save_as_output[0] != '\0' &&
+        !FileHasNativeDocHeader(g_scripted_save_as_output)) {
+        return 13;
+    }
     if (run_scripted_pdf_export_test && !ScriptedPdfExportMatched()) return 10;
     if (run_scripted_font_typing_test && !ScriptedFontTypingMatched()) {
         return 11;
@@ -1083,10 +1195,18 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
 
 #ifndef _WIN32
 int main(const int argument_count, char **arguments) {
+    static const char save_as_output_prefix[] = "--scripted-save-as-output=";
     size_t length = 1;
     WCHAR *command_line;
     size_t offset = 0;
     for (int argument = 1; argument < argument_count; ++argument) {
+        if (arguments[argument] != NULL &&
+            strncmp(arguments[argument], save_as_output_prefix,
+                    sizeof(save_as_output_prefix) - 1) == 0) {
+            snprintf(g_scripted_save_as_output,
+                     sizeof(g_scripted_save_as_output), "%s",
+                     arguments[argument] + sizeof(save_as_output_prefix) - 1);
+        }
         if (argument > 1) {
             ++length;
         }

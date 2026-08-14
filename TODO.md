@@ -116,10 +116,11 @@ The FIB/file-header path now packs the 420-byte disk FIB into a fixed 512-byte h
 while keeping the LP64 runtime FIB layout separate.
 Persisted keymap entries now pack to their fixed 4-byte disk shape instead of following
 the host pointer-sized runtime `KME`.
-The scripted Save As test now injects a native `.doc` path, writes a real document, and
-checks the saved 512-byte header for the fixed 420-byte disk FIB values.
-Remaining work: run the document save/open roundtrip with PLC, FIB and keymap data
-present, capture the saved bytes from Windows, macOS and Linux, and compare them.
+The scripted Save As path can now accept an explicit output path, but the SDL
+headless startup still does not create an `OpusWwd` document pane before the Save As
+harness needs it. Fix that pane creation path first, then run the document save/open
+roundtrip with PLC, FIB and keymap data present, capture the saved bytes from
+Windows, macOS and Linux, and compare them.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.
