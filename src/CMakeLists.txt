@@ -1591,47 +1591,47 @@ set_tests_properties(word1_scripted_key_test PROPERTIES
 )
 opus_add_executable_test(opus_word1_ui_test WORD1 --scripted-ui-test)
 set_tests_properties(opus_word1_ui_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_clipboard_shortcut_test WORD1 --scripted-clipboard-test)
 set_tests_properties(opus_word1_clipboard_shortcut_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_unicode_test WORD1 --scripted-unicode-test)
 set_tests_properties(opus_word1_unicode_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_typing_test WORD1 --scripted-typing-test)
 set_tests_properties(opus_word1_typing_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_interaction_test WORD1 --scripted-interaction-test)
 set_tests_properties(opus_word1_interaction_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_selection_test WORD1 --scripted-selection-test)
 set_tests_properties(opus_word1_selection_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_font_typing_test WORD1 --scripted-font-typing-test)
 set_tests_properties(opus_word1_font_typing_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_about_test WORD1 --scripted-about-test)
 set_tests_properties(opus_word1_about_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 opus_add_executable_test(opus_word1_save_as_test WORD1 --scripted-save-as-test)
 set_tests_properties(opus_word1_save_as_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
@@ -1649,7 +1649,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 endif()
 opus_add_executable_test(opus_word1_pdf_export_test WORD1 --scripted-pdf-export-test)
 set_tests_properties(opus_word1_pdf_export_test PROPERTIES
-    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=offscreen"
     TIMEOUT 15
 )
 set_tests_properties(

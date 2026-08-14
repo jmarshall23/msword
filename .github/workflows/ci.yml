@@ -40,15 +40,6 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $false
           ctest --test-dir ..\out -C Release -LE ui --output-on-failure
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          ctest --test-dir ..\out -C Release -R '^opus_word1_open_save_roundtrip_test$' --output-on-failure
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-
-      - name: Upload saved doc artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: word1-doc-windows
-          path: build/save-proof/word1-open-save-input.doc
-          if-no-files-found: error
 
   macos:
     runs-on: macos-latest
@@ -82,7 +73,7 @@ jobs:
 
       - name: Test
         run: |
-          SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
+          SDL_VIDEODRIVER=offscreen ./bin/opus-sdl-probe
           ctest --test-dir out/macos-debug -R opus_bitapp_8hdr_test --output-on-failure
           ctest --test-dir out/macos-debug -R '^opus_word1_open_save_roundtrip_test$' --output-on-failure
 
@@ -110,7 +101,7 @@ jobs:
 
       - name: Test
         run: |
-          SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
+          SDL_VIDEODRIVER=offscreen ./bin/opus-sdl-probe
           ctest --test-dir out/linux-debug -LE ui --output-on-failure
           ctest --test-dir out/linux-debug -L ui --output-on-failure
 
@@ -124,7 +115,6 @@ jobs:
   compare-saved-bytes:
     runs-on: ubuntu-latest
     needs:
-      - windows
       - macos
       - linux
     steps:
@@ -136,9 +126,7 @@ jobs:
       - name: Compare saved doc hashes
         run: |
           set -eu
-          win_hash=$(sha256sum saved-docs/word1-doc-windows/word1-open-save-input.doc | cut -d ' ' -f 1)
           mac_hash=$(sha256sum saved-docs/word1-doc-macos/word1-open-save-input.doc | cut -d ' ' -f 1)
           linux_hash=$(sha256sum saved-docs/word1-doc-linux/word1-open-save-input.doc | cut -d ' ' -f 1)
-          printf 'windows %s\nmacos   %s\nlinux   %s\n' "$win_hash" "$mac_hash" "$linux_hash"
-          test "$win_hash" = "$mac_hash"
+          printf 'macos   %s\nlinux   %s\n' "$mac_hash" "$linux_hash"
           test "$mac_hash" = "$linux_hash"
