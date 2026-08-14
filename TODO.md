@@ -118,206 +118,9 @@ kept stable so citations elsewhere do not rot.
 
 ## Shim dependency order
 
-Execution order here is 14, 15b. Item 15 still finishes after item 14 because
-SDM's own control drawing needs both the device context and the input loop.
-Numbering stays stable so citations do not rot.
-
-### 14. user32 tier, 173 entries
-
-Windowing and the message pump, input translation from SDL events to
-`WM_KEYDOWN`/`WM_CHAR`/`WM_?BUTTON*` with correct `wParam`/`lParam` packing, menus,
-caret, clipboard, scrollbars.
-
-The message loop is not ours to invert, and an earlier draft of this item decided
-otherwise on a false premise. It said "invert the loop into a step function, one path,
-no Asyncify". Grepping `src/Opus` for `GetMessage`, `PeekMessage` and `WaitMessage`
-gives 39 calls across 17 files, 17 of them blocking (`GetMessage` or `WaitMessage`),
-nested arbitrarily deep in the call stack:
-`wproc.c:2489, 2497, 2583, 2591, 2608, 2644` inside `FIsKeyMessage`, `idle.c:1072, 1086,
-1261`, `prompt.c:1748`, `help.c:1342`, `raremsg.c:639`, `iconbar3.c:1092`,
-`eldde.c:781`, plus the main pump in `OpusOriginalWinMain` at `wproc.c:527-563`. Rule 1
-makes all of that read-only. You cannot return to `emscripten_set_main_loop` from inside
-`FIsKeyMessage` without unwinding the C stack, so the inversion is not merely expensive,
-it is unavailable.
-
-For WebAssembly, choose Asyncify. Add `docs/win32-shim/wasm-pump.md` listing every shim
-function allowed to yield and the matching `ASYNCIFY_IMPORTS` entry. Do not implement a
-pthread pump unless Asyncify fails a measured size or speed gate. JSPI and dropping WASM
-are not item 14 work.
-
-What the shim owns is its own queue, not Word's loop, and it must preserve free-api's
-invariant: `PeekMessage` never sleeps, only `GetMessage` and `WaitMessage` may
-(`free-api/src/winuser_message.cpp:48-53` and `:122-125`, with an Android branch added
-alongside the `SDL_Delay(1)` at `:168-170`).
-
-```c
-/* src/port/win32/user32.c */
-BOOL WINAPI PeekMessageA(LPMSG m, HWND h, UINT lo, UINT hi, UINT flags) {
-    Opus_PumpOnce();                  /* drain SDL into the queue; never sleeps */
-    return Opus_QueueTake(m, h, lo, hi, flags);
-}
-BOOL WINAPI GetMessageA(LPMSG m, HWND h, UINT lo, UINT hi) {
-    for (;;) {
-        if (Opus_QueueTake(m, h, lo, hi, PM_REMOVE))
-            return m->message != WM_QUIT;
-        Opus_PumpBlockUntilMessage(); /* native: SDL_WaitEvent.
-                                         wasm+Asyncify: emscripten_sleep(0).
-                                         wasm+pthread: cond_wait on the queue. */
-    }
-}
-BOOL WINAPI WaitMessage(void) { Opus_PumpBlockUntilMessage(); return TRUE; }
-```
-
-The one pump we do own is `opus_sdm_runtime.cpp:2567-2578`, and item 15 deletes it.
-
-`GetWindowWord`/`SetWindowWord` are 90 sites combined in `src/Opus` (68 and 22). They
-are the Win16 per-window extra-bytes mechanism and a 16-bit slot cannot hold what Word
-stores there on a 64-bit host. Audit the call sites before assuming a straight port;
-this is the same class of defect as item 19, a pointer squeezed through a slot too
-narrow to hold it.
-
-Headless mode belongs here, not deferred forever: `backend_sdl.c` honours
-`SDL_VIDEODRIVER=dummy` under `OPUS_HEADLESS=1`, and the input translator
-replays a scripted event list instead of SDL events. The rich WORD1 UI
-harnesses and the base `opus_word1_ui_test` smoke harness now run in process
-under that headless path.
-
-Current finding: `word1_port_smoke_test` passes, and the typing, clipboard,
-Unicode, About, selection, interaction, font-typing, Save As, and PDF export
-UI harnesses, plus the base File/New/Exit smoke harness, now run in process
-under the headless scripted environment. The obsolete out-of-process
-`opus_word1_ui_test` executable has been removed, and `ctest -L ui` is empty.
-The old interaction test's out-of-process caption-drag coverage is not
-preserved yet; add an in-process nonclient mouse drag gate when the shim has a
-scripted cursor/capture path for native window movement. The old font-typing
-test's screen-pixel paint assertions are not preserved under SDL dummy; add a
-headless paint-buffer oracle if line rendering regresses without
-formatter-state failures.
-
-Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
-quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets
-scripted messages with no explicit HWND to the active/focused window, reaches the
-startup paint path, and exits cleanly under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`.
-The gate is registered as `word1_scripted_key_test` and now fails if the scripted
-key sequence does not become the expected consumed `WM_CHAR` sequence.
-
-Message ordering is where ports like this actually fail. Word assumes Windows 2/3
-delivery order around focus, capture and paint. Expect more time there than on any
-individual entry point.
-
-A first non-Windows `user32.cpp` seed is in place. It covers the startup link
-surface that blocked `opus_x64_runtime_test`: class registration, window creation
-and destruction, parent/owner lookup, window extra bytes, DC acquisition, system
-metrics/colors, simple visibility/enabled/focus state, environment/process helpers
-used by the runtime harness, and honest no-work message stubs. The runtime test no
-longer uses macOS `dynamic_lookup`, so missing imports fail at link time instead of
-as null calls.
-
-The message core now handles direct `SendMessageA/W`, queued `PostMessageA/W`,
-`PeekMessageA` removal semantics, `GetMessageA` over queued messages, `WaitMessage`
-as a backend-required fail-fast, `WM_CLOSE`, and default window text messages.
-Macro spellings for `SendMessage`, `GetMessage`, `PostMessage`, and
-`DefWindowProc` are routed through the shim with casts so old C call sites stay
-buildable and visible to the coverage gate.
-
-Window text and byte-width extra accessors are now in place. `GetWindowTextA/W`,
-`GetWindowTextLengthA/W`, `SetWindowTextW`, `GetWindowWord`, `SetWindowWord`, and
-`GetTopWindow` build through the original engine, and the coverage baseline no
-longer lists the implemented text APIs. `GetWindowWord`/`SetWindowWord` currently
-cover positive per-window extra-byte offsets; negative `GWW_*` slots stay out until
-the call-site audit proves this tree needs them. The final WORD1 link gate is still
-not flipped because the app target keeps macOS `dynamic_lookup` while many user32
-entries remain uncovered.
-
-The in-memory input core now tracks key down/up state from posted key messages and
-`SetKeyboardState`, exposes `GetKeyState`, and has `TranslateMessage` synthesize
-printable `WM_CHAR`/`WM_SYSCHAR` messages. This proves dispatch through the existing
-queue and window procedure, but it is not yet the headless event source: blocking
-`GetMessage`/`WaitMessage` still fail fast until the SDL or scripted pump feeds the
-queue. The next reviewed small slice is client geometry and rect algebra, because
-mouse packing and paint/update work need coherent client coordinates.
-
-Client geometry and the common rect helpers now exist for the declared user32
-surface: `GetClientRect`, `GetWindowRect` with child-to-screen conversion,
-`ClientToScreen`, `ScreenToClient`, `IntersectRect`, `OffsetRect`, `PtInRect`,
-`MoveWindow`, and ancestor-aware `IsWindowVisible`. The coverage baseline no longer
-lists those names. Undeclared rect helpers such as `SetRect`, `InflateRect`, and
-`UnionRect` remain hidden from `win32_coverage` until they are declared and
-implemented together.
-
-The pure rect-helper blind spot has been closed for `SetRect`, `InflateRect`, and
-`UnionRect`: all three are now declared and implemented together, so the coverage
-gate can see them without adding stale uncovered entries. Paint/update-region rect
-helpers remain out of scope until the paint slice.
-
-Capture and cursor-position state are now in the shim: `SetCapture`,
-`GetCapture`, `ReleaseCapture`, `SetCursor`, `SetCursorPos`, and `GetCursorPos`
-all have process-local state and coverage entries removed. This is still not the
-headless event source; it gives later mouse/scripted input somewhere to store
-capture and screen cursor coordinates.
-
-Default hit testing is now in place: `DefWindowProcA/W` handle `WM_NCHITTEST`
-with screen coordinates, and `WindowFromPoint` walks visible/enabled windows in
-reverse creation order while skipping `HTNOWHERE` and `HTTRANSPARENT`. This is
-still not a mouse pump; it supplies hit-test routing for future mouse/scripted
-input.
-
-A minimal scripted-input pump is now in place for tests. `PeekMessageA`,
-`GetMessageA`, and `WaitMessage` can pull one scripted event at a time into the
-existing queue, and `PostQuitMessage` is modeled as a quit flag so `PM_NOREMOVE`
-can observe it without consuming it. This is still not SDL input, timer
-delivery, or full mouse packing; those are the remaining event-source slices.
-
-Timer delivery is now in the same queue path: `SetTimer` and `KillTimer` keep
-process-local periodic timers, `GetMessageA` and `WaitMessage` can wait until
-the next timer deadline, and due timers enter the queue as `WM_TIMER` without
-duplicating an already queued timer message. SDL input and full mouse packing
-remain the event-source work before the headless keystroke gate.
-
-The hidden input/cursor state entries are now declared and implemented:
-`GetAsyncKeyState` reads the same key state as the queue path, mouse button
-messages update `VK_LBUTTON`/`VK_RBUTTON`, and `ShowCursor` maintains the
-cursor display counter reported by `SM_CURSORLEVEL`. SDL event translation is
-still needed to feed those states from real backend events.
-
-The in-memory window lookup helpers are now backed by the existing window list:
-enumeration, class/text lookup, ancestor lookup, control IDs, simple iconic and
-zoomed state, top-window activation, and `MessageBeep` no-op success. These
-close more declared surface for Word and the chrome bridge without adding
-backend behavior.
-
-A first in-memory menu core is now in place: menu handles,
-append/insert/modify/remove/delete, item count/id/state/text/submenu queries,
-check/radio state, window menu attachment, and no-op draw/track calls. This is
-still not a popup UI or menu rendering path; it gives Word's startup/menu
-mutation code a real menu tree to maintain.
-
-Window properties are now backed by per-window state for `SetPropW`,
-`GetPropA/W`, and `RemovePropW`. String keys are matched case-insensitively and
-integer atom keys are accepted as raw 16-bit ids; property enumeration and a
-global atom table remain out of scope until real call sites require them.
-
-The small callback/string helpers `CallWindowProcW`, `lstrcmpW`, and
-`lstrcmpiW` are now implemented. String comparison is ordinal over 16-bit code
-units, with ASCII-only folding for the insensitive form; full NLS collation is
-not part of the shim until a non-ASCII call site proves it is needed.
-
-The kernel string conversion helpers `MultiByteToWideChar` and
-`WideCharToMultiByte` now cover the code pages this tree calls today:
-`CP_ACP`, `CP_UTF8`, and 1252. They handle sizing calls, `-1` terminator
-counts, truncation failure, UTF-8 round trips, and default-character fallback
-for wide characters that do not fit a byte code page.
-
-The small kernel environment helpers `GetCurrentThreadId`,
-`GlobalMemoryStatusEx`, and `GetTempFileNameA` are now implemented for the
-single-thread shim and test harness. They provide a stable thread id, bounded
-memory-status numbers, and Win32-style temporary file names with file creation
-when the caller asks the shim to generate the unique value.
-
-Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
-dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
-About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so
-they belong to item 15b.
+The remaining shim dependency work is SDM control drawing. SDM now has the
+device-context and input-loop pieces it needs; the next local task is replacing
+the port-owned native-control choice with SDM-drawn controls.
 
 ### 15. The controls decision, which is the biggest single item
 
@@ -331,7 +134,8 @@ navigation, and a common file dialog: more work than gdi32 and user32 combined.
 It is also self-inflicted. Word 1.1a shipped SDM, which drew its own controls on Win16
 primitives. Native controls are a choice this port made, in code we own.
 
-What remains is SDM's own control drawing, over item 13's device context, after item 14.
+What remains is SDM's own control drawing over the existing device context and
+input loop.
 
 Exclude `opus_win95_chrome.cpp` from non-Windows targets until the SDM path can redraw
 that chrome. It is 2882 lines of Win32 chrome with `<windowsx.h>` and `uxtheme.dll`, and
@@ -385,7 +189,8 @@ any `#pragma pack` struct with a pointer member (`Opus/cmdtbl.h:65`,
 will fire). Configure a wasm32 build early, even if it does not link, to collect the
 list.
 
-The blocking-loop problem is item 14's, and Asyncify is the chosen route for this item.
+The blocking-loop problem is handled by the user32 queue model, and Asyncify is
+the chosen route for this item.
 Files come from MEMFS or IDBFS behind item 12's file APIs. SDL2 is the default from item
 5a because `-sUSE_SDL=2` is a first-class Emscripten port; SDL3 is only revisited if the
 probe in `docs/win32-shim/sdl.md` proves it across macOS, Linux and Emscripten before

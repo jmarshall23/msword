@@ -1,5 +1,23 @@
 # DONE
 
+## Complete user32 tier gate
+
+The user32 shim tier now meets its declared local gate: `WORD1` builds,
+`word1_port_smoke_test` passes, and the headless scripted key path opens the
+application window and dispatches a keystroke through the original message loop.
+The remaining About and Save As dialog work stays in TODO under SDM controls
+because those dialogs are not a user32 gate.
+
+Validated with `cmake --build build-chrstride --target WORD1 -j2`, `ctest
+--test-dir build-chrstride -R '^word1_port_smoke_test$|^word1_scripted_key_test$'
+--output-on-failure`, the broader `ctest --test-dir build-chrstride -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test|opus_word1_about_test|opus_word1_selection_test|opus_word1_interaction_test|opus_word1_save_as_test|opus_word1_pdf_export_test|opus_word1_font_typing_test'
+--output-on-failure` sweep, and `git diff --check`.
+
+Reviewed by agy and claude before moving the task: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Convert string-table test to C
 
 `opus_original_strtbl_test` now uses the C source
