@@ -1,3 +1,7 @@
+if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+endif()
+
 foreach(required_var IN ITEMS NM ARCHIVES HEADER BASELINE)
     if(NOT DEFINED ${required_var} OR "${${required_var}}" STREQUAL "")
         message(FATAL_ERROR "${required_var} is required")

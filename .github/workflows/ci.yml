@@ -87,29 +87,11 @@ jobs:
       - name: Configure
         run: cmake -S src --preset linux-debug
 
-      - name: Build probes
-        run: >
-          cmake --build out/linux-debug --target
-          opus-sdl-probe
-          WORD1
-          opus_x64_runtime_test
-          opus_sdm_render_test
-          opus_mkcmd_tool
-          opus_mkdlg_tool
-          opus_mergeelx_tool
-          opus_bitapp_tool
-          opus_dibapp_tool
-          opus_cabi_tool
-          opus_generated_commands
-          opus_generated_cursors
-          opus_generated_embedded_resources
-          opus_generated_dib_resources
-          opus_generated_dlgcheck
-          opus_generated_elxinfo
+      - name: Build
+        run: cmake --build out/linux-debug --target all opus-sdl-probe
 
       - name: Test
         run: |
           SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
-          ctest --test-dir out/linux-debug -R opus_bitapp_8hdr_test --output-on-failure
+          ctest --test-dir out/linux-debug -LE ui --output-on-failure
           ctest --test-dir out/linux-debug -L ui --output-on-failure
-          ctest --test-dir out/linux-debug -R '^opus_x64_runtime_test$' --output-on-failure
