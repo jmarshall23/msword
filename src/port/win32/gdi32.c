@@ -12,6 +12,8 @@
 #define OPUS_GET_SET_PAPER_BINS 29
 #define OPUS_ENUM_PAPER_BINS 31
 #define OPUS_SET_CHARSET 772
+/* Small fixed list; replace with region bands if callers exceed it. */
+#define OPUS_MAX_EXCLUDED_CLIP_RECTS 8
 
 enum GdiKind {
     kGdiKindDc,
@@ -64,6 +66,8 @@ struct DcState {
     int raster_operation;
     int stretch_mode;
     RECT clip;
+    RECT excluded_clips[OPUS_MAX_EXCLUDED_CLIP_RECTS];
+    size_t excluded_clip_count;
     POINT current_position;
     POINT viewport_origin;
     SIZE viewport_extent;
@@ -128,6 +132,44 @@ static LONG max_long(LONG left, LONG right) {
 static int rect_region_type(const RECT* rect) {
     return rect->right <= rect->left || rect->bottom <= rect->top ? NULLREGION
                                                                  : SIMPLEREGION;
+}
+
+static BOOL rects_intersect(const RECT* left, const RECT* right) {
+    return left->left < right->right && right->left < left->right &&
+           left->top < right->bottom && right->top < left->bottom;
+}
+
+static BOOL rect_contains_rect(const RECT* outer, const RECT* inner) {
+    return outer->left <= inner->left && outer->top <= inner->top &&
+           outer->right >= inner->right && outer->bottom >= inner->bottom;
+}
+
+static BOOL point_in_rect(const RECT* rect, int x, int y) {
+    return x >= rect->left && x < rect->right && y >= rect->top &&
+           y < rect->bottom;
+}
+
+static BOOL pixel_allowed(const struct DcState* dc, int x, int y) {
+    if (!point_in_rect(&dc->clip, x, y)) return FALSE;
+    size_t index;
+    for (index = 0; index < dc->excluded_clip_count; ++index) {
+        if (point_in_rect(&dc->excluded_clips[index], x, y)) return FALSE;
+    }
+    return TRUE;
+}
+
+static int clip_region_type(const struct DcState* dc) {
+    if (rect_region_type(&dc->clip) == NULLREGION) return NULLREGION;
+    BOOL complex = FALSE;
+    size_t index;
+    for (index = 0; index < dc->excluded_clip_count; ++index) {
+        if (!rects_intersect(&dc->clip, &dc->excluded_clips[index])) continue;
+        if (rect_contains_rect(&dc->excluded_clips[index], &dc->clip)) {
+            return NULLREGION;
+        }
+        complex = TRUE;
+    }
+    return complex ? COMPLEXREGION : SIMPLEREGION;
 }
 
 static void lock_gdi(void) {
@@ -541,10 +583,7 @@ static COLORREF pen_color(struct GdiObject* dc) {
 
 static BOOL put_pixel_clipped(struct GdiObject* dc, struct GdiObject* bitmap,
                               int x, int y, COLORREF color) {
-    if (x < dc->dc.clip.left || y < dc->dc.clip.top ||
-        x >= dc->dc.clip.right || y >= dc->dc.clip.bottom) {
-        return FALSE;
-    }
+    if (!pixel_allowed(&dc->dc, x, y)) return FALSE;
     return put_pixel(&bitmap->bitmap, x, y, color);
 }
 
@@ -919,7 +958,7 @@ static void fill_text_background(struct GdiObject* dc, struct GdiObject* bitmap,
     for (py = top; py < bottom; ++py) {
         int px;
         for (px = left; px < right; ++px) {
-            put_pixel(&bitmap->bitmap, px, py, dc->dc.background_color);
+            put_pixel_clipped(dc, bitmap, px, py, dc->dc.background_color);
         }
     }
 }
@@ -1344,8 +1383,8 @@ int FillRect(HDC device_context, const RECT* rect, HBRUSH brush_handle) {
     for (py = top; py < bottom; ++py) {
         int px;
         for (px = left; px < right; ++px) {
-            put_pixel(&bitmap->bitmap, px, py,
-                      brush_pixel_color(brush, px, py));
+            put_pixel_clipped(dc, bitmap, px, py,
+                              brush_pixel_color(brush, px, py));
         }
     }
     return 1;
@@ -1472,9 +1511,10 @@ BOOL Ellipse(HDC device_context, int left, int top, int right, int bottom) {
                 !ellipse_contains(x + 1, y, left, top, right, bottom) ||
                 !ellipse_contains(x, y - 1, left, top, right, bottom) ||
                 !ellipse_contains(x, y + 1, left, top, right, bottom)) {
-                put_pixel(&bitmap->bitmap, x, y, outline);
+                put_pixel_clipped(dc, bitmap, x, y, outline);
             } else if (brush != NULL && brush->kind == kGdiKindBrush) {
-                put_pixel(&bitmap->bitmap, x, y, brush_pixel_color(brush, x, y));
+                put_pixel_clipped(dc, bitmap, x, y,
+                                  brush_pixel_color(brush, x, y));
             }
         }
     }
@@ -1527,8 +1567,8 @@ BOOL Polygon(HDC device_context, const POINT* points, int count) {
             int x;
             for (x = left; x < right; ++x) {
                 if (point_in_polygon(points, count, x + 0.5, y + 0.5)) {
-                    put_pixel(&bitmap->bitmap, x, y,
-                              brush_pixel_color(brush, x, y));
+                    put_pixel_clipped(dc, bitmap, x, y,
+                                      brush_pixel_color(brush, x, y));
                 }
             }
         }
@@ -1565,7 +1605,32 @@ int IntersectClipRect(HDC device_context, int left, int top, int right,
         dc->dc.clip.top = max_int(dc->dc.clip.top, top);
         dc->dc.clip.right = min_int(dc->dc.clip.right, right);
         dc->dc.clip.bottom = min_int(dc->dc.clip.bottom, bottom);
-        result = rect_region_type(&dc->dc.clip);
+        result = clip_region_type(&dc->dc);
+    }
+    unlock_gdi();
+    return result;
+}
+
+int ExcludeClipRect(HDC device_context, int left, int top, int right,
+                    int bottom) {
+    int result = ERROR;
+    lock_gdi();
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc != NULL) {
+        RECT excluded;
+        excluded.left = left;
+        excluded.top = top;
+        excluded.right = right;
+        excluded.bottom = bottom;
+        if (rect_region_type(&excluded) != NULLREGION &&
+            rects_intersect(&dc->dc.clip, &excluded)) {
+            if (dc->dc.excluded_clip_count >= OPUS_MAX_EXCLUDED_CLIP_RECTS) {
+                unlock_gdi();
+                return ERROR;
+            }
+            dc->dc.excluded_clips[dc->dc.excluded_clip_count++] = excluded;
+        }
+        result = clip_region_type(&dc->dc);
     }
     unlock_gdi();
     return result;
@@ -1588,6 +1653,7 @@ BOOL PatBlt(HDC device_context, int x, int y, int width, int height,
     for (py = top; py < bottom; ++py) {
         int px;
         for (px = left; px < right; ++px) {
+            if (!pixel_allowed(&dc->dc, px, py)) continue;
             const COLORREF old = pixel_or_black(&destination->bitmap, px, py);
             put_pixel(&destination->bitmap, px, py,
                       eval_rop(raster_operation, old, 0,
@@ -1641,6 +1707,7 @@ BOOL BitBlt(HDC destination_dc, int x_destination, int y_destination, int width,
         for (px = left; px < right; ++px) {
             const COLORREF source_color =
                 source != NULL ? source_pixels[index++] : 0;
+            if (!pixel_allowed(&destination_context->dc, px, py)) continue;
             const COLORREF old = pixel_or_black(&destination->bitmap, px, py);
             put_pixel(&destination->bitmap, px, py,
                       eval_rop(raster_operation, old, source_color,
@@ -1680,6 +1747,7 @@ BOOL StretchBlt(HDC destination, int x_destination, int y_destination,
     for (py = top; py < bottom; ++py) {
         int px;
         for (px = left; px < right; ++px) {
+            if (!pixel_allowed(&destination_context->dc, px, py)) continue;
             const int sx = x_source + ((px - x_destination) * width_source) /
                                           width_destination;
             const int sy = y_source + ((py - y_destination) * height_source) /

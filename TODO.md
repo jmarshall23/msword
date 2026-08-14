@@ -179,9 +179,10 @@ The UTF-16 text output slice now covers `TextOutW` and `DrawTextW` with a minima
 visible raster path driven by the existing font advances and text color. Exact glyph
 shapes, wrapping, and pagination-quality text still belong to the font renderer work.
 
-The rectangular clip slice now covers `CreateRectRgn` and `IntersectClipRect` for the
-existing single-rectangle DC clip. `ExcludeClipRect` still needs real region handling
-before it can model cut-outs without lying to callers.
+The rectangular clip slice now covers `CreateRectRgn`, `IntersectClipRect`, and
+`ExcludeClipRect`. Exclusions use a small fixed list on the DC, which covers current
+holes without adding a full region engine; replace it with region bands if callers
+start stacking many exclusions.
 
 The system color brush slice now covers `GetSysColorBrush` for chrome fills that need
 an `HBRUSH` view of the existing `GetSysColor` palette.

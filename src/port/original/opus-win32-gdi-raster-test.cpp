@@ -193,6 +193,21 @@ int main() {
         return 22;
     }
 
+    const int saved_clip = SaveDC(destination);
+    if (saved_clip <= 0 ||
+        !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+        ExcludeClipRect(destination, 1, 1, 3, 3) != COMPLEXREGION ||
+        !PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
+        !PixelIs(destination, 0, 0, RGB(0, 0, 0)) ||
+        !PixelIs(destination, 1, 1, RGB(255, 255, 255)) ||
+        !PixelIs(destination, 2, 2, RGB(255, 255, 255)) ||
+        ExcludeClipRect(destination, 0, 0, 640, 480) != NULLREGION ||
+        !RestoreDC(destination, saved_clip) ||
+        !PatBlt(destination, 1, 1, 1, 1, BLACKNESS) ||
+        !PixelIs(destination, 1, 1, RGB(0, 0, 0))) {
+        return 23;
+    }
+
     HRGN region = CreateRectRgn(1, 1, 3, 3);
     if (region == nullptr || !DeleteObject(region) ||
         !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
@@ -205,7 +220,7 @@ int main() {
         IntersectClipRect(destination, 3, 3, 4, 4) != NULLREGION ||
         !PatBlt(destination, 1, 1, 1, 1, WHITENESS) ||
         !PixelIs(destination, 1, 1, RGB(0, 0, 0))) {
-        return 23;
+        return 24;
     }
 
     SelectObject(destination, old_brush);

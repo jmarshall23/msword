@@ -1,5 +1,26 @@
 # DONE
 
+## Add gdi32 excluded clip rectangles
+
+`src/port/win32/gdi32.c` now implements `ExcludeClipRect` as exclusion state
+on the DC instead of shrinking the base clip rectangle. Raster writes for text,
+fills, shapes, and blits now skip excluded pixels, and `SaveDC`/`RestoreDC`
+preserve the exclusion list with the rest of the DC state.
+
+`opus-win32-gdi-raster-test` now covers a center clip hole, full exclusion,
+and restoring the previous clip state. The final implemented symbol was removed
+from `docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_gdi_raster_test
+-j2`, `ctest --test-dir build-chrstride -R 'opus_win32_gdi_raster_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep, an empty `docs/win32-shim/uncovered.txt`, and
+`git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Add gdi32 UTF-16 text output
 
 `src/port/win32/gdi32.c` now implements `TextOutW` and `DrawTextW` as a
