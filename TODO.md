@@ -94,25 +94,6 @@ kept stable so citations elsewhere do not rot.
 
 ## Targets, in order
 
-### 17. Linux
-
-jphonorato's ground truth: `ninja -k 0` reaches 0 errors across all 207 engine
-translation units under winegcc (`00-reconocimiento.md:2181, 2271, 2416`), after
-triaging 182 errors into 5 families at `:1451-1620`. One review reported this as
-"154/207, still failing"; that is the opening reconnaissance figure at `:19`, not the
-closing one. Reuse the triage, and expect the remaining families to be pointer-width
-and LP64 work.
-
-What Linux adds over macOS is a case-sensitive filesystem. jphonorato counted 12 headers
-across 202 files in his tree; measured in this one it is 11 forwarders, the nine
-`src/Opus` quoted includes plus `Windows.h` and `DbgHelp.h`, all of which item 6 already
-covers. LP64 is not on this list; macOS is LP64 too and item 3 already forced that.
-
-Do not adopt winegcc. Under the shim there is no Wine, just an ordinary clang or gcc
-build of the same sources macOS builds.
-
-Done when: the macOS test set passes on Linux, including `ctest -L ui` headless.
-
 ### 18. WebAssembly
 
 wasm32 has 4-byte pointers. Item 4 removes the configure assertion; the work is finding

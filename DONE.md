@@ -2599,3 +2599,25 @@ Validated with `ctest --test-dir out/macos-debug -R
 Reviewed by agy and claude before ledger update, but agy failed because its
 interactive TTY could not open `/dev/tty`, and claude timed out with only an
 execution-error line.
+
+## Complete Linux WORD1 target
+
+The Linux CI job now builds the full `linux-debug` default target set plus the
+SDL probe, then runs the existing macOS CTest surface as `ctest -LE ui` and the
+headless UI set as `ctest -L ui`. This keeps the explicit headless UI gate while
+covering the non-UI tests that the narrower Linux job had skipped.
+
+The stronger Linux gate exposed a script-mode CMake policy gap in
+`src/cmake/CheckWin32Coverage.cmake`; the checker now sets CMP0057 before using
+`IN_LIST`, so `win32_coverage` runs under Linux CMake as well as macOS.
+
+Validated locally with `ctest --test-dir out/macos-debug -R '^win32_coverage$'
+--output-on-failure`, `ctest --test-dir out/macos-debug -LE ui
+--output-on-failure`, and `ctest --test-dir out/macos-debug -L ui
+--output-on-failure`. Validated remotely with fork CI run `31795025982` for
+`60ebec899262fb45165a4d8612e3c4b1f21fe686`, whose Linux, macOS, and Windows
+jobs all passed.
+
+Reviewed by agy and claude before implementation, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line.
