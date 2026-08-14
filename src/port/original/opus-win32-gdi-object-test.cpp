@@ -21,6 +21,14 @@ int main() {
         return 15;
     }
 
+    HDC metafile_dc = CreateMetaFile(nullptr);
+    if (metafile_dc == nullptr || CloseMetaFile(dc) != nullptr) return 16;
+    HMETAFILE metafile = CloseMetaFile(metafile_dc);
+    if (metafile == nullptr || DeleteDC(metafile_dc) != FALSE ||
+        !DeleteObject(static_cast<HGDIOBJ>(metafile))) {
+        return 17;
+    }
+
     HBRUSH brush = CreateSolidBrush(RGB(10, 20, 30));
     HPEN pen = CreatePen(PS_SOLID, 2, RGB(30, 20, 10));
     LOGFONTA logical{};

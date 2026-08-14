@@ -187,6 +187,10 @@ The device context creation slice now covers `CreateDCA` and `CreateICA` by reus
 the existing memory DC state. It does not model physical devices or metafiles; those
 stay separate from the selected-object DC behavior.
 
+The metafile handle slice now covers `CreateMetaFile` and `CloseMetaFile` as an
+opaque handle lifecycle. It does not record or replay drawing commands; add that only
+when picture import/export reaches those paths.
+
 The clipboard state slice now covers process-local custom formats, open/close, owner,
 empty, availability, and handle get/set. It intentionally does not free handles when
 the clipboard is emptied because ownership varies by caller path.

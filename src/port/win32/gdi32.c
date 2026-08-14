@@ -20,6 +20,7 @@ enum GdiKind {
     kGdiKindPen,
     kGdiKindFont,
     kGdiKindRegion,
+    kGdiKindMetafile,
 };
 
 struct BitmapData {
@@ -81,6 +82,7 @@ struct GdiObject {
     struct FontData font;
     struct RegionData region;
     struct DcState dc;
+    BOOL metafile_context;
     struct DcState* saved;
     size_t saved_size;
     size_t saved_capacity;
@@ -396,6 +398,7 @@ static HGDIOBJ select_object(struct GdiObject* dc, struct GdiObject* object) {
         case kGdiKindPen: slot = (HGDIOBJ*)&dc->dc.pen; break;
         case kGdiKindFont: slot = (HGDIOBJ*)&dc->dc.font; break;
         case kGdiKindRegion:
+        case kGdiKindMetafile:
         case kGdiKindDc: return NULL;
     }
     HGDIOBJ previous = *slot;
@@ -698,6 +701,27 @@ HDC CreateICA(LPCSTR driver, LPCSTR device, LPCSTR output,
     (void)output;
     (void)init_data;
     return CreateCompatibleDC(NULL);
+}
+
+HDC CreateMetaFile(LPSTR file_name) {
+    (void)file_name;
+    HDC device_context = CreateCompatibleDC(NULL);
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc != NULL) dc->metafile_context = TRUE;
+    return device_context;
+}
+
+HMETAFILE CloseMetaFile(HDC device_context) {
+    HMETAFILE result = NULL;
+    lock_gdi();
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc != NULL && dc->metafile_context) {
+        dc->metafile_context = FALSE;
+        dc->kind = kGdiKindMetafile;
+        result = (HMETAFILE)dc;
+    }
+    unlock_gdi();
+    return result;
 }
 
 BOOL DeleteDC(HDC device_context) {
