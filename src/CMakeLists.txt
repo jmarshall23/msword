@@ -25,6 +25,7 @@ set(MSWORD_TARGET_BIN_ROOT "${MSWORD_BIN_ROOT}")
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(MSWORD_TARGET_BUILD_ROOT "${MSWORD_BUILD_ROOT}/wasm")
     set(MSWORD_TARGET_BIN_ROOT "${MSWORD_BIN_ROOT}/wasm")
+    add_link_options(-sSTACK_SIZE=1048576)
 endif()
 # Reserved for the executable that will be linked from the original Opus
 # source graph. The migration bootstrap must not use this product name.
@@ -1497,6 +1498,16 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 enable_testing()
+function(opus_add_executable_test test_name target_name)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        add_test(NAME ${test_name}
+            COMMAND "${OPUS_NODE_EXECUTABLE}" "$<TARGET_FILE:${target_name}>" ${ARGN}
+        )
+    else()
+        add_test(NAME ${test_name} COMMAND $<TARGET_FILE:${target_name}> ${ARGN})
+    endif()
+endfunction()
+
 file(RELATIVE_PATH OPUS_BITAPP_TEST_OUTPUT
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_BINARY_DIR}/generated/tests/8hdr.hb")
@@ -1509,20 +1520,20 @@ add_test(NAME opus_bitapp_8hdr_test
         "-DWORKDIR=${CMAKE_CURRENT_SOURCE_DIR}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyBitapp.cmake"
 )
-add_test(NAME opus_original_strtbl_test COMMAND $<TARGET_FILE:opus_original_strtbl_test>)
-add_test(NAME opus_x64_runtime_test COMMAND $<TARGET_FILE:opus_x64_runtime_test>)
+opus_add_executable_test(opus_original_strtbl_test opus_original_strtbl_test)
+opus_add_executable_test(opus_x64_runtime_test opus_x64_runtime_test)
 if(NOT WIN32)
-    add_test(NAME opus_win16_module_test COMMAND $<TARGET_FILE:opus_win16_module_test>)
-    add_test(NAME opus_win32_resource_test COMMAND $<TARGET_FILE:opus_win32_resource_test>)
-    add_test(NAME opus_win32_gdi_object_test COMMAND $<TARGET_FILE:opus_win32_gdi_object_test>)
-    add_test(NAME opus_win32_gdi_raster_test COMMAND $<TARGET_FILE:opus_win32_gdi_raster_test>)
-    add_test(NAME opus_win32_font_test
-        COMMAND $<TARGET_FILE:opus_win32_font_test>
-                "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-win32-font-golden.tsv"
+    opus_add_executable_test(opus_win16_module_test opus_win16_module_test)
+    opus_add_executable_test(opus_win32_resource_test opus_win32_resource_test)
+    opus_add_executable_test(opus_win32_gdi_object_test opus_win32_gdi_object_test)
+    opus_add_executable_test(opus_win32_gdi_raster_test opus_win32_gdi_raster_test)
+    opus_add_executable_test(opus_win32_font_test
+        opus_win32_font_test
+        "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-win32-font-golden.tsv"
     )
-    add_test(NAME opus_win32_print_test COMMAND $<TARGET_FILE:opus_win32_print_test>)
-    add_test(NAME opus_win32_user32_test COMMAND $<TARGET_FILE:opus_win32_user32_test>)
-    add_test(NAME opus_win32_memory_test COMMAND $<TARGET_FILE:opus_win32_memory_test>)
+    opus_add_executable_test(opus_win32_print_test opus_win32_print_test)
+    opus_add_executable_test(opus_win32_user32_test opus_win32_user32_test)
+    opus_add_executable_test(opus_win32_memory_test opus_win32_memory_test)
 endif()
 if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     add_test(NAME win32_coverage
@@ -1534,91 +1545,71 @@ if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckWin32Coverage.cmake"
     )
 endif()
-add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
-add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
-add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_test>)
-add_test(NAME opus_sdm_cab_test COMMAND $<TARGET_FILE:opus_sdm_cab_test>)
-add_test(NAME opus_sdm_render_test
-    COMMAND $<TARGET_FILE:opus_sdm_render_test>
-            "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-about.ppm"
-            "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-save-as.ppm"
+opus_add_executable_test(opus_modern_formats_test opus_modern_formats_test)
+opus_add_executable_test(opus_original_sttb_test opus_original_sttb_test)
+opus_add_executable_test(opus_original_plc_test opus_original_plc_test)
+opus_add_executable_test(opus_sdm_cab_test opus_sdm_cab_test)
+opus_add_executable_test(opus_sdm_render_test
+    opus_sdm_render_test
+    "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-about.ppm"
+    "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-save-as.ppm"
 )
 set_tests_properties(opus_sdm_render_test PROPERTIES
     LABELS ui
 )
-add_test(NAME opus_original_command_test COMMAND $<TARGET_FILE:opus_original_command_test>)
-add_test(NAME word1_port_smoke_test COMMAND $<TARGET_FILE:WORD1> --self-test)
-add_test(NAME word1_scripted_key_test COMMAND $<TARGET_FILE:WORD1> --scripted-key-test)
+opus_add_executable_test(opus_original_command_test opus_original_command_test)
+opus_add_executable_test(word1_port_smoke_test WORD1 --self-test)
+opus_add_executable_test(word1_scripted_key_test WORD1 --scripted-key-test)
 set_tests_properties(word1_scripted_key_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_ui_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-ui-test
-)
+opus_add_executable_test(opus_word1_ui_test WORD1 --scripted-ui-test)
 set_tests_properties(opus_word1_ui_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_clipboard_shortcut_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-clipboard-test
-)
+opus_add_executable_test(opus_word1_clipboard_shortcut_test WORD1 --scripted-clipboard-test)
 set_tests_properties(opus_word1_clipboard_shortcut_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_unicode_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-unicode-test
-)
+opus_add_executable_test(opus_word1_unicode_test WORD1 --scripted-unicode-test)
 set_tests_properties(opus_word1_unicode_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_typing_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-typing-test
-)
+opus_add_executable_test(opus_word1_typing_test WORD1 --scripted-typing-test)
 set_tests_properties(opus_word1_typing_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_interaction_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-interaction-test
-)
+opus_add_executable_test(opus_word1_interaction_test WORD1 --scripted-interaction-test)
 set_tests_properties(opus_word1_interaction_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_selection_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-selection-test
-)
+opus_add_executable_test(opus_word1_selection_test WORD1 --scripted-selection-test)
 set_tests_properties(opus_word1_selection_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_font_typing_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-font-typing-test
-)
+opus_add_executable_test(opus_word1_font_typing_test WORD1 --scripted-font-typing-test)
 set_tests_properties(opus_word1_font_typing_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_about_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-about-test
-)
+opus_add_executable_test(opus_word1_about_test WORD1 --scripted-about-test)
 set_tests_properties(opus_word1_about_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_save_as_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-save-as-test
-)
+opus_add_executable_test(opus_word1_save_as_test WORD1 --scripted-save-as-test)
 set_tests_properties(opus_word1_save_as_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-add_test(NAME opus_word1_pdf_export_test
-    COMMAND $<TARGET_FILE:WORD1> --scripted-pdf-export-test
-)
+opus_add_executable_test(opus_word1_pdf_export_test WORD1 --scripted-pdf-export-test)
 set_tests_properties(opus_word1_pdf_export_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15

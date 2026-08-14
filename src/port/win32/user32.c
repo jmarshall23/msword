@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/stack.h>
+#endif
 
 #define OPUS_WINDOW_MAGIC 0x55533232u
 #define OPUS_MENU_MAGIC 0x4d454e55u
@@ -175,12 +178,23 @@ static struct MenuObject* menu_from_handle(HMENU handle) {
     return menu != NULL && menu->magic == OPUS_MENU_MAGIC ? menu : NULL;
 }
 
+static BOOL pointer_name_is_atom(const void* name) {
+    const uintptr_t value = (uintptr_t)name;
+    if ((value >> 16u) != 0) return FALSE;
+#ifdef __EMSCRIPTEN__
+    const uintptr_t stack_base = (uintptr_t)emscripten_stack_get_base();
+    const uintptr_t stack_end = (uintptr_t)emscripten_stack_get_end();
+    if (stack_end <= value && value < stack_base) return FALSE;
+#endif
+    return TRUE;
+}
+
 static BOOL class_name_is_atom(LPCSTR name) {
-    return ((uintptr_t)name >> 16u) == 0;
+    return pointer_name_is_atom(name);
 }
 
 static BOOL property_name_is_atom(const void* name) {
-    return ((uintptr_t)name >> 16u) == 0;
+    return pointer_name_is_atom(name);
 }
 
 static char fold_property_char(char value) {

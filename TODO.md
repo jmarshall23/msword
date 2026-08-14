@@ -119,9 +119,11 @@ Emscripten-linked artifacts now live under `build/wasm/` and `bin/wasm/`, while
 native host tools still come from `build/tools/Debug`. Keep that split intact
 before adding wasm CI.
 
-`wasm-debug` still registers native CTest tests whose Emscripten outputs are not
-directly executable by CTest. Guard or route those tests through Node before
-turning on a wasm CI job.
+`wasm-debug` routes executable CTest entries through Node while leaving native
+CTest commands unchanged. The focused wasm CTest gate now covers
+`opus_x64_runtime_test`, `opus_win32_user32_test`, `opus_original_command_test`,
+and `word1_port_smoke_test`. Before adding wasm CI, build and run the broader
+wasm CTest set and decide which UI entries belong in Node versus browser.
 
 The blocking-loop problem is handled by the user32 queue model, and Asyncify is
 the chosen route for this item.
