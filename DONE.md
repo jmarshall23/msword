@@ -1,5 +1,25 @@
 # DONE
 
+## Convert GDI and print tests to C11
+
+`opus_win32_gdi_object_test`, `opus_win32_gdi_raster_test`, and
+`opus_win32_print_test` now compile from C11 sources instead of C++20. The
+conversion keeps the same return-code checks and target linkage while replacing
+`nullptr`, C++ casts, C++ aggregate initialization, `std::array`, and `u""`
+wide literals with C equivalents.
+
+Validated with `cmake --build build-chrstride --target
+opus_win32_gdi_object_test opus_win32_gdi_raster_test
+opus_win32_print_test -j2`, `ctest --test-dir build-chrstride -R
+'^opus_win32_gdi_object_test$|^opus_win32_gdi_raster_test$|^opus_win32_print_test$'
+--output-on-failure`, the broader `ctest --test-dir build-chrstride -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test|opus_word1_about_test|opus_word1_selection_test|opus_word1_interaction_test|opus_word1_save_as_test|opus_word1_pdf_export_test|opus_word1_font_typing_test'
+--output-on-failure` sweep, and `git diff --check`.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Convert module and resource tests to C11
 
 `opus_win16_module_test` and `opus_win32_resource_test` now compile from C11

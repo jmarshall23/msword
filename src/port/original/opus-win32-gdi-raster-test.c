@@ -1,16 +1,19 @@
 #include "windows.h"
 
-#include <array>
+#include <stdbool.h>
 
-bool PixelIs(HDC dc, int x, int y, COLORREF color) {
+static bool PixelIs(HDC dc, int x, int y, COLORREF color) {
     return GetPixel(dc, x, y) == (color & 0x00ffffffu);
 }
 
-int main() {
-    HDC destination = CreateCompatibleDC(nullptr);
+int main(void) {
+    static const WCHAR text_a[] = {'A', 0};
+    static const WCHAR text_b[] = {'B', 0};
+
+    HDC destination = CreateCompatibleDC(NULL);
     HBITMAP destination_bitmap = CreateCompatibleBitmap(destination, 4, 4);
-    if (destination == nullptr || destination_bitmap == nullptr ||
-        SelectObject(destination, destination_bitmap) == nullptr) {
+    if (destination == NULL || destination_bitmap == NULL ||
+        SelectObject(destination, destination_bitmap) == NULL) {
         return 1;
     }
 
@@ -39,14 +42,16 @@ int main() {
         return 6;
     }
 
-    HDC source = CreateCompatibleDC(nullptr);
-    std::array<COLORREF, 4> pixels{
-        RGB(10, 20, 30), RGB(40, 50, 60),
-        RGB(70, 80, 90), RGB(100, 110, 120),
+    HDC source = CreateCompatibleDC(NULL);
+    COLORREF pixels[4] = {
+        RGB(10, 20, 30),
+        RGB(40, 50, 60),
+        RGB(70, 80, 90),
+        RGB(100, 110, 120),
     };
-    HBITMAP source_bitmap = CreateBitmap(2, 2, 1, 32, pixels.data());
-    if (source == nullptr || source_bitmap == nullptr ||
-        SelectObject(source, source_bitmap) == nullptr) {
+    HBITMAP source_bitmap = CreateBitmap(2, 2, 1, 32, pixels);
+    if (source == NULL || source_bitmap == NULL ||
+        SelectObject(source, source_bitmap) == NULL) {
         return 7;
     }
     if (!BitBlt(destination, 0, 0, 2, 2, source, 0, 0, SRCCOPY) ||
@@ -68,8 +73,7 @@ int main() {
         return 11;
     }
 
-    if (!StretchBlt(destination, 0, 2, 4, 2, source, 0, 0, 2, 1,
-                    SRCCOPY) ||
+    if (!StretchBlt(destination, 0, 2, 4, 2, source, 0, 0, 2, 1, SRCCOPY) ||
         !PixelIs(destination, 0, 2, RGB(10, 20, 30)) ||
         !PixelIs(destination, 3, 3, RGB(40, 50, 60))) {
         return 12;
@@ -80,10 +84,9 @@ int main() {
         return 13;
     }
 
-    BITMAPINFO info{};
-    std::array<COLORREF, 16> out{};
-    if (GetDIBits(destination, destination_bitmap, 0, 4, out.data(), &info, 0) !=
-            4 ||
+    BITMAPINFO info = {0};
+    COLORREF out[16] = {0};
+    if (GetDIBits(destination, destination_bitmap, 0, 4, out, &info, 0) != 4 ||
         info.bmiHeader.biWidth != 4 || info.bmiHeader.biHeight != 4 ||
         out[0] != RGB(0, 0, 0)) {
         return 14;
@@ -109,32 +112,32 @@ int main() {
         return 16;
     }
 
-    RECT text_rect{0, 0, 4, 4};
-    RECT opaque_rect{0, 0, 4, 4};
+    RECT text_rect = {0, 0, 4, 4};
+    RECT opaque_rect = {0, 0, 4, 4};
     if (!PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
-        !TextOutW(destination, 0, 0, u"A", 1) ||
+        !TextOutW(destination, 0, 0, text_a, 1) ||
         !PixelIs(destination, 0, 1, RGB(4, 5, 6)) ||
         !PixelIs(destination, 2, 2, RGB(255, 255, 255)) ||
         !SetBkColor(destination, RGB(7, 8, 9)) ||
         !ExtTextOut(destination, 0, 0, ETO_OPAQUE, &opaque_rect, "C", 1,
-                    nullptr) ||
+                    NULL) ||
         !PixelIs(destination, 3, 3, RGB(7, 8, 9)) ||
-        DrawTextW(destination, u"B", -1, &text_rect, DT_SINGLELINE) <= 0) {
+        DrawTextW(destination, text_b, -1, &text_rect, DT_SINGLELINE) <= 0) {
         return 17;
     }
 
-    SIZE size{};
-    POINT point{};
-    POINT previous_point{};
+    SIZE size = {0};
+    POINT point = {0};
+    POINT previous_point = {0};
     if (!GetViewportExtEx(destination, &size) || size.cx != 1 || size.cy != 1 ||
-        !SetViewportExtEx(destination, 7, 8, &size) ||
-        size.cx != 1 || size.cy != 1 ||
-        !GetViewportExtEx(destination, &size) || size.cx != 7 || size.cy != 8 ||
-        !GetViewportOrgEx(destination, &point) || point.x != 0 || point.y != 0 ||
-        !SetViewportOrgEx(destination, 2, 3, &previous_point) ||
+        !SetViewportExtEx(destination, 7, 8, &size) || size.cx != 1 ||
+        size.cy != 1 || !GetViewportExtEx(destination, &size) ||
+        size.cx != 7 || size.cy != 8 ||
+        !GetViewportOrgEx(destination, &point) || point.x != 0 ||
+        point.y != 0 || !SetViewportOrgEx(destination, 2, 3, &previous_point) ||
         previous_point.x != 0 || previous_point.y != 0 ||
-        !GetViewportOrgEx(destination, &point) || point.x != 2 || point.y != 3 ||
-        !SetWindowExtEx(destination, 9, 10, &size) ||
+        !GetViewportOrgEx(destination, &point) || point.x != 2 ||
+        point.y != 3 || !SetWindowExtEx(destination, 9, 10, &size) ||
         size.cx != 1 || size.cy != 1 ||
         !SetWindowOrgEx(destination, 4, 5, &previous_point) ||
         previous_point.x != 0 || previous_point.y != 0) {
@@ -143,7 +146,7 @@ int main() {
 
     HPEN blue = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
     HGDIOBJ old_pen = SelectObject(destination, blue);
-    if (blue == nullptr || old_pen == nullptr ||
+    if (blue == NULL || old_pen == NULL ||
         !MoveToEx(destination, 0, 0, &previous_point) ||
         previous_point.x != 0 || previous_point.y != 0 ||
         !LineTo(destination, 4, 0) ||
@@ -159,10 +162,9 @@ int main() {
     }
 
     HBRUSH green = CreateSolidBrush(RGB(0, 255, 0));
-    RECT fill_rect{0, 0, 2, 2};
-    RECT frame_rect{1, 1, 4, 4};
-    if (green == nullptr ||
-        !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+    RECT fill_rect = {0, 0, 2, 2};
+    RECT frame_rect = {1, 1, 4, 4};
+    if (green == NULL || !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
         FillRect(destination, &fill_rect, green) == 0 ||
         !PixelIs(destination, 0, 0, RGB(0, 255, 0)) ||
         !PixelIs(destination, 1, 1, RGB(0, 255, 0)) ||
@@ -178,7 +180,7 @@ int main() {
         return 20;
     }
 
-    RECT edge_rect{0, 0, 4, 4};
+    RECT edge_rect = {0, 0, 4, 4};
     if (!PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
         !DrawEdge(destination, &edge_rect, EDGE_RAISED, BF_RECT) ||
         !PixelIs(destination, 0, 0, RGB(255, 255, 255)) ||
@@ -192,7 +194,7 @@ int main() {
         return 21;
     }
 
-    POINT polygon_points[]{{0, 0}, {4, 0}, {4, 4}, {0, 4}};
+    POINT polygon_points[] = {{0, 0}, {4, 0}, {4, 4}, {0, 4}};
     if (!PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
         !Ellipse(destination, 0, 0, 4, 4) ||
         !PixelIs(destination, 0, 1, RGB(0, 0, 255)) ||
@@ -205,8 +207,7 @@ int main() {
     }
 
     const int saved_clip = SaveDC(destination);
-    if (saved_clip <= 0 ||
-        !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+    if (saved_clip <= 0 || !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
         ExcludeClipRect(destination, 1, 1, 3, 3) != COMPLEXREGION ||
         !PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||
         !PixelIs(destination, 0, 0, RGB(0, 0, 0)) ||
@@ -220,7 +221,7 @@ int main() {
     }
 
     HRGN region = CreateRectRgn(1, 1, 3, 3);
-    if (region == nullptr || !DeleteObject(region) ||
+    if (region == NULL || !DeleteObject(region) ||
         !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
         IntersectClipRect(destination, 1, 1, 3, 3) != SIMPLEREGION ||
         !PatBlt(destination, 0, 0, 4, 4, BLACKNESS) ||

@@ -1230,9 +1230,9 @@ endif()
 
 if(NOT WIN32)
     add_executable(opus_win32_gdi_object_test
-        port/original/opus-win32-gdi-object-test.cpp
+        port/original/opus-win32-gdi-object-test.c
     )
-    target_compile_features(opus_win32_gdi_object_test PRIVATE cxx_std_20)
+    target_compile_features(opus_win32_gdi_object_test PRIVATE c_std_11)
     target_compile_definitions(opus_win32_gdi_object_test PRIVATE
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
@@ -1251,9 +1251,9 @@ if(NOT WIN32)
     endforeach()
 
     add_executable(opus_win32_gdi_raster_test
-        port/original/opus-win32-gdi-raster-test.cpp
+        port/original/opus-win32-gdi-raster-test.c
     )
-    target_compile_features(opus_win32_gdi_raster_test PRIVATE cxx_std_20)
+    target_compile_features(opus_win32_gdi_raster_test PRIVATE c_std_11)
     target_compile_definitions(opus_win32_gdi_raster_test PRIVATE
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )
@@ -1293,9 +1293,9 @@ if(NOT WIN32)
     endforeach()
 
     add_executable(opus_win32_print_test
-        port/original/opus-win32-print-test.cpp
+        port/original/opus-win32-print-test.c
     )
-    target_compile_features(opus_win32_print_test PRIVATE cxx_std_20)
+    target_compile_features(opus_win32_print_test PRIVATE c_std_11)
     target_compile_definitions(opus_win32_print_test PRIVATE
         WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
     )

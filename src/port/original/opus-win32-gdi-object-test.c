@@ -1,44 +1,42 @@
 #include "windows.h"
 
-int main() {
-    HDC dc = CreateCompatibleDC(nullptr);
-    if (dc == nullptr) return 1;
+int main(void) {
+    HDC dc = CreateCompatibleDC(NULL);
+    if (dc == NULL) return 1;
 
-    HBRUSH default_brush = static_cast<HBRUSH>(GetCurrentObject(dc, OBJ_BRUSH));
-    HPEN default_pen = static_cast<HPEN>(GetCurrentObject(dc, OBJ_PEN));
-    HFONT default_font = static_cast<HFONT>(GetCurrentObject(dc, OBJ_FONT));
-    HBITMAP default_bitmap =
-        static_cast<HBITMAP>(GetCurrentObject(dc, OBJ_BITMAP));
-    if (default_brush == nullptr || default_pen == nullptr ||
-        default_font == nullptr || default_bitmap == nullptr) {
+    HBRUSH default_brush = (HBRUSH)GetCurrentObject(dc, OBJ_BRUSH);
+    HPEN default_pen = (HPEN)GetCurrentObject(dc, OBJ_PEN);
+    HFONT default_font = (HFONT)GetCurrentObject(dc, OBJ_FONT);
+    HBITMAP default_bitmap = (HBITMAP)GetCurrentObject(dc, OBJ_BITMAP);
+    if (default_brush == NULL || default_pen == NULL || default_font == NULL ||
+        default_bitmap == NULL) {
         return 2;
     }
 
-    HDC device_dc = CreateDCA("DISPLAY", nullptr, nullptr, nullptr);
-    HDC info_dc = CreateICA("DISPLAY", nullptr, nullptr, nullptr);
-    if (device_dc == nullptr || info_dc == nullptr || device_dc == info_dc ||
-        GetCurrentObject(device_dc, OBJ_BRUSH) == nullptr ||
-        GetCurrentObject(info_dc, OBJ_PEN) == nullptr ||
-        !DeleteDC(device_dc) || !DeleteDC(info_dc)) {
+    HDC device_dc = CreateDCA("DISPLAY", NULL, NULL, NULL);
+    HDC info_dc = CreateICA("DISPLAY", NULL, NULL, NULL);
+    if (device_dc == NULL || info_dc == NULL || device_dc == info_dc ||
+        GetCurrentObject(device_dc, OBJ_BRUSH) == NULL ||
+        GetCurrentObject(info_dc, OBJ_PEN) == NULL || !DeleteDC(device_dc) ||
+        !DeleteDC(info_dc)) {
         return 15;
     }
 
-    HDC metafile_dc = CreateMetaFile(nullptr);
-    if (metafile_dc == nullptr || CloseMetaFile(dc) != nullptr) return 16;
+    HDC metafile_dc = CreateMetaFile(NULL);
+    if (metafile_dc == NULL || CloseMetaFile(dc) != NULL) return 16;
     HMETAFILE metafile = CloseMetaFile(metafile_dc);
-    if (metafile == nullptr || DeleteDC(metafile_dc) != FALSE ||
-        !DeleteObject(static_cast<HGDIOBJ>(metafile))) {
+    if (metafile == NULL || DeleteDC(metafile_dc) != FALSE ||
+        !DeleteObject((HGDIOBJ)metafile)) {
         return 17;
     }
 
     HBRUSH brush = CreateSolidBrush(RGB(10, 20, 30));
     HPEN pen = CreatePen(PS_SOLID, 2, RGB(30, 20, 10));
-    LOGFONTA logical{};
+    LOGFONTA logical = {0};
     logical.lfHeight = 18;
     HFONT font = CreateFontIndirectA(&logical);
     HBITMAP bitmap = CreateCompatibleBitmap(dc, 8, 4);
-    if (brush == nullptr || pen == nullptr || font == nullptr ||
-        bitmap == nullptr) {
+    if (brush == NULL || pen == NULL || font == NULL || bitmap == NULL) {
         return 3;
     }
 
@@ -62,14 +60,14 @@ int main() {
         return 8;
     }
 
-    BITMAP info{};
+    BITMAP info = {0};
     if (GetObjectA(bitmap, sizeof(info), &info) != sizeof(info) ||
         info.bmWidth != 8 || info.bmHeight != 4 || info.bmBitsPixel != 32) {
         return 9;
     }
 
     HBITMAP spare_bitmap = CreateCompatibleBitmap(dc, 1, 1);
-    if (spare_bitmap == nullptr || SelectObject(dc, spare_bitmap) != bitmap) {
+    if (spare_bitmap == NULL || SelectObject(dc, spare_bitmap) != bitmap) {
         return 10;
     }
     SelectObject(dc, default_brush);
