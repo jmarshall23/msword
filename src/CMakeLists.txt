@@ -1039,9 +1039,9 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 add_executable(opus_sdm_cab_test
-    port/original/opus_sdm_cab_test.cpp
+    port/original/opus_sdm_cab_test.c
 )
-target_compile_features(opus_sdm_cab_test PRIVATE cxx_std_20)
+target_compile_features(opus_sdm_cab_test PRIVATE c_std_11)
 target_compile_definitions(opus_sdm_cab_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
 )

@@ -1,5 +1,22 @@
 # DONE
 
+## Convert SDM CAB test to C11
+
+`opus_sdm_cab_test` now compiles from
+`src/port/original/opus_sdm_cab_test.c` instead of C++. The test keeps the same
+CAB allocation, string/STZ, duplicate, ninch, and heap-balance checks while
+dropping `extern "C"`, `constexpr`, `using`, C++ casts, `nullptr`, and
+`std::` calls.
+
+Validated with `cmake --build out/macos-debug --target opus_sdm_cab_test -j2`,
+`ctest --test-dir out/macos-debug -R '^opus_sdm_cab_test$'
+--output-on-failure`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert startup diagnostics to C11
 
 `src/port/original/opus_startup_diagnostics.c` now provides the startup report
