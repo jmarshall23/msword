@@ -129,8 +129,14 @@ the byte comparison could run: Linux spent its explicit-output Save As attempt t
 early and exited 9, and Windows rejected the native-layout fixture's PCD size
 assertion under LLP64. The harness now retries the Save As command until the output
 file is present without inserting duplicate text, and the fixture accepts the
-16-byte LLP64 PCD runtime layout. Run CI again and use the three-platform artifact
-comparison to close this item or debug the first platform-specific byte delta.
+16-byte LLP64 PCD runtime layout. The next CI run confirmed the Windows build fix,
+then exposed the shared roundtrip harness gate: Linux still exited 9 on the first
+explicit-output Save As, while Windows reached the roundtrip test and timed out.
+The follow-up harness fix now accepts a delayed output only after this process has
+attempted Save As, and schedules the explicit-output timer with native `SetTimer`
+on Windows instead of the SDL scripted queue. Run CI again and use the
+three-platform artifact comparison to close this item or debug the first
+platform-specific byte delta.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.

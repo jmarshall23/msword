@@ -366,7 +366,7 @@ static bool ScriptedSaveCurrentDocumentAs(HWND app, const char *doc_path) {
            FileHasNativeDocHeader(doc_path);
 }
 
-static bool ScriptedSaveAsMatched(bool *text_inserted) {
+static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
     const HWND app = FindWindowA("OpusApp", NULL);
     const HWND pane = FindDocumentPane();
     char temporary_directory[MAX_PATH] = {0};
@@ -424,7 +424,14 @@ static bool ScriptedSaveAsMatched(bool *text_inserted) {
             return false;
         }
     }
+    if (keep_output && save_attempted != NULL && *save_attempted &&
+        FileHasNativeDocHeader(doc_path)) {
+        return true;
+    }
     matched = ScriptedSaveCurrentDocumentAs(app, doc_path);
+    if (save_attempted != NULL) {
+        *save_attempted = true;
+    }
     if (!keep_output) {
         DeleteFileA(doc_path);
     }
@@ -435,19 +442,31 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
                                          UINT_PTR timer, DWORD time) {
     static unsigned attempts;
     static bool text_inserted;
+    static bool save_attempted;
     (void)message;
     (void)time;
     (void)window;
-    if (ScriptedSaveAsMatched(&text_inserted)) {
+    if (ScriptedSaveAsMatched(&text_inserted, &save_attempted)) {
         PostQuitMessage(0);
         return;
     }
     if (attempts++ < 1000) {
+#ifndef _WIN32
         OpusUser32PushScriptedInput(NULL, WM_TIMER, timer,
                                     (LPARAM)ScriptedSaveAsTimer);
+#endif
         return;
     }
     PostQuitMessage(9);
+}
+
+static void ScheduleScriptedSaveAsTimer(void) {
+#ifdef _WIN32
+    SetTimer(NULL, 1, 1, ScriptedSaveAsTimer);
+#else
+    OpusUser32PushScriptedInput(NULL, WM_TIMER, 1,
+                                (LPARAM)ScriptedSaveAsTimer);
+#endif
 }
 
 static bool FileStartsWithPdfHeader(const char *path) {
@@ -1174,8 +1193,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                run_scripted_save_as_test || run_scripted_pdf_export_test ||
                run_scripted_font_typing_test) {
         if (run_scripted_save_as_test && save_as_output_requested) {
-            OpusUser32PushScriptedInput(NULL, WM_TIMER, 1,
-                                        (LPARAM)ScriptedSaveAsTimer);
+            ScheduleScriptedSaveAsTimer();
         } else {
             OpusUser32PushScriptedInput(NULL, WM_QUIT, 0, 0);
         }
@@ -1197,7 +1215,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_selection_test && !ScriptedSelectionMatched()) return 7;
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
     if (run_scripted_save_as_test && !save_as_output_requested &&
-        !ScriptedSaveAsMatched(NULL)) return 9;
+        !ScriptedSaveAsMatched(NULL, NULL)) return 9;
     if (g_scripted_save_as_output[0] != '\0' &&
         !FileHasNativeDocHeader(g_scripted_save_as_output)) {
         return 13;
