@@ -88,6 +88,13 @@ struct ClipboardItem {
     HANDLE data;
 };
 
+struct WindowDc {
+    HDC dc;
+    HWND window;
+    HBITMAP bitmap;
+    HGDIOBJ previous_bitmap;
+};
+
 static struct RegisteredClass* g_classes;
 static size_t g_class_count;
 static size_t g_class_capacity;
@@ -127,6 +134,11 @@ static size_t g_clipboard_item_count;
 static size_t g_clipboard_item_capacity;
 static BOOL g_clipboard_open;
 static HWND g_clipboard_owner;
+static struct WindowDc* g_window_dcs;
+static size_t g_window_dc_count;
+static size_t g_window_dc_capacity;
+
+static struct WindowObject* window_from_handle(HWND handle);
 
 static int max_int(int left, int right) {
     return left > right ? left : right;
@@ -139,6 +151,7 @@ static int min_int(int left, int right) {
 #ifndef _WIN32
 static SDL_Window* g_browser_window;
 static unsigned g_browser_present_count;
+static BOOL g_browser_has_window_dc_paint;
 
 static BOOL browser_has_canvas(void) {
 #ifdef __EMSCRIPTEN__
@@ -194,11 +207,131 @@ static void fill_surface_rect(SDL_Surface* surface, int x, int y, int width,
                  SDL_MapRGB(surface->format, red, green, blue));
 }
 
+static void put_surface_pixel(SDL_Surface* surface, int x, int y,
+                              COLORREF color) {
+    if (x < 0 || y < 0 || x >= surface->w || y >= surface->h) return;
+    const Uint32 pixel = SDL_MapRGB(surface->format, GetRValue(color),
+                                    GetGValue(color), GetBValue(color));
+    Uint8* target = (Uint8*)surface->pixels +
+                    (size_t)y * (size_t)surface->pitch +
+                    (size_t)x * (size_t)surface->format->BytesPerPixel;
+    switch (surface->format->BytesPerPixel) {
+        case 1: *target = (Uint8)pixel; break;
+        case 2: *(Uint16*)target = (Uint16)pixel; break;
+        case 3:
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+            target[0] = (Uint8)((pixel >> 16) & 0xff);
+            target[1] = (Uint8)((pixel >> 8) & 0xff);
+            target[2] = (Uint8)(pixel & 0xff);
+#else
+            target[0] = (Uint8)(pixel & 0xff);
+            target[1] = (Uint8)((pixel >> 8) & 0xff);
+            target[2] = (Uint8)((pixel >> 16) & 0xff);
+#endif
+            break;
+        default: *(Uint32*)target = pixel; break;
+    }
+}
+
+static BOOL browser_window_visible(const struct WindowObject* window) {
+    const struct WindowObject* cursor = window;
+    int depth = 0;
+    while (cursor != NULL && depth++ < 64) {
+        if (!cursor->visible) return FALSE;
+        cursor = window_from_handle(cursor->parent);
+    }
+    return cursor == NULL;
+}
+
+static RECT browser_window_rect(const struct WindowObject* window) {
+    RECT rect = window->rectangle;
+    const struct WindowObject* cursor = window_from_handle(window->parent);
+    int depth = 0;
+    while (cursor != NULL && depth++ < 64) {
+        const int dx = cursor->rectangle.left;
+        const int dy = cursor->rectangle.top;
+        rect.left += dx;
+        rect.right += dx;
+        rect.top += dy;
+        rect.bottom += dy;
+        cursor = window_from_handle(cursor->parent);
+    }
+    return rect;
+}
+
+static void browser_window_color(const struct WindowObject* window,
+                                 Uint8* red, Uint8* green, Uint8* blue) {
+    const char* name = window->klass.name != NULL ? window->klass.name : "";
+    *red = 192;
+    *green = 192;
+    *blue = 192;
+    if (strcmp(name, "OpusWwd") == 0) {
+        *red = 255;
+        *green = 255;
+        *blue = 255;
+    } else if (strcmp(name, "OpusWin95Toolbar") == 0 ||
+               strcmp(name, "OpusWin95RulerOverlay") == 0) {
+        *red = 210;
+        *green = 210;
+        *blue = 210;
+    } else if (strcmp(name, "SCROLLBAR") == 0) {
+        *red = 170;
+        *green = 170;
+        *blue = 170;
+    } else if (strcmp(name, "EDIT") == 0 ||
+               strcmp(name, "COMBOBOX") == 0 ||
+               strcmp(name, "LISTBOX") == 0) {
+        *red = 255;
+        *green = 255;
+        *blue = 255;
+    }
+}
+
+static void draw_browser_window(SDL_Surface* surface,
+                                const struct WindowObject* window) {
+    RECT rect = browser_window_rect(window);
+    Uint8 red, green, blue;
+    const int width = rect.right - rect.left;
+    const int height = rect.bottom - rect.top;
+    if (width <= 0 || height <= 0) return;
+    browser_window_color(window, &red, &green, &blue);
+    fill_surface_rect(surface, rect.left, rect.top, width, height, red, green,
+                      blue);
+    fill_surface_rect(surface, rect.left, rect.top, width, 1, 0, 0, 0);
+    fill_surface_rect(surface, rect.left, rect.bottom - 1, width, 1, 0, 0, 0);
+    fill_surface_rect(surface, rect.left, rect.top, 1, height, 0, 0, 0);
+    fill_surface_rect(surface, rect.right - 1, rect.top, 1, height, 0, 0, 0);
+    if ((window->style & WS_CAPTION) != 0 && width > 2 && height > 2) {
+        const int caption_height = min_int(18, height - 2);
+        fill_surface_rect(surface, rect.left + 1, rect.top + 1, width - 2,
+                          caption_height, 0, 0, 128);
+    }
+}
+
+static void draw_browser_window_tree(SDL_Surface* surface,
+                                     const struct WindowObject* window,
+                                     int depth) {
+    if (window == NULL || depth >= 64 || !browser_window_visible(window)) {
+        return;
+    }
+    size_t index;
+    draw_browser_window(surface, window);
+    for (index = 0; index < g_window_count; ++index) {
+        struct WindowObject* child = g_windows[index];
+        if (child != NULL && child->parent == (HWND)window) {
+            draw_browser_window_tree(surface, child, depth + 1);
+        }
+    }
+}
+
 static void present_browser_windows(void) {
     SDL_Surface* surface = browser_surface();
     if (surface == NULL) return;
-    fill_surface_rect(surface, 0, 0, surface->w, surface->h, 32, 32, 32);
-    BOOL has_visible_top_level = FALSE;
+    if (g_browser_has_window_dc_paint) {
+        SDL_UpdateWindowSurface(g_browser_window);
+        return;
+    }
+    fill_surface_rect(surface, 0, 0, surface->w, surface->h, 192, 192, 192);
     unsigned top_level_count = 0;
     unsigned visible_top_level_count = 0;
     const RECT* first_top_level_rectangle = NULL;
@@ -211,7 +344,6 @@ static void present_browser_windows(void) {
         }
         ++top_level_count;
         if (window->visible) {
-            has_visible_top_level = TRUE;
             ++visible_top_level_count;
         }
     }
@@ -220,30 +352,10 @@ static void present_browser_windows(void) {
                         visible_top_level_count, first_top_level_rectangle);
     for (index = 0; index < g_window_count; ++index) {
         struct WindowObject* window = g_windows[index];
-        if (window == NULL || window->parent != NULL ||
-            (has_visible_top_level && !window->visible)) {
-            continue;
-        }
-        const int width = window->rectangle.right - window->rectangle.left;
-        const int height = window->rectangle.bottom - window->rectangle.top;
-        if (width <= 0 || height <= 0) continue;
-        fill_surface_rect(surface, window->rectangle.left, window->rectangle.top,
-                          width, height, 192, 192, 192);
-        fill_surface_rect(surface, window->rectangle.left, window->rectangle.top,
-                          width, 1, 0, 0, 0);
-        fill_surface_rect(surface, window->rectangle.left,
-                          window->rectangle.bottom - 1, width, 1, 0, 0, 0);
-        fill_surface_rect(surface, window->rectangle.left, window->rectangle.top,
-                          1, height, 0, 0, 0);
-        fill_surface_rect(surface, window->rectangle.right - 1,
-                          window->rectangle.top, 1, height, 0, 0, 0);
-        if ((window->style & WS_CAPTION) != 0) {
-            fill_surface_rect(surface, window->rectangle.left + 1,
-                              window->rectangle.top + 1, width - 2, 18, 0, 0,
-                              128);
-        }
-        break;
+        if (window == NULL || window->parent != NULL) continue;
+        draw_browser_window_tree(surface, window, 0);
     }
+    SDL_UpdateWindowSurface(g_browser_window);
 }
 #else
 static void present_browser_windows(void) {}
@@ -1400,13 +1512,97 @@ BOOL SetMenuItemBitmaps(HMENU handle, UINT position, UINT flags,
     return menu != NULL && menu_item_index(menu, position, flags) < menu->item_count;
 }
 
+static BOOL append_window_dc(HWND window, HDC dc, HBITMAP bitmap,
+                             HGDIOBJ previous_bitmap) {
+    if (!reserve_bytes((void**)&g_window_dcs, &g_window_dc_capacity,
+                       g_window_dc_count + 1, sizeof(g_window_dcs[0]))) {
+        return FALSE;
+    }
+    struct WindowDc* entry = &g_window_dcs[g_window_dc_count++];
+    entry->window = window;
+    entry->dc = dc;
+    entry->bitmap = bitmap;
+    entry->previous_bitmap = previous_bitmap;
+    return TRUE;
+}
+
+static void remove_window_dc(size_t index) {
+    if (index + 1 < g_window_dc_count) {
+        memmove(&g_window_dcs[index], &g_window_dcs[index + 1],
+                (g_window_dc_count - index - 1) * sizeof(g_window_dcs[0]));
+    }
+    --g_window_dc_count;
+}
+
+#ifndef _WIN32
+static void flush_window_dc_to_browser(const struct WindowDc* entry) {
+    struct WindowObject* window = window_from_handle(entry->window);
+    SDL_Surface* surface = browser_surface();
+    if (window == NULL || surface == NULL) return;
+    RECT rect = browser_window_rect(window);
+    RECT client;
+    GetClientRect(entry->window, &client);
+    const int left = max_int(0, rect.left);
+    const int top = max_int(0, rect.top);
+    const int right = min_int(surface->w, rect.left + client.right);
+    const int bottom = min_int(surface->h, rect.top + client.bottom);
+    if (SDL_MUSTLOCK(surface) && SDL_LockSurface(surface) != 0) return;
+    int y;
+    for (y = top; y < bottom; ++y) {
+        int x;
+        for (x = left; x < right; ++x) {
+            const COLORREF color = GetPixel(entry->dc, x - rect.left,
+                                            y - rect.top);
+            if (color == CLR_INVALID) continue;
+            put_surface_pixel(surface, x, y, color);
+        }
+    }
+    if (SDL_MUSTLOCK(surface)) SDL_UnlockSurface(surface);
+    g_browser_has_window_dc_paint = TRUE;
+    SDL_UpdateWindowSurface(g_browser_window);
+}
+#else
+static void flush_window_dc_to_browser(const struct WindowDc* entry) {
+    (void)entry;
+}
+#endif
+
 HDC GetDC(HWND window) {
     if (window != NULL && !IsWindow(window)) return NULL;
-    return CreateCompatibleDC(NULL);
+    HDC dc = CreateCompatibleDC(NULL);
+    if (dc == NULL || window == NULL) return dc;
+    RECT client;
+    GetClientRect(window, &client);
+    const int width = max_int(1, client.right - client.left);
+    const int height = max_int(1, client.bottom - client.top);
+    HBITMAP bitmap = CreateCompatibleBitmap(dc, width, height);
+    if (bitmap == NULL) {
+        DeleteDC(dc);
+        return NULL;
+    }
+    HGDIOBJ previous_bitmap = SelectObject(dc, bitmap);
+    if (!append_window_dc(window, dc, bitmap, previous_bitmap)) {
+        SelectObject(dc, previous_bitmap);
+        DeleteObject(bitmap);
+        DeleteDC(dc);
+        return NULL;
+    }
+    PatBlt(dc, 0, 0, width, height, WHITENESS);
+    return dc;
 }
 
 int ReleaseDC(HWND window, HDC device_context) {
     (void)window;
+    size_t index;
+    for (index = 0; index < g_window_dc_count; ++index) {
+        struct WindowDc entry = g_window_dcs[index];
+        if (entry.dc != device_context) continue;
+        flush_window_dc_to_browser(&entry);
+        SelectObject(device_context, entry.previous_bitmap);
+        DeleteObject(entry.bitmap);
+        remove_window_dc(index);
+        break;
+    }
     return DeleteDC(device_context) ? 1 : 0;
 }
 
