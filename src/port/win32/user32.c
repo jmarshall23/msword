@@ -1184,6 +1184,57 @@ int ReleaseDC(HWND window, HDC device_context) {
     return DeleteDC(device_context) ? 1 : 0;
 }
 
+HDC BeginPaint(HWND window, LPPAINTSTRUCT paint) {
+    if (!IsWindow(window) || paint == NULL) return NULL;
+    memset(paint, 0, sizeof(*paint));
+    paint->hdc = GetDC(window);
+    paint->fErase = TRUE;
+    GetClientRect(window, &paint->rcPaint);
+    return paint->hdc;
+}
+
+VOID EndPaint(HWND window, LPPAINTSTRUCT paint) {
+    if (paint == NULL || paint->hdc == NULL) return;
+    ReleaseDC(window, paint->hdc);
+    paint->hdc = NULL;
+}
+
+BOOL InvalidateRect(HWND window, const RECT* rectangle, BOOL erase) {
+    (void)rectangle;
+    (void)erase;
+    if (!IsWindow(window)) return FALSE;
+    return PostMessageA(window, WM_PAINT, 0, 0);
+}
+
+BOOL RedrawWindow(HWND window, const RECT* update_rect, HRGN update_region,
+                  UINT flags) {
+    (void)update_region;
+    if (!IsWindow(window)) return FALSE;
+    const BOOL update_now = (flags & RDW_UPDATENOW) != 0;
+    if ((flags & RDW_INVALIDATE) != 0 && !update_now &&
+        !InvalidateRect(window, update_rect, (flags & RDW_ERASE) != 0)) {
+        return FALSE;
+    }
+    if (update_now) {
+        SendMessageA(window, WM_PAINT, 0, 0);
+    }
+    if ((flags & RDW_ALLCHILDREN) != 0) {
+        size_t index;
+        for (index = 0; index < g_window_count; ++index) {
+            if (g_windows[index] != NULL && g_windows[index]->parent == window) {
+                HWND child = (HWND)g_windows[index];
+                if ((flags & RDW_INVALIDATE) != 0 && !update_now) {
+                    InvalidateRect(child, update_rect, (flags & RDW_ERASE) != 0);
+                }
+                if (update_now) {
+                    SendMessageA(child, WM_PAINT, 0, 0);
+                }
+            }
+        }
+    }
+    return TRUE;
+}
+
 int GetSystemMetrics(int index) {
     switch (index) {
         case SM_CXSCREEN: return 640;

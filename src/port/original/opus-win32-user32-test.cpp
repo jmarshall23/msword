@@ -11,6 +11,7 @@ constexpr LONG_PTR kExtraData = 0x123456789;
 int g_nc_create_count = 0;
 int g_create_count = 0;
 int g_user_message_count = 0;
+int g_paint_count = 0;
 WPARAM g_last_char = 0;
 WPARAM g_last_keyup = 0;
 int g_enum_count = 0;
@@ -32,6 +33,10 @@ LRESULT CALLBACK TestWindowProc(HWND window, UINT message, WPARAM wparam,
     if (message == WM_USER + 1) {
         ++g_user_message_count;
         return static_cast<LRESULT>(parameter + 7);
+    }
+    if (message == WM_PAINT) {
+        ++g_paint_count;
+        return 0;
     }
     if (message == WM_CHAR) {
         g_last_char = wparam;
@@ -244,6 +249,28 @@ int main() {
         !OpenIcon(iconic) || IsIconic(iconic) || !IsWindowVisible(iconic) ||
         !IsZoomed(zoomed)) {
         return 18;
+    }
+    PAINTSTRUCT paint{};
+    HDC paint_dc = BeginPaint(child, &paint);
+    if (paint_dc == nullptr || paint.hdc != paint_dc || !paint.fErase ||
+        paint.rcPaint.left != 0 || paint.rcPaint.top != 0 ||
+        paint.rcPaint.right != 3 || paint.rcPaint.bottom != 4) {
+        return 19;
+    }
+    EndPaint(child, &paint);
+    if (paint.hdc != nullptr) return 20;
+    MSG paint_message{};
+    if (!InvalidateRect(window, nullptr, FALSE) ||
+        !PeekMessageA(&paint_message, window, WM_PAINT, WM_PAINT, PM_REMOVE) ||
+        paint_message.message != WM_PAINT || paint_message.hwnd != window) {
+        return 21;
+    }
+    const int previous_paint_count = g_paint_count;
+    if (!RedrawWindow(window, nullptr, nullptr,
+                      RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN) ||
+        g_paint_count < previous_paint_count + 1 ||
+        PeekMessageA(&paint_message, window, WM_PAINT, WM_PAINT, PM_REMOVE)) {
+        return 22;
     }
 
     RECT client{};

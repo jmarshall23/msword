@@ -1,4 +1,3 @@
-BeginPaint
 CallNextHookEx
 CloseMetaFile
 CreateDCA
@@ -6,12 +5,9 @@ CreateICA
 CreateMetaFile
 DrawTextW
 Ellipse
-EndPaint
 ExcludeClipRect
 GetSystemMenu
-InvalidateRect
 Polygon
-RedrawWindow
 SetScrollPos
 SetScrollRange
 TextOutW

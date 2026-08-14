@@ -169,8 +169,8 @@ the selected pen. The remaining work is still the higher-value paint, region, sh
 text, and font behavior needed by real document rendering.
 
 The rectangle primitive slice now covers `FillRect`, `FrameRect`, and `Rectangle` on
-the selected bitmap. Remaining shape work includes region-aware clipping, `DrawEdge`,
-`Polygon`, and `Ellipse`.
+the selected bitmap. Remaining shape work includes non-rectangular clipping, `Polygon`,
+and `Ellipse`.
 
 The rectangular clip slice now covers `CreateRectRgn` and `IntersectClipRect` for the
 existing single-rectangle DC clip. `ExcludeClipRect` still needs real region handling
@@ -186,6 +186,10 @@ UTF-16 text output.
 The clipboard state slice now covers process-local custom formats, open/close, owner,
 empty, availability, and handle get/set. It intentionally does not free handles when
 the clipboard is emptied because ownership varies by caller path.
+
+The paint invalidation slice now covers `BeginPaint`, `EndPaint`, `InvalidateRect`,
+and `RedrawWindow` for the chrome repaint paths. Remaining user32 chrome state work
+includes scroll position/range and system menu handling.
 
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
