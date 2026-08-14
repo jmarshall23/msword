@@ -179,23 +179,21 @@ out of process with `SendInput` and `GetGUIThreadInfo`
 (`opus_word1_ui_test.cpp:391, 297`), which has no meaning under a self-contained shim;
 they become in-process scripted-event tests against the same harness.
 
-Current finding: `word1_port_smoke_test` passes, but
-`OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy ctest -R '^opus_word1_typing_test$'`
-segfaults in the UI harness before logging because macOS builds
-`opus_word1_ui_test` with unresolved Win32 symbols via `dynamic_lookup`. Linking that
-harness to `opus_x64_runtime` is not the fix: it exposes more missing native-style
-process/window APIs, and even if those linked, the harness and WORD1 would still have
-separate process-local shim state. Replace this with an in-process scripted typing
-test that drives the same queue `PostMessage`/`GetMessage` use.
+Current finding: `word1_port_smoke_test` passes, and `opus_word1_typing_test`
+now runs in process as `WORD1 --scripted-typing-test` under
+`OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. It drives the same scripted queue
+`PostMessage`/`GetMessage` use and fails unless three key cycles become three
+consumed `WM_CHAR` messages. The remaining gap is document mutation: add a
+direct assertion that typed characters reach Word's document state before
+converting the richer clipboard, unicode, interaction, selection, font-typing,
+about, save-as, and pdf-export UI tests.
 
 Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
 quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets
 scripted messages with no explicit HWND to the active/focused window, reaches the
 startup paint path, and exits cleanly under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`.
 The gate is registered as `word1_scripted_key_test` and now fails if the scripted
-key sequence does not become the expected consumed `WM_CHAR` sequence. The next
-small slice is replacing the out-of-process typing UI test with an in-process
-equivalent that drives the same scripted queue.
+key sequence does not become the expected consumed `WM_CHAR` sequence.
 
 Message ordering is where ports like this actually fail. Word assumes Windows 2/3
 delivery order around focus, capture and paint. Expect more time there than on any

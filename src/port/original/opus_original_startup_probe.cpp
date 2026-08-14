@@ -435,6 +435,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                     PWSTR command_line, int show_command) {
     const LPCWSTR self_test = OPUSW("--self-test");
     const LPCWSTR scripted_key_test = OPUSW("--scripted-key-test");
+    const LPCWSTR scripted_typing_test = OPUSW("--scripted-typing-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -442,6 +443,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_key_test =
         OpusWideContains(command_line, scripted_key_test) ||
         OpusWideContains(GetCommandLineW(), scripted_key_test);
+    const bool run_scripted_typing_test =
+        OpusWideContains(command_line, scripted_typing_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_typing_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -482,10 +486,22 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 3);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 4);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
+    } else if (run_scripted_typing_test) {
+        OpusUser32ExpectScriptedChar('a', 3);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 1);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 2);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 3);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 4);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 5);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 6);
+        OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
                                           show_command);
-    if (run_scripted_key_test && !OpusUser32ScriptedCharMatched()) return 2;
+    if ((run_scripted_key_test || run_scripted_typing_test) &&
+        !OpusUser32ScriptedCharMatched()) {
+        return 2;
+    }
     return result;
 }
 
