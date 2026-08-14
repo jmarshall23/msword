@@ -104,8 +104,10 @@ macOS, and Linux jobs are attached to the PR and green.
 Status: PR #12 is open at `https://github.com/jmarshall23/msword/pull/12` from
 `jserv:dev`, is not a draft, and has a clean merge state. As of
 2026-08-13 20:00 UTC, fork CI run `31738579720` is green for Windows, macOS,
-and Linux, but `statusCheckRollup` on the upstream PR is still empty because
-the upstream default branch has no Actions workflow yet.
+and Linux at PR head `a4b0e4db2783aef710f156710d72ab55e0cd71f2`, but
+`statusCheckRollup` on the upstream PR is still empty. The local branch is
+ahead of `fork/dev`, so the next check is to push the current head and confirm
+the new PR-head workflow run exposes green Windows, macOS, and Linux jobs.
 
 Done when: the three jobs are green on a pull request.
 
