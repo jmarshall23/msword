@@ -122,13 +122,21 @@ checks that the artifacts are present and non-empty. That proves the portable SD
 Save As path is writing native files, but it does not close the original Windows
 byte-identity target.
 
+The smaller native serialization evidence path now runs on Windows, macOS and
+Linux. `opus_original_plc_test --write-proof` emits the exact PCD, SED, FIB,
+KME and PLC disk bytes the test already validates, and CI uploads
+`word1-layout-proof.bin` from all three platforms. GitHub Actions run
+`31839408255` compared those artifacts at 558 bytes with SHA-256
+`330dafb611b24e4face6a02d8438202c8268e3b3813d994b8ea74768b41b7783` on each
+platform. This proves the current fixed-width serializers are byte-identical on
+Windows, macOS and Linux, but it is still not a real `WORD1` Save As document.
+
 The remaining work is Windows-specific. The native Windows CI runner exits the
 scripted UI roundtrip before the `OpusWwd` pane is available
 (`pane=0 stage=-1 app_alive=0`), so Windows no longer runs that SDL-only gate.
-Make this executable by adding either a Windows-native saved-document harness that
-does not depend on the SDL offscreen UI path, or a smaller native serialization
-test that produces the same file-format evidence. Then compare the Windows output
-with the macOS/Linux native outputs or explain the first intentional byte delta.
+Make this executable by adding a Windows-native saved-document harness that does
+not depend on the SDL offscreen UI path. Then compare the Windows output with
+the macOS/Linux native outputs or explain the first intentional byte delta.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux,
 and back, or the remaining byte deltas are documented as intentional file-format
