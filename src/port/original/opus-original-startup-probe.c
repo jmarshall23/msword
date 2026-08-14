@@ -57,6 +57,22 @@ enum {
 };
 
 static char g_scripted_save_as_output[MAX_PATH];
+static char g_scripted_save_as_doc_path[MAX_PATH + 5];
+static bool g_scripted_save_as_keep_output;
+static ULONGLONG g_scripted_save_as_started;
+static unsigned g_scripted_save_as_attempts;
+static bool g_scripted_save_as_text_inserted;
+static bool g_scripted_save_as_attempted;
+static bool g_scripted_save_as_running;
+static UINT_PTR g_scripted_save_as_timer;
+static BOOL g_last_scripted_save_has_app;
+static BOOL g_last_scripted_save_has_pane;
+static INT_PTR g_last_scripted_save_stage;
+static BOOL g_last_scripted_save_app_alive;
+static BOOL g_last_scripted_save_opus_dialog_open;
+static BOOL g_last_scripted_save_win_dialog_open;
+static BOOL g_last_scripted_save_header;
+static DWORD g_last_scripted_save_error;
 
 typedef struct ControlSearch {
     int control_id;
@@ -347,23 +363,47 @@ static bool FileHasNativeDocHeader(const char *path) {
     return matched;
 }
 
-static bool ScriptedSaveCurrentDocumentAs(HWND app, const char *doc_path) {
-    INT_PTR stage;
+static bool PollScriptedSaveStatus(HWND app, const char *doc_path) {
+    const INT_PTR stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
+    const BOOL header = FileHasNativeDocHeader(doc_path);
+    g_last_scripted_save_stage = stage;
+    g_last_scripted_save_app_alive = IsWindow(app);
+    g_last_scripted_save_opus_dialog_open =
+        FindWindowA("OpusSdmDialog", NULL) != NULL;
+    g_last_scripted_save_win_dialog_open = FindWindowA("#32770", NULL) != NULL;
+    g_last_scripted_save_header = header;
+    return stage == 3 && g_last_scripted_save_app_alive &&
+           !g_last_scripted_save_opus_dialog_open &&
+           !g_last_scripted_save_win_dialog_open && header;
+}
+
+static bool ScriptedSaveCurrentDocumentAs(HWND app, const char *doc_path,
+                                          bool *dispatched) {
+    if (dispatched != NULL) {
+        *dispatched = false;
+    }
     if (app == NULL || doc_path == NULL || *doc_path == '\0') {
         return false;
     }
+    g_last_scripted_save_stage = -1;
+    g_last_scripted_save_app_alive = false;
+    g_last_scripted_save_opus_dialog_open = false;
+    g_last_scripted_save_win_dialog_open = false;
+    g_last_scripted_save_header = false;
+    g_last_scripted_save_error = 0;
     DeleteFileA(doc_path);
     if (!SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", doc_path)) {
+        g_last_scripted_save_error = GetLastError();
         return false;
     }
+    g_last_scripted_save_error = 0;
     RemovePropW(app, OPUSW("OpusX64SaveAsStage"));
     SendMessageW(app, WM_COMMAND, kFileSaveAs, 0);
+    if (dispatched != NULL) {
+        *dispatched = true;
+    }
     SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", NULL);
-    stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
-    return stage == 3 && IsWindow(app) &&
-           FindWindowA("OpusSdmDialog", NULL) == NULL &&
-           FindWindowA("#32770", NULL) == NULL &&
-           FileHasNativeDocHeader(doc_path);
+    return PollScriptedSaveStatus(app, doc_path);
 }
 
 static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
@@ -378,8 +418,14 @@ static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
     int path_length;
     DWORD output_path_length;
     DWORD temporary_directory_length;
+    g_last_scripted_save_has_app = app != NULL;
+    g_last_scripted_save_has_pane = pane != NULL;
     if (app == NULL || pane == NULL) {
         return false;
+    }
+    if (save_attempted != NULL && *save_attempted &&
+        g_scripted_save_as_doc_path[0] != '\0') {
+        return PollScriptedSaveStatus(app, g_scripted_save_as_doc_path);
     }
     if ((text_inserted == NULL || !*text_inserted) &&
         !InsertText(pane, "native save as text")) {
@@ -424,45 +470,94 @@ static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
             return false;
         }
     }
-    if (keep_output && save_attempted != NULL && *save_attempted &&
-        FileHasNativeDocHeader(doc_path)) {
-        return true;
-    }
-    matched = ScriptedSaveCurrentDocumentAs(app, doc_path);
-    if (save_attempted != NULL) {
-        *save_attempted = true;
-    }
-    if (!keep_output) {
+    snprintf(g_scripted_save_as_doc_path, sizeof(g_scripted_save_as_doc_path),
+             "%s", doc_path);
+    g_scripted_save_as_keep_output = keep_output;
+    matched = ScriptedSaveCurrentDocumentAs(app, doc_path, save_attempted);
+    if (save_attempted == NULL && !keep_output) {
         DeleteFileA(doc_path);
+        g_scripted_save_as_doc_path[0] = '\0';
     }
     return matched;
 }
 
+static void FinishScriptedSaveAs(int exit_code) {
+#ifdef _WIN32
+    if (g_scripted_save_as_timer != 0) {
+        KillTimer(NULL, g_scripted_save_as_timer);
+        g_scripted_save_as_timer = 0;
+    }
+#endif
+    if (!g_scripted_save_as_keep_output &&
+        g_scripted_save_as_doc_path[0] != '\0') {
+        DeleteFileA(g_scripted_save_as_doc_path);
+        g_scripted_save_as_doc_path[0] = '\0';
+    }
+    PostQuitMessage(exit_code);
+}
+
 static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
                                          UINT_PTR timer, DWORD time) {
-    static unsigned attempts;
-    static bool text_inserted;
-    static bool save_attempted;
     (void)message;
     (void)time;
     (void)window;
-    if (ScriptedSaveAsMatched(&text_inserted, &save_attempted)) {
-        PostQuitMessage(0);
+    if (g_scripted_save_as_running) return;
+    g_scripted_save_as_running = true;
+    if (g_scripted_save_as_started == 0) {
+        g_scripted_save_as_started = GetTickCount64();
+    }
+    ++g_scripted_save_as_attempts;
+    if (ScriptedSaveAsMatched(&g_scripted_save_as_text_inserted,
+                              &g_scripted_save_as_attempted)) {
+        g_scripted_save_as_running = false;
+        FinishScriptedSaveAs(0);
         return;
     }
-    if (attempts++ < 1000) {
+    if (GetTickCount64() - g_scripted_save_as_started < 25000) {
 #ifndef _WIN32
         OpusUser32PushScriptedInput(NULL, WM_TIMER, timer,
                                     (LPARAM)ScriptedSaveAsTimer);
 #endif
+        g_scripted_save_as_running = false;
         return;
     }
-    PostQuitMessage(9);
+    fprintf(stderr,
+            "WORD1 x64: scripted Save As timed out attempts=%u app=%d pane=%d "
+            "stage=%lld app_alive=%d opus_dialog=%d win_dialog=%d header=%d "
+            "last_error=%lu output=\"%s\"\n",
+            g_scripted_save_as_attempts, g_last_scripted_save_has_app,
+            g_last_scripted_save_has_pane,
+            (long long)g_last_scripted_save_stage,
+            g_last_scripted_save_app_alive,
+            g_last_scripted_save_opus_dialog_open,
+            g_last_scripted_save_win_dialog_open,
+            g_last_scripted_save_header,
+            (unsigned long)g_last_scripted_save_error,
+            g_scripted_save_as_doc_path[0] != '\0' ?
+                g_scripted_save_as_doc_path : g_scripted_save_as_output);
+    g_scripted_save_as_running = false;
+    FinishScriptedSaveAs(9);
 }
 
 static void ScheduleScriptedSaveAsTimer(void) {
+    g_scripted_save_as_started = 0;
+    g_scripted_save_as_attempts = 0;
+    g_scripted_save_as_text_inserted = false;
+    g_scripted_save_as_attempted = false;
+    g_scripted_save_as_running = false;
+    g_scripted_save_as_timer = 0;
+    g_scripted_save_as_doc_path[0] = '\0';
+    g_scripted_save_as_keep_output = false;
+    g_last_scripted_save_has_app = false;
+    g_last_scripted_save_has_pane = false;
+    g_last_scripted_save_stage = -1;
+    g_last_scripted_save_app_alive = false;
+    g_last_scripted_save_opus_dialog_open = false;
+    g_last_scripted_save_win_dialog_open = false;
+    g_last_scripted_save_header = false;
+    g_last_scripted_save_error = 0;
 #ifdef _WIN32
-    SetTimer(NULL, 1, 1, ScriptedSaveAsTimer);
+    g_scripted_save_as_timer = SetTimer(NULL, 1, 1, ScriptedSaveAsTimer);
 #else
     OpusUser32PushScriptedInput(NULL, WM_TIMER, 1,
                                 (LPARAM)ScriptedSaveAsTimer);
