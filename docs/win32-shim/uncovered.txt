@@ -1,5 +1,3 @@
 DrawTextW
-Ellipse
 ExcludeClipRect
-Polygon
 TextOutW

@@ -1184,6 +1184,23 @@ BOOL MoveToEx(HDC device_context, int x, int y, POINT* previous) {
     return TRUE;
 }
 
+static void draw_line_pixels(struct GdiObject* dc, struct GdiObject* bitmap,
+                             POINT start, POINT end, COLORREF color) {
+    const int dx = end.x - start.x;
+    const int dy = end.y - start.y;
+    const int steps = max_int(abs(dx), abs(dy));
+    if (steps == 0) {
+        put_pixel_clipped(dc, bitmap, start.x, start.y, color);
+        return;
+    }
+    int step;
+    for (step = 0; step <= steps; ++step) {
+        const int px = start.x + (dx * step) / steps;
+        const int py = start.y + (dy * step) / steps;
+        put_pixel_clipped(dc, bitmap, px, py, color);
+    }
+}
+
 BOOL LineTo(HDC device_context, int x, int y) {
     struct GdiObject* dc = dc_from_handle(device_context);
     struct GdiObject* bitmap = bitmap_from_dc(dc);
@@ -1192,18 +1209,10 @@ BOOL LineTo(HDC device_context, int x, int y) {
     dc->dc.current_position.x = x;
     dc->dc.current_position.y = y;
     if (bitmap == NULL) return TRUE;
-
-    const int dx = x - start.x;
-    const int dy = y - start.y;
-    const int steps = max_int(abs(dx), abs(dy));
-    if (steps == 0) return TRUE;
-    const COLORREF color = pen_color(dc);
-    int step;
-    for (step = 0; step < steps; ++step) {
-        const int px = start.x + (dx * step) / steps;
-        const int py = start.y + (dy * step) / steps;
-        put_pixel_clipped(dc, bitmap, px, py, color);
-    }
+    POINT end;
+    end.x = x;
+    end.y = y;
+    draw_line_pixels(dc, bitmap, start, end, pen_color(dc));
     return TRUE;
 }
 
@@ -1314,6 +1323,111 @@ BOOL Rectangle(HDC device_context, int left, int top, int right, int bottom) {
     for (y = top; y < bottom; ++y) {
         put_pixel_clipped(dc, bitmap, left, y, color);
         put_pixel_clipped(dc, bitmap, right - 1, y, color);
+    }
+    return TRUE;
+}
+
+static BOOL ellipse_contains(int x, int y, int left, int top, int right,
+                             int bottom) {
+    const long width = right - left;
+    const long height = bottom - top;
+    const long center_x2 = left + right - 1;
+    const long center_y2 = top + bottom - 1;
+    const long dx2 = 2L * x - center_x2;
+    const long dy2 = 2L * y - center_y2;
+    const long width2 = width * width;
+    const long height2 = height * height;
+    return dx2 * dx2 * height2 + dy2 * dy2 * width2 <= width2 * height2;
+}
+
+BOOL Ellipse(HDC device_context, int left, int top, int right, int bottom) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    if (bitmap == NULL) return TRUE;
+    if (right <= left || bottom <= top) return TRUE;
+    struct GdiObject* brush = object_from_handle(dc->dc.brush);
+    const COLORREF outline = pen_color(dc);
+    const int draw_left = max_int(left, dc->dc.clip.left);
+    const int draw_top = max_int(top, dc->dc.clip.top);
+    const int draw_right =
+        min_int(min_int(right, dc->dc.clip.right), bitmap->bitmap.width);
+    const int draw_bottom =
+        min_int(min_int(bottom, dc->dc.clip.bottom), bitmap->bitmap.height);
+    int y;
+    for (y = draw_top; y < draw_bottom; ++y) {
+        int x;
+        for (x = draw_left; x < draw_right; ++x) {
+            if (!ellipse_contains(x, y, left, top, right, bottom)) continue;
+            if (!ellipse_contains(x - 1, y, left, top, right, bottom) ||
+                !ellipse_contains(x + 1, y, left, top, right, bottom) ||
+                !ellipse_contains(x, y - 1, left, top, right, bottom) ||
+                !ellipse_contains(x, y + 1, left, top, right, bottom)) {
+                put_pixel(&bitmap->bitmap, x, y, outline);
+            } else if (brush != NULL && brush->kind == kGdiKindBrush) {
+                put_pixel(&bitmap->bitmap, x, y, brush_pixel_color(brush, x, y));
+            }
+        }
+    }
+    return TRUE;
+}
+
+static BOOL point_in_polygon(const POINT* points, int count, double x,
+                             double y) {
+    BOOL inside = FALSE;
+    int i;
+    int j = count - 1;
+    for (i = 0; i < count; ++i) {
+        const double yi = points[i].y;
+        const double yj = points[j].y;
+        if ((yi > y) != (yj > y)) {
+            const double xi = points[i].x;
+            const double xj = points[j].x;
+            const double edge_x = xi + (y - yi) * (xj - xi) / (yj - yi);
+            if (x < edge_x) inside = !inside;
+        }
+        j = i;
+    }
+    return inside;
+}
+
+BOOL Polygon(HDC device_context, const POINT* points, int count) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL || points == NULL || count < 2) return FALSE;
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    if (bitmap == NULL) return TRUE;
+    struct GdiObject* brush = object_from_handle(dc->dc.brush);
+    int left = points[0].x;
+    int top = points[0].y;
+    int right = points[0].x + 1;
+    int bottom = points[0].y + 1;
+    int i;
+    for (i = 1; i < count; ++i) {
+        left = min_int(left, points[i].x);
+        top = min_int(top, points[i].y);
+        right = max_int(right, points[i].x + 1);
+        bottom = max_int(bottom, points[i].y + 1);
+    }
+    left = max_int(left, dc->dc.clip.left);
+    top = max_int(top, dc->dc.clip.top);
+    right = min_int(min_int(right, dc->dc.clip.right), bitmap->bitmap.width);
+    bottom = min_int(min_int(bottom, dc->dc.clip.bottom), bitmap->bitmap.height);
+    if (brush != NULL && brush->kind == kGdiKindBrush) {
+        int y;
+        for (y = top; y < bottom; ++y) {
+            int x;
+            for (x = left; x < right; ++x) {
+                if (point_in_polygon(points, count, x + 0.5, y + 0.5)) {
+                    put_pixel(&bitmap->bitmap, x, y,
+                              brush_pixel_color(brush, x, y));
+                }
+            }
+        }
+    }
+    const COLORREF outline = pen_color(dc);
+    for (i = 0; i < count; ++i) {
+        draw_line_pixels(dc, bitmap, points[i], points[(i + 1) % count],
+                         outline);
     }
     return TRUE;
 }

@@ -169,8 +169,11 @@ the selected pen. The remaining work is still the higher-value paint, region, sh
 text, and font behavior needed by real document rendering.
 
 The rectangle primitive slice now covers `FillRect`, `FrameRect`, and `Rectangle` on
-the selected bitmap. Remaining shape work includes non-rectangular clipping, `Polygon`,
-and `Ellipse`.
+the selected bitmap. Remaining shape work needs the non-rectangular clipping model.
+
+The filled shape slice now covers `Ellipse` and `Polygon` with selected pen/brush
+drawing under the current rectangular clip. `ExcludeClipRect` still needs a real
+region model before holes can be represented.
 
 The rectangular clip slice now covers `CreateRectRgn` and `IntersectClipRect` for the
 existing single-rectangle DC clip. `ExcludeClipRect` still needs real region handling

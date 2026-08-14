@@ -172,6 +172,18 @@ int main() {
         return 20;
     }
 
+    POINT polygon_points[]{{0, 0}, {4, 0}, {4, 4}, {0, 4}};
+    if (!PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+        !Ellipse(destination, 0, 0, 4, 4) ||
+        !PixelIs(destination, 0, 1, RGB(0, 0, 255)) ||
+        !PixelIs(destination, 1, 1, RGB(255, 0, 0)) ||
+        !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+        !Polygon(destination, polygon_points, 4) ||
+        !PixelIs(destination, 0, 0, RGB(0, 0, 255)) ||
+        !PixelIs(destination, 1, 1, RGB(255, 0, 0))) {
+        return 21;
+    }
+
     HRGN region = CreateRectRgn(1, 1, 3, 3);
     if (region == nullptr || !DeleteObject(region) ||
         !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
@@ -184,7 +196,7 @@ int main() {
         IntersectClipRect(destination, 3, 3, 4, 4) != NULLREGION ||
         !PatBlt(destination, 1, 1, 1, 1, WHITENESS) ||
         !PixelIs(destination, 1, 1, RGB(0, 0, 0))) {
-        return 21;
+        return 22;
     }
 
     SelectObject(destination, old_brush);
