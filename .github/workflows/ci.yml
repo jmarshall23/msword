@@ -91,6 +91,9 @@ jobs:
         run: >
           cmake --build out/linux-debug --target
           opus-sdl-probe
+          WORD1
+          opus_x64_runtime_test
+          opus_sdm_render_test
           opus_mkcmd_tool
           opus_mkdlg_tool
           opus_mergeelx_tool
@@ -108,3 +111,5 @@ jobs:
         run: |
           SDL_VIDEODRIVER=dummy ./bin/opus-sdl-probe
           ctest --test-dir out/linux-debug -R opus_bitapp_8hdr_test --output-on-failure
+          ctest --test-dir out/linux-debug -L ui --output-on-failure
+          ctest --test-dir out/linux-debug -R '^opus_x64_runtime_test$' --output-on-failure
