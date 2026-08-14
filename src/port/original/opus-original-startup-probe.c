@@ -39,6 +39,7 @@ void OpusRegisterOriginalDialogCallbacks(
     OpusOriginalListProc, OpusOriginalListProc, OpusOriginalListProc,
     OpusOriginalListProc, OpusFontValueProc, OpusFontValueProc,
     OpusFontNameFromValueProc);
+extern int vopusSaveAliasDebugState;
 
 enum {
     kWmOpusX64QuerySelection = WM_APP + 0x351,
@@ -548,7 +549,7 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
     fprintf(stderr,
             "WORD1 x64: scripted Save As timed out attempts=%u app=%d pane=%d "
             "stage=%lld app_alive=%d opus_dialog=%d win_dialog=%d header=%d "
-            "last_error=%lu file_open=%d file_error=%lu file_size=%lu "
+            "last_error=%lu alias=%d file_open=%d file_error=%lu file_size=%lu "
             "file_read=%lu h0=%08lx h4=%08lx h24=%08lx h48=%08lx "
             "output=\"%s\"\n",
             g_scripted_save_as_attempts, g_last_scripted_save_has_app,
@@ -559,6 +560,7 @@ static void CALLBACK ScriptedSaveAsTimer(HWND window, UINT message,
             g_last_scripted_save_win_dialog_open,
             g_last_scripted_save_header,
             (unsigned long)g_last_scripted_save_error,
+            vopusSaveAliasDebugState,
             g_last_scripted_save_file_open,
             (unsigned long)g_last_scripted_save_file_error,
             (unsigned long)g_last_scripted_save_file_size,
@@ -583,6 +585,7 @@ static void ScheduleScriptedSaveAsTimer(void) {
     g_scripted_save_as_running = false;
     g_scripted_save_as_timer = 0;
     g_scripted_save_as_doc_path[0] = '\0';
+    vopusSaveAliasDebugState = 0;
     g_scripted_save_as_keep_output = false;
     g_last_scripted_save_has_app = false;
     g_last_scripted_save_has_pane = false;
