@@ -1487,6 +1487,9 @@ add_test(NAME opus_sdm_render_test
             "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-about.ppm"
             "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-save-as.ppm"
 )
+set_tests_properties(opus_sdm_render_test PROPERTIES
+    LABELS ui
+)
 add_test(NAME opus_original_command_test COMMAND $<TARGET_FILE:opus_original_command_test>)
 add_test(NAME word1_port_smoke_test COMMAND $<TARGET_FILE:WORD1> --self-test)
 add_test(NAME word1_scripted_key_test COMMAND $<TARGET_FILE:WORD1> --scripted-key-test)

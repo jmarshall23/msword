@@ -1,5 +1,24 @@
 # DONE
 
+## Restore SDM headless ui gate
+
+`opus_sdm_render_test` now carries the `ui` CTest label. The label points at the
+headless About and Save As reference-image renderer, so `ctest -L ui` exercises a
+real dialog pixel diff without depending on native windows or scripted WORD1
+input.
+
+This is partial item 15 progress only. The remaining SDM work is the interactive
+Open/Save file browser path without `WORD1_TEST_FILE_DIALOG_PATH`.
+
+Validated with `cmake -S src -B build-chrstride`, `cmake --build
+build-chrstride --target opus_sdm_render_test -j2`, `ctest --test-dir
+build-chrstride -N -L ui`, and `ctest --test-dir build-chrstride -L ui
+--output-on-failure`.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Add SDM reference-image oracle
 
 `opus_sdm_render_test` now compares the About and Save As preview buffers

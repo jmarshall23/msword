@@ -147,14 +147,18 @@ The two comdlg32 entries become a small SDM-drawn file browser over item 12's fi
 
 Current finding: `opus_sdm_render_test` now materializes About and Save As through
 `OpusSdmRenderDialogPreview` and diffs the rendered buffers against checked-in
-PPM reference images. This is still a preview oracle only; the remaining work is
-making the live SDM path draw controls itself instead of creating native child
-controls, replacing the common dialogs with an SDM file browser, and restoring a
-headless `ui` CTest label with meaningful tests.
+PPM reference images under the headless `ui` CTest label. The live SDM path no
+longer creates native child controls for SDM-owned controls, and
+`opus_sdm_runtime.cpp` no longer calls `GetOpenFileNameA` or `GetSaveFileNameA`.
+The remaining work is replacing the test-hook-only Open/Save path with an SDM
+file browser that can select files through item 12's file APIs without
+`WORD1_TEST_FILE_DIALOG_PATH`.
 
 Done when: a new `opus_sdm_render_test` renders the About and Save As dialogs to a
 pixel buffer and diffs against a checked-in reference image, and
-`ctest -L ui` is green headless on the Linux runner.
+`ctest -L ui` is green headless on the Linux runner, and the Open/Save dialog
+path can complete a file selection without native common dialogs or test-only
+environment injection.
 
 ---
 
