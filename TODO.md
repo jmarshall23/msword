@@ -183,10 +183,10 @@ Current finding: `word1_port_smoke_test` passes, and `opus_word1_typing_test`
 now runs in process as `WORD1 --scripted-typing-test` under
 `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. It drives the same scripted queue
 `PostMessage`/`GetMessage` use and fails unless three key cycles become three
-consumed `WM_CHAR` messages. The remaining gap is document mutation: add a
-direct assertion that typed characters reach Word's document state before
-converting the richer clipboard, unicode, interaction, selection, font-typing,
-about, save-as, and pdf-export UI tests.
+consumed `WM_CHAR` messages and an insertion selection with at least three
+characters in Word's document state. The remaining item 14 UI-test work is to
+convert the richer clipboard, unicode, interaction, selection, font-typing,
+about, save-as, and pdf-export tests to in-process scripted-event equivalents.
 
 Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
 quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets

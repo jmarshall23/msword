@@ -1,5 +1,22 @@
 # DONE
 
+## Assert WORD1 scripted typing mutates the document
+
+`WORD1 --scripted-typing-test` now finds the in-process `OpusWwd` document
+pane after the scripted loop exits and reuses Word's existing diagnostic
+selection query. The gate fails unless the three consumed `WM_CHAR` messages
+also leave a canonical insertion selection and a document length at least as
+large as the typed character count.
+
+Validated with `cmake --build build-chrstride --target WORD1 -j2`,
+`ctest --test-dir build-chrstride -R '^opus_word1_typing_test$|^word1_scripted_key_test$'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test'
+--output-on-failure` sweep, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Replace WORD1 typing UI harness
 
 `opus_word1_typing_test` now runs `WORD1 --scripted-typing-test` in process

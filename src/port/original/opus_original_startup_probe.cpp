@@ -43,6 +43,8 @@ extern "C" void OpusRegisterOriginalDialogCallbacks(
 
 namespace {
 
+constexpr UINT kWmOpusX64QuerySelection = WM_APP + 0x351;
+
 bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
     if (text == nullptr || needle == nullptr || *needle == 0) {
         return false;
@@ -59,6 +61,40 @@ bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
         }
     }
     return false;
+}
+
+BOOL CALLBACK FindDocumentPaneCallback(HWND window, LPARAM parameter) {
+    auto* result = reinterpret_cast<HWND*>(parameter);
+    WCHAR class_name[64] = {};
+    if (GetClassNameW(window, class_name,
+                      static_cast<int>(sizeof(class_name) /
+                                       sizeof(class_name[0]))) != 0 &&
+        lstrcmpW(class_name, OPUSW("OpusWwd")) == 0) {
+        *result = window;
+        return FALSE;
+    }
+    EnumChildWindows(window, FindDocumentPaneCallback, parameter);
+    return *result == nullptr;
+}
+
+HWND FindDocumentPane() {
+    HWND result = nullptr;
+    EnumWindows(FindDocumentPaneCallback, reinterpret_cast<LPARAM>(&result));
+    return result;
+}
+
+bool ScriptedTypingDocumentMatched() {
+    const HWND pane = FindDocumentPane();
+    if (pane == nullptr) {
+        return false;
+    }
+    const LRESULT cp_first = SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
+    const LRESULT cp_lim = SendMessageW(pane, kWmOpusX64QuerySelection, 1, 0);
+    const LRESULT is_insertion =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 2, 0);
+    const LRESULT cp_mac = SendMessageW(pane, kWmOpusX64QuerySelection, 41, 0);
+    return cp_first >= 3 && cp_first == cp_lim && is_insertion == 1 &&
+           cp_mac >= cp_first;
 }
 
 void WriteCrashText(HANDLE file, const char* text) {
@@ -501,6 +537,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if ((run_scripted_key_test || run_scripted_typing_test) &&
         !OpusUser32ScriptedCharMatched()) {
         return 2;
+    }
+    if (run_scripted_typing_test && !ScriptedTypingDocumentMatched()) {
+        return 3;
     }
     return result;
 }
