@@ -911,7 +911,7 @@ add_library(opus_x64_runtime STATIC
     port/original/opus-asm-resn2-sttb.c
     port/original/opus_asm_sttb.c
     port/original/opus-asm-search.c
-    port/original/opus_sdm_cab.cpp
+    port/original/opus-sdm-cab.c
     port/original/opus_sdm_runtime.cpp
 )
 target_compile_features(opus_x64_runtime PRIVATE c_std_11 cxx_std_20)

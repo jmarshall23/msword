@@ -1,5 +1,30 @@
 # DONE
 
+## Convert SDM CAB adapter to C11
+
+The SDM CAB storage adapter now builds from
+`src/port/original/opus-sdm-cab.c`. The conversion keeps the exported C ABI
+entry points and globals for CAB allocation, initialization, reinitialization,
+data cleanup, lock/unlock, NINCH filling, raw/string/count-string get/set,
+duplication, `hcabDlgCur`, and `wRefDlgCur`.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, `using`,
+`std::byte`, `constexpr`, C++ casts, `nullptr`, `auto`, `std::memcpy`,
+`std::memset`, `std::strlen`, `std::min`, and `std::numeric_limits`. CAB layout
+constants, handle-slot alignment, handle ownership, bounded string copies, and
+duplicate cleanup paths are preserved in direct C11 code.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_sdm_cab_test opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir
+out/macos-debug -R '^opus_sdm_cab_test$' --output-on-failure`, `ctest
+--test-dir out/macos-debug -R '^opus_x64_runtime_test$' --output-on-failure`,
+`ctest --test-dir out/macos-debug -L ui --output-on-failure`, the C++ surface
+grep over `src/port/original/opus-sdm-cab.c`, the `nm` symbol check in
+`libopus_x64_runtime.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert search adapter to C11
 
 The SEARCHN and WORDGREP adapter now builds from
