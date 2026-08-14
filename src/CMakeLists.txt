@@ -883,6 +883,7 @@ else()
         $<$<COMPILE_LANGUAGE:C>:-fms-extensions>
         $<$<COMPILE_LANGUAGE:C>:-funsigned-char>
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
+        $<$<COMPILE_LANGUAGE:C>:-Wno-error=incompatible-pointer-types>
     )
 endif()
 set_target_properties(opus_original_engine PROPERTIES

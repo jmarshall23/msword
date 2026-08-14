@@ -96,12 +96,27 @@ kept stable so citations elsewhere do not rot.
 
 ### 18. WebAssembly
 
-wasm32 has 4-byte pointers. Item 4 removes the configure assertion; the work is finding
-every 8-byte assumption: `opus_x64_heap.cpp`'s handle encoding, `opus_x64_layout.c`, and
-any `#pragma pack` struct with a pointer member (`Opus/cmdtbl.h:65`,
-`opus_asm_movecmds.c:12`, with the size assertions at `opus_asm_movecmds.c:164-170` that
-will fire). Configure a wasm32 build early, even if it does not link, to collect the
-list.
+wasm32 has 4-byte pointers. `wasm-debug` configures with Emscripten after building
+the native host tools from `macos-debug` or `linux-debug`. Reproduce the current
+compile gate with:
+
+```sh
+cmake --build out/macos-debug --target opus_mkcmd_tool opus_mkdlg_tool opus_mergeelx_tool opus_bitapp_tool opus_dibapp_tool -j2
+emcmake cmake --fresh -S src --preset wasm-debug
+cmake --build out/wasm-debug --target WORD1 -j2
+```
+
+The build now reaches `src/port/original/opus_asm_movecmds.c` and fails the
+native command-table layout assertions: `OPUS_NATIVE_SY` is no longer 15 bytes,
+`OPUS_NATIVE_KME` is no longer 16 bytes, and `OPUS_NATIVE_KMP.rgkme` is no longer
+at byte 24 when `OPUS_PFN` and heap handles are 4-byte wasm pointers. Fix the
+table writer and every reader that assumes x64-native KME/KMP widths; do not
+paper over the assertions.
+
+The wasm build currently writes static archives under `build/lib/Debug`, the same
+directory used by native debug builds. Rebuild `opus_x64_runtime` after a wasm
+probe before running native tests, or split target artifact directories before
+adding wasm CI.
 
 The blocking-loop problem is handled by the user32 queue model, and Asyncify is
 the chosen route for this item.
