@@ -788,20 +788,20 @@ add_library(opus_original_engine STATIC
     Opus/wordtech/undo.c
     Opus/SPELL.C
     Opus/spelcore.c
-    port/original/opus_asm_layout2.cpp
+    port/original/opus_asm_layout2.c
     port/original/opus_asm_file2.cpp
     port/original/opus_asm_filewin.cpp
     port/original/opus_asm_math.cpp
     port/original/opus_asm_natinit_format.cpp
     port/original/opus_asm_graphics.cpp
-    port/original/opus_asm_fetch3.cpp
+    port/original/opus_asm_fetch3.c
     port/original/opus_asm_prompt.cpp
     port/original/opus_asm_misc.cpp
     port/original/opus_asm_movecmds.c
-    port/original/opus_asm_fetch_adapters.cpp
-    port/original/opus_asm_display_adapters.cpp
-    port/original/opus_asm_plc_adapters.cpp
-    port/original/opus_asm_resn2_adapters.cpp
+    port/original/opus_asm_fetch_adapters.c
+    port/original/opus_asm_display_adapters.c
+    port/original/opus_asm_plc_adapters.c
+    port/original/opus_asm_resn2_adapters.c
     port/original/opus_asm_native_adapters.cpp
     port/original/opus_asm_wproc.cpp
     port/original/opus_win95_chrome.cpp
@@ -903,7 +903,7 @@ add_library(opus_x64_runtime STATIC
     port/original/opus_asm_resn2_access.cpp
     port/original/opus_asm_resn2_pl.cpp
     port/original/opus_asm_resn2_sttb.cpp
-    port/original/opus_asm_sttb.cpp
+    port/original/opus_asm_sttb.c
     port/original/opus_asm_search.cpp
     port/original/opus_sdm_cab.cpp
     port/original/opus_sdm_runtime.cpp
@@ -998,7 +998,7 @@ endforeach()
 
 add_executable(opus_original_plc_test
     Opus/wordtech/clsplc.c
-    port/original/opus_asm_plc_adapters.cpp
+    port/original/opus_asm_plc_adapters.c
     port/original/opus_original_plc_test.c
 )
 target_compile_definitions(opus_original_plc_test PRIVATE

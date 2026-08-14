@@ -5,11 +5,9 @@
  * replace the assembly-visible and p-code-visible entry names.
  */
 
-extern "C" {
-
-struct LBS;
-struct PLLR;
-struct LR;
+typedef struct LBS LBS;
+typedef struct PLLR PLLR;
+typedef struct LR LR;
 
 int C_CopyHdtLrs(int ihdt, LBS* plbs, int yl, LBS* plbs_abs);
 int C_CopyLrs(PLLR** hpllr_from, LBS* plbs_to, int ilr_mac, int yl,
@@ -98,5 +96,3 @@ int N_CopyLbs(LBS* from, LBS* to) {
 int CopyLbs(LBS* from, LBS* to) {
     return N_CopyLbs(from, to);
 }
-
-}  // extern "C"

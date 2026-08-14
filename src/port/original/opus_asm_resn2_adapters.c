@@ -6,29 +6,27 @@
  * keep Microsoft C in control of the historical structure layouts.
  */
 
-struct DR;
-struct DRF;
+typedef struct DR DR;
+typedef struct DRF DRF;
 
-struct OpusPoint {
+typedef struct OpusPoint {
     int x;
     int y;
-};
+} OpusPoint;
 
-struct OpusRect {
+typedef struct OpusRect {
     int left;
     int top;
     int right;
     int bottom;
-};
+} OpusRect;
 
-struct OpusDrc {
+typedef struct OpusDrc {
     int x;
     int y;
     int dx;
     int dy;
-};
-
-extern "C" {
+} OpusDrc;
 
 DR* C_PdrFetch(void** hpldr, int idr, DRF* pdrf);
 DR* C_PdrFetchAndFree(void** hpldr, int idr, DRF* pdrf);
@@ -73,13 +71,16 @@ OpusPoint N_PtOrigin(void** hpldr, int idr) {
 }
 
 static OpusPoint WindowOffset(const OpusPoint origin) {
+    OpusPoint offset;
     int page_x;
     int page_y;
     int window_x;
     int window_y;
     OpusWwdCoordinateOffsets(*vhwwdOrigin, &page_x, &page_y, &window_x,
                              &window_y);
-    return {origin.x + page_x + window_x, origin.y + page_y + window_y};
+    offset.x = origin.x + page_x + window_x;
+    offset.y = origin.y + page_y + window_y;
+    return offset;
 }
 
 static void TranslateRect(const OpusRect* source, OpusRect* destination,
@@ -120,8 +121,11 @@ void RceToRcw(void* pwwd, const OpusRect* rce, OpusRect* rcw) {
 }
 
 void DrclToRcw(void** hpldr, const OpusDrc* drcl, OpusRect* rcw) {
-    const OpusRect rcl{drcl->x, drcl->y, drcl->x + drcl->dx,
-                       drcl->y + drcl->dy};
+    OpusRect rcl;
+    rcl.left = drcl->x;
+    rcl.top = drcl->y;
+    rcl.right = drcl->x + drcl->dx;
+    rcl.bottom = drcl->y + drcl->dy;
     RclToRcw(hpldr, &rcl, rcw);
 }
 
@@ -135,33 +139,41 @@ void DrcpToRcl(void** hpldr, int idr, const OpusDrc* drcp, OpusRect* rcl) {
 
 void DrcpToRcw(void** hpldr, int idr, const OpusDrc* drcp, OpusRect* rcw) {
     OpusRect rcl;
+    OpusPoint origin = {0, 0};
+    OpusPoint offset;
     DrcpToRcl(hpldr, idr, drcp, &rcl);
-    const OpusPoint offset = WindowOffset({0, 0});
+    offset = WindowOffset(origin);
     TranslateRect(&rcl, rcw, offset.x, offset.y);
 }
 
 int XwFromXl(void** hpldr, int xl) {
-    return xl + WindowOffset(C_PtOrigin(hpldr, -1)).x;
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, -1));
+    return xl + offset.x;
 }
 
 int YwFromYl(void** hpldr, int yl) {
-    return yl + WindowOffset(C_PtOrigin(hpldr, -1)).y;
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, -1));
+    return yl + offset.y;
 }
 
 int YwFromYp(void** hpldr, int idr, int yp) {
-    return yp + WindowOffset(C_PtOrigin(hpldr, idr)).y;
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
+    return yp + offset.y;
 }
 
 int YpFromYw(void** hpldr, int idr, int yw) {
-    return yw - WindowOffset(C_PtOrigin(hpldr, idr)).y;
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
+    return yw - offset.y;
 }
 
 int XwFromXp(void** hpldr, int idr, int xp) {
-    return xp + WindowOffset(C_PtOrigin(hpldr, idr)).x;
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
+    return xp + offset.x;
 }
 
 int XpFromXw(void** hpldr, int idr, int xw) {
-    return xw - WindowOffset(C_PtOrigin(hpldr, idr)).x;
+    OpusPoint offset = WindowOffset(C_PtOrigin(hpldr, idr));
+    return xw - offset.x;
 }
 
 OpusRect* PrcSet(OpusRect* rect, int x, int y, int dx, int dy) {
@@ -221,5 +233,3 @@ int N_CbGrpprlProp(int normalized, char* output, int output_max,
 int N_IfldFromDocCp(int doc, long cp, int match) {
     return C_IfldFromDocCp(doc, cp, match);
 }
-
-}  // extern "C"

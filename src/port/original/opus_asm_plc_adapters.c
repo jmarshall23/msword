@@ -1,8 +1,6 @@
 /* AMD64 entry adapters for the original C PLC mutation algorithms retained
  * in wordtech/clsplc.c. */
 
-extern "C" {
-
 int C_FOpenPlc(void** hplc, int index, int delta);
 int C_FInsertInPlc(void** hplc, int index, long cp, char* data);
 int C_FStretchPlc(void** hplc, int delta);
@@ -32,5 +30,3 @@ int N_ShrinkPlc(void** hplc, int new_max, int index, int delta) {
     C_ShrinkPlc(hplc, new_max, index, delta);
     return 0;
 }
-
-}  // extern "C"

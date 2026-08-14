@@ -5,7 +5,7 @@
  * symbol spelling used by the original source graph.
  */
 
-extern "C" {
+#include <stddef.h>
 
 int C_FetchCp(int doc, long cp, int fcm);
 int C_CachePara(int doc, long cp);
@@ -88,11 +88,11 @@ int FetchCpAndPara(int doc, long cp, int fcm) {
     return N_FetchCp(doc, cp, fcm);
 }
 
-struct OpusFetchCa {
+typedef struct OpusFetchCa {
     long cpFirst;
     long cpLim;
     int doc;
-};
+} OpusFetchCa;
 
 int FetchCpAndParaCa(const OpusFetchCa* range, int fcm) {
     return FetchCpAndPara(range->doc, range->cpFirst, fcm);
@@ -103,7 +103,5 @@ int ChFetch(int doc, long cp, int fcm) {
         N_CachePara(doc, cp);
     }
     N_FetchCp(doc, cp, fcm);
-    return vhpchFetch == nullptr ? 0 : *vhpchFetch;
+    return vhpchFetch == NULL ? 0 : *vhpchFetch;
 }
-
-}  // extern "C"
