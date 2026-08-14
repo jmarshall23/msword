@@ -511,57 +511,6 @@ test from item 22 fail on the current layout.
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.
 
-### 24. `OpusX64TraceRibbon` has no default definition
-
-`Opus/rulrib.c:1657` declares `extern void OpusX64TraceRibbon();` with no prototype and
-calls it with 8 arguments at `:1693` and `:1713`. The only definition is
-`opus_original_startup_probe.cpp:377`, which is WORD1-only, so any other target linking
-the engine fails. bahree pasted a no-op stub into `opus_x64_runtime_test.cpp`; the next
-test target needs the same paste.
-
-An earlier draft of this item got the library wrong and would not have fixed the link.
-The callers that break the test are in `opus_sdm_runtime.cpp:1779, 1794, 1955, 1981,
-1998`, which is compiled into `opus_x64_runtime` (`src/CMakeLists.txt:723`), and
-`opus_x64_runtime_test` links `opus_x64_runtime user32 gdi32` (`:933`), not
-`opus_original_engine`. A stub in the engine resolves nothing.
-
-No header is needed either. `rulrib.c:1657` already declares the function at block
-scope, and every parameter type survives default argument promotion, so that
-non-prototype declaration is compatible with the real one and the calls at `:1693,
-1713` already pass the right eight arguments. `opus_sdm_runtime.cpp:24` declares it
-inside an `extern "C"` block. Adding an include to `rulrib.c` would be a `src/Opus` edit
-for no gain.
-
-Do: add one file to `opus_x64_runtime`, containing nothing else.
-
-```c
-/* src/port/original/opus_trace_stub.c
- * Fallback definition of OpusX64TraceRibbon. This file must contain NOTHING
- * else: a static-archive member is pulled in only to resolve an undefined
- * symbol, so WORD1, which defines the real one in
- * opus_original_startup_probe.cpp:377, never pulls this member and never sees
- * a duplicate. Any other symbol here would force it in and break that link.
- * Signature matches opus_original_startup_probe.cpp:377-380 exactly. */
-void OpusX64TraceRibbon(const char *stage, int message, int tmc,
-                        int first_value, int second_value,
-                        long cp_first, long cp_limit, int insertion)
-	{
-	(void)stage; (void)message; (void)tmc; (void)first_value;
-	(void)second_value; (void)cp_first; (void)cp_limit; (void)insertion;
-	}
-```
-
-and one line in the `add_library(opus_x64_runtime STATIC ...)` list near
-`src/CMakeLists.txt:705-724`:
-
-```cmake
-    port/original/opus_trace_stub.c
-```
-
-Done when: `opus_x64_runtime_test` links with no stub pasted into its own source, and
-`nm` on WORD1 shows exactly one `OpusX64TraceRibbon`, the one from
-`opus_original_startup_probe.o`.
-
 ### 25. Write the toolchain-agnostic fixes once
 
 jphonorato guards most of his `src/Opus/` changes with

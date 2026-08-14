@@ -1,5 +1,23 @@
 # DONE
 
+## Add trace fallback for runtime targets
+
+`OpusX64TraceRibbon` now has one standalone fallback definition in
+`src/port/original/opustracestub.c`, and `opus_x64_runtime` includes that
+archive member directly. `opus_sdm_runtime.cpp` now only declares the function,
+so the fallback member contains no unrelated SDM symbols.
+
+Validated with `cmake --build build-trace-stub --target opus_x64_runtime_test WORD1 --parallel 8`,
+`ctest --test-dir build-trace-stub -R opus_x64_runtime_test --output-on-failure`,
+`nm` on `build/lib/Debug/libopus_x64_runtime.a` showing the single definition in
+`opustracestub.c.o` and only an undefined reference from `opus_sdm_runtime.cpp.o`,
+`nm` on `bin/WORD1` showing exactly one final `OpusX64TraceRibbon`,
+`commentflow src/port/original/opustracestub.c src/port/original/opus_sdm_runtime.cpp`,
+and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Add GDI DC and object state
 
 `src/port/win32/gdi32.cpp` now owns the first GDI layer: `HDC`, `HBITMAP`, `HPEN`,

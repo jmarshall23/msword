@@ -32,12 +32,7 @@ int OpusSaveDocumentAsDocx(int, const char*);
 }
 
 extern "C" void OpusX64TraceRibbon(const char*, int, int, int, int,
-                                     long, long, int) {
-    /* Ribbon tracing used during the bring-up of the x64 port. Keep the ABI for
-     * original call sites without writing diagnostic files in product or test
-     * processes.
-     */
-}
+                                     long, long, int);
 
 /* Flat, stateful implementation of the public SDM 2.21 dialog API used by Opus.
  * The archive contains the SDM headers and 16-bit .obj files, but not its C
