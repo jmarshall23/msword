@@ -181,7 +181,6 @@ static char* g_win95_staging_directory;
 static const WCHAR k_save_as_stage_property[] = {
     'O', 'p', 'u', 's', 'X', '6', '4', 'S', 'a', 'v', 'e', 'A', 's',
     'S', 't', 'a', 'g', 'e', '\0'};
-int vopusSaveAliasDebugState = 0;
 
 static void sdm_cleanup(void);
 
@@ -579,14 +578,18 @@ static void sdm_cleanup(void) {
 }
 
 static char* win95_alias_key(const char* path) {
-    char* key;
-    if (path != NULL && path[0] == '/' &&
-        (path[1] == 'U' || path[1] == 'u') &&
-        (path[2] == '\\' || path[2] == '/')) {
-        key = str_join3("C:", path + 2, "");
-    } else {
-        key = xstrdup(path);
+    char full_path[32768];
+    char* key = NULL;
+    memset(full_path, 0, sizeof(full_path));
+    if (!str_empty(path)) {
+        const DWORD length = GetFullPathNameA(
+            path, (DWORD) sizeof(full_path), full_path, NULL);
+        if (length != 0 && length < sizeof(full_path)) {
+            key = xstrdup(full_path);
+        }
     }
+    if (key == NULL)
+        key = xstrdup(path);
     str_to_lower_in_place(key);
     return key;
 }
@@ -2842,7 +2845,6 @@ static Tmc run_word95_common_file_dialog(DialogState* dialog) {
         } else {
             g_win95_save_alias.active = true;
             g_win95_save_alias.created = true;
-            vopusSaveAliasDebugState = 1;
             str_set(&g_win95_save_alias.selected_path, selected_path);
             str_set(&g_win95_save_alias.legacy_path, legacy_path);
             str_set(&dialog_control(dialog, kTmcSaveFile)->text,
@@ -2981,10 +2983,6 @@ int OpusWin95SaveAliasActiveMatches(const unsigned char* st_file) {
     char* path = counted_path(st_file);
     int result = !str_empty(path) && g_win95_save_alias.active &&
         win95_alias_key_matches(path, g_win95_save_alias.legacy_path);
-    if (result)
-        vopusSaveAliasDebugState |= 2;
-    else
-        vopusSaveAliasDebugState |= 4;
     free(path);
     return result;
 }
@@ -3045,7 +3043,6 @@ int OpusFinishWin95SaveAlias(const unsigned char* st_file,
     if (g_win95_save_alias.active &&
         win95_alias_key_matches(path, g_win95_save_alias.legacy_path)) {
         bool copied = success != 0;
-        vopusSaveAliasDebugState |= 64;
         if (copied) {
             copied = (OpusModernPathIsDocx(
                           g_win95_save_alias.selected_path) ||
@@ -3056,7 +3053,6 @@ int OpusFinishWin95SaveAlias(const unsigned char* st_file,
                 atomic_copy_file(g_win95_save_alias.legacy_path,
                                  g_win95_save_alias.selected_path);
         }
-        vopusSaveAliasDebugState |= copied ? 256 : 512;
         if (!success) {
             DeleteFileA(g_win95_save_alias.legacy_path);
         } else if (copied) {

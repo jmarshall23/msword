@@ -784,6 +784,24 @@ int main(void) {
         EndSdm();
         return 27;
     }
+    if (GetFullPathNameA(staged_path, sizeof(staged_path),
+                         staged_path, NULL) == 0) {
+        OpusFinishWin95SaveAlias(staged_counted, 0, 0);
+        DeleteFileA(selected_path);
+        FreeCab(save_cab);
+        DestroyWindow(parent);
+        EndSdm();
+        return 27;
+    }
+    CountedPath(staged_path, staged_counted, sizeof(staged_counted));
+    if (OpusWin95SaveAliasActiveMatches(staged_counted) == 0) {
+        OpusFinishWin95SaveAlias(staged_counted, 0, 0);
+        DeleteFileA(selected_path);
+        FreeCab(save_cab);
+        DestroyWindow(parent);
+        EndSdm();
+        return 27;
+    }
     OpusFinishWin95SaveAlias(staged_counted, 0, 0);
     DeleteFileA(selected_path);
     FreeCab(save_cab);

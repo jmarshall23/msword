@@ -92,7 +92,6 @@ extern int OpusWin95SaveAliasMatches();
 extern int OpusWin95SaveAliasActiveMatches();
 extern int OpusFinishWin95SaveAlias();
 extern int OpusWin95SaveAliasRequiresRtf();
-extern int vopusSaveAliasDebugState;
 #define FWin95SaveAliasMatches(st) OpusWin95SaveAliasMatches(st)
 #define FWin95SaveAliasActiveMatches(st) OpusWin95SaveAliasActiveMatches(st)
 #else
@@ -574,7 +573,6 @@ LSaveAs:
 			PdodDoc(doc)->fPromptSI = fFalse;
 			if (!pcmb->fAction && FWin95SaveAliasActiveMatches(stFile))
 				{
-				vopusSaveAliasDebugState |= 8;
 				pcmb->fAction = fTrue;
 				}
 			#endif
@@ -684,16 +682,10 @@ LSaveAs:
 		dffSave = dffSaveRTF;
 		(*hcab)->fQuicksave = fFalse;
 		}
-	if (FWin95SaveAliasActiveMatches(stFile))
-		vopusSaveAliasDebugState |= 16;
 #endif
 	if (FSaveFile(stFile, doc, dffSave,
 			(*hcab)->fQuicksave, (*hcab)->fBackup, fTrue /* fReport */))
 		{
-#ifdef OPUS_X64
-		if (FWin95SaveAliasActiveMatches(stFile))
-			vopusSaveAliasDebugState |= 32;
-#endif
 		/*  display number of characters written in prompt */
 		CP cp = CpMacDocEdit(doc);
 		unsigned rgw [1 + (sizeof (long)/sizeof (unsigned))];
