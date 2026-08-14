@@ -497,6 +497,22 @@ int main() {
         return 42;
     }
 
+    HMENU system_menu = GetSystemMenu(window, FALSE);
+    if (system_menu == nullptr || !IsMenu(system_menu) ||
+        GetSystemMenu(window, FALSE) != system_menu ||
+        GetMenuState(system_menu, SC_CLOSE, MF_BYCOMMAND) == static_cast<UINT>(-1) ||
+        GetMenuItemID(system_menu, 6) != SC_CLOSE ||
+        GetSystemMenu(nullptr, FALSE) != nullptr ||
+        GetSystemMenu(window, TRUE) != nullptr ||
+        IsMenu(system_menu)) {
+        return 43;
+    }
+    HMENU recreated_system_menu = GetSystemMenu(window, FALSE);
+    if (recreated_system_menu == nullptr || recreated_system_menu == system_menu ||
+        !IsMenu(recreated_system_menu)) {
+        return 44;
+    }
+
     HMENU menu = CreateMenu();
     HMENU popup_menu = CreatePopupMenu();
     HMENU detached_menu = CreatePopupMenu();
@@ -536,7 +552,7 @@ int main() {
         !DrawMenuBar(window) ||
         TrackPopupMenu(popup_menu, TPM_RETURNCMD, 0, 0, 0, window, nullptr) !=
             0) {
-        return 43;
+        return 45;
     }
     if (!AppendMenuA(detached_menu, MF_STRING, 201, "Detached") ||
         !AppendMenuA(holder_menu, MF_POPUP,
@@ -545,7 +561,7 @@ int main() {
         !DestroyMenu(holder_menu) || !IsMenu(detached_menu) ||
         !DestroyMenu(detached_menu) || !DestroyMenu(menu) || IsMenu(menu) ||
         IsMenu(popup_menu) || GetMenu(window) != nullptr) {
-        return 44;
+        return 46;
     }
 
     const WCHAR prop_name[] = {'W', 'o', 'r', 'd', 0};
@@ -569,16 +585,16 @@ int main() {
         SetPropW(window, nullptr, prop_value) ||
         GetPropW(nullptr, prop_name) != nullptr ||
         RemovePropW(window, prop_name) != nullptr) {
-        return 45;
+        return 47;
     }
 
     if (!PostMessageA(message_child, WM_USER + 4, 0, 0) ||
         !DestroyWindow(window) || IsWindow(window) || IsWindow(message_child) ||
         PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
-        return 46;
+        return 48;
     }
     HWND second = CreateWindowExA(0, "STATIC", "second", WS_POPUP, 0, 0, 1, 1,
                                   nullptr, nullptr, nullptr, nullptr);
-    if (second == nullptr || second == window) return 47;
+    if (second == nullptr || second == window) return 49;
     return 0;
 }

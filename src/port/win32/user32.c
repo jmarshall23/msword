@@ -33,6 +33,7 @@ struct WindowObject {
     HWND parent;
     HWND owner;
     HMENU menu;
+    HMENU system_menu;
     HINSTANCE instance;
     LONG_PTR user_data;
     BOOL enabled;
@@ -463,6 +464,10 @@ static void destroy_menu_tree(HMENU handle) {
         if (window_from_handle(handle_from_window(window)) != NULL &&
             window->menu == handle) {
             window->menu = NULL;
+        }
+        if (window_from_handle(handle_from_window(window)) != NULL &&
+            window->system_menu == handle) {
+            window->system_menu = NULL;
         }
     }
     for (index = 0; index < submenu_count; ++index) destroy_menu_tree(submenus[index]);
@@ -994,6 +999,7 @@ BOOL DestroyWindow(HWND window) {
     if (g_active_window == window) g_active_window = NULL;
     if (g_focus_window == window) g_focus_window = NULL;
     if (g_capture_window == window) g_capture_window = NULL;
+    if (object->system_menu != NULL) destroy_menu_tree(object->system_menu);
     remove_window_timers(window);
     size_t index = 0;
     while (index < g_message_count) {
@@ -1033,6 +1039,22 @@ BOOL DestroyMenu(HMENU menu) {
     if (!IsMenu(menu)) return FALSE;
     destroy_menu_tree(menu);
     return TRUE;
+}
+
+static HMENU create_system_menu(void) {
+    HMENU menu = CreatePopupMenu();
+    if (menu == NULL) return NULL;
+    if (!AppendMenuA(menu, MF_STRING, SC_RESTORE, "Restore") ||
+        !AppendMenuA(menu, MF_STRING, SC_MOVE, "Move") ||
+        !AppendMenuA(menu, MF_STRING, SC_SIZE, "Size") ||
+        !AppendMenuA(menu, MF_STRING, SC_MINIMIZE, "Minimize") ||
+        !AppendMenuA(menu, MF_STRING, SC_MAXIMIZE, "Maximize") ||
+        !AppendMenuA(menu, MF_SEPARATOR, 0, NULL) ||
+        !AppendMenuA(menu, MF_STRING, SC_CLOSE, "Close")) {
+        DestroyMenu(menu);
+        return NULL;
+    }
+    return menu;
 }
 
 BOOL AppendMenuA(HMENU menu, UINT flags, UINT_PTR new_item, LPCSTR new_item_text) {
@@ -1570,6 +1592,22 @@ HWND GetWindow(HWND window, UINT command) {
 HMENU GetMenu(HWND window) {
     struct WindowObject* object = window_from_handle(window);
     return object != NULL ? object->menu : NULL;
+}
+
+HMENU GetSystemMenu(HWND window, BOOL revert) {
+    struct WindowObject* object = window_from_handle(window);
+    if (object == NULL) return NULL;
+    if (revert) {
+        if (object->system_menu != NULL) {
+            destroy_menu_tree(object->system_menu);
+            object->system_menu = NULL;
+        }
+        return NULL;
+    }
+    if (object->system_menu == NULL) {
+        object->system_menu = create_system_menu();
+    }
+    return object->system_menu;
 }
 
 BOOL SetMenu(HWND window, HMENU menu) {

@@ -6,6 +6,5 @@ CreateMetaFile
 DrawTextW
 Ellipse
 ExcludeClipRect
-GetSystemMenu
 Polygon
 TextOutW

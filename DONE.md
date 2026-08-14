@@ -1,5 +1,25 @@
 # DONE
 
+## Add user32 system menu state
+
+`src/port/win32/user32.c` now creates a per-window system menu for
+`GetSystemMenu`. Repeated calls return the same menu, `revert` clears the current
+system menu, and window/menu destruction invalidates the stored handle.
+
+`opus-win32-user32-test` now covers stable system-menu handles, the standard close
+command, invalid-window behavior, revert, and recreation. The implemented symbol was
+removed from `docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_user32_test -j2`,
+`ctest --test-dir build-chrstride -R 'opus_win32_user32_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep, a search proving `GetSystemMenu` is gone from
+`uncovered.txt`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Add user32 scroll state
 
 `src/port/win32/user32.c` now stores horizontal and vertical scroll ranges and

@@ -188,11 +188,13 @@ empty, availability, and handle get/set. It intentionally does not free handles 
 the clipboard is emptied because ownership varies by caller path.
 
 The paint invalidation slice now covers `BeginPaint`, `EndPaint`, `InvalidateRect`,
-and `RedrawWindow` for the chrome repaint paths. Remaining user32 chrome state work
-includes system menu handling.
+and `RedrawWindow` for the chrome repaint paths.
 
 The scroll state slice now covers `SetScrollRange` and `SetScrollPos` for independent
 horizontal and vertical window scroll state with default ranges and range clamping.
+
+The system menu slice now covers `GetSystemMenu` with per-window system menus and
+revert behavior.
 
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
