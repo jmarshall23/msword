@@ -1573,6 +1573,11 @@ endif()
 opus_add_executable_test(opus_modern_formats_test opus_modern_formats_test)
 opus_add_executable_test(opus_original_sttb_test opus_original_sttb_test)
 opus_add_executable_test(opus_original_plc_test opus_original_plc_test)
+add_test(NAME opus_disk_layout_proof_test
+    COMMAND "$<TARGET_FILE:opus_original_plc_test>"
+        --write-proof
+        "${MSWORD_TARGET_BUILD_ROOT}/word1-layout-proof.bin"
+)
 opus_add_executable_test(opus_sdm_cab_test opus_sdm_cab_test)
 opus_add_executable_test(opus_sdm_render_test
     opus_sdm_render_test

@@ -9,6 +9,7 @@ DEBUGASSERTSZ
 #include "inter.h"
 #include "opus-native-layout.h"
 
+#include <stdio.h>
 #include <string.h>
 
 struct FPC vfpc;
@@ -69,6 +70,38 @@ struct TESTFOO
 	int second;
 	};
 
+enum
+	{
+	cbDiskProofMax = 8 + 6 + 512 + 4 + 28
+	};
+
+static int AppendDiskProof(unsigned char *proof, size_t *pibProof,
+		const unsigned char *bytes, size_t cb)
+{
+	if (*pibProof + cb > cbDiskProofMax)
+		return 0;
+	memcpy(proof + *pibProof, bytes, cb);
+	*pibProof += cb;
+	return 1;
+}
+
+static int WriteDiskProof(const char *szPath, const unsigned char *proof,
+		size_t cbProof)
+{
+	FILE *file;
+	if (szPath == 0 || szPath[0] == 0)
+		return 1;
+	file = fopen(szPath, "wb");
+	if (file == 0)
+		return 0;
+	if (fwrite(proof, 1, cbProof, file) != cbProof)
+		{
+		fclose(file);
+		return 0;
+		}
+	return fclose(file) == 0;
+}
+
 static int FExercisePlc(int fExternal)
 {
 	struct TESTFOO foo0 = {11, 22};
@@ -121,7 +154,7 @@ static int FExercisePlc(int fExternal)
 	return result;
 }
 
-static int FExerciseDiskPacking(void)
+static int FExerciseDiskPacking(const char *szProofPath)
 {
 	struct PCD pcd;
 	struct PCD pcdCopy;
@@ -136,7 +169,10 @@ static int FExerciseDiskPacking(void)
 	struct TESTFOO foo1 = {33, 44};
 	struct PLC** hplc;
 	int result = 0;
+	unsigned char proof[cbDiskProofMax];
+	size_t ibProof = 0;
 
+	memset(proof, 0, sizeof(proof));
 	memset(&pcd, 0, sizeof(pcd));
 	pcd.fNoParaLast = fTrue;
 	pcd.fPaphNil = fTrue;
@@ -152,6 +188,8 @@ static int FExerciseDiskPacking(void)
 	if (!pcdCopy.fNoParaLast || !pcdCopy.fPaphNil || pcdCopy.fn != 7 ||
 			pcdCopy.fc != (FC)0x12345678L || pcdCopy.prm != -2)
 		return 22;
+	if (!AppendDiskProof(proof, &ibProof, rgch, 8))
+		return 38;
 
 	memset(&sed, 0, sizeof(sed));
 	sed.fSpare = fTrue;
@@ -165,6 +203,8 @@ static int FExerciseDiskPacking(void)
 	if (!sedCopy.fSpare || sedCopy.fUnk || sedCopy.fn != -1 ||
 			sedCopy.fcSepx != fcNil)
 		return 24;
+	if (!AppendDiskProof(proof, &ibProof, rgch, 6))
+		return 38;
 
 	memset(&fib, 0, sizeof(fib));
 	fib.wIdent = 0xfe37;
@@ -209,6 +249,8 @@ static int FExerciseDiskPacking(void)
 			fibCopy.cbClx != 34 || fibCopy.pnChpFirst != 3 ||
 			fibCopy.cpnBtePap != 5)
 		return 33;
+	if (!AppendDiskProof(proof, &ibProof, rgch, 512))
+		return 38;
 
 	memset(&kme, 0, sizeof(kme));
 	kme.kc = 0x345;
@@ -226,6 +268,8 @@ static int FExerciseDiskPacking(void)
 	if (kmeCopy.kc != 0x345 || kmeCopy.kt != 6 ||
 			kmeCopy.ibst != -2)
 		return 37;
+	if (!AppendDiskProof(proof, &ibProof, rgch, 4))
+		return 38;
 
 	hplc = HplcInit(sizeof(struct TESTFOO), 3, 100, fTrue);
 	if (hplc == 0)
@@ -245,11 +289,15 @@ static int FExerciseDiskPacking(void)
 			rgch[12] != 11 || rgch[16] != 22 || rgch[20] != 33 ||
 			rgch[24] != 44)
 		result = 28;
+	else if (!AppendDiskProof(proof, &ibProof, rgch, 28))
+		result = 38;
 	FreeHplc(hplc);
+	if (result == 0 && !WriteDiskProof(szProofPath, proof, ibProof))
+		result = 39;
 	return result;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
 	int result = FExercisePlc(fFalse);
 	if (result != 0)
@@ -257,5 +305,9 @@ int main(void)
 	result = FExercisePlc(fTrue);
 	if (result != 0)
 		return result + 10;
-	return FExerciseDiskPacking();
+	if (argc != 1 && argc != 3)
+		return 40;
+	if (argc == 3 && strcmp(argv[1], "--write-proof") != 0)
+		return 41;
+	return FExerciseDiskPacking(argc == 3 ? argv[2] : 0);
 }
