@@ -1,5 +1,20 @@
 # DONE
 
+## Fix CLIPBRD2 CHR stride
+
+`src/Opus/CLIPBRD2.C` now advances the `CHR` scan with
+`CbFromChrm(pchr->chrm)` instead of treating `chrm` as a byte count. This matches
+the other live `CHR` walkers in `disp1.c`, `format.c`, and `select.c`, where
+`chrm` is interpreted through the variant-size helper.
+
+Validated with `cmake --build build-chrstride --target opus_original_engine opus_x64_runtime_test opus_original_plc_test opus_original_sttb_test opus_original_strtbl_test --parallel 8`,
+`ctest --test-dir build-chrstride -R 'opus_x64_runtime_test|opus_original_plc_test|opus_original_sttb_test|opus_original_strtbl_test' --output-on-failure`,
+a source search showing no remaining `+ pchr->chrm` stride and the corrected
+`CbFromChrm(pchr->chrm)` site, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Add build-output ignore rules
 
 The repository now has a top-level `.gitignore` for build products and generated

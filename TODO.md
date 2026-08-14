@@ -462,18 +462,6 @@ ABI wants one XMM register. Fix once item 19's per-argument DKT table exists.
 
 Done when: the same test covers a `Declare ... As Double`.
 
-### 21. `CLIPBRD2.C:783` walks the CHR array by the wrong stride
-
-```c
-(char *)pchr += pchr->chrm;
-```
-
-Every other walk uses `CbFromChrm(chrm)`: `disp1.c:1722`, `format.c:3013`,
-`select.c:960`. `chrm` is a discriminator tag on this port, not a byte count. They
-cannot all be right.
-
-Done when: the site matches the other three, or a comment explains why it must not.
-
 ### 22. Bare `long` in serialized structures
 
 An earlier draft headlined this as "`qwindows.h:119` is the construct that already
@@ -521,11 +509,11 @@ for nothing.
 
 Cite these as classes, not single lines, since they recur:
 
-- Cast-as-lvalue, 20 sites. `grep -rnE '^[[:space:]]*\([a-zA-Z_][^)]*\*\)[[:space:]]*[a-zA-Z_]' src/Opus | grep -E '(\+=|-=|=[^=])'`
+- Cast-as-lvalue, 19 sites. `grep -rnE '^[[:space:]]*\([a-zA-Z_][^)]*\*\)[[:space:]]*[a-zA-Z_]' src/Opus | grep -E '(\+=|-=|=[^=])'`
   returns 24 lines; four of them (`disp1.c:1676`, `elfile.c:1469`, `formula.c:503`,
-  `elsubs.c:354`) are ordinary casts inside expressions, not assignments. The 20 real
+  `elsubs.c:354`) are ordinary casts inside expressions, not assignments. The 19 real
   ones: `disp1.c:798, 799, 852, 904, 959, 974, 1045, 1046, 1072, 1073, 1249, 1250,
-  1722`, `CLIPBRD2.C:783`, `format.c:3013`, `elsubs2.c:290`, `spelcore.c:157`,
+  1722`, `format.c:3013`, `elsubs2.c:290`, `spelcore.c:157`,
   `inssubs.c:1684, 1687`, and `tabs.c:213`, which is a cast-as-lvalue through
   `#define vptdsd ((TDSD *) pcmb->pv)` at `tabs.c:131`. `(char *)p += n` becoming
   `p = (T *)((char *)p + n)` changes nothing for MSVC and sheds a deprecated extension no

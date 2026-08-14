@@ -810,7 +810,7 @@ CP cp;
 		Assert (ich < vfli.ichMac);
 		Assert (pchr->chrm);
 		Assert (pchr->chrm != chrmEnd);
-			pchr = (struct CHR *)((char *)pchr + pchr->chrm);
+			pchr = (struct CHR *)((char *)pchr + CbFromChrm(pchr->chrm));
 		}
 	return ich;
 }
