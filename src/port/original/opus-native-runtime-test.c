@@ -115,6 +115,7 @@ void FreeCab(void **);
 int FSetCabSz(void **, const char *, TestWord);
 void GetCabSz(void **, char *, TestWord, TestWord);
 int OpusWin95SaveAliasMatches(const unsigned char *);
+int OpusWin95SaveAliasActiveMatches(const unsigned char *);
 int OpusFinishWin95SaveAlias(const unsigned char *, int, int);
 
 int OpusSaveDocumentAsDocx(int doc, const char *path) {
@@ -775,6 +776,14 @@ int main(void) {
     GetCabSz(save_cab, staged_path, sizeof(staged_path), 1);
     CountedPath(staged_path, staged_counted, sizeof(staged_counted));
     save_alias_active = OpusWin95SaveAliasMatches(staged_counted) != 0;
+    if (OpusWin95SaveAliasActiveMatches(staged_counted) == 0) {
+        OpusFinishWin95SaveAlias(staged_counted, 0, 0);
+        DeleteFileA(selected_path);
+        FreeCab(save_cab);
+        DestroyWindow(parent);
+        EndSdm();
+        return 27;
+    }
     OpusFinishWin95SaveAlias(staged_counted, 0, 0);
     DeleteFileA(selected_path);
     FreeCab(save_cab);
@@ -807,6 +816,14 @@ int main(void) {
     CountedPath(opened_staged_path, opened_staged_counted,
                 sizeof(opened_staged_counted));
     open_alias_active = OpusWin95SaveAliasMatches(opened_staged_counted) != 0;
+    if (OpusWin95SaveAliasActiveMatches(opened_staged_counted) != 0) {
+        DeleteFileA(opened_staged_path);
+        DeleteFileA(open_path);
+        FreeCab(open_cab);
+        DestroyWindow(parent);
+        EndSdm();
+        return 29;
+    }
     DeleteFileA(opened_staged_path);
     DeleteFileA(open_path);
     FreeCab(open_cab);

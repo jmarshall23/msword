@@ -89,11 +89,14 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 
 #ifdef OPUS_X64
 extern int OpusWin95SaveAliasMatches();
+extern int OpusWin95SaveAliasActiveMatches();
 extern int OpusFinishWin95SaveAlias();
 extern int OpusWin95SaveAliasRequiresRtf();
 #define FWin95SaveAliasMatches(st) OpusWin95SaveAliasMatches(st)
+#define FWin95SaveAliasActiveMatches(st) OpusWin95SaveAliasActiveMatches(st)
 #else
 #define FWin95SaveAliasMatches(st) fFalse
+#define FWin95SaveAliasActiveMatches(st) fFalse
 #endif
 
 
@@ -568,6 +571,8 @@ LSaveAs:
 			   hidden secondary modal; properties remain available from File. */
 			fPromptSI = fFalse;
 			PdodDoc(doc)->fPromptSI = fFalse;
+			if (!pcmb->fAction && FWin95SaveAliasActiveMatches(stFile))
+				pcmb->fAction = fTrue;
 			#endif
 			}
 
@@ -1760,10 +1765,6 @@ BOOL fBinaryOnly;
 
 int vcRescue = 0;
 
-#ifdef OPUS_X64
-int vopusSaveFilePhase = 0;
-#endif
-
 /* D O  E M E R G  S A V E */
 /* %%Function:DoEmergSave  %%Owner:peterj */
 DoEmergSave(doc)
@@ -1836,10 +1837,6 @@ BOOL fReport;
 	BOOL fQuicksave;
 	BOOL fBackup;
 
-#ifdef OPUS_X64
-	vopusSaveFilePhase = 1;
-#endif
-
 	/* avoid stack overflow */
 	ReturnOnNoStack(6250,fFalse,fTrue);
 
@@ -1848,9 +1845,6 @@ BOOL fReport;
 	Assert (*pst);
 
 	AssertDo(FNormalizeStFile(pst, stNorm, nfoNormal));
-#ifdef OPUS_X64
-	vopusSaveFilePhase = 2;
-#endif
 
 	if (PdodDoc(doc)->fDot && dff == dffSaveNative)
 		dff = dffSaveDocType;
@@ -1866,44 +1860,6 @@ BOOL fReport;
 
 
 
-
-#ifdef OPUS_X64
-OpusSaveCurrentDocumentNative(szPath)
-const char *szPath;
-{
-	CHAR stFile [ichMaxFile];
-	CHAR szTempPath [MAX_PATH];
-	CHAR szTempFile [MAX_PATH];
-	int cch;
-	int result;
-	DWORD cchTempPath;
-
-	if (szPath == NULL || *szPath == 0)
-		return -1;
-	if (selCur.doc == docNil)
-		return -2;
-	cch = CchSz(szPath);
-	if (cch <= 1 || cch > ichMaxFile)
-		return -3;
-	cchTempPath = GetTempPathA(sizeof(szTempPath), szTempPath);
-	if (cchTempPath == 0 || cchTempPath >= sizeof(szTempPath) ||
-			GetTempFileNameA(szTempPath, "OWD", 0, szTempFile) == 0)
-		return -4;
-	if (CchSz(szTempFile) > ichMaxFile)
-		{
-		DeleteFileA(szTempFile);
-		return -4;
-		}
-	DeleteFileA(szTempFile);
-	SzToSt(szTempFile, stFile);
-	vopusSaveFilePhase = 0;
-	result = FFlushDoc(DocMother(selCur.doc), stFile, dffSaveNative, fFalse) ?
-			(CopyFileA(szTempFile, szPath, fFalse) ? 1 : -5) :
-			(-6000 - vopusSaveFilePhase);
-	DeleteFileA(szTempFile);
-	return result;
-}
-#endif
 
 /* F S A V E  F I L E */
 /*  Perform actual save according to pcabsave.
@@ -2026,9 +1982,6 @@ BOOL fQuicksave, fBackup, fReport;
 		/* We were unable to back up the file.
 				An appropriate error message was reported. */
 		{
-#ifdef OPUS_X64
-		vopusSaveFilePhase = 3;
-#endif
 		EndGuarantee();
 		ReportSz("Could not backup target file; abandoning save");
 		goto LQuit;
@@ -2045,16 +1998,10 @@ BOOL fQuicksave, fBackup, fReport;
 	fn = FnOpenSt(stFile, (FUnderstoodDff (dff, fTrue/*fBinary*/) ?
 			fOstFormatted : 0) | fOstCreate | fOstNamed, ofcDoc, NULL );
 	EndGuarantee();
-#ifdef OPUS_X64
-	vopusSaveFilePhase = 4;
-#endif
 
 	/*  FnOpenSt fail? */
 	if (FRareT(reNoSaveTemp, fn == fnNil))
 		{
-#ifdef OPUS_X64
-		vopusSaveFilePhase = 5;
-#endif
 		eid = eidNoSaveTemp;
 		goto LQuit;
 		}
@@ -2065,9 +2012,6 @@ BOOL fQuicksave, fBackup, fReport;
 
 	if (!FWriteFnDsrs (fn, &dsr, &dsrGlsy, dff))
 		{
-#ifdef OPUS_X64
-		vopusSaveFilePhase = 6;
-#endif
 		ReportSz("FWriteFn Failed");
 		if (bkinfo.fn != fnNil)
 			{ /* Must rename by fn on Windows, name
@@ -2124,9 +2068,6 @@ LQuitOK:
 		}
 
 	fSaveSuccessful = fTrue;
-#ifdef OPUS_X64
-	vopusSaveFilePhase = 7;
-#endif
 
 LQuit:
 	/* set so vhprc chain is checked when we run out of memory */

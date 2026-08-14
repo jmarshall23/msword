@@ -2975,6 +2975,14 @@ int OpusWin95SaveAliasMatches(const unsigned char* st_file) {
     return result;
 }
 
+int OpusWin95SaveAliasActiveMatches(const unsigned char* st_file) {
+    char* path = counted_path(st_file);
+    int result = !str_empty(path) && g_win95_save_alias.active &&
+        win95_alias_key_matches(path, g_win95_save_alias.legacy_path);
+    free(path);
+    return result;
+}
+
 int OpusWin95DisplayAlias(unsigned char* const st_file) {
     char* path = counted_path(st_file);
     char* key;
