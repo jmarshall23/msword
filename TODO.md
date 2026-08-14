@@ -185,8 +185,11 @@ now runs in process as `WORD1 --scripted-typing-test` under
 `PostMessage`/`GetMessage` use and fails unless three key cycles become three
 consumed `WM_CHAR` messages and an insertion selection with at least three
 characters in Word's document state. The remaining item 14 UI-test work is to
-convert the richer interaction, font-typing, save-as, and pdf-export tests to
-in-process scripted-event equivalents.
+convert the richer font-typing, save-as, and pdf-export tests to in-process
+scripted-event equivalents. The old interaction test's out-of-process
+caption-drag coverage is not preserved yet; add an in-process nonclient mouse
+drag gate when the shim has a scripted cursor/capture path for native window
+movement.
 
 Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
 quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets

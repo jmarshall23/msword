@@ -1515,9 +1515,12 @@ set_tests_properties(opus_word1_typing_test PROPERTIES
     TIMEOUT 15
 )
 add_test(NAME opus_word1_interaction_test
-    COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1> --interaction
+    COMMAND $<TARGET_FILE:WORD1> --scripted-interaction-test
 )
-set_tests_properties(opus_word1_interaction_test PROPERTIES TIMEOUT 25)
+set_tests_properties(opus_word1_interaction_test PROPERTIES
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    TIMEOUT 15
+)
 add_test(NAME opus_word1_selection_test
     COMMAND $<TARGET_FILE:WORD1> --scripted-selection-test
 )
@@ -1547,7 +1550,6 @@ set_tests_properties(opus_word1_pdf_export_test PROPERTIES TIMEOUT 25)
 
 set(OPUS_WORD1_UI_TESTS
     opus_word1_ui_test
-    opus_word1_interaction_test
     opus_word1_font_typing_test
     opus_word1_save_as_test
     opus_word1_pdf_export_test
