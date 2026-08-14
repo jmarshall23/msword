@@ -2400,3 +2400,29 @@ interactive TTY could not open `/dev/tty`, and claude timed out with only an
 execution-error line. The conversion leaves the shared `OPUSW` macro untouched
 and uses a source-local C11 fallback so other C translation units do not inherit
 new wide-literal behavior.
+
+## Convert x64 heap bridge to C11
+
+`src/port/original/opus_x64_heap.cpp` is now
+`src/port/original/opus-x64-heap.c`. The native movable-handle, compact-handle,
+PRC token, segment-table, guard-byte, and heap-accounting code now uses C
+structs, static arrays, C casts, and C11 atomics instead of C++ namespaces,
+`std::array`, `std::atomic_size_t`, `constexpr`, and C++ casts.
+
+The runtime source list now builds the heap bridge as C with a source-local
+non-Windows `gnu11` override, keeping the rest of the original runtime C files
+on their existing `gnu89` setting. The stale `SbAllocEmmCb` heap-header
+prototype now matches the implemented byte-count argument.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -R '^opus_sdm_cab_test$' --output-on-failure`, `ctest
+--test-dir out/macos-debug -L ui --output-on-failure`, exported-symbol checks
+for the heap/LMEM/PRC entry points in `libopus_x64_runtime.a`, C++ surface grep
+over the new heap C source, and `git diff --check`.
+
+Reviewed by agy and claude before implementation, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line. The conversion preserves relaxed heap-byte accounting
+with C11 atomics instead of adding a new lock around the counter.

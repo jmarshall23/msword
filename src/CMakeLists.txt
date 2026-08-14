@@ -899,7 +899,7 @@ add_library(opus_x64_runtime STATIC
     port/original/opus_elx_dispatch.cpp
     port/original/opus_startup_diagnostics.c
     port/original/opus-win16-platform.c
-    port/original/opus_x64_heap.cpp
+    port/original/opus-x64-heap.c
     port/original/opus_x64_layout.c
     port/original/opus_asm_fetchn2.c
     port/original/opus_asm_resn.c
@@ -955,6 +955,9 @@ else()
         $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-function-declaration>
     )
 endif()
+set_source_files_properties(port/original/opus-x64-heap.c PROPERTIES
+    COMPILE_OPTIONS "$<$<NOT:$<BOOL:${WIN32}>>:-std=gnu11>"
+)
 set_target_properties(opus_x64_runtime PROPERTIES
     FOLDER "Original Opus x64/runtime"
     ARCHIVE_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/lib"

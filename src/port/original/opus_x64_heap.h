@@ -107,7 +107,7 @@ struct PLF
 
 CHAR HUGE* HpInPlf();
 struct PLF** HplfInit();
-SB SbAllocEmmCb();
+SB SbAllocEmmCb(unsigned int byte_count);
 
 /* The Win64 stack is committed/grown by the OS and cannot be measured using
  * the old 16-bit SS offset arithmetic. */
