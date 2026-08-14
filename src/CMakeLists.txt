@@ -792,10 +792,10 @@ add_library(opus_original_engine STATIC
     port/original/opus_asm_file2.cpp
     port/original/opus_asm_filewin.cpp
     port/original/opus_asm_math.cpp
-    port/original/opus_asm_natinit_format.cpp
-    port/original/opus_asm_graphics.cpp
+    port/original/opus_asm_natinit_format.c
+    port/original/opus_asm_graphics.c
     port/original/opus_asm_fetch3.c
-    port/original/opus_asm_prompt.cpp
+    port/original/opus_asm_prompt.c
     port/original/opus_asm_misc.cpp
     port/original/opus_asm_movecmds.c
     port/original/opus_asm_fetch_adapters.c

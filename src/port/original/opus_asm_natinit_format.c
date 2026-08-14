@@ -1,11 +1,7 @@
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <stdint.h>
+#include <string.h>
 
 /* Small native entry points translated from NATINIT.ASM and FORMATN.ASM. */
-extern "C" {
-
 extern int vwWinVersion;
 extern int vfLargeFrameEMS;
 extern int vfSmallFrameEMS;
@@ -14,15 +10,19 @@ extern int vcbitSegmentShift;
 
 int C_DxpFromCh(int character, void* font_widths);
 
+static int MinInt(int lhs, int rhs) {
+    return lhs < rhs ? lhs : rhs;
+}
+
 void FillBytePattern(unsigned char* destination, const unsigned char* pattern,
                      const int pattern_count, int byte_count) {
-    if (destination == nullptr || pattern == nullptr ||
+    if (destination == NULL || pattern == NULL ||
         pattern_count <= 0 || byte_count <= 0) {
         return;
     }
     while (byte_count > 0) {
-        const int copied = (std::min)(pattern_count, byte_count);
-        std::memcpy(destination, pattern, static_cast<std::size_t>(copied));
+        const int copied = MinInt(pattern_count, byte_count);
+        memcpy(destination, pattern, (size_t)copied);
         destination += copied;
         byte_count -= copied;
     }
@@ -52,12 +52,11 @@ int DxpFromChNat(const int character, void* font_widths) {
 unsigned int UMultDivNR(const unsigned int value,
                         const unsigned int numerator,
                         const unsigned int denominator) {
+    uint64_t result;
+
     if (denominator == 0) {
         return 0xffffu;
     }
-    const std::uint64_t result =
-        static_cast<std::uint64_t>(value) * numerator / denominator;
-    return result > 0xffffu ? 0xffffu : static_cast<unsigned int>(result);
+    result = (uint64_t)value * numerator / denominator;
+    return result > 0xffffu ? 0xffffu : (unsigned int)result;
 }
-
-}  // extern "C"
