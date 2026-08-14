@@ -1,5 +1,28 @@
 # DONE
 
+## Add local WORD1 open/save byte roundtrip
+
+`opus_word1_open_save_roundtrip_test` now exercises the saved document path in
+one native CTest step. The test uses `WORD1 --scripted-save-as-output` to create
+a native `.doc`, launches `WORD1` with that document path, saves it to a second
+path through the same scripted Save As hook, and compares SHA-256 hashes.
+
+The startup probe now shares the existing scripted Save As implementation through
+`ScriptedSaveCurrentDocumentAs`, so the explicit output path and the new
+roundtrip check validate the same dialog staging and header checks.
+
+Validated with `cmake -S src --preset macos-debug`, `cmake --build
+out/macos-debug --target WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'opus_word1_open_save_roundtrip_test|opus_word1_save_as_test'
+--output-on-failure`, `cmake --build out/macos-debug --target
+opus_native_runtime_test opus_original_plc_test opus_original_sttb_test -j2`,
+`ctest --test-dir out/macos-debug -R
+'opus_native_runtime_test|opus_original_plc_test|opus_original_sttb_test|opus_word1_open_save_roundtrip_test|opus_word1_save_as_test'
+--output-on-failure`, and `git diff --check`.
+
+Reviewed before implementation: agy identified the missing open/resave byte
+roundtrip harness and recommended reusing the existing Save As output hook.
+
 ## Fix SDL headless Save As artifact output
 
 The scripted SDL headless Save As path now writes the requested native `.doc`

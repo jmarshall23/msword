@@ -347,6 +347,25 @@ static bool FileHasNativeDocHeader(const char *path) {
     return matched;
 }
 
+static bool ScriptedSaveCurrentDocumentAs(HWND app, const char *doc_path) {
+    INT_PTR stage;
+    if (app == NULL || doc_path == NULL || *doc_path == '\0') {
+        return false;
+    }
+    DeleteFileA(doc_path);
+    if (!SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", doc_path)) {
+        return false;
+    }
+    RemovePropW(app, OPUSW("OpusX64SaveAsStage"));
+    SendMessageW(app, WM_COMMAND, kFileSaveAs, 0);
+    SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", NULL);
+    stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
+    return stage == 3 && IsWindow(app) &&
+           FindWindowA("OpusSdmDialog", NULL) == NULL &&
+           FindWindowA("#32770", NULL) == NULL &&
+           FileHasNativeDocHeader(doc_path);
+}
+
 static bool ScriptedSaveAsMatched(void) {
     const HWND app = FindWindowA("OpusApp", NULL);
     const HWND pane = FindDocumentPane();
@@ -354,7 +373,6 @@ static bool ScriptedSaveAsMatched(void) {
     char temporary_seed[MAX_PATH] = {0};
     char doc_path[MAX_PATH + 5] = {0};
     char output_path[MAX_PATH] = {0};
-    INT_PTR stage;
     bool matched;
     bool keep_output = false;
     int path_length;
@@ -402,18 +420,7 @@ static bool ScriptedSaveAsMatched(void) {
             return false;
         }
     }
-    DeleteFileA(doc_path);
-    if (!SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", doc_path)) {
-        return false;
-    }
-    RemovePropW(app, OPUSW("OpusX64SaveAsStage"));
-    SendMessageW(app, WM_COMMAND, kFileSaveAs, 0);
-    SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", NULL);
-    stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
-    matched = stage == 3 && IsWindow(app) &&
-              FindWindowA("OpusSdmDialog", NULL) == NULL &&
-              FindWindowA("#32770", NULL) == NULL &&
-              FileHasNativeDocHeader(doc_path);
+    matched = ScriptedSaveCurrentDocumentAs(app, doc_path);
     if (!keep_output) {
         DeleteFileA(doc_path);
     }

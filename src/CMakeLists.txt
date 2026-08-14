@@ -1634,6 +1634,17 @@ set_tests_properties(opus_word1_save_as_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    add_test(NAME opus_word1_open_save_roundtrip_test
+        COMMAND "${CMAKE_COMMAND}"
+            "-DWORD1_PATH=$<TARGET_FILE:WORD1>"
+            "-DROUNDTRIP_DIR=${MSWORD_TARGET_BUILD_ROOT}/save-proof"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Word1OpenSaveRoundtrip.cmake"
+    )
+    set_tests_properties(opus_word1_open_save_roundtrip_test PROPERTIES
+        TIMEOUT 30
+    )
+endif()
 opus_add_executable_test(opus_word1_pdf_export_test WORD1 --scripted-pdf-export-test)
 set_tests_properties(opus_word1_pdf_export_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
