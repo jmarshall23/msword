@@ -205,7 +205,9 @@ BOOL SetWindowText(HWND window, LPCSTR text) {
 }
 
 int GetClassName(HWND window, LPSTR class_name, int max_count) {
-    return GetClassNameA(window, class_name, max_count);
+    (void)window;
+    if (class_name != NULL && max_count > 0) class_name[0] = 0;
+    return 0;
 }
 
 int GetKeyboardState(BYTE* key_state) {
