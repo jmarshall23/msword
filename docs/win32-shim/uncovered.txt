@@ -16,13 +16,10 @@ FillRect
 FrameRect
 GetClipboardData
 GetClipboardOwner
-GetCurrentThreadId
 GetSysColorBrush
 GetSystemMenu
-GetTempFileNameA
 GetViewportExtEx
 GetViewportOrgEx
-GlobalMemoryStatusEx
 IntersectClipRect
 InvalidateRect
 IsClipboardFormatAvailable

@@ -61,6 +61,7 @@ std::unordered_map<void*, GlobalBlock*> g_global_by_pointer;
 std::unordered_map<int, FileHandle*> g_hfiles;
 int g_next_hfile = 3;
 WORD g_next_global_token = 1;
+UINT g_next_temp_file = 1;
 
 DWORD error_from_errno(const int value) {
     switch (value) {
@@ -418,6 +419,27 @@ HANDLE GetCurrentProcess(void) {
 
 DWORD GetCurrentProcessId(void) {
     return static_cast<DWORD>(getpid());
+}
+
+DWORD GetCurrentThreadId(void) {
+    return 1;
+}
+
+BOOL GlobalMemoryStatusEx(LPMEMORYSTATUSEX buffer) {
+    if (buffer == nullptr || buffer->dwLength != sizeof(MEMORYSTATUSEX)) {
+        g_last_error = ERROR_INVALID_PARAMETER;
+        return FALSE;
+    }
+    constexpr DWORDLONG total = 1024ull * 1024ull * 1024ull;
+    buffer->dwMemoryLoad = 50;
+    buffer->ullTotalPhys = total;
+    buffer->ullAvailPhys = total / 2;
+    buffer->ullTotalPageFile = total;
+    buffer->ullAvailPageFile = total / 2;
+    buffer->ullTotalVirtual = total;
+    buffer->ullAvailVirtual = total / 2;
+    buffer->ullAvailExtendedVirtual = 0;
+    return TRUE;
 }
 
 BOOL TerminateProcess(HANDLE, UINT exit_code) {
@@ -910,6 +932,35 @@ DWORD GetTempPathA(DWORD buffer_length, LPSTR buffer) {
         lstrcpynA(buffer, path.c_str(), static_cast<int>(buffer_length));
     }
     return static_cast<DWORD>(path.size());
+}
+
+UINT GetTempFileNameA(LPCSTR path_name, LPCSTR prefix, UINT unique,
+                      LPSTR file_name) {
+    if (path_name == nullptr || prefix == nullptr || file_name == nullptr) {
+        g_last_error = ERROR_INVALID_PARAMETER;
+        return 0;
+    }
+    const UINT value = unique != 0 ? unique : g_next_temp_file++;
+    char suffix[16]{};
+    std::snprintf(suffix, sizeof(suffix), "%04X.TMP", value & 0xffffu);
+    std::string prefix_text(prefix, prefix + (std::min)(std::strlen(prefix), std::size_t{3}));
+    std::filesystem::path path = normalize_path(path_name);
+    path /= prefix_text + suffix;
+    const std::string text = path.string();
+    if (text.size() >= MAX_PATH) {
+        g_last_error = ERROR_INSUFFICIENT_BUFFER;
+        return 0;
+    }
+    std::strcpy(file_name, text.c_str());
+    if (unique == 0) {
+        FILE* file = std::fopen(text.c_str(), "wb");
+        if (file == nullptr) {
+            set_errno_error();
+            return 0;
+        }
+        std::fclose(file);
+    }
+    return value;
 }
 
 BOOL CopyFileA(LPCSTR existing_file_name, LPCSTR new_file_name, BOOL fail_if_exists) {

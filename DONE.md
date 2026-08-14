@@ -970,3 +970,36 @@ stalled without output and was stopped. agy's review called out supported code
 pages, `-1` count semantics, sizing calls, truncation, UTF-8 handling,
 default-character reporting, and accepting `WC_NO_BEST_FIT_CHARS` from current
 call sites.
+
+## Add kernel thread, memory, and temp-file helpers
+
+The non-Windows kernel32 shim now implements `GetCurrentThreadId`,
+`GlobalMemoryStatusEx`, and `GetTempFileNameA`. The thread id is stable and
+nonzero for the current single-thread shim, memory status returns bounded
+synthetic values when `dwLength` is valid, and temporary names use the existing
+path normalization while creating the file when the unique value is generated.
+
+`opus_win32_memory_test` covers stable thread id reporting, memory-status
+success and invalid-argument failure, generated temporary file creation, and
+explicit unique temporary-name composition. The Win32 coverage baseline no
+longer lists those kernel helpers.
+
+Validated with `cmake -S src -B build-item12c -DCMAKE_BUILD_TYPE=Debug`,
+`cmake --build build-item12c --target opus_win32_memory_test
+opus_x64_runtime_test opus_original_engine --parallel 8`, and `ctest --test-dir
+build-item12c -R
+'opus_win32_memory_test|opus_x64_runtime_test|win32_coverage'
+--output-on-failure`, which passed 3/3. Also validated with `cmake --build
+build-item12c --target opus_original_strtbl_test opus_original_sttb_test
+opus_original_plc_test opus_sdm_cab_test opus_original_command_test
+opus_win32_memory_test opus_win32_resource_test opus_win32_gdi_object_test
+opus_win32_gdi_raster_test opus_win32_font_test opus_win32_print_test
+opus_win32_user32_test opus_x64_runtime_test opus_original_engine
+opus_x64_runtime --parallel 8`, then `ctest --test-dir build-item12c -R
+'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage'
+--output-on-failure`, which passed 14/14.
+
+Reviewed by agy and claude before implementation, but both reviewer commands
+stalled without final output and were stopped. The implementation keeps thread
+modeling, real host memory accounting, and collision-resistant temp-file retry
+logic out of scope until a real call site requires them.

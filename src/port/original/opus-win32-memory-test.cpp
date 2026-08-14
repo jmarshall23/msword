@@ -1,5 +1,6 @@
 #include "windows.h"
 
+#include <cstdio>
 #include <cstring>
 
 int main() {
@@ -40,51 +41,73 @@ int main() {
         return 2;
     }
 
+    MEMORYSTATUSEX memory_status{};
+    memory_status.dwLength = sizeof(memory_status);
+    char temporary[MAX_PATH]{};
+    char generated[MAX_PATH]{};
+    char explicit_name[MAX_PATH]{};
+    FILE* generated_file = nullptr;
+    if (GetCurrentThreadId() == 0 ||
+        !GlobalMemoryStatusEx(&memory_status) ||
+        memory_status.ullTotalPhys == 0 ||
+        memory_status.ullAvailPhys > memory_status.ullTotalPhys ||
+        GlobalMemoryStatusEx(nullptr) ||
+        GetLastError() != ERROR_INVALID_PARAMETER ||
+        GetTempPathA(MAX_PATH, temporary) == 0 ||
+        GetTempFileNameA(temporary, "OWF", 0, generated) == 0 ||
+        (generated_file = std::fopen(generated, "rb")) == nullptr ||
+        GetTempFileNameA(temporary, "OWF", 0x1234, explicit_name) != 0x1234 ||
+        std::strstr(explicit_name, "OWF1234.TMP") == nullptr) {
+        return 3;
+    }
+    std::fclose(generated_file);
+    std::remove(generated);
+
     HANDLE memory = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, 16);
     if (memory == nullptr || GlobalSize(memory) != 16) {
-        return 3;
+        return 4;
     }
 
     auto* bytes = static_cast<unsigned char*>(GlobalLock(memory));
     if (bytes == nullptr) {
-        return 4;
+        return 5;
     }
     for (int index = 0; index < 16; ++index) {
         if (bytes[index] != 0) {
-            return 5;
+            return 6;
         }
     }
     std::memcpy(bytes, "word", 5);
     if (HIWORD(GlobalHandle(bytes)) == 0) {
-        return 6;
-    }
-    if (GlobalUnlock(memory) != FALSE || GetLastError() != ERROR_SUCCESS) {
         return 7;
     }
     if (GlobalUnlock(memory) != FALSE || GetLastError() != ERROR_SUCCESS) {
         return 8;
     }
+    if (GlobalUnlock(memory) != FALSE || GetLastError() != ERROR_SUCCESS) {
+        return 9;
+    }
 
     memory = GlobalReAlloc(memory, 32, GMEM_MOVEABLE | GMEM_ZEROINIT);
     if (memory == nullptr || GlobalSize(memory) != 32) {
-        return 9;
+        return 10;
     }
     bytes = static_cast<unsigned char*>(GlobalLock(memory));
     if (bytes == nullptr || std::memcmp(bytes, "word", 5) != 0) {
-        return 10;
+        return 11;
     }
     for (int index = 16; index < 32; ++index) {
         if (bytes[index] != 0) {
-            return 11;
+            return 12;
         }
     }
     GlobalUnlock(memory);
 
     if (GlobalFree(memory) != nullptr) {
-        return 12;
+        return 13;
     }
     if (GlobalFree(memory) == nullptr || GetLastError() != ERROR_INVALID_HANDLE) {
-        return 13;
+        return 14;
     }
     return 0;
 }

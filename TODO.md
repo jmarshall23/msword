@@ -335,6 +335,12 @@ The kernel string conversion helpers `MultiByteToWideChar` and
 counts, truncation failure, UTF-8 round trips, and default-character fallback
 for wide characters that do not fit a byte code page.
 
+The small kernel environment helpers `GetCurrentThreadId`,
+`GlobalMemoryStatusEx`, and `GetTempFileNameA` are now implemented for the
+single-thread shim and test harness. They provide a stable thread id, bounded
+memory-status numbers, and Win32-style temporary file names with file creation
+when the caller asks the shim to generate the unique value.
+
 Done when: `word1_port_smoke_test` passes on macOS and a headless run opens a window and
 dispatches a keystroke. `ctest -L ui` cannot be this item's check: those tests drive the
 About and Save As dialogs (`src/CMakeLists.txt:1000-1007`), which are SDM dialogs, so
