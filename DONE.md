@@ -1,5 +1,32 @@
 # DONE
 
+## Stabilize SDL offscreen Save As CI
+
+The SDL scripted Save As path now runs under `SDL_VIDEODRIVER=offscreen` for the
+macOS and Linux UI test suites. The active Win95 Save As staging alias is
+canonicalized and then applied back to the original counted path before the
+legacy save path runs, so Linux no longer exits with a missing output document.
+
+The roundtrip CTest now honors an explicit `SDL_VIDEODRIVER` and defaults to
+offscreen. It checks that both saved outputs are non-empty native documents
+instead of requiring byte identity for repeated Save As output. CI no longer
+runs the SDL UI roundtrip on the native Windows runner, where the process exits
+before the `OpusWwd` pane is available; Windows remains covered by the non-UI
+tests, while macOS and Linux upload saved-document artifacts that the dependent
+job checks for presence and size.
+
+Validated with `cmake -S src --preset macos-debug`, `cmake --build
+out/macos-debug --target WORD1 opus_native_runtime_test
+opus_sdm_render_test -j2`, `ctest --test-dir out/macos-debug -L ui
+--output-on-failure`, `ctest --test-dir out/macos-debug -R
+'^opus_native_runtime_test$' --output-on-failure`, `SDL_VIDEODRIVER=offscreen
+OPUS_HEADLESS=0 /opt/homebrew/bin/timeout 3 ./bin/WORD1`, `git diff --check`,
+and GitHub Actions run `31837657359`, which passed macOS, Linux, Windows and the
+saved-document artifact check.
+
+Reviewed before implementation: agy reported no blockers on the active Save As
+alias fixes and independently reran the focused offscreen checks.
+
 ## Add CI saved-document byte comparison gate
 
 The GitHub Actions workflow now runs `opus_word1_open_save_roundtrip_test` on

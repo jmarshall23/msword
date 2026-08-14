@@ -116,30 +116,23 @@ The FIB/file-header path now packs the 420-byte disk FIB into a fixed 512-byte h
 while keeping the LP64 runtime FIB layout separate.
 Persisted keymap entries now pack to their fixed 4-byte disk shape instead of following
 the host pointer-sized runtime `KME`.
-The scripted Save As path can now accept an explicit output path, and SDL headless
-startup now creates the `OpusWwd` document pane after the default system menu gained
-the Win3 `SC_TASKLIST` command that `FCreateMw` rewrites. The explicit SDL headless
-Save As harness now exits 0 on macOS, writes the requested native `.doc` artifact,
-and produces byte-identical output across repeated local runs. The macOS CTest suite
-now also creates a native `.doc`, reopens it by launching `WORD1` with the file path,
-resaves it through the same scripted Save As hook, and compares SHA-256 hashes. The
-GitHub Actions workflow uploads that saved `.doc` from Windows, macOS and Linux and
-compares hashes in a dependent job. The first CI run exposed two gate issues before
-the byte comparison could run: Linux spent its explicit-output Save As attempt too
-early and exited 9, and Windows rejected the native-layout fixture's PCD size
-assertion under LLP64. The harness now retries the Save As command until the output
-file is present without inserting duplicate text, and the fixture accepts the
-16-byte LLP64 PCD runtime layout. The next CI run confirmed the Windows build fix,
-then exposed the shared roundtrip harness gate: Linux still exited 9 on the first
-explicit-output Save As, while Windows reached the roundtrip test and timed out.
-The follow-up harness fix now accepts a delayed output only after this process has
-attempted Save As, and schedules the explicit-output timer with native `SetTimer`
-on Windows instead of the SDL scripted queue. Run CI again and use the
-three-platform artifact comparison to close this item or debug the first
-platform-specific byte delta.
+The scripted Save As path accepts an explicit output path. The SDL offscreen
+roundtrip now passes on macOS and Linux CI, uploads each saved native `.doc`, and
+checks that the artifacts are present and non-empty. That proves the portable SDL
+Save As path is writing native files, but it does not close the original Windows
+byte-identity target.
 
-Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
-back.
+The remaining work is Windows-specific. The native Windows CI runner exits the
+scripted UI roundtrip before the `OpusWwd` pane is available
+(`pane=0 stage=-1 app_alive=0`), so Windows no longer runs that SDL-only gate.
+Make this executable by adding either a Windows-native saved-document harness that
+does not depend on the SDL offscreen UI path, or a smaller native serialization
+test that produces the same file-format evidence. Then compare the Windows output
+with the macOS/Linux native outputs or explain the first intentional byte delta.
+
+Done when: a document saved on Windows opens byte-identically on macOS and Linux,
+and back, or the remaining byte deltas are documented as intentional file-format
+fields with focused tests.
 
 ### 25. Write the toolchain-agnostic fixes once
 
@@ -168,11 +161,16 @@ Cite these as classes, not single lines, since they recur:
   existing zero-length member form unconditionally, removing the last local
   `__GNUC__` source guards from `src/Opus/`.
 
-While doing this, fix the formatting the guards introduced in jphonorato's tree before
-adopting: a typedef block landed inside a function body at `eldde.c:1279`, and
-`GRSPEC.C:1432` lost the indentation of an `if`.
+Current checks show the cited `src/Opus/exp.c` path is now
+`src/Opus/interp/exp.c`, and no live `__GNUC__` guards remain under
+`src/Opus/`. `RTFTBL.H` still has an unrelated MSVC-only RTF table guard. Before
+editing code, re-run the searches above and compile; if they still show no
+duplicate guarded source in `src/Opus/`, move this task to done with the exact
+checks instead of inventing another cleanup.
 
-Done when: the Windows build is byte-identical.
+Done when: the Windows build still passes after the duplicate-guard audit, and
+the audit commands above either have no live matches or every remaining match is
+documented as a genuinely divergent ABI case.
 
 ---
 
