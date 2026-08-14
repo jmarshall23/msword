@@ -1,5 +1,23 @@
 # DONE
 
+## Replace WORD1 Unicode UI harness
+
+`opus_word1_unicode_test` now runs `WORD1 --scripted-unicode-test` in process
+with `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. The scripted mode exits the
+normal Word loop, finds the live `OpusWwd` pane, queues the same scalar set
+through Word's existing Unicode diagnostic insertion path, and verifies every
+stored scalar through the existing document query.
+
+Validated with `cmake --build build-chrstride --target WORD1 -j2`,
+`ctest --test-dir build-chrstride -R '^opus_word1_unicode_test$|^opus_word1_clipboard_shortcut_test$|^opus_word1_typing_test$|^word1_scripted_key_test$'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'strtbl|sttb|plc|sdm_cab|command|opus_x64_runtime_test|win32_memory|opus_win16_module_test|opus_win32_resource_test|opus_win32_gdi_(object|raster)_test|opus_win32_font_test|opus_win32_print_test|opus_win32_user32_test|win32_coverage|word1_port_smoke_test|word1_scripted_key_test|opus_word1_typing_test|opus_word1_clipboard_shortcut_test|opus_word1_unicode_test'
+--output-on-failure` sweep, `ctest --test-dir build-chrstride -N -L ui`
+showing 7 remaining UI-labelled tests, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude timed out without output.
+
 ## Replace WORD1 clipboard shortcut UI harness
 
 `opus_word1_clipboard_shortcut_test` now runs

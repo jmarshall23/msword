@@ -1501,9 +1501,12 @@ set_tests_properties(opus_word1_clipboard_shortcut_test PROPERTIES
     TIMEOUT 15
 )
 add_test(NAME opus_word1_unicode_test
-    COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1> --unicode
+    COMMAND $<TARGET_FILE:WORD1> --scripted-unicode-test
 )
-set_tests_properties(opus_word1_unicode_test PROPERTIES TIMEOUT 20)
+set_tests_properties(opus_word1_unicode_test PROPERTIES
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    TIMEOUT 15
+)
 add_test(NAME opus_word1_typing_test
     COMMAND $<TARGET_FILE:WORD1> --scripted-typing-test
 )
@@ -1538,7 +1541,6 @@ set_tests_properties(opus_word1_pdf_export_test PROPERTIES TIMEOUT 25)
 
 set(OPUS_WORD1_UI_TESTS
     opus_word1_ui_test
-    opus_word1_unicode_test
     opus_word1_interaction_test
     opus_word1_selection_test
     opus_word1_font_typing_test
