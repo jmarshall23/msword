@@ -191,7 +191,11 @@ sys void * _SYS_PV();
 #undef LOWORD
 #undef HIWORD
 #undef MAKELONG
+#ifdef OPUS_X64
+#define MAKELONG(lo,hi) ((LONG)(((WORD)(lo)) | ((DWORD)((WORD)(hi))) << 16u))
+#else
 #define MAKELONG(lo,hi) (__FNATIVE__ ? ((long)(((unsigned)(lo)) | ((unsigned long)((unsigned)(hi))) << 16)) : MakeLong(lo,hi))
+#endif
 #define LOWORD(l)	(__FNATIVE__ ? ((WORD)(l)) : LowWord(l))
 #define HIWORD(l)	(__FNATIVE__ ? ((WORD)(((DWORD)(l) >> 16) & 0xffff)) : HighWord(l))
 
@@ -825,7 +829,6 @@ extern int smtMemory;
 #define smtProtect  2 /* Protect mode */
 HANDLE OurGlobalAlloc(WORD, DWORD);
 HANDLE OurGlobalReAlloc(HANDLE, DWORD, WORD);
-
 
 
 

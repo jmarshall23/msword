@@ -110,18 +110,26 @@ includes `Opus/windows.h`, its only other route. Its `typedef unsigned long DWOR
 dead text; `DWORD` in this build comes from the SDK and is correctly 32-bit. Rule 1 puts
 the file off limits anyway.
 
-The real exposure is bare `long` and `LONG` in structures that reach `fread`/`fwrite`.
-Audit `wordtech/plc.c`, `savefast.c`, `file.h`. Add the one new instance this plan
-creates: the shim's own `LONG` must be `int32_t`, not `long`, or every `RECT`, `POINT`
-and `MAKELONG` changes width on LP64.
+The direct bare-`long` scan in `wordtech/plc.c`, `savefast.c`, and `file.h`
+mostly finds runtime counters, Mac-only backup metadata, and macro-language open-file
+state. Record those rows so nobody re-opens them as serialized file-format defects.
+The real serialized exposure is the `CP` and `FC` typedefs in `wordtech/word.h`,
+because `savefast.c` blits structures whose size follows those typedefs.
+
+The shim's own `LONG` must stay `int32_t`, not `long`, or every `RECT`, `POINT`
+and `MAKELONG` changes width on LP64. The Win32 shim already defines `LONG` as
+`int32_t`; the `OPUS_X64` `MAKELONG` override in `wordwin.h` must also return
+a 32-bit `LONG`, not host `long`.
 
 Produce `docs/lp64-audit.tsv` with columns `file`, `line`, `type`,
 `serialized_or_runtime`, `windows_size`, `host_size`, `fix`. Mark only on-disk or
 wire-format rows as `serialized`; ordinary runtime-only uses do not need serialization
 tests.
 
-Done when: a static-assertion test checks the `sizeof` of every serialized structure
-listed in `docs/lp64-audit.tsv` against the Win16 values and passes on all four targets.
+Done when: `docs/lp64-audit.tsv` records the direct runtime rows and the serialized
+`CP`/`FC` rows, the runtime `LONG`/`POINT`/`RECT`/`MAKELONG` widths are guarded by a
+compile-time test, and the remaining serialized rows have exact target sizes ready for
+the fixed-width file-format pass.
 
 ### 23. `CP` is `long` and PLC tables are serialized
 
@@ -131,8 +139,8 @@ on-disk-width rule to `KME` (`wordwin.h:452`): do not widen `int w`, the first m
 the union at `:459`, because that changes `sizeof(KME)`, and `openrare.c:782` reads
 keymaps as `iMac * cwKME * 2`.
 
-Add `CP`, PLC rows and `KME` to `docs/lp64-audit.tsv` before editing code, then make the
-test from item 22 fail on the current layout.
+Complete the `CP`, `FC`, PLC row and `KME` entries in `docs/lp64-audit.tsv` before
+editing code, then make the item 22 layout test fail on the current serialized layout.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.

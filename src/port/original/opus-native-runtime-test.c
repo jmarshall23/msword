@@ -16,6 +16,13 @@ void **mpfnhfcb[8] = {0};
 void **mpwwhwwd[8] = {0};
 void **mpmwhmwd[8] = {0};
 
+typedef char OpusAssertLongWidth[(sizeof(LONG) == 4) ? 1 : -1];
+typedef char OpusAssertDwordWidth[(sizeof(DWORD) == 4) ? 1 : -1];
+typedef char OpusAssertPointSize[(sizeof(POINT) == 8) ? 1 : -1];
+typedef char OpusAssertRectSize[(sizeof(RECT) == 16) ? 1 : -1];
+typedef char OpusAssertMakeLongWidth[
+    (sizeof(MAKELONG(0x1122, 0x3344)) == sizeof(LONG)) ? 1 : -1];
+
 void *N_PdodDoc(int doc);
 void *N_PfcbFn(int fn);
 void *N_PwwdWw(int ww);
