@@ -56,6 +56,7 @@ KME vkme;
 
 KME * PkmeFromKc();
 KME * PkmeOfKcInChain();
+static BSBPwwd();
 
 extern int viMenu;
 extern HWND vhwndApp;
@@ -1522,4 +1523,3 @@ int bcmSrch, bcmAdd;
 		AddKeyToKmp(hkmpAdd, kc, bcmAdd);
 		}
 }
-
