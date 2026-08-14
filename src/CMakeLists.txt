@@ -1147,7 +1147,7 @@ endforeach()
 
 add_executable(opus_original_strtbl_test
     Opus/strtbl.c
-    port/original/opus_original_strtbl_test.cpp
+    port/original/opus-original-strtbl-test.c
 )
 target_compile_definitions(opus_original_strtbl_test PRIVATE
     WIN WIN23 CRLF NONATIVE OPUS_X64 NOMINMAX
