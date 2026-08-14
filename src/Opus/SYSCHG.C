@@ -84,6 +84,8 @@ extern uns		cKBitmap;
 extern BYTE     fProtectModeWindows;
 
 CHAR (**HszCreateSYS())[];
+STATIC NEAR GetAMPMFromProfile();
+STATIC NEAR FInvalidCharSetting();
 
 /* %%Function:AppWinSysChange %%Owner:davidbo */
 AppWinSysChange(wm, lpsz)
