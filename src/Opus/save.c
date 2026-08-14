@@ -1861,7 +1861,11 @@ OpusSaveCurrentDocumentNative(szPath)
 const char *szPath;
 {
 	CHAR stFile [ichMaxFile];
+	CHAR szTempPath [MAX_PATH];
+	CHAR szTempFile [MAX_PATH];
 	int cch;
+	int result;
+	DWORD cchTempPath;
 
 	if (szPath == NULL || *szPath == 0)
 		return -1;
@@ -1870,9 +1874,21 @@ const char *szPath;
 	cch = CchSz(szPath);
 	if (cch <= 1 || cch > ichMaxFile)
 		return -3;
-	SzToSt(szPath, stFile);
-	return FFlushDoc(DocMother(selCur.doc), stFile, dffSaveNative, fFalse) ?
-			1 : -4;
+	cchTempPath = GetTempPathA(sizeof(szTempPath), szTempPath);
+	if (cchTempPath == 0 || cchTempPath >= sizeof(szTempPath) ||
+			GetTempFileNameA(szTempPath, "OWD", 0, szTempFile) == 0)
+		return -4;
+	if (CchSz(szTempFile) > ichMaxFile)
+		{
+		DeleteFileA(szTempFile);
+		return -4;
+		}
+	DeleteFileA(szTempFile);
+	SzToSt(szTempFile, stFile);
+	result = FFlushDoc(DocMother(selCur.doc), stFile, dffSaveNative, fFalse) ?
+			(CopyFileA(szTempFile, szPath, fFalse) ? 1 : -5) : -6;
+	DeleteFileA(szTempFile);
+	return result;
 }
 #endif
 
