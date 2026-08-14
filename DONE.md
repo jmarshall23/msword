@@ -1,5 +1,26 @@
 # DONE
 
+## Add gdi32 rectangle primitives
+
+`src/port/win32/gdi32.c` now implements `FillRect`, `FrameRect`, and `Rectangle` on the
+selected bitmap. `FillRect` uses the supplied brush, `FrameRect` draws a one-pixel
+brush border, and `Rectangle` fills with the selected brush and draws the outline with
+the selected pen, all through the existing clip and pixel helpers.
+
+`opus-win32-gdi-raster-test` now covers filled rectangles, framed rectangles, and
+selected-pen rectangle borders. The implemented symbols were removed from
+`docs/win32-shim/uncovered.txt`.
+
+Validated with `cmake --build build-chrstride --target opus_win32_gdi_raster_test -j2`,
+`ctest --test-dir build-chrstride -R 'opus_win32_gdi_raster_test|win32_coverage'
+--output-on-failure`, the broader
+`ctest --test-dir build-chrstride -R 'opus_win32_(gdi_object|gdi_raster|font|print|user32|memory)_test|win32_coverage'
+--output-on-failure` sweep, searches proving the implemented names are gone from
+`uncovered.txt`, and `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Add gdi32 DC state and line drawing
 
 `src/port/win32/gdi32.c` now keeps DC background mode, text color, map mode,

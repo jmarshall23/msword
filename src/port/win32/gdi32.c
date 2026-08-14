@@ -498,8 +498,7 @@ static struct GdiObject* bitmap_from_dc(struct GdiObject* dc) {
     return bitmap != NULL && bitmap->kind == kGdiKindBitmap ? bitmap : NULL;
 }
 
-static COLORREF pattern_color(struct GdiObject* dc, int x, int y) {
-    struct GdiObject* brush = object_from_handle(dc->dc.brush);
+static COLORREF brush_pixel_color(struct GdiObject* brush, int x, int y) {
     if (brush == NULL || brush->kind != kGdiKindBrush) {
         return RGB(255, 255, 255);
     }
@@ -513,6 +512,10 @@ static COLORREF pattern_color(struct GdiObject* dc, int x, int y) {
         if (pixel_at(&pattern->bitmap, px, py, &color)) return color;
     }
     return brush->brush.color;
+}
+
+static COLORREF pattern_color(struct GdiObject* dc, int x, int y) {
+    return brush_pixel_color(object_from_handle(dc->dc.brush), x, y);
 }
 
 static COLORREF pen_color(struct GdiObject* dc) {
@@ -1136,6 +1139,79 @@ BOOL LineTo(HDC device_context, int x, int y) {
         const int px = start.x + (dx * step) / steps;
         const int py = start.y + (dy * step) / steps;
         put_pixel_clipped(dc, bitmap, px, py, color);
+    }
+    return TRUE;
+}
+
+int FillRect(HDC device_context, const RECT* rect, HBRUSH brush_handle) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    struct GdiObject* brush = object_from_handle(brush_handle);
+    if (dc == NULL || rect == NULL || brush == NULL ||
+        brush->kind != kGdiKindBrush) {
+        return 0;
+    }
+    if (bitmap == NULL) return 1;
+    const int left = max_int(rect->left, dc->dc.clip.left);
+    const int top = max_int(rect->top, dc->dc.clip.top);
+    const int right =
+        min_int(min_int(rect->right, dc->dc.clip.right), bitmap->bitmap.width);
+    const int bottom = min_int(min_int(rect->bottom, dc->dc.clip.bottom),
+                               bitmap->bitmap.height);
+    int py;
+    for (py = top; py < bottom; ++py) {
+        int px;
+        for (px = left; px < right; ++px) {
+            put_pixel(&bitmap->bitmap, px, py,
+                      brush_pixel_color(brush, px, py));
+        }
+    }
+    return 1;
+}
+
+int FrameRect(HDC device_context, const RECT* rect, HBRUSH brush) {
+    if (rect == NULL) return 0;
+    RECT edge;
+    edge = *rect;
+    edge.bottom = edge.top + 1;
+    if (!FillRect(device_context, &edge, brush)) return 0;
+    edge = *rect;
+    edge.top = edge.bottom - 1;
+    if (!FillRect(device_context, &edge, brush)) return 0;
+    edge = *rect;
+    edge.right = edge.left + 1;
+    if (!FillRect(device_context, &edge, brush)) return 0;
+    edge = *rect;
+    edge.left = edge.right - 1;
+    return FillRect(device_context, &edge, brush);
+}
+
+BOOL Rectangle(HDC device_context, int left, int top, int right, int bottom) {
+    struct GdiObject* dc = dc_from_handle(device_context);
+    if (dc == NULL) return FALSE;
+    struct GdiObject* brush = object_from_handle(dc->dc.brush);
+    struct GdiObject* bitmap = bitmap_from_dc(dc);
+    if (bitmap == NULL) return TRUE;
+    if (right <= left || bottom <= top) return TRUE;
+    if (brush != NULL && brush->kind == kGdiKindBrush &&
+        right - left > 2 && bottom - top > 2) {
+        RECT interior;
+        interior.left = left + 1;
+        interior.top = top + 1;
+        interior.right = right - 1;
+        interior.bottom = bottom - 1;
+        FillRect(device_context, &interior, (HBRUSH)brush);
+    }
+    const COLORREF color = pen_color(dc);
+    int x;
+    int y;
+    for (x = left; x < right; ++x) {
+        put_pixel_clipped(dc, bitmap, x, top, color);
+        put_pixel_clipped(dc, bitmap, x, bottom - 1, color);
+    }
+    for (y = top; y < bottom; ++y) {
+        put_pixel_clipped(dc, bitmap, left, y, color);
+        put_pixel_clipped(dc, bitmap, right - 1, y, color);
     }
     return TRUE;
 }

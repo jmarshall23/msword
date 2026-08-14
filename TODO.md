@@ -168,6 +168,10 @@ window origin/extent accessors, `MoveToEx`, and simple clipped `LineTo` drawing 
 the selected pen. The remaining work is still the higher-value paint, region, shape,
 text, and font behavior needed by real document rendering.
 
+The rectangle primitive slice now covers `FillRect`, `FrameRect`, and `Rectangle` on
+the selected bitmap. Remaining shape work includes region-aware clipping, `DrawEdge`,
+`Polygon`, and `Ellipse`.
+
 Done when: `opus_x64_runtime_test` passes on macOS, and a golden-file test runs
 `GetTextExtent` over printable ASCII at 8, 10, 12, 14, 18, 24 and 36 pt for the startup
 font names and diffs against output captured from the Windows build.

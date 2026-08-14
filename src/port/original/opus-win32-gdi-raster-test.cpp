@@ -138,8 +138,29 @@ int main() {
         return 18;
     }
 
+    HBRUSH green = CreateSolidBrush(RGB(0, 255, 0));
+    RECT fill_rect{0, 0, 2, 2};
+    RECT frame_rect{1, 1, 4, 4};
+    if (green == nullptr ||
+        !PatBlt(destination, 0, 0, 4, 4, WHITENESS) ||
+        FillRect(destination, &fill_rect, green) == 0 ||
+        !PixelIs(destination, 0, 0, RGB(0, 255, 0)) ||
+        !PixelIs(destination, 1, 1, RGB(0, 255, 0)) ||
+        !PixelIs(destination, 2, 2, RGB(255, 255, 255)) ||
+        FrameRect(destination, &frame_rect, red) == 0 ||
+        !PixelIs(destination, 1, 1, RGB(255, 0, 0)) ||
+        !PixelIs(destination, 3, 3, RGB(255, 0, 0)) ||
+        !PixelIs(destination, 2, 2, RGB(255, 255, 255)) ||
+        !Rectangle(destination, 0, 0, 4, 4) ||
+        !PixelIs(destination, 0, 0, RGB(0, 0, 255)) ||
+        !PixelIs(destination, 3, 3, RGB(0, 0, 255)) ||
+        !PixelIs(destination, 1, 1, RGB(255, 0, 0))) {
+        return 19;
+    }
+
     SelectObject(destination, old_brush);
     SelectObject(destination, old_pen);
+    DeleteObject(green);
     DeleteObject(blue);
     DeleteObject(red);
     DeleteDC(source);

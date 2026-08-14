@@ -12,8 +12,6 @@ Ellipse
 EmptyClipboard
 EndPaint
 ExcludeClipRect
-FillRect
-FrameRect
 GetClipboardData
 GetClipboardOwner
 GetSysColorBrush
@@ -23,7 +21,6 @@ InvalidateRect
 IsClipboardFormatAvailable
 OpenClipboard
 Polygon
-Rectangle
 RedrawWindow
 RegisterClipboardFormatA
 SetClipboardData
