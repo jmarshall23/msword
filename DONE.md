@@ -1,5 +1,29 @@
 # DONE
 
+## Add SDM reference-image oracle
+
+`opus_sdm_render_test` now compares the About and Save As preview buffers
+against checked-in PPM images instead of only checking pixel hashes. The test
+still keeps a nonblank guard, and its explicit `--write-references` mode was
+used once to generate `opus-sdm-about.ppm` and `opus-sdm-save-as.ppm`.
+
+This is partial item 15 progress only. The live SDM path still creates native
+child controls, the common dialogs still need an SDM file browser, and
+`ctest -L ui` still reports zero labelled tests.
+
+Validated with `cmake --build build-chrstride --target opus_sdm_render_test -j2`,
+`build/tests/Debug/opus_sdm_render_test --write-references
+src/port/original/opus-sdm-about.ppm
+src/port/original/opus-sdm-save-as.ppm`, `ctest --test-dir build-chrstride -R
+'^opus_sdm_render_test$' --output-on-failure`, `file` and `wc -c` on both PPM
+fixtures, the C-only grep check for `opus-sdm-render-test.c`, `git diff
+--check`, the broader 27-test CTest sweep, and `ctest --test-dir
+build-chrstride -N -L ui`.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Seed SDM render preview test
 
 `opus_sdm_runtime.cpp` now exposes `OpusSdmRenderDialogPreview` for tests. The

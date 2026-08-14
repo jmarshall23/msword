@@ -1482,7 +1482,11 @@ add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
 add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_test>)
 add_test(NAME opus_sdm_cab_test COMMAND $<TARGET_FILE:opus_sdm_cab_test>)
-add_test(NAME opus_sdm_render_test COMMAND $<TARGET_FILE:opus_sdm_render_test>)
+add_test(NAME opus_sdm_render_test
+    COMMAND $<TARGET_FILE:opus_sdm_render_test>
+            "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-about.ppm"
+            "${CMAKE_CURRENT_SOURCE_DIR}/port/original/opus-sdm-save-as.ppm"
+)
 add_test(NAME opus_original_command_test COMMAND $<TARGET_FILE:opus_original_command_test>)
 add_test(NAME word1_port_smoke_test COMMAND $<TARGET_FILE:WORD1> --self-test)
 add_test(NAME word1_scripted_key_test COMMAND $<TARGET_FILE:WORD1> --scripted-key-test)
