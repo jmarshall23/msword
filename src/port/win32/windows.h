@@ -1887,6 +1887,9 @@ typedef struct _WIN32_FIND_DATAA {
 #ifndef SC_NEXTWINDOW
 #define SC_NEXTWINDOW 0xf040
 #endif
+#ifndef SC_TASKLIST
+#define SC_TASKLIST 0xf130
+#endif
 #ifndef SC_PREVWINDOW
 #define SC_PREVWINDOW 0xf050
 #endif

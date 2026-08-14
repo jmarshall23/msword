@@ -540,6 +540,7 @@ int main(void) {
     if (system_menu == NULL || !IsMenu(system_menu) ||
         GetSystemMenu(window, FALSE) != system_menu ||
         GetMenuState(system_menu, SC_CLOSE, MF_BYCOMMAND) == (UINT)(-1) ||
+        GetMenuState(system_menu, SC_TASKLIST, MF_BYCOMMAND) == (UINT)(-1) ||
         GetMenuItemID(system_menu, 6) != SC_CLOSE ||
         GetSystemMenu(NULL, FALSE) != NULL ||
         GetSystemMenu(window, TRUE) != NULL ||

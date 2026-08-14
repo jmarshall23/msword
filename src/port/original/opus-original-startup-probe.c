@@ -1180,7 +1180,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_about_test && !ScriptedAboutMatched()) return 6;
     if (run_scripted_selection_test && !ScriptedSelectionMatched()) return 7;
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
-    if (run_scripted_save_as_test && !ScriptedSaveAsMatched()) return 9;
+    if (run_scripted_save_as_test && !save_as_output_requested &&
+        !ScriptedSaveAsMatched()) return 9;
     if (g_scripted_save_as_output[0] != '\0' &&
         !FileHasNativeDocHeader(g_scripted_save_as_output)) {
         return 13;

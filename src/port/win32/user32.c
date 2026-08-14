@@ -1230,7 +1230,8 @@ static HMENU create_system_menu(void) {
         !AppendMenuA(menu, MF_STRING, SC_MINIMIZE, "Minimize") ||
         !AppendMenuA(menu, MF_STRING, SC_MAXIMIZE, "Maximize") ||
         !AppendMenuA(menu, MF_SEPARATOR, 0, NULL) ||
-        !AppendMenuA(menu, MF_STRING, SC_CLOSE, "Close")) {
+        !AppendMenuA(menu, MF_STRING, SC_CLOSE, "Close") ||
+        !AppendMenuA(menu, MF_STRING, SC_TASKLIST, "Switch To")) {
         DestroyMenu(menu);
         return NULL;
     }

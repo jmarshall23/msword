@@ -116,11 +116,14 @@ The FIB/file-header path now packs the 420-byte disk FIB into a fixed 512-byte h
 while keeping the LP64 runtime FIB layout separate.
 Persisted keymap entries now pack to their fixed 4-byte disk shape instead of following
 the host pointer-sized runtime `KME`.
-The scripted Save As path can now accept an explicit output path, but the SDL
-headless startup still does not create an `OpusWwd` document pane before the Save As
-harness needs it. Fix that pane creation path first, then run the document save/open
-roundtrip with PLC, FIB and keymap data present, capture the saved bytes from
-Windows, macOS and Linux, and compare them.
+The scripted Save As path can now accept an explicit output path, and SDL headless
+startup now creates the `OpusWwd` document pane after the default system menu gained
+the Win3 `SC_TASKLIST` command that `FCreateMw` rewrites. The explicit Save As
+harness now reaches dialog acceptance (`OpusX64SaveAsStage == 2`) but still returns
+9 because the Save As command exits cancelled before `FSaveFile` runs. Fix that
+dialog validation/command path next, then run the document save/open roundtrip with
+PLC, FIB and keymap data present, capture the saved bytes from Windows, macOS and
+Linux, and compare them.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.
