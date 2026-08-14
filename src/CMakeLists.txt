@@ -796,7 +796,7 @@ add_library(opus_original_engine STATIC
     Opus/spelcore.c
     port/original/opus_asm_layout2.c
     port/original/opus_asm_file2.cpp
-    port/original/opus_asm_filewin.cpp
+    port/original/opus-asm-filewin.c
     port/original/opus-asm-math.c
     port/original/opus_asm_natinit_format.c
     port/original/opus_asm_graphics.c

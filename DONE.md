@@ -1,5 +1,26 @@
 # DONE
 
+## Convert FILEWIN adapter to C11
+
+The FILEWIN native boundary now builds from
+`src/port/original/opus-asm-filewin.c`. The conversion keeps the exported C ABI
+entry points for the legacy `OpenFile` bridge, DOS-handle close/read/write/seek,
+file-type and last-error reporting, BPTB page access, and OS date/time structs.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`, C++ casts,
+`nullptr`, `auto`, value initialization, `std::memcpy`, `std::min`, and line
+comments, and keeps the target source name hyphenated for the new C file.
+
+Validated with `cmake --build out/macos-debug --target WORD1
+opus_x64_runtime_test -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-asm-filewin.c`, the `nm` symbol check in
+`libopus_original_engine.a`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert RESN PLC adapter to C11
 
 The foundational PLC adapter now builds from
