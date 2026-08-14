@@ -44,6 +44,12 @@ extern "C" void OpusRegisterOriginalDialogCallbacks(
 namespace {
 
 constexpr UINT kWmOpusX64QuerySelection = WM_APP + 0x351;
+constexpr LPARAM kKcControl = 0x100;
+constexpr LRESULT kEditUndo = 2229;
+constexpr LRESULT kEditCut = 2252;
+constexpr LRESULT kEditCopy = 2274;
+constexpr LRESULT kEditPaste = 2297;
+constexpr LRESULT kEditSelectAll = 5106;
 
 bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
     if (text == nullptr || needle == nullptr || *needle == 0) {
@@ -95,6 +101,36 @@ bool ScriptedTypingDocumentMatched() {
     const LRESULT cp_mac = SendMessageW(pane, kWmOpusX64QuerySelection, 41, 0);
     return cp_first >= 3 && cp_first == cp_lim && is_insertion == 1 &&
            cp_mac >= cp_first;
+}
+
+bool ScriptedClipboardMatched() {
+    const HWND pane = FindDocumentPane();
+    if (pane == nullptr) {
+        return false;
+    }
+    const struct {
+        char key;
+        LRESULT command;
+    } bindings[] = {
+        {'A', kEditSelectAll},
+        {'C', kEditCopy},
+        {'V', kEditPaste},
+        {'X', kEditCut},
+        {'Z', kEditUndo},
+    };
+    for (const auto& binding : bindings) {
+        if (SendMessageW(pane, kWmOpusX64QuerySelection, 81,
+                         kKcControl | binding.key) != binding.command) {
+            return false;
+        }
+    }
+    if (SendMessageW(pane, kWmOpusX64QuerySelection, 80,
+                     kKcControl | 'A') == 0) {
+        return false;
+    }
+    const LRESULT cp_first = SendMessageW(pane, kWmOpusX64QuerySelection, 0, 0);
+    const LRESULT cp_lim = SendMessageW(pane, kWmOpusX64QuerySelection, 1, 0);
+    return cp_lim > cp_first;
 }
 
 void WriteCrashText(HANDLE file, const char* text) {
@@ -472,6 +508,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const LPCWSTR self_test = OPUSW("--self-test");
     const LPCWSTR scripted_key_test = OPUSW("--scripted-key-test");
     const LPCWSTR scripted_typing_test = OPUSW("--scripted-typing-test");
+    const LPCWSTR scripted_clipboard_test = OPUSW("--scripted-clipboard-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -482,6 +519,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_typing_test =
         OpusWideContains(command_line, scripted_typing_test) ||
         OpusWideContains(GetCommandLineW(), scripted_typing_test);
+    const bool run_scripted_clipboard_test =
+        OpusWideContains(command_line, scripted_clipboard_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_clipboard_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -522,7 +562,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 3);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 4);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
-    } else if (run_scripted_typing_test) {
+    } else if (run_scripted_typing_test || run_scripted_clipboard_test) {
         OpusUser32ExpectScriptedChar('a', 3);
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 1);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 2);
@@ -534,13 +574,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
                                           show_command);
-    if ((run_scripted_key_test || run_scripted_typing_test) &&
+    if ((run_scripted_key_test || run_scripted_typing_test ||
+         run_scripted_clipboard_test) &&
         !OpusUser32ScriptedCharMatched()) {
         return 2;
     }
-    if (run_scripted_typing_test && !ScriptedTypingDocumentMatched()) {
+    if ((run_scripted_typing_test || run_scripted_clipboard_test) &&
+        !ScriptedTypingDocumentMatched()) {
         return 3;
     }
+    if (run_scripted_clipboard_test && !ScriptedClipboardMatched()) return 4;
     return result;
 }
 
