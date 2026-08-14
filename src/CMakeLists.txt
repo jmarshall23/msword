@@ -1122,6 +1122,7 @@ add_executable(WORD1 WIN32
 )
 if(WIN32)
     target_sources(WORD1 PRIVATE
+        port/original/opus-native-scripted-input.c
         port/winword.manifest
         port/word1.rc
     )
@@ -1154,6 +1155,11 @@ set_target_properties(WORD1 PROPERTIES
 add_executable(opus_original_startup_probe EXCLUDE_FROM_ALL WIN32
     port/original/opus_original_startup_probe.cpp
 )
+if(WIN32)
+    target_sources(opus_original_startup_probe PRIVATE
+        port/original/opus-native-scripted-input.c
+    )
+endif()
 add_dependencies(opus_original_startup_probe opus_original_engine)
 target_compile_features(opus_original_startup_probe PRIVATE cxx_std_20)
 target_compile_definitions(opus_original_startup_probe PRIVATE
@@ -1566,4 +1572,18 @@ add_test(NAME opus_word1_pdf_export_test
 set_tests_properties(opus_word1_pdf_export_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
+)
+set_tests_properties(
+    opus_word1_ui_test
+    opus_word1_clipboard_shortcut_test
+    opus_word1_unicode_test
+    opus_word1_typing_test
+    opus_word1_interaction_test
+    opus_word1_selection_test
+    opus_word1_font_typing_test
+    opus_word1_about_test
+    opus_word1_save_as_test
+    opus_word1_pdf_export_test
+    PROPERTIES
+    LABELS ui
 )
