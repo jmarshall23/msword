@@ -1,5 +1,24 @@
 # DONE
 
+## Preserve startup heap diagnosis
+
+`docs/win32-shim/startup-debugging.md` now condenses the Spanish Fedora startup
+heap-corruption notes into English. It keeps the actionable findings: the Fedora-only
+reproduction boundary, ASan and Valgrind dead ends, limited value of glibc malloc
+checking, `WINEDEBUG=+heap` as the useful historical Winelib trace path, offline
+`addr2line` resolving `WORD1+0x1FD57C` to `N_FormatLineDxa`, and lowercase generated
+paths for breakpoints.
+
+The document marks Wine commands as historical because the SDL shim will not run under
+Wine, and it links each retained claim back to the source Spanish note and section.
+
+Validated with searches for `ASan`, `Valgrind`, `WINEDEBUG=+heap`, `addr2line`,
+`N_FormatLineDxa`, `lowercase`, `historical`, `SDL shim`, and both source note
+filenames in `docs/win32-shim/startup-debugging.md`, plus `git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Keep release packaging deferred
 
 Release packaging remains deliberately deferred until macOS, Linux, and WebAssembly

@@ -556,16 +556,3 @@ architecture.
 
 Done when: `docs/win32-shim/` has a documented command for recapturing font metrics and
 a documented command for validating `GlobalHandle(ptr)` round-trips against the shim.
-
-### 28b. Preserve the startup heap diagnosis
-
-Translate and condense `docs/port-linux/01-diagnostico-heap-corruption-arranque.md` and
-`02-pendientes-fedora.md` into `docs/win32-shim/startup-debugging.md`. Keep the actionable
-bits: ASan and Valgrind fight Wine's preloader, `WINEDEBUG=+heap` was the useful next
-step for Winelib, `addr2line` against `WORD1.exe.so` resolved the verified frame to
-`N_FormatLineDxa`, and breakpoints against case-shimmed sources need lowercase paths.
-Mark every Wine-only command as historical, because the SDL shim will not run under
-Wine.
-
-Done when: nobody has to re-read the Spanish Fedora notes to know which debugging paths
-were already dead ends and which observations may still inform the native shim.
