@@ -476,9 +476,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                             nullptr, nullptr);
     }
     if (run_scripted_key_test) {
-        OpusUser32ExpectScriptedChar('a');
+        OpusUser32ExpectScriptedChar('a', 2);
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 1);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 2);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 3);
+        OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 4);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,

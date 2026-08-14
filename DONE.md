@@ -22,6 +22,13 @@ the same headless environment used by the manual gate.
 scripted character and returns nonzero if Word's message loop never consumes the
 matching `WM_CHAR`. The user32 test covers the observer on a shifted key path.
 
+## Assert repeated WORD1 scripted characters
+
+The scripted character observer now waits for a count, and
+`WORD1 --scripted-key-test` queues two key cycles before quitting. The CTest gate
+therefore fails if repeated scripted keys do not become repeated consumed
+`WM_CHAR` messages.
+
 ## Complete gdi32 shim tier
 
 `src/port/win32/gdi32.c` now covers the checked Win32 GDI surface used by the

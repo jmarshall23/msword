@@ -451,9 +451,14 @@ int main() {
         !PostMessageA(window, WM_KEYDOWN, 'A', 1) ||
         GetKeyState('A') >= 0 || GetAsyncKeyState('A') >= 0 ||
         !PeekMessageA(&message, window, WM_KEYDOWN, WM_KEYDOWN, PM_REMOVE) ||
-        (OpusUser32ExpectScriptedChar('A'), OpusUser32ScriptedCharMatched()) ||
+        (OpusUser32ExpectScriptedChar('A', 2), OpusUser32ScriptedCharMatched()) ||
         !TranslateMessage(&message) ||
         OpusUser32ScriptedCharMatched() ||
+        !PeekMessageA(&message, window, WM_CHAR, WM_CHAR, PM_REMOVE) ||
+        OpusUser32ScriptedCharMatched() ||
+        !PostMessageA(window, WM_KEYDOWN, 'A', 1) ||
+        !PeekMessageA(&message, window, WM_KEYDOWN, WM_KEYDOWN, PM_REMOVE) ||
+        !TranslateMessage(&message) ||
         !PeekMessageA(&message, window, WM_CHAR, WM_CHAR, PM_REMOVE) ||
         !OpusUser32ScriptedCharMatched() ||
         message.wParam != 'A' || DispatchMessageA(&message) != 0 ||

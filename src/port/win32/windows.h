@@ -3130,7 +3130,7 @@ BOOL GetMessageA(LPMSG message, HWND window, UINT filter_min, UINT filter_max);
 BOOL IsDialogMessageA(HWND dialog, LPMSG message);
 VOID PostQuitMessage(int exit_code);
 BOOL WaitMessage(void);
-void OpusUser32ExpectScriptedChar(UINT character);
+void OpusUser32ExpectScriptedChar(UINT character, UINT count);
 BOOL OpusUser32ScriptedCharMatched(void);
 BOOL EnumChildWindows(HWND parent, WNDENUMPROC enum_func, LPARAM parameter);
 BOOL EnumThreadWindows(DWORD thread_id, WNDENUMPROC enum_func, LPARAM parameter);

@@ -108,6 +108,7 @@ static int g_cursor_show_count;
 static BOOL g_quit_posted;
 static int g_quit_code;
 static UINT g_expected_scripted_char;
+static UINT g_expected_scripted_char_count;
 static BOOL g_matched_scripted_char;
 static HBRUSH g_system_color_brushes[32];
 static struct ClipboardFormat* g_clipboard_formats;
@@ -556,10 +557,14 @@ static BOOL queue_take(LPMSG message, HWND window, UINT filter_min,
         }
         *message = g_messages[index];
         if ((remove_message & PM_REMOVE) != 0) {
-            if (g_expected_scripted_char != 0 && message->message == WM_CHAR &&
+            if (g_expected_scripted_char_count != 0 &&
+                message->message == WM_CHAR &&
                 message->wParam == g_expected_scripted_char) {
-                g_matched_scripted_char = TRUE;
-                g_expected_scripted_char = 0;
+                --g_expected_scripted_char_count;
+                if (g_expected_scripted_char_count == 0) {
+                    g_matched_scripted_char = TRUE;
+                    g_expected_scripted_char = 0;
+                }
             }
             clear_timer_queued(&g_messages[index]);
             memmove(&g_messages[index], &g_messages[index + 1],
@@ -2236,9 +2241,10 @@ void OpusUser32PushScriptedInput(HWND window, UINT message, WPARAM wparam,
                &item, FALSE);
 }
 
-void OpusUser32ExpectScriptedChar(UINT character) {
+void OpusUser32ExpectScriptedChar(UINT character, UINT count) {
     g_expected_scripted_char = character;
-    g_matched_scripted_char = FALSE;
+    g_expected_scripted_char_count = count;
+    g_matched_scripted_char = count == 0;
 }
 
 BOOL OpusUser32ScriptedCharMatched(void) { return g_matched_scripted_char; }
