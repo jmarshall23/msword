@@ -770,7 +770,6 @@ int main(void) {
         return 26;
     }
     SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", NULL);
-    SetEnvironmentVariableA("TMPDIR", "/tmp/");
     save_result =
         TmcDoDlgDli(&save_template_pointer, save_cab, &modal_initializer);
     GetCabSz(save_cab, staged_path, sizeof(staged_path), 1);

@@ -1,5 +1,30 @@
 # DONE
 
+## Fix SDL headless Save As artifact output
+
+The scripted SDL headless Save As path now writes the requested native `.doc`
+artifact on macOS and exits successfully. Win95 Save As staging now uses a short
+DOS-style path under `C:\build\OPUSTMP`, so the original dialog code no longer
+depends on host `TMPDIR` length. The Win32 shim maps Word's legacy `/U/...`
+normalizer output back through the existing C-drive root, and `GetFileType`
+recognizes registered `HFILE` handles so the original save path can validate
+OpenFile handles without crashing or reporting a non-file.
+
+The Save As test hook now records stage 3 only after an accepted OK path. The
+startup probe accepts both the Mac Word and Windows native document magic values
+while preserving the existing structural header checks.
+
+Validated with `cmake --build out/macos-debug --target WORD1
+opus_native_runtime_test opus_win32_user32_test -j2`, `ctest --test-dir
+out/macos-debug -R
+'opus_win32_user32_test|opus_native_runtime|opus_word1_save_as_test|word1_port_smoke_test'
+--output-on-failure`, two explicit `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy
+./bin/WORD1 --scripted-save-as-output=...` runs whose outputs compared equal,
+and `git diff --check`.
+
+Reviewed before commit: agy was started with non-interactive permissions but
+timed out without findings.
+
 ## Complete the LP64 serialized-layout audit
 
 `docs/lp64-audit.tsv` now records the direct runtime `long` rows, the Win32

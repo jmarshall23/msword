@@ -118,12 +118,11 @@ Persisted keymap entries now pack to their fixed 4-byte disk shape instead of fo
 the host pointer-sized runtime `KME`.
 The scripted Save As path can now accept an explicit output path, and SDL headless
 startup now creates the `OpusWwd` document pane after the default system menu gained
-the Win3 `SC_TASKLIST` command that `FCreateMw` rewrites. The explicit Save As
-harness now reaches dialog acceptance (`OpusX64SaveAsStage == 2`) but still returns
-9 because the Save As command exits cancelled before `FSaveFile` runs. Fix that
-dialog validation/command path next, then run the document save/open roundtrip with
-PLC, FIB and keymap data present, capture the saved bytes from Windows, macOS and
-Linux, and compare them.
+the Win3 `SC_TASKLIST` command that `FCreateMw` rewrites. The explicit SDL headless
+Save As harness now exits 0 on macOS, writes the requested native `.doc` artifact,
+and produces byte-identical output across repeated local runs. Next run the document
+save/open roundtrip with PLC, FIB and keymap data present, capture the saved bytes
+from Windows, macOS and Linux, and compare them.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux, and
 back.

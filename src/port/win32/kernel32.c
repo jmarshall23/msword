@@ -210,6 +210,16 @@ static char* normalize_path(const char* path) {
     char* text = replace_slashes_dup(path);
     if (text == NULL) return NULL;
 
+    if (strlen(text) >= 3 &&
+        lower_char(text[0]) == '/' && lower_char(text[1]) == 'u' &&
+        text[2] == '/') {
+        char* root = c_drive_root();
+        char* result = join_path(root, text + 3);
+        free(root);
+        free(text);
+        return result;
+    }
+
     if (strlen(text) >= 2 && text[1] == ':') {
         if (lower_char(text[0]) != 'c') {
             free(text);
@@ -342,6 +352,7 @@ static void fill_find_data_path(const char* path, WIN32_FIND_DATAA* data) {
 }
 
 static FileHandle* file_from_handle(HANDLE handle) {
+    if ((uintptr_t)handle < 4096) return NULL;
     FileHandle* file = (FileHandle*)handle;
     return file != NULL && file->magic == FILE_MAGIC ? file : NULL;
 }
@@ -1151,7 +1162,10 @@ DWORD WaitForSingleObject(HANDLE handle, DWORD milliseconds) {
     return WAIT_OBJECT_0;
 }
 
-DWORD GetFileType(HANDLE handle) { return file_from_handle(handle) == NULL ? 0 : FILE_TYPE_DISK; }
+DWORD GetFileType(HANDLE handle) {
+    return file_from_handle(handle) != NULL ||
+        find_hfile((HFILE)(uintptr_t)handle) != NULL ? FILE_TYPE_DISK : 0;
+}
 
 HFILE OpenFile(LPCSTR file_name, LPOFSTRUCT reopen_buffer, UINT style) {
     DWORD access = (style & OF_WRITE) != 0 ? GENERIC_WRITE : GENERIC_READ;

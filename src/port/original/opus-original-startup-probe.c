@@ -335,7 +335,8 @@ static bool FileHasNativeDocHeader(const char *path) {
     }
     matched = ReadFile(file, header, sizeof(header), &read, NULL) &&
               read == sizeof(header) &&
-              ReadLittleU32(header + 0) == 0xfe37 &&
+              (ReadLittleU32(header + 0) == 0xfe37 ||
+               ReadLittleU32(header + 0) == 0xa59b) &&
               ReadLittleU32(header + 4) == 33 &&
               ReadLittleU32(header + 24) == 25 &&
               ReadLittleU32(header + 48) == 512;
@@ -409,7 +410,7 @@ static bool ScriptedSaveAsMatched(void) {
     SendMessageW(app, WM_COMMAND, kFileSaveAs, 0);
     SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", NULL);
     stage = (INT_PTR)GetPropW(app, OPUSW("OpusX64SaveAsStage"));
-    matched = stage == 2 && IsWindow(app) &&
+    matched = stage == 3 && IsWindow(app) &&
               FindWindowA("OpusSdmDialog", NULL) == NULL &&
               FindWindowA("#32770", NULL) == NULL &&
               FileHasNativeDocHeader(doc_path);

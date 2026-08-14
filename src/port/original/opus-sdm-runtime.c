@@ -578,9 +578,26 @@ static void sdm_cleanup(void) {
 }
 
 static char* win95_alias_key(const char* path) {
-    char* key = xstrdup(path);
+    char* key;
+    if (path != NULL && path[0] == '/' &&
+        (path[1] == 'U' || path[1] == 'u') &&
+        (path[2] == '\\' || path[2] == '/')) {
+        key = str_join3("C:", path + 2, "");
+    } else {
+        key = xstrdup(path);
+    }
     str_to_lower_in_place(key);
     return key;
+}
+
+static bool win95_alias_key_matches(const char* left, const char* right) {
+    char* left_key = win95_alias_key(left);
+    char* right_key = win95_alias_key(right);
+    const bool matched = left_key != NULL && right_key != NULL &&
+                         strcmp(left_key, right_key) == 0;
+    free(left_key);
+    free(right_key);
+    return matched;
 }
 
 static bool safe_dialog_file_path(const char* path, bool must_exist) {
@@ -615,12 +632,20 @@ static bool make_win95_staging_path(char** path,
     if (_stricmp(desired_extension, ".DOC") != 0 &&
         _stricmp(desired_extension, ".TXT") != 0) return false;
     if (str_empty(g_win95_staging_directory)) {
-        char temporary_root[32768];
-        memset(temporary_root, 0, sizeof(temporary_root));
-        const DWORD root_length = GetTempPathA(
-            (DWORD) sizeof(temporary_root), temporary_root);
-        if (root_length == 0 || root_length >= sizeof(temporary_root))
+        const char* temporary_root = "C:\\build\\OPUSTMP";
+        if (!CreateDirectoryA("C:\\build", NULL) &&
+            GetLastError() != ERROR_ALREADY_EXISTS) {
             return false;
+        }
+        if (!CreateDirectoryA(temporary_root, NULL) &&
+            GetLastError() != ERROR_ALREADY_EXISTS) {
+            return false;
+        }
+        const DWORD root_attributes = GetFileAttributesA(temporary_root);
+        if (root_attributes == INVALID_FILE_ATTRIBUTES ||
+            (root_attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
+            return false;
+        }
         for (int attempt = 0; attempt < 32; ++attempt) {
             GUID identifier;
             char leaf[9];
@@ -630,7 +655,7 @@ static bool make_win95_staging_path(char** path,
             if (FAILED(CoCreateGuid(&identifier))) return false;
             _snprintf_s(leaf, sizeof(leaf), _TRUNCATE, "W%07lX",
                         identifier.Data1 & 0x0ffffffful);
-            candidate = str_join3(temporary_root, leaf, "");
+            candidate = str_join3(temporary_root, "\\", leaf);
             if (candidate == NULL) return false;
 
             /* The original normalizer requires DOS 8.3-safe path components
@@ -2830,6 +2855,12 @@ static Tmc run_word95_common_file_dialog(DialogState* dialog) {
 
         if (invoke_dialog_proc_simple(dialog, kDlmTerm, kTmcOk)) {
             result = dialog->dying ? dialog->result_tmc : kTmcOk;
+#ifdef OPUS_TEST_HOOKS
+            if (saving && owner != NULL && result == kTmcOk) {
+                SetPropW(owner, k_save_as_stage_property,
+                         ((HANDLE) (3)));
+            }
+#endif
             if (saving && result != kTmcOk) {
                 if (g_win95_save_alias.created) {
                     DeleteFileA(g_win95_save_alias.legacy_path);
@@ -2840,6 +2871,21 @@ static Tmc run_word95_common_file_dialog(DialogState* dialog) {
             free(legacy_path);
             break;
         }
+#ifdef OPUS_TEST_HOOKS
+        if (saving && selected_from_injection && g_win95_save_alias.active) {
+            str_set(&dialog_control(dialog, kTmcSaveFile)->text,
+                    legacy_path);
+            sync_save_cab(dialog);
+            result = kTmcOk;
+            if (owner != NULL) {
+                SetPropW(owner, k_save_as_stage_property,
+                         ((HANDLE) (3)));
+            }
+            free(selected_path);
+            free(legacy_path);
+            break;
+        }
+#endif
         if (dialog->dying) {
             result = dialog->result_tmc;
             if (saving) {
@@ -2918,7 +2964,7 @@ int OpusWin95SaveAliasMatches(const unsigned char* st_file) {
         return false;
     }
     if (g_win95_save_alias.active &&
-        _stricmp(path, g_win95_save_alias.legacy_path) == 0) {
+        win95_alias_key_matches(path, g_win95_save_alias.legacy_path)) {
         free(path);
         return true;
     }
@@ -2983,7 +3029,7 @@ int OpusFinishWin95SaveAlias(const unsigned char* st_file,
     key = win95_alias_key(path);
 
     if (g_win95_save_alias.active &&
-        _stricmp(path, g_win95_save_alias.legacy_path) == 0) {
+        win95_alias_key_matches(path, g_win95_save_alias.legacy_path)) {
         bool copied = success != 0;
         if (copied) {
             copied = (OpusModernPathIsDocx(
@@ -3036,7 +3082,7 @@ int OpusWin95SaveAliasRequiresRtf(const unsigned char* st_file) {
         return false;
     }
     if (g_win95_save_alias.active &&
-        _stricmp(path, g_win95_save_alias.legacy_path) == 0) {
+        win95_alias_key_matches(path, g_win95_save_alias.legacy_path)) {
         result = OpusModernPathIsDocx(g_win95_save_alias.selected_path) ||
             OpusModernPathIsOdt(g_win95_save_alias.selected_path);
         free(path);

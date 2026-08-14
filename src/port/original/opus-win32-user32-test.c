@@ -1,5 +1,6 @@
 #include "windows.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "../win32/opusinputscript.h"
@@ -95,6 +96,40 @@ int main(void) {
     if (CallNextHookEx(NULL, 0, 1, 2) != 0 ||
         CallNextHookEx((HANDLE)(UINT_PTR)0x1234, HC_GETNEXT, 3, 4) != 0) {
         return 6;
+    }
+    if (!CreateDirectoryA("C:\\build", NULL) &&
+        GetLastError() != ERROR_ALREADY_EXISTS) {
+        return 60;
+    }
+    if (!CreateDirectoryA("C:\\build\\OPUSTMP", NULL) &&
+        GetLastError() != ERROR_ALREADY_EXISTS) {
+        return 60;
+    }
+    char legacy_file[MAX_PATH] = {0};
+    char mutated_file[MAX_PATH] = {0};
+    snprintf(legacy_file, sizeof(legacy_file), "C:\\build\\OPUSTMP\\UFT%lu.TMP",
+             (unsigned long)GetCurrentProcessId());
+    snprintf(mutated_file, sizeof(mutated_file), "/U\\build\\OPUSTMP\\UFT%lu.TMP",
+             (unsigned long)GetCurrentProcessId());
+    DeleteFileA(legacy_file);
+    HANDLE mapped_file = CreateFileA(mutated_file, GENERIC_WRITE,
+                                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                     NULL, CREATE_ALWAYS,
+                                     FILE_ATTRIBUTE_NORMAL, NULL);
+    DWORD written = 0;
+    if (mapped_file == INVALID_HANDLE_VALUE ||
+        !WriteFile(mapped_file, "ok", 2, &written, NULL) ||
+        written != 2 ||
+        !CloseHandle(mapped_file)) {
+        return 61;
+    }
+    OFSTRUCT open_state = {0};
+    HFILE hfile = OpenFile(legacy_file, &open_state, OF_READ);
+    if (hfile == HFILE_ERROR ||
+        GetFileType((HANDLE)(UINT_PTR)hfile) != FILE_TYPE_DISK ||
+        _lclose(hfile) != 0 ||
+        !DeleteFileA(legacy_file)) {
+        return 62;
     }
     if (SetWindowLongA(window, 8, 0x11223344) != 0 ||
         GetWindowLongA(window, 8) != 0x11223344 ||
