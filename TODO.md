@@ -100,15 +100,19 @@ Real defects in the current x64 build. All line numbers below were re-derived ag
 this tree; an earlier draft carried jphonorato's post-patch numbers, which are offset by
 roughly 18 lines in `exp.c` and 29 in `CLIPBRD2.C`.
 
-### 20. `dktDouble` arguments are passed in integer registers
+### 21. Complete the remaining `dktDouble` dispatch matrix
 
-Same path. `exp.c` writes an 8-byte `NUM` into `int rgwArgs[]` and `invoke_macro` passes
-one `int` per slot, so a `double` parameter arrives as two integer arguments where the
-ABI wants one XMM register. `LPushMacroArgsTyped` now receives the per-argument DKT
-table; extend it to materialize `dktDouble` as the ABI's floating-point argument type
-instead of copying it into an integer slot.
+`LPushMacroArgsTyped` now materializes one `dktDouble` as an ABI floating-point
+argument, which covers the first declared-double call path. Declarations with
+two or more `Double` parameters still return 0 rather than making a known-wrong
+integer-register call. On wasm, one-double calls are exact-signature only for
+the currently tested one-to-three argument shapes because wasm traps mismatched
+indirect-call signatures.
 
-Done when: the same test covers a `Declare ... As Double`.
+Done when: `opus_x64_runtime_test` covers declaration-shaped calls with at least
+two `Double` parameters and with one `Double` in a higher-arity wasm-safe
+signature, and all values arrive through the ABI's floating-point argument
+path.
 
 ### 22. Bare `long` in serialized structures
 

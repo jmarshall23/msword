@@ -247,22 +247,39 @@ static long __cdecl TestMacroString(const char *text) {
     return text != NULL && strcmp(text, "macro string") == 0 ? 47 : 0;
 }
 
-static int RunMacroStringBridgeTest(void) {
-    enum { testDktString = 4 };
+static long __cdecl TestMacroDouble(int first, double value,
+                                    const char *text) {
+    return first == 5 && value == 12.5 && text == macro_string_seen ? 53 : 0;
+}
+
+static int RunMacroTypedBridgeTest(void) {
+    enum { testDktInt = 0, testDktDouble = 3, testDktString = 4 };
     char text[] = "macro string";
     uintptr_t pointer = (uintptr_t)text;
-    int arguments[2];
-    int types[1] = {testDktString};
+    double value = 12.5;
+    int string_arguments[2];
+    int string_types[1] = {testDktString};
+    int mixed_arguments[5];
+    int mixed_types[3] = {testDktInt, testDktDouble, testDktString};
 
-    arguments[0] = (int)(pointer & UINT32_MAX);
+    string_arguments[0] = (int)(pointer & UINT32_MAX);
 #if UINTPTR_MAX > UINT32_MAX
-    arguments[1] = (int)(pointer >> 32);
+    string_arguments[1] = (int)(pointer >> 32);
 #else
-    arguments[1] = 0;
+    string_arguments[1] = 0;
 #endif
-    return LPushMacroArgsTyped((void *)TestMacroString, arguments, 2, types,
-                               1) == 47 &&
-           macro_string_seen == text;
+    if (LPushMacroArgsTyped((void *)TestMacroString, string_arguments, 2,
+                            string_types, 1) != 47 ||
+        macro_string_seen != text) {
+        return 0;
+    }
+
+    mixed_arguments[0] = 5;
+    memcpy(mixed_arguments + 1, &value, sizeof(value));
+    mixed_arguments[3] = string_arguments[0];
+    mixed_arguments[4] = string_arguments[1];
+    return LPushMacroArgsTyped((void *)TestMacroDouble, mixed_arguments, 5,
+                               mixed_types, 3) == 53;
 }
 
 static int RunElxDispatchTest(void) {
@@ -413,7 +430,7 @@ int main(void) {
     if (!RunElxDispatchTest()) {
         return 31;
     }
-    if (!RunMacroStringBridgeTest()) {
+    if (!RunMacroTypedBridgeTest()) {
         return 32;
     }
 

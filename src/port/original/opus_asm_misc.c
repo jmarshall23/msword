@@ -194,12 +194,297 @@ static int NativeSlotsForDkt(int type) {
     return 1;
 }
 
+static long CallMacroArgsOneDouble(void* procedure,
+                                   const uintptr_t* native_arguments,
+                                   const int type_count,
+                                   const int double_index,
+                                   const double double_argument) {
+#if defined(__wasm__)
+#define CALL_TYPED(types, values)                                               \
+    do {                                                                       \
+        typedef long(__cdecl *Proc) types;                                      \
+        return ((Proc)procedure) values;                                        \
+    } while (0)
+    switch (type_count) {
+    case 1:
+        if (double_index == 0) {
+            CALL_TYPED((double), (double_argument));
+        }
+        break;
+    case 2:
+        if (double_index == 0) {
+            CALL_TYPED((double, uintptr_t),
+                       (double_argument, native_arguments[1]));
+        }
+        if (double_index == 1) {
+            CALL_TYPED((uintptr_t, double),
+                       (native_arguments[0], double_argument));
+        }
+        break;
+    case 3:
+        if (double_index == 0) {
+            CALL_TYPED((double, uintptr_t, uintptr_t),
+                       (double_argument, native_arguments[1],
+                        native_arguments[2]));
+        }
+        if (double_index == 1) {
+            CALL_TYPED((uintptr_t, double, uintptr_t),
+                       (native_arguments[0], double_argument,
+                        native_arguments[2]));
+        }
+        if (double_index == 2) {
+            CALL_TYPED((uintptr_t, uintptr_t, double),
+                       (native_arguments[0], native_arguments[1],
+                        double_argument));
+        }
+        break;
+    default:
+        break;
+    }
+#undef CALL_TYPED
+    return 0;
+#else
+    (void)type_count;
+    switch (double_index) {
+    case 0: {
+        typedef long(__cdecl *Proc)(double, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            double_argument, native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 1: {
+        typedef long(__cdecl *Proc)(uintptr_t, double, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], double_argument, native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 2: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, double, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], double_argument,
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 3: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, double,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            double_argument, native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 4: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    double, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], double_argument, native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 5: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, double, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], double_argument,
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 6: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, double, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            double_argument, native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 7: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t, double,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], double_argument, native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 8: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, double, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], double_argument,
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 9: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, double, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            double_argument, native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 10: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t, double,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], double_argument, native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 11: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, double, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], double_argument,
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 12: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, double, uintptr_t,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            double_argument, native_arguments[13], native_arguments[14],
+            native_arguments[15]);
+    }
+    case 13: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t, double,
+                                    uintptr_t, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], double_argument, native_arguments[14],
+            native_arguments[15]);
+    }
+    case 14: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, double, uintptr_t);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], double_argument,
+            native_arguments[15]);
+    }
+    case 15: {
+        typedef long(__cdecl *Proc)(uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, uintptr_t,
+                                    uintptr_t, uintptr_t, double);
+        return ((Proc)procedure)(
+            native_arguments[0], native_arguments[1], native_arguments[2],
+            native_arguments[3], native_arguments[4], native_arguments[5],
+            native_arguments[6], native_arguments[7], native_arguments[8],
+            native_arguments[9], native_arguments[10], native_arguments[11],
+            native_arguments[12], native_arguments[13], native_arguments[14],
+            double_argument);
+    }
+    default:
+        return 0;
+    }
+#endif
+}
+
 long LPushMacroArgsTyped(void* procedure, const int* arguments,
                          const int argument_count, const int* types,
                          const int type_count) {
-    enum { dktStringBridge = 4 };
+    enum { dktDoubleBridge = 3, dktStringBridge = 4 };
     uintptr_t native_arguments[16] = {0};
+    double double_argument = 0.0;
     int argument_index = 0;
+    int double_count = 0;
+    int double_index = -1;
     int slot_index = 0;
 
     if (procedure == NULL || argument_count < 0 || argument_count > 16 ||
@@ -223,6 +508,11 @@ long LPushMacroArgsTyped(void* procedure, const int* arguments,
             (void)high;
             native_arguments[argument_index] = (uintptr_t)low;
 #endif
+        } else if (types[argument_index] == dktDoubleBridge) {
+            memcpy(&double_argument, arguments + slot_index,
+                   sizeof(double_argument));
+            ++double_count;
+            double_index = argument_index;
         } else {
             size_t bytes = (size_t)slots * sizeof(int);
             if (bytes > sizeof(native_arguments[argument_index])) {
@@ -234,6 +524,14 @@ long LPushMacroArgsTyped(void* procedure, const int* arguments,
         slot_index += slots;
     }
     if (slot_index != argument_count) {
+        return 0;
+    }
+    if (double_count == 1) {
+        /* ponytail: one double; use a call-ABI helper before multi-double macros. */
+        return CallMacroArgsOneDouble(procedure, native_arguments, type_count,
+                                      double_index, double_argument);
+    }
+    if (double_count > 1) {
         return 0;
     }
     switch (type_count) {

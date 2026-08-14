@@ -1506,6 +1506,7 @@ LTmError:
 					case dktDouble:
 						*(NUM *)pwArgs = hpev->num;
 						pwArgs = (WORD *)((NUM *)pwArgs + 1);
+						fTypedArgs = TRUE;
 					break;
 
 				case dktString:

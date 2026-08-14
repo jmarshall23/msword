@@ -1,5 +1,30 @@
 # DONE
 
+## Pass WordBasic Double arguments through the native ABI
+
+WordBasic `Declare` calls with one `Double` argument now use the typed macro
+bridge. `exp.c` marks `dktDouble` declarations for typed dispatch, and
+`LPushMacroArgsTyped` extracts the 8-byte value into a real C `double` before
+calling through a signature that places that parameter on the ABI's
+floating-point path. String and integer-slot calls keep the existing bridge.
+The wasm path uses exact signatures for the tested one-to-three argument
+shapes, where indirect-call signature mismatches trap instead of being ignored.
+
+`opus_x64_runtime_test` now keeps the prior string-pointer coverage and adds a
+mixed declaration-shaped call with `int`, `double`, and `String` parameters.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime_test
+-j2`, direct execution of `./build/tests/Debug/opus_x64_runtime_test`,
+`ctest --test-dir out/macos-debug -R '^opus_x64_runtime_test$'
+--output-on-failure`, `cmake --build out/wasm-debug --target
+opus_x64_runtime_test -j2`, `ctest --test-dir out/wasm-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `cmake --build
+out/macos-debug --target WORD1 -j2`, `cmake --build out/wasm-debug --target
+WORD1 -j2`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Preserve WordBasic string pointers in native Declare calls
 
 WordBasic `Declare ... As String` now preserves full native pointers. The
