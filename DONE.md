@@ -1,5 +1,26 @@
 # DONE
 
+## Convert RESN2 string utilities to C11
+
+The RESN2 native string and character utility adapter now builds from
+`src/port/original/opus-asm-resn2.c`. The conversion keeps the exported C ABI
+entry points and preserves the French uppercasing, Win32 character-type checks,
+case-insensitive comparisons, difference masks, scan, and bounded-copy
+behavior covered by `opus_x64_runtime_test`.
+
+The replacement drops C++ headers, namespace scope, `extern "C"`,
+`static_cast`, `nullptr`, and `noexcept`, and keeps the target source name
+hyphenated for the new C file.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime
+opus_x64_runtime_test WORD1 -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, the C++ surface grep over
+`src/port/original/opus-asm-resn2.c`, and `git diff --check`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Convert CABI compatibility tool to C11
 
 `opus_cabi_tool` now builds from `src/port/tools/opus-cabi-tool.c`. The target
