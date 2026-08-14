@@ -255,6 +255,7 @@ char * rgszUcc [] =
 
 #ifdef OPUS_X64_TOOL
 #pragma pack(pop)
+static int vcbNativeSY = 15;
 #endif
 
 #define vkNil (-1)
@@ -722,6 +723,21 @@ char * argv [];
 		case 'B':
 			szBuildDir = &argv[argi][2];
 			break;
+
+#ifdef OPUS_X64_TOOL
+		case 'p':
+		case 'P':
+			{
+			int cbPointer = atoi(argv[argi] + 2);
+			if (cbPointer != 4 && cbPointer != 8)
+				{
+				GiveUsage();
+				exit(1);
+				}
+			vcbNativeSY = 2 + cbPointer + 2 + 2 + 1;
+			break;
+			}
+#endif
 
 		default:
 			GiveUsage();
@@ -1312,7 +1328,6 @@ WriteAsmFile()
 
 #ifdef OPUS_X64_TOOL
 
-#define cbNativeSY 15
 #define cbNativeSYT (4 + wHashMax * 2)
 
 static int CbLegacyPsy(psy)
@@ -1334,7 +1349,7 @@ SY *psy;
 {
 	int cch = (unsigned char)psy->st[0];
 	int mct = psy->mct & 7;
-	int cb = cbNativeSY + (cch == 0 ? 4 : cch);
+	int cb = vcbNativeSY + (cch == 0 ? 4 : cch);
 	if (mct == mctSdm)
 		cb += 8;
 	else if (mct == mctEl)

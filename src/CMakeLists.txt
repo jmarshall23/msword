@@ -484,7 +484,7 @@ add_custom_command(
         "${CMAKE_CURRENT_SOURCE_DIR}/Opus/resource/ibcm.rel"
         "${OPUS_GENERATED_COMMAND_DIR}/IBCM.H"
     COMMAND "$<TARGET_FILE:opus_mkcmd_tool>"
-        -T@13 -s${OPUS_DLG_SOURCE_ARG}/ -bcabi/
+        -T@13 -p${CMAKE_SIZEOF_VOID_P} -s${OPUS_DLG_SOURCE_ARG}/ -bcabi/
         opuscmd keys menus
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
         "${OPUS_GENERATED_COMMAND_DIR}/IBCM.H"

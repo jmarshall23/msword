@@ -10,6 +10,17 @@ typedef int (*OPUS_PFN)();
 #define mctEl 2
 #define mctSdm 3
 
+#define OPUS_MAX_SIZE(a, b) ((a) > (b) ? (a) : (b))
+#define OPUS_ALIGN_UP(value, alignment) \
+	((((value) + (alignment) - 1) / (alignment)) * (alignment))
+#define OPUS_POINTER_ALIGN sizeof(void *)
+#define OPUS_KME_VALUE_SIZE OPUS_MAX_SIZE(sizeof(void *), sizeof(int))
+#define OPUS_EXPECTED_SY_SIZE (2 + sizeof(OPUS_PFN) + 2 + 2 + 1)
+#define OPUS_EXPECTED_KME_SIZE \
+	OPUS_ALIGN_UP(sizeof(unsigned) + OPUS_KME_VALUE_SIZE, OPUS_POINTER_ALIGN)
+#define OPUS_EXPECTED_KMP_OFFSET \
+	OPUS_ALIGN_UP(sizeof(void *) + sizeof(int) * 3, OPUS_POINTER_ALIGN)
+
 #pragma pack(push, 1)
 typedef struct _OPUS_NATIVE_SY
 	{
@@ -169,10 +180,10 @@ typedef struct _OpusNativeCommandAddress
 #include "opuscmddata.inc"
 #include "opuscmdtable.h"
 
-typedef char OpusAssertSySize[(sizeof(OPUS_NATIVE_SY) == 15) ? 1 : -1];
+typedef char OpusAssertSySize[(sizeof(OPUS_NATIVE_SY) == OPUS_EXPECTED_SY_SIZE) ? 1 : -1];
 typedef char OpusAssertSytSize[(sizeof(OPUS_NATIVE_SYT) == 258) ? 1 : -1];
-typedef char OpusAssertKmeSize[(sizeof(OPUS_NATIVE_KME) == 16) ? 1 : -1];
-typedef char OpusAssertKmpOffset[(offsetof(OPUS_NATIVE_KMP, rgkme) == 24) ? 1 : -1];
+typedef char OpusAssertKmeSize[(sizeof(OPUS_NATIVE_KME) == OPUS_EXPECTED_KME_SIZE) ? 1 : -1];
+typedef char OpusAssertKmpOffset[(offsetof(OPUS_NATIVE_KMP, rgkme) == OPUS_EXPECTED_KMP_OFFSET) ? 1 : -1];
 typedef char OpusAssertMtmSize[(sizeof(OPUS_NATIVE_MTM) == 8) ? 1 : -1];
 typedef char OpusAssertMudSize[(sizeof(OPUS_NATIVE_MUD) == 8) ? 1 : -1];
 typedef char OpusAssertSttbSize[(sizeof(OPUS_NATIVE_STTB) == 24) ? 1 : -1];
@@ -254,6 +265,8 @@ void MoveCmds(void *sytRaw, void *kmpRaw, void *mudRaw,
 		{
 		const OpusNativeSymbolInit *init = &kOpusNativeSymbols[i];
 		OPUS_NATIVE_SY *symbol = (OPUS_NATIVE_SY *)(syt->grpsy + bsy);
+		if (bsy != init->bsy)
+			abort();
 		memset(symbol, 0, sizeof(*symbol));
 		symbol->bsyNext = init->bsy_next;
 		symbol->pfnCmd = ResolveCommandAddress(init->function_name);
@@ -278,6 +291,8 @@ void MoveCmds(void *sytRaw, void *kmpRaw, void *mudRaw,
 
 		bsy += CopySymbolPayload(symbol, init);
 		}
+	if (bsy != (size_t)kOpusNativeBsyMac)
+		abort();
 
 	kmp->hkmpNext = NULL;
 	kmp->grpf = 0;

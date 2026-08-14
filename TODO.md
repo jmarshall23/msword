@@ -106,12 +106,14 @@ emcmake cmake --fresh -S src --preset wasm-debug
 cmake --build out/wasm-debug --target WORD1 -j2
 ```
 
-The build now reaches `src/port/original/opus_asm_movecmds.c` and fails the
-native command-table layout assertions: `OPUS_NATIVE_SY` is no longer 15 bytes,
-`OPUS_NATIVE_KME` is no longer 16 bytes, and `OPUS_NATIVE_KMP.rgkme` is no longer
-at byte 24 when `OPUS_PFN` and heap handles are 4-byte wasm pointers. Fix the
-table writer and every reader that assumes x64-native KME/KMP widths; do not
-paper over the assertions.
+The build now links `bin/wasm/WORD1.js` and `bin/wasm/WORD1.wasm`. `mkcmd`
+receives the target pointer width and emits wasm32 command offsets, so generated
+`bcm*` constants, `rgbcm`, menu command ids, `kOpusNativeBsyMac`, and the
+`MoveCmds` writer agree on 4-byte `OPUS_PFN` and heap handles. Keep both native
+host-tool and wasm generations covered when changing command-table layout.
+
+`node bin/wasm/WORD1.js --self-test` exits successfully. The next check is a
+browser run with SDL canvas output and Asyncify enabled where needed.
 
 Emscripten-linked artifacts now live under `build/wasm/` and `bin/wasm/`, while
 native host tools still come from `build/tools/Debug`. Keep that split intact
