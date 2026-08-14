@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "opusinputscript.h"
+#include "../win32/opusinputscript.h"
 
 #define kUserData ((LONG_PTR)0x12345678)
 #define kExtraData ((LONG_PTR)0x123456789)

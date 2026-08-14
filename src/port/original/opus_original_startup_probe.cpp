@@ -3,7 +3,7 @@
 #if defined(_MSC_VER)
 #include "rtcapi.h"
 #endif
-#include "opusinputscript.h"
+#include "../win32/opusinputscript.h"
 #include "opus_x64_compat.h"
 #include <algorithm>
 #include <cstdarg>
