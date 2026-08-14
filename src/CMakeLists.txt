@@ -1639,6 +1639,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         COMMAND "${CMAKE_COMMAND}"
             "-DWORD1_PATH=$<TARGET_FILE:WORD1>"
             "-DROUNDTRIP_DIR=${MSWORD_TARGET_BUILD_ROOT}/save-proof"
+            "-DWORKDIR=${MSWORD_ROOT}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Word1OpenSaveRoundtrip.cmake"
     )
     set_tests_properties(opus_word1_open_save_roundtrip_test PROPERTIES

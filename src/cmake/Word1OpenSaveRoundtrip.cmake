@@ -4,10 +4,15 @@ endif()
 if(NOT DEFINED ROUNDTRIP_DIR OR ROUNDTRIP_DIR STREQUAL "")
     message(FATAL_ERROR "ROUNDTRIP_DIR is required")
 endif()
+if(NOT DEFINED WORKDIR OR WORKDIR STREQUAL "")
+    message(FATAL_ERROR "WORKDIR is required")
+endif()
 
 file(MAKE_DIRECTORY "${ROUNDTRIP_DIR}")
 set(input_doc "${ROUNDTRIP_DIR}/word1-open-save-input.doc")
 set(output_doc "${ROUNDTRIP_DIR}/word1-open-save-output.doc")
+set(input_arg "build/save-proof/word1-open-save-input.doc")
+set(output_arg "build/save-proof/word1-open-save-output.doc")
 file(REMOVE "${input_doc}" "${output_doc}")
 
 execute_process(
@@ -15,7 +20,8 @@ execute_process(
         OPUS_HEADLESS=1
         SDL_VIDEODRIVER=dummy
         "${WORD1_PATH}"
-        "--scripted-save-as-output=${input_doc}"
+        "--scripted-save-as-output=${input_arg}"
+    WORKING_DIRECTORY "${WORKDIR}"
     RESULT_VARIABLE save_result
 )
 if(NOT save_result EQUAL 0)
@@ -27,8 +33,9 @@ execute_process(
         OPUS_HEADLESS=1
         SDL_VIDEODRIVER=dummy
         "${WORD1_PATH}"
-        "${input_doc}"
-        "--scripted-save-as-output=${output_doc}"
+        "${input_arg}"
+        "--scripted-save-as-output=${output_arg}"
+    WORKING_DIRECTORY "${WORKDIR}"
     RESULT_VARIABLE roundtrip_result
 )
 if(NOT roundtrip_result EQUAL 0)
