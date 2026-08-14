@@ -52,6 +52,7 @@ constexpr LRESULT kEditPaste = 2297;
 constexpr LRESULT kEditSelectAll = 5106;
 constexpr WPARAM kFileNew = 1813;
 constexpr WPARAM kFileSaveAs = 1897;
+constexpr WPARAM kFileExit = 2095;
 constexpr WPARAM kHelpAbout = 182;
 constexpr WPARAM kExportPdf = 0x7103;
 constexpr int kComboFont = 0x7502;
@@ -512,6 +513,25 @@ bool ScriptedFontTypingMatched() {
                         second_cp) == 144;
 }
 
+bool ScriptedUiMatched() {
+    const HWND app = FindWindowA("OpusApp", nullptr);
+    if (app == nullptr) {
+        return false;
+    }
+    OpusUser32PushScriptedInput(nullptr, WM_COMMAND, 1, 0);
+    SendMessageW(app, WM_COMMAND, kFileNew, 0);
+    WCHAR caption[256] = {};
+    if (!IsWindow(app) ||
+        GetWindowTextW(app, caption,
+                       static_cast<int>(sizeof(caption) /
+                                        sizeof(caption[0]))) == 0 ||
+        !OpusWideContains(caption, OPUSW("Document2"))) {
+        return false;
+    }
+    SendMessageW(app, WM_COMMAND, kFileExit, 0);
+    return true;
+}
+
 void WriteCrashText(HANDLE file, const char* text) {
     DWORD written = 0;
     WriteFile(file, text, static_cast<DWORD>(std::strlen(text)), &written,
@@ -885,6 +905,7 @@ LONG WINAPI ObserveVectoredException(EXCEPTION_POINTERS* exception) {
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
                     PWSTR command_line, int show_command) {
     const LPCWSTR self_test = OPUSW("--self-test");
+    const LPCWSTR scripted_ui_test = OPUSW("--scripted-ui-test");
     const LPCWSTR scripted_key_test = OPUSW("--scripted-key-test");
     const LPCWSTR scripted_typing_test = OPUSW("--scripted-typing-test");
     const LPCWSTR scripted_clipboard_test = OPUSW("--scripted-clipboard-test");
@@ -904,6 +925,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_key_test =
         OpusWideContains(command_line, scripted_key_test) ||
         OpusWideContains(GetCommandLineW(), scripted_key_test);
+    const bool run_scripted_ui_test =
+        OpusWideContains(command_line, scripted_ui_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_ui_test);
     const bool run_scripted_typing_test =
         OpusWideContains(command_line, scripted_typing_test) ||
         OpusWideContains(GetCommandLineW(), scripted_typing_test);
@@ -980,7 +1004,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_KEYDOWN, 'A', 5);
         OpusUser32PushScriptedInput(nullptr, WM_KEYUP, 'A', 6);
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
-    } else if (run_scripted_unicode_test || run_scripted_about_test ||
+    } else if (run_scripted_ui_test || run_scripted_unicode_test ||
+               run_scripted_about_test ||
                run_scripted_selection_test || run_scripted_interaction_test ||
                run_scripted_save_as_test || run_scripted_pdf_export_test ||
                run_scripted_font_typing_test) {
@@ -1007,6 +1032,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_font_typing_test && !ScriptedFontTypingMatched()) {
         return 11;
     }
+    if (run_scripted_ui_test && !ScriptedUiMatched()) return 12;
     return result;
 }
 

@@ -94,8 +94,8 @@ The Windows job keeps the useful Checkout, Configure, Build and Test shape.
 
 macOS and Linux jobs install SDL2, configure their Ninja presets, and build the current
 non-Windows gates: `opus-sdl-probe`, the native generator tools, and the generated
-command/resource targets. The 10 tests that run `opus_word1_ui_test` are labelled `ui`;
-CI excludes that label until item 14 gives them a headless path.
+command/resource targets. The former WORD1 UI-labelled tests now run through
+headless scripted `WORD1` modes, so `ctest -L ui` is empty.
 
 Do: open a pull request and confirm the Windows, macOS and Linux jobs are green.
 
@@ -175,18 +175,19 @@ narrow to hold it.
 Headless mode belongs here, not deferred forever: `backend_sdl.c` honours
 `SDL_VIDEODRIVER=dummy` under `OPUS_HEADLESS=1`, and the input translator
 replays a scripted event list instead of SDL events. The rich WORD1 UI
-harnesses now run in process under that headless path. The remaining
-UI-labelled test is the base `opus_word1_ui_test` smoke harness.
+harnesses and the base `opus_word1_ui_test` smoke harness now run in process
+under that headless path.
 
 Current finding: `word1_port_smoke_test` passes, and the typing, clipboard,
 Unicode, About, selection, interaction, font-typing, Save As, and PDF export
-UI harnesses now run in process under the headless scripted environment. The
-old interaction test's out-of-process caption-drag
-coverage is not preserved yet; add an in-process nonclient mouse drag gate
-when the shim has a scripted cursor/capture path for native window movement.
-The old font-typing test's screen-pixel paint assertions are not preserved
-under SDL dummy; add a headless paint-buffer oracle if line rendering regresses
-without formatter-state failures.
+UI harnesses, plus the base File/New/Exit smoke harness, now run in process
+under the headless scripted environment. `ctest -L ui` is empty. The old
+interaction test's out-of-process caption-drag coverage is not preserved yet;
+add an in-process nonclient mouse drag gate when the shim has a scripted
+cursor/capture path for native window movement. The old font-typing test's
+screen-pixel paint assertions are not preserved under SDL dummy; add a
+headless paint-buffer oracle if line rendering regresses without
+formatter-state failures.
 
 Current finding: `WORD1 --scripted-key-test` now seeds in-process key down/up and
 quit messages before entering Microsoft's `OpusOriginalWinMain`, retargets

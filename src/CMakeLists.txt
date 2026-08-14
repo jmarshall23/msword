@@ -1490,9 +1490,12 @@ set_tests_properties(word1_scripted_key_test PROPERTIES
     TIMEOUT 15
 )
 add_test(NAME opus_word1_ui_test
-    COMMAND $<TARGET_FILE:opus_word1_ui_test> $<TARGET_FILE:WORD1>
+    COMMAND $<TARGET_FILE:WORD1> --scripted-ui-test
 )
-set_tests_properties(opus_word1_ui_test PROPERTIES TIMEOUT 20)
+set_tests_properties(opus_word1_ui_test PROPERTIES
+    ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
+    TIMEOUT 15
+)
 add_test(NAME opus_word1_clipboard_shortcut_test
     COMMAND $<TARGET_FILE:WORD1> --scripted-clipboard-test
 )
@@ -1556,8 +1559,3 @@ set_tests_properties(opus_word1_pdf_export_test PROPERTIES
     ENVIRONMENT "OPUS_HEADLESS=1;SDL_VIDEODRIVER=dummy"
     TIMEOUT 15
 )
-
-set(OPUS_WORD1_UI_TESTS
-    opus_word1_ui_test
-)
-set_tests_properties(${OPUS_WORD1_UI_TESTS} PROPERTIES LABELS ui)
