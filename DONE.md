@@ -2426,3 +2426,29 @@ Reviewed by agy and claude before implementation, but agy failed because its
 interactive TTY could not open `/dev/tty`, and claude timed out with only an
 execution-error line. The conversion preserves relaxed heap-byte accounting
 with C11 atomics instead of adding a new lock around the counter.
+
+## Convert modern formats test to C11
+
+`src/port/original/opus_modern_formats_test.cpp` is now
+`src/port/original/opus-modern-formats-test.c`. The test keeps the same modern
+format API probes and assertions while replacing C++ streams, strings,
+iterators, and base64 helpers with C11 stdio/stdlib helpers and byte-buffer
+search routines.
+
+`opus_modern_formats_test` now builds the C source with `c_std_11`, includes
+the original port headers explicitly, and keeps C++ link language because
+`opus_x64_runtime` can contain C++ objects on Windows. Its CTest registration
+is Windows-only because non-Windows builds link `modernformatsstub.c`, not the
+real modern-format implementation.
+
+Validated with `cmake --build out/macos-debug --target
+opus_modern_formats_test -j2`, `ctest --test-dir out/macos-debug -R
+'^opus_modern_formats_test$' --output-on-failure` on macOS confirming the test
+is not registered against stubs, `ctest --test-dir out/macos-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `ctest --test-dir
+out/macos-debug -L ui --output-on-failure`, C++ surface grep over the new test
+C source, and `git diff --check`.
+
+Reviewed by agy and claude before implementation, but agy failed because its
+interactive TTY could not open `/dev/tty`, and claude timed out with only an
+execution-error line.

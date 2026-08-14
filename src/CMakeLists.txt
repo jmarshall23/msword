@@ -1453,10 +1453,11 @@ foreach(config Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 add_executable(opus_modern_formats_test
-    port/original/opus_modern_formats_test.cpp
+    port/original/opus-modern-formats-test.c
 )
-target_compile_features(opus_modern_formats_test PRIVATE cxx_std_20)
+target_compile_features(opus_modern_formats_test PRIVATE c_std_11)
 target_compile_definitions(opus_modern_formats_test PRIVATE NOMINMAX UNICODE _UNICODE)
+target_include_directories(opus_modern_formats_test PRIVATE ${OPUS_ORIGINAL_INCLUDE_DIRS})
 target_link_libraries(opus_modern_formats_test PRIVATE opus_x64_runtime)
 if(WIN32)
     target_link_libraries(opus_modern_formats_test PRIVATE user32 gdi32)
@@ -1468,6 +1469,7 @@ if(MSVC)
 endif()
 set_target_properties(opus_modern_formats_test PROPERTIES
     FOLDER "Original Opus x64/tests"
+    LINKER_LANGUAGE CXX
     RUNTIME_OUTPUT_DIRECTORY "${MSWORD_BUILD_ROOT}/tests"
     VS_GLOBAL_VcpkgApplocalDeps "false"
 )
@@ -1516,7 +1518,9 @@ if(NOT WIN32 AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckWin32Coverage.cmake"
     )
 endif()
-add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
+if(WIN32)
+    add_test(NAME opus_modern_formats_test COMMAND $<TARGET_FILE:opus_modern_formats_test>)
+endif()
 add_test(NAME opus_original_sttb_test COMMAND $<TARGET_FILE:opus_original_sttb_test>)
 add_test(NAME opus_original_plc_test COMMAND $<TARGET_FILE:opus_original_plc_test>)
 add_test(NAME opus_sdm_cab_test COMMAND $<TARGET_FILE:opus_sdm_cab_test>)
