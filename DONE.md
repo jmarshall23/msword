@@ -1,5 +1,29 @@
 # DONE
 
+## Import jphonorato's probes
+
+`docs/win32-shim/font-probes/` now contains translated Win32 oracle probes for
+integer glyph advances, synthetic bold and italic metrics, and startup font
+substitution. The README documents the Wine/Windows commands for recapturing font
+metrics while marking them as oracle-capture commands, not SDL-shim run instructions.
+
+`docs/win32-shim/handle-check/` now contains a translated and shim-adapted
+`GlobalHandle(ptr)` probe. It calls the current C shim's `GlobalAlloc`, `GlobalLock`,
+`GlobalUnlock`, `GlobalHandle`, and `GlobalFree` path directly instead of importing the
+discarded Qt shell's `OpusShellMemory` API.
+
+The Qt comparison probes and table generator were left behind because they feed
+`src/core` artifacts from the rejected Qt-shell architecture, not this Win32-on-SDL
+shim.
+
+Validated with C11 syntax checks for the font probes, a compiled and passing
+`handle-check` run against `src/port/win32/kernel32.c`, filename checks proving no new
+underscore filenames, a search proving no banned label text was added, and
+`git diff --check`.
+
+Reviewed by agy and claude: agy could not start because its TTY UI failed to
+open `/dev/tty`; claude hung without findings and was interrupted.
+
 ## Preserve startup heap diagnosis
 
 `docs/win32-shim/startup-debugging.md` now condenses the Spanish Fedora startup

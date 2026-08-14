@@ -544,15 +544,3 @@ inventory need an English version at minimum.
 
 Done when: the English doc links each retained claim to the original Spanish section and
 omits Winelib-only implementation steps that do not apply to the SDL shim.
-
-### 28a. Import jphonorato's probes, not the Qt core
-
-Copy the small diagnostic programs under `docs/port-qt/scripts/fidelity/` and
-`docs/port-qt/scripts/handle-check/` into `docs/win32-shim/` after translating the
-README text. Do not copy `src/core/`: its contracts are for a Qt shell extraction, while
-this repo's contract is still Win32-on-SDL. The probes are valuable because they pin
-font substitution, integer glyph advances, and handle round-trips independently of that
-architecture.
-
-Done when: `docs/win32-shim/` has a documented command for recapturing font metrics and
-a documented command for validating `GlobalHandle(ptr)` round-trips against the shim.
