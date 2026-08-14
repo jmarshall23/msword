@@ -1405,7 +1405,7 @@ char *pchBufStart;
 	if (fToRead)
 		{
 		PrintT("READ: refilling token buffer from offset %u\n",
-				pchBufStart - Global(rgchBuf));
+				pchBufStart - (char *)Global(rgchBuf));
 		PrintT("READ: requesting %d bytes", cchWanted);
 		PrintT(" from lib %u\n", (unsigned)Global(libBufEnd));
 		}

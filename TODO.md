@@ -139,8 +139,9 @@ Cite these as classes, not single lines, since they recur:
   pointer increments in `debug/debugstr.c` and `debug/debuginf.c`. Keep the check
   actionable with `rg -n "^[[:space:]]*\([^)]*\*\)[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(\+=|-=|=[^=])" src/Opus`,
   which should return no matches.
-- Pointer subtraction between incompatible types: `elcore.c`, `elxprocs.c:89`,
-  `inssubs.c:652`, `pagevw.c:1380`.
+- Pointer subtraction between incompatible types: current cleanup made the cited
+  `elcore.c`, `inssubs.c:652`, and `pagevw.c:1380` offsets use explicit,
+  same-typed subtraction; `elxprocs.c:89` is already same-typed in this tree.
 - K&R definitions that conflict with a prototype: `help.h` `FDlgAbout`, `mathapi.c`
   `LWholeFromNum`, and the SDM parser declarations. Locate by compiling, not by line
   number; the four cited in an earlier draft were jphonorato's post-patch positions.

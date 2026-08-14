@@ -1377,7 +1377,7 @@ LTrimDrcl:
 					{
 					/* bad ghost dr - delete it */
 					FreezeHp();
-					DeleteFromPl(hpldr, pdr - (struct DR *)PInPl(hpldr, 0));
+					DeleteFromPl(hpldr, (int)(pdr - (struct DR *)PInPl(hpldr, 0)));
 					MeltHp();
 					if (pdrNew > pdr)
 						pdrNew--;

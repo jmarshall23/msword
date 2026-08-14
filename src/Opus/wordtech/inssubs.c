@@ -649,7 +649,7 @@ int grpf;
 							!FNeHprgch((char HUGE *)pchProp, hpch + 1,
 							cchPropShare))
 						{ /* share existing property */
-						bCur = hpch - (char HUGE *)hpfkp;
+						bCur = (int)(hpch - (char HUGE *)hpfkp);
 						cchPropShare = 0;
 						break;  /* exit while */
 						}
