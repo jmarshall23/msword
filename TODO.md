@@ -134,9 +134,13 @@ Windows, macOS and Linux, but it is still not a real `WORD1` Save As document.
 The remaining work is Windows-specific. The native Windows CI runner exits the
 scripted UI roundtrip before the `OpusWwd` pane is available
 (`pane=0 stage=-1 app_alive=0`), so Windows no longer runs that SDL-only gate.
-Make this executable by adding a Windows-native saved-document harness that does
-not depend on the SDL offscreen UI path. Then compare the Windows output with
-the macOS/Linux native outputs or explain the first intentional byte delta.
+GitHub Actions runs `31840965528` and `31841323031` proved that dispatching
+File New from the Save As timer is not the missing step: synchronous dispatch
+hangs the modal path until CTest kills the process, and asynchronous dispatch
+still times out at `app=1 pane=0 stage=-1`. Make this executable by adding a
+Windows-native saved-document harness that does not depend on finding an
+`OpusWwd` pane or on the SDL offscreen UI path. Then compare the Windows output
+with the macOS/Linux native outputs or explain the first intentional byte delta.
 
 Done when: a document saved on Windows opens byte-identically on macOS and Linux,
 and back, or the remaining byte deltas are documented as intentional file-format

@@ -64,7 +64,6 @@ static ULONGLONG g_scripted_save_as_started;
 static unsigned g_scripted_save_as_attempts;
 static bool g_scripted_save_as_text_inserted;
 static bool g_scripted_save_as_attempted;
-static bool g_scripted_save_as_new_dispatched;
 static bool g_scripted_save_as_running;
 static UINT_PTR g_scripted_save_as_timer;
 static BOOL g_last_scripted_save_has_app;
@@ -451,15 +450,7 @@ static bool ScriptedSaveAsMatched(bool *text_inserted, bool *save_attempted) {
     DWORD temporary_directory_length;
     g_last_scripted_save_has_app = app != NULL;
     g_last_scripted_save_has_pane = pane != NULL;
-    if (app == NULL) {
-        return false;
-    }
-    if (pane == NULL) {
-        if (!g_scripted_save_as_new_dispatched) {
-            g_scripted_save_as_new_dispatched = true;
-            PostMessageW(app, WM_COMMAND, kFileNew, 0);
-            OpusUser32PushScriptedInput(NULL, WM_COMMAND, 1, 0);
-        }
+    if (app == NULL || pane == NULL) {
         return false;
     }
     if (save_attempted != NULL && *save_attempted &&
@@ -589,7 +580,6 @@ static void ScheduleScriptedSaveAsTimer(void) {
     g_scripted_save_as_attempts = 0;
     g_scripted_save_as_text_inserted = false;
     g_scripted_save_as_attempted = false;
-    g_scripted_save_as_new_dispatched = false;
     g_scripted_save_as_running = false;
     g_scripted_save_as_timer = 0;
     g_scripted_save_as_doc_path[0] = '\0';
