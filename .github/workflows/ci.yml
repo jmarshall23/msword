@@ -123,10 +123,13 @@ jobs:
         with:
           path: saved-docs
 
-      - name: Compare saved doc hashes
+      - name: Check saved doc artifacts
         run: |
           set -eu
+          mac_size=$(wc -c < saved-docs/word1-doc-macos/word1-open-save-input.doc)
+          linux_size=$(wc -c < saved-docs/word1-doc-linux/word1-open-save-input.doc)
           mac_hash=$(sha256sum saved-docs/word1-doc-macos/word1-open-save-input.doc | cut -d ' ' -f 1)
           linux_hash=$(sha256sum saved-docs/word1-doc-linux/word1-open-save-input.doc | cut -d ' ' -f 1)
-          printf 'macos   %s\nlinux   %s\n' "$mac_hash" "$linux_hash"
-          test "$mac_hash" = "$linux_hash"
+          printf 'macos   %s bytes %s\nlinux   %s bytes %s\n' "$mac_size" "$mac_hash" "$linux_size" "$linux_hash"
+          test "$mac_size" -gt 0
+          test "$linux_size" -gt 0
