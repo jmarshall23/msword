@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
 
 extern "C" struct ITR vitr = {};
@@ -88,10 +89,30 @@ extern "C" TestWord TmcDoDlgDli(TestDltHeader**, void**, TestDli*);
 extern "C" void EndDlg(TestWord);
 extern "C" void SetTmcText_sdm21(TestWord, char*);
 extern "C" void GetTmcText_sdm21(TestWord, char*, TestWord);
+extern "C" void** HcabAlloc_sdm21(TestWord);
+extern "C" void FreeCab(void**);
+extern "C" int FSetCabSz(void**, const char*, TestWord);
+extern "C" void GetCabSz(void**, char*, TestWord, TestWord);
+extern "C" int OpusWin95SaveAliasMatches(const unsigned char*);
+extern "C" int OpusFinishWin95SaveAlias(const unsigned char*, int, int);
 
 extern "C" int OpusSaveDocumentAsDocx(int, const char*) {
     return 0;
 }
+
+struct TestCabSaveNative {
+    TestWord simple_words;
+    TestWord handle_words;
+    TestWord sab;
+    TestWord alignment;
+    char** file_name;
+    int directory_list;
+    int format;
+    int quick_save;
+    int backup;
+    int lock_annotations;
+    int options;
+};
 
 int modal_init_count = 0;
 int modal_exit_count = 0;
@@ -104,6 +125,14 @@ bool HasControlRecord(const TestWord tmc) {
     GetTmcRec(tmc, &rectangle);
     return HwndOfTmc(tmc) == nullptr && rectangle.dx > 0 &&
            rectangle.dy > 0;
+}
+
+void CountedPath(const char* path, unsigned char* counted_path,
+                 const std::size_t capacity) {
+    const std::size_t length = std::strlen(path);
+    counted_path[0] = static_cast<unsigned char>(
+        length >= capacity ? capacity - 1 : length);
+    std::memcpy(counted_path + 1, path, counted_path[0]);
 }
 
 int ModalRuntimeProbe(TestWord message, TestWord, TestWord, TestWord,
@@ -354,6 +383,84 @@ int main() {
         DestroyWindow(parent);
         EndSdm();
         return 25;
+    }
+
+    constexpr TestWord save_cab_words = static_cast<TestWord>(
+        (sizeof(TestCabSaveNative) + sizeof(TestWord) - 1) /
+        sizeof(TestWord));
+    constexpr TestWord save_cab_initializer =
+        static_cast<TestWord>(save_cab_words | (1u << 8u));
+    void** save_cab = HcabAlloc_sdm21(save_cab_initializer);
+    char selected_path[] = "sdm-save.doc";
+    if (save_cab == nullptr ||
+        !FSetCabSz(save_cab, selected_path, 1)) {
+        if (save_cab != nullptr) {
+            FreeCab(save_cab);
+        }
+        DestroyWindow(parent);
+        EndSdm();
+        return 26;
+    }
+    SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
+    SetEnvironmentVariableA("TMPDIR", "/tmp/");
+    TestDltHeader save_template{{8, 24, 150, 102}, 4, 0x8400,
+                                 nullptr, 11, 4};
+    auto* save_template_pointer = &save_template;
+    const TestWord save_result =
+        TmcDoDlgDli(&save_template_pointer, save_cab, &modal_initializer);
+    char staged_path[32768] = {};
+    GetCabSz(save_cab, staged_path, sizeof(staged_path), 1);
+    unsigned char staged_counted[256] = {};
+    CountedPath(staged_path, staged_counted, sizeof(staged_counted));
+    const bool save_alias_active =
+        OpusWin95SaveAliasMatches(staged_counted) != 0;
+    OpusFinishWin95SaveAlias(staged_counted, 0, 0);
+    DeleteFileA(selected_path);
+    FreeCab(save_cab);
+    if (save_result != 1 || staged_path[0] == '\0' || !save_alias_active) {
+        DestroyWindow(parent);
+        EndSdm();
+        return 27;
+    }
+
+    void** open_cab = HcabAlloc_sdm21(save_cab_initializer);
+    char open_path[] = "sdm-open.doc";
+    FILE* open_file = std::fopen(open_path, "wb");
+    if (open_file != nullptr) {
+        std::fputs("open", open_file);
+        std::fclose(open_file);
+    }
+    if (open_cab == nullptr || open_file == nullptr ||
+        !FSetCabSz(open_cab, open_path, 1)) {
+        if (open_cab != nullptr) {
+            FreeCab(open_cab);
+        }
+        DeleteFileA(open_path);
+        DestroyWindow(parent);
+        EndSdm();
+        return 28;
+    }
+    SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
+    TestDltHeader open_template{{8, 24, 206, 104}, 3, 0x8400,
+                                 nullptr, 11, 4};
+    auto* open_template_pointer = &open_template;
+    const TestWord open_result =
+        TmcDoDlgDli(&open_template_pointer, open_cab, &modal_initializer);
+    char opened_staged_path[32768] = {};
+    GetCabSz(open_cab, opened_staged_path, sizeof(opened_staged_path), 1);
+    unsigned char opened_staged_counted[256] = {};
+    CountedPath(opened_staged_path, opened_staged_counted,
+                sizeof(opened_staged_counted));
+    const bool open_alias_active =
+        OpusWin95SaveAliasMatches(opened_staged_counted) != 0;
+    DeleteFileA(opened_staged_path);
+    DeleteFileA(open_path);
+    FreeCab(open_cab);
+    if (open_result != 1 || opened_staged_path[0] == '\0' ||
+        !open_alias_active) {
+        DestroyWindow(parent);
+        EndSdm();
+        return 29;
     }
     EndSdm();
     DestroyWindow(parent);

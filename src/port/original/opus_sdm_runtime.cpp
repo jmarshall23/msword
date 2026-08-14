@@ -2096,14 +2096,29 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
     Tmc result = kTmcCancel;
     for (;;) {
         char test_path[32768]{};
+        DWORD test_path_length = 0;
 #ifdef OPUS_TEST_HOOKS
-        const DWORD test_path_length = GetEnvironmentVariableA(
+        test_path_length = GetEnvironmentVariableA(
             "WORD1_TEST_FILE_DIALOG_PATH", test_path,
             static_cast<DWORD>(std::size(test_path)));
 #else
-        const DWORD test_path_length = 0;
+        (void)test_path;
 #endif
-        if (test_path_length == 0 || test_path_length >= std::size(test_path)) {
+        if (test_path_length >= std::size(test_path)) {
+#ifdef OPUS_TEST_HOOKS
+            if (saving && owner != nullptr) {
+                SetPropW(owner, OPUSW("OpusX64SaveAsStage"),
+                         reinterpret_cast<HANDLE>(2));
+            }
+#endif
+            invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
+            result = kTmcCancel;
+            break;
+        }
+        std::string selected_path =
+            test_path_length == 0 ? initial : std::string(test_path);
+        const bool selected_from_injection = test_path_length != 0;
+        if (selected_path.empty()) {
 #ifdef OPUS_TEST_HOOKS
             if (saving && owner != nullptr) {
                 SetPropW(owner, OPUSW("OpusX64SaveAsStage"),
@@ -2115,12 +2130,15 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
             break;
         }
 #ifdef OPUS_TEST_HOOKS
-        SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
+        if (test_path_length != 0) {
+            SetEnvironmentVariableA("WORD1_TEST_FILE_DIALOG_PATH", nullptr);
+        }
 #endif
 
-        std::string selected_path = test_path;
-        const bool save_docx = saving && OpusModernPathIsDocx(test_path);
-        const bool save_odt = saving && OpusModernPathIsOdt(test_path);
+        const bool save_docx =
+            saving && OpusModernPathIsDocx(selected_path.c_str());
+        const bool save_odt =
+            saving && OpusModernPathIsOdt(selected_path.c_str());
         if (save_docx || save_odt) {
             const char* modern_extension = save_docx ? ".docx" : ".odt";
             const std::size_t selected_slash =
@@ -2144,6 +2162,11 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
                     "This is not a safe document file name.",
                 opening ? "Open" : "Save As",
                 MB_OK | MB_ICONEXCLAMATION);
+            if (!selected_from_injection) {
+                invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
+                result = kTmcCancel;
+                break;
+            }
             continue;
         }
         std::string legacy_path;
@@ -2156,6 +2179,11 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
                 "Word could not prepare a temporary document file.",
                 opening ? "Open" : "Save As",
                 MB_OK | MB_ICONEXCLAMATION);
+            if (!selected_from_injection) {
+                invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
+                result = kTmcCancel;
+                break;
+            }
             continue;
         }
         const bool staged_open = !opening ||
@@ -2172,6 +2200,11 @@ Tmc run_word95_common_file_dialog(DialogState& dialog) {
                         odt ? "Word could not read this OpenDocument file." :
                             "Word could not open the selected file.",
                         "Open", MB_OK | MB_ICONEXCLAMATION);
+            if (!selected_from_injection) {
+                invoke_dialog_proc(dialog, kDlmTerm, kTmcCancel);
+                result = kTmcCancel;
+                break;
+            }
             continue;
         }
 

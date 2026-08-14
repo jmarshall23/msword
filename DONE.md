@@ -1,5 +1,35 @@
 # DONE
 
+## Use SDM edit paths for file dialogs
+
+The SDM Open and Save As modal path now uses the state-owned edit-control text
+as the selected file path when no `WORD1_TEST_FILE_DIALOG_PATH` override is
+present. The override still wins when scripted tests provide it, and all file
+safety, staging, alias, conversion, CAB sync, and cleanup logic stays on the
+existing shared path.
+
+Deterministic edit-path validation, staging, or import failures now cancel the
+dialog instead of retrying forever with the same fixed selection.
+
+`opus_x64_runtime_test` covers both no-env Save As and no-env Open by seeding
+the SDM CAB path, clearing `WORD1_TEST_FILE_DIALOG_PATH`, running the modal
+dialog, and checking that the staging alias is active.
+
+This is partial item 15 progress only. The remaining work is interactive
+file-list and directory-list selection without native common dialogs.
+
+Validated with `cmake --build build-chrstride --target opus_x64_runtime_test
+-j2`, `ctest --test-dir build-chrstride -R '^opus_x64_runtime_test$'
+--output-on-failure --timeout 20`, the focused SDM/Save/PDF test set,
+`ctest --test-dir build-chrstride -L ui --output-on-failure`, the grep checks
+showing no `GetOpenFileNameA`/`GetSaveFileNameA` calls in
+`opus_sdm_runtime.cpp` and only the two dialog-host `CreateWindowExA` calls,
+`git diff --check`, and the broader 27-test CTest sweep.
+
+Reviewed by agy and claude before implementation: agy could not start because
+its TTY UI failed to open `/dev/tty`; claude stalled without output and was
+stopped.
+
 ## Restore SDM headless ui gate
 
 `opus_sdm_render_test` now carries the `ui` CTest label. The label points at the
