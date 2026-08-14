@@ -1,5 +1,31 @@
 # DONE
 
+## Complete six-parameter Double macro dispatch
+
+`LPushMacroArgsTyped` now uses exact typed C call signatures for one through six
+declared parameters whenever any parameter is `Double`. The typed argument
+parser keeps integer, long and string parameters on the existing `uintptr_t`
+path, materializes each `dktDouble` as a C `double`, and rejects double-bearing
+declarations above the supported exact arity instead of falling back to the old
+integer-slot call.
+
+`opus_x64_runtime_test` now covers the prior string-pointer case, the original
+one-`Double` mixed call, a declaration-shaped call with two `Double` arguments,
+and a six-parameter call with one `Double`. The wasm test covers the same cases,
+so mismatched indirect-call signatures would trap.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime_test
+-j2`, direct execution of `./build/tests/Debug/opus_x64_runtime_test`,
+`ctest --test-dir out/macos-debug -R '^opus_x64_runtime_test$'
+--output-on-failure`, `cmake --build out/wasm-debug --target
+opus_x64_runtime_test -j2`, `ctest --test-dir out/wasm-debug -R
+'^opus_x64_runtime_test$' --output-on-failure`, `cmake --build
+out/macos-debug --target WORD1 -j2`, `cmake --build out/wasm-debug --target
+WORD1 -j2`, `git diff --check`, and a C++-suffix grep over `src/port`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped.
+
 ## Pass WordBasic Double arguments through the native ABI
 
 WordBasic `Declare` calls with one `Double` argument now use the typed macro

@@ -100,19 +100,17 @@ Real defects in the current x64 build. All line numbers below were re-derived ag
 this tree; an earlier draft carried jphonorato's post-patch numbers, which are offset by
 roughly 18 lines in `exp.c` and 29 in `CLIPBRD2.C`.
 
-### 21. Complete the remaining `dktDouble` dispatch matrix
+### 21. Extend `dktDouble` dispatch beyond six typed parameters
 
-`LPushMacroArgsTyped` now materializes one `dktDouble` as an ABI floating-point
-argument, which covers the first declared-double call path. Declarations with
-two or more `Double` parameters still return 0 rather than making a known-wrong
-integer-register call. On wasm, one-double calls are exact-signature only for
-the currently tested one-to-three argument shapes because wasm traps mismatched
-indirect-call signatures.
+`LPushMacroArgsTyped` now has wasm-safe exact typed dispatch for one through six
+declared parameters whenever any parameter is `Double`. `celpMax` is still 16,
+so declarations with `Double` in parameters seven through sixteen fail closed
+instead of taking the old integer-register path.
 
-Done when: `opus_x64_runtime_test` covers declaration-shaped calls with at least
-two `Double` parameters and with one `Double` in a higher-arity wasm-safe
-signature, and all values arrive through the ABI's floating-point argument
-path.
+Done when: `opus_x64_runtime_test` covers a declaration-shaped call with
+`Double` in at least the seventh parameter position, the wasm test passes without
+an indirect-call signature trap, and the fallback no longer rejects
+double-bearing declarations with seven to sixteen typed parameters.
 
 ### 22. Bare `long` in serialized structures
 

@@ -252,22 +252,52 @@ static long __cdecl TestMacroDouble(int first, double value,
     return first == 5 && value == 12.5 && text == macro_string_seen ? 53 : 0;
 }
 
+static long __cdecl TestMacroTwoDoubles(int first, double left, double right,
+                                        const char *text) {
+    return first == 7 && left == 2.25 && right == 4.5 &&
+                   text == macro_string_seen
+               ? 61
+               : 0;
+}
+
+static long __cdecl TestMacroWideDouble(int first, int second, int third,
+                                        int fourth, double value,
+                                        const char *text) {
+    return first == 1 && second == 2 && third == 3 && fourth == 4 &&
+                   value == 8.75 && text == macro_string_seen
+               ? 67
+               : 0;
+}
+
+static void SetMacroPointerArguments(int *arguments, const void *pointer_value) {
+    uintptr_t pointer = (uintptr_t)pointer_value;
+    arguments[0] = (int)(pointer & UINT32_MAX);
+#if UINTPTR_MAX > UINT32_MAX
+    arguments[1] = (int)(pointer >> 32);
+#else
+    arguments[1] = 0;
+#endif
+}
+
 static int RunMacroTypedBridgeTest(void) {
     enum { testDktInt = 0, testDktDouble = 3, testDktString = 4 };
     char text[] = "macro string";
-    uintptr_t pointer = (uintptr_t)text;
     double value = 12.5;
     int string_arguments[2];
     int string_types[1] = {testDktString};
     int mixed_arguments[5];
     int mixed_types[3] = {testDktInt, testDktDouble, testDktString};
+    double left = 2.25;
+    double right = 4.5;
+    int double_arguments[7];
+    int double_types[4] = {testDktInt, testDktDouble, testDktDouble,
+                           testDktString};
+    double wide_value = 8.75;
+    int wide_arguments[8];
+    int wide_types[6] = {testDktInt, testDktInt,    testDktInt,
+                         testDktInt, testDktDouble, testDktString};
 
-    string_arguments[0] = (int)(pointer & UINT32_MAX);
-#if UINTPTR_MAX > UINT32_MAX
-    string_arguments[1] = (int)(pointer >> 32);
-#else
-    string_arguments[1] = 0;
-#endif
+    SetMacroPointerArguments(string_arguments, text);
     if (LPushMacroArgsTyped((void *)TestMacroString, string_arguments, 2,
                             string_types, 1) != 47 ||
         macro_string_seen != text) {
@@ -278,8 +308,30 @@ static int RunMacroTypedBridgeTest(void) {
     memcpy(mixed_arguments + 1, &value, sizeof(value));
     mixed_arguments[3] = string_arguments[0];
     mixed_arguments[4] = string_arguments[1];
-    return LPushMacroArgsTyped((void *)TestMacroDouble, mixed_arguments, 5,
-                               mixed_types, 3) == 53;
+    if (LPushMacroArgsTyped((void *)TestMacroDouble, mixed_arguments, 5,
+                            mixed_types, 3) != 53) {
+        return 0;
+    }
+
+    double_arguments[0] = 7;
+    memcpy(double_arguments + 1, &left, sizeof(left));
+    memcpy(double_arguments + 3, &right, sizeof(right));
+    double_arguments[5] = string_arguments[0];
+    double_arguments[6] = string_arguments[1];
+    if (LPushMacroArgsTyped((void *)TestMacroTwoDoubles, double_arguments, 7,
+                            double_types, 4) != 61) {
+        return 0;
+    }
+
+    wide_arguments[0] = 1;
+    wide_arguments[1] = 2;
+    wide_arguments[2] = 3;
+    wide_arguments[3] = 4;
+    memcpy(wide_arguments + 4, &wide_value, sizeof(wide_value));
+    wide_arguments[6] = string_arguments[0];
+    wide_arguments[7] = string_arguments[1];
+    return LPushMacroArgsTyped((void *)TestMacroWideDouble, wide_arguments, 8,
+                               wide_types, 6) == 67;
 }
 
 static int RunElxDispatchTest(void) {
