@@ -90,13 +90,16 @@ DEBUGASSERTSZ            /* WIN - bogus macro for assert string */
 #ifdef OPUS_X64
 extern int OpusWin95SaveAliasMatches();
 extern int OpusWin95SaveAliasActiveMatches();
+extern int OpusWin95SaveAliasApplyActive();
 extern int OpusFinishWin95SaveAlias();
 extern int OpusWin95SaveAliasRequiresRtf();
 #define FWin95SaveAliasMatches(st) OpusWin95SaveAliasMatches(st)
 #define FWin95SaveAliasActiveMatches(st) OpusWin95SaveAliasActiveMatches(st)
+#define FWin95SaveAliasApplyActive(st) OpusWin95SaveAliasApplyActive(st)
 #else
 #define FWin95SaveAliasMatches(st) fFalse
 #define FWin95SaveAliasActiveMatches(st) fFalse
+#define FWin95SaveAliasApplyActive(st) fFalse
 #endif
 
 
@@ -571,6 +574,7 @@ LSaveAs:
 			   hidden secondary modal; properties remain available from File. */
 			fPromptSI = fFalse;
 			PdodDoc(doc)->fPromptSI = fFalse;
+			FWin95SaveAliasApplyActive(stFile);
 			if (!pcmb->fAction && FWin95SaveAliasActiveMatches(stFile))
 				{
 				pcmb->fAction = fTrue;
