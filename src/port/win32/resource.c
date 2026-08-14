@@ -97,8 +97,8 @@ static BOOL HasIconResource(WORD id) {
 }
 
 static HBITMAP LoadStockBitmap(WORD id) {
-    for (size_t i = 0; i < sizeof(g_stock_bitmaps) / sizeof(g_stock_bitmaps[0]);
-         ++i) {
+    size_t i;
+    for (i = 0; i < sizeof(g_stock_bitmaps) / sizeof(g_stock_bitmaps[0]); ++i) {
         if (g_stock_bitmaps[i].id == id) {
             return CreateCompatibleBitmap(NULL, 16, 16);
         }
