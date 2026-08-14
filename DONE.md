@@ -1,5 +1,30 @@
 # DONE
 
+## Route pure Long Declare calls through the typed macro bridge
+
+`exp.c` now marks `dktLong` arguments as typed while marshaling WordBasic
+`Declare` calls, so a pure `Long` declaration no longer falls through to the
+integer-slot `LPushMacroArgs` path on LP64. Existing integer-only declarations
+still use the untyped fallback, and string/double declarations keep using the
+typed path.
+
+`opus_x64_runtime_test` now covers a pure `Long` declaration-shaped bridge call
+and a mixed `Long` plus `String` bridge call using the existing packed slot
+format.
+
+Validated with `cmake --build out/macos-debug --target opus_x64_runtime_test
+-j2`, direct execution of `./build/tests/Debug/opus_x64_runtime_test`, `ctest
+--test-dir out/macos-debug -R '^opus_x64_runtime_test$' --output-on-failure`,
+`cmake --build out/wasm-debug --target opus_x64_runtime_test -j2`, `ctest
+--test-dir out/wasm-debug -R '^opus_x64_runtime_test$' --output-on-failure`,
+`cmake --build out/macos-debug --target WORD1 -j2`, `cmake --build
+out/wasm-debug --target WORD1 -j2`, `git diff --check`, and a C++-suffix grep
+over `src/port`.
+
+Reviewed before implementation: agy could not start because its TTY UI failed
+to open `/dev/tty`; claude stalled without output and was stopped, returning
+only `Execution error`.
+
 ## Extend Double macro dispatch to the Declare arity ceiling
 
 `LPushMacroArgsTyped` now supports the next reachable WordBasic `Declare`

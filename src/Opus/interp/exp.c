@@ -1500,6 +1500,7 @@ LTmError:
 						BLTBH(&hpev->num, &numT, cbNUM);
 							*(long *)pwArgs = LWholeFromNum(&numT, TRUE);
 							pwArgs = (WORD *)((long *)pwArgs + 1);
+							fTypedArgs = TRUE;
 						}
 					break;
 

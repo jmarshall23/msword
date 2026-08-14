@@ -247,6 +247,14 @@ static long __cdecl TestMacroString(const char *text) {
     return text != NULL && strcmp(text, "macro string") == 0 ? 47 : 0;
 }
 
+static long __cdecl TestMacroLong(long value) {
+    return value == 0x1234567L ? 43 : 0;
+}
+
+static long __cdecl TestMacroLongString(long value, const char *text) {
+    return value == 0x2345678L && text == macro_string_seen ? 41 : 0;
+}
+
 static long __cdecl TestMacroDouble(int first, double value,
                                     const char *text) {
     return first == 5 && value == 12.5 && text == macro_string_seen ? 53 : 0;
@@ -288,12 +296,25 @@ static void SetMacroPointerArguments(int *arguments, const void *pointer_value) 
 #endif
 }
 
+static void SetMacroLongArgument(int *arguments, long value) {
+    memcpy(arguments, &value, sizeof(value));
+}
+
 static int RunMacroTypedBridgeTest(void) {
-    enum { testDktInt = 0, testDktDouble = 3, testDktString = 4 };
+    enum {
+        testDktInt = 0,
+        testDktLong = 1,
+        testDktDouble = 3,
+        testDktString = 4
+    };
     char text[] = "macro string";
     double value = 12.5;
     int string_arguments[2];
     int string_types[1] = {testDktString};
+    int long_arguments[2] = {0};
+    int long_types[1] = {testDktLong};
+    int long_string_arguments[4] = {0};
+    int long_string_types[2] = {testDktLong, testDktString};
     int mixed_arguments[5];
     int mixed_types[3] = {testDktInt, testDktDouble, testDktString};
     double left = 2.25;
@@ -316,6 +337,24 @@ static int RunMacroTypedBridgeTest(void) {
     if (LPushMacroArgsTyped((void *)TestMacroString, string_arguments, 2,
                             string_types, 1) != 47 ||
         macro_string_seen != text) {
+        return 0;
+    }
+
+    SetMacroLongArgument(long_arguments, 0x1234567L);
+    if (LPushMacroArgsTyped((void *)TestMacroLong, long_arguments,
+                            sizeof(long) / sizeof(int), long_types, 1) !=
+        43) {
+        return 0;
+    }
+
+    SetMacroLongArgument(long_string_arguments, 0x2345678L);
+    long_string_arguments[sizeof(long) / sizeof(int)] = string_arguments[0];
+    long_string_arguments[sizeof(long) / sizeof(int) + 1] =
+        string_arguments[1];
+    if (LPushMacroArgsTyped((void *)TestMacroLongString,
+                            long_string_arguments,
+                            (int)(sizeof(long) / sizeof(int) + 2),
+                            long_string_types, 2) != 41) {
         return 0;
     }
 
