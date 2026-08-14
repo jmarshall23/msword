@@ -1117,7 +1117,7 @@ NATIVE CkVfli()     /* makes CkVfli visible to hand NATIVE */
 		iAssert = 0;
 		/*  = because chrmVanish may preceed ichMac */
 		Assert (vfli.fSplatBreak || pchr->ich <= vfli.ichMac);
-		(char *)pchr += CbFromChrm(pchr->chrm);
+		pchr = (struct CHR *)((char *)pchr + CbFromChrm(pchr->chrm));
 		}
 	iAssert = 1;
 	Assert (vfli.doc >= 0 && vfli.doc < docMac);

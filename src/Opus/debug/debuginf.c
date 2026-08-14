@@ -1719,7 +1719,7 @@ CMB *pcmb;
 			CommSz("\n\r");
 			pch = rgch;
 			}
-		(char *)pchr += CbFromChrm(chrm);
+		pchr = (struct CHR *)((char *)pchr + CbFromChrm(chrm));
 		}
 	return cmdOK;
 }

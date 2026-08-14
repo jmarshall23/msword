@@ -134,15 +134,11 @@ for nothing.
 
 Cite these as classes, not single lines, since they recur:
 
-- Cast-as-lvalue, 19 sites. `grep -rnE '^[[:space:]]*\([a-zA-Z_][^)]*\*\)[[:space:]]*[a-zA-Z_]' src/Opus | grep -E '(\+=|-=|=[^=])'`
-  returns 24 lines; four of them (`disp1.c:1676`, `elfile.c:1469`, `formula.c:503`,
-  `elsubs.c:354`) are ordinary casts inside expressions, not assignments. The 19 real
-  ones: `disp1.c:798, 799, 852, 904, 959, 974, 1045, 1046, 1072, 1073, 1249, 1250,
-  1722`, `format.c:3013`, `elsubs2.c:290`, `spelcore.c:157`,
-  `inssubs.c:1684, 1687`, and `tabs.c:213`, which is a cast-as-lvalue through
-  `#define vptdsd ((TDSD *) pcmb->pv)` at `tabs.c:131`. `(char *)p += n` becoming
-  `p = (T *)((char *)p + n)` changes nothing for MSVC and sheds a deprecated extension no
-  other compiler accepts.
+- Cast-as-lvalue pointer assignments. The stale 19-site list from the reference tree
+  no longer applies to this tree; the current live cleanup removed the two remaining
+  pointer increments in `debug/debugstr.c` and `debug/debuginf.c`. Keep the check
+  actionable with `rg -n "^[[:space:]]*\([^)]*\*\)[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(\+=|-=|=[^=])" src/Opus`,
+  which should return no matches.
 - Pointer subtraction between incompatible types: `elcore.c`, `elxprocs.c:89`,
   `inssubs.c:652`, `pagevw.c:1380`.
 - K&R definitions that conflict with a prototype: `help.h` `FDlgAbout`, `mathapi.c`
