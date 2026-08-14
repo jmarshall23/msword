@@ -53,6 +53,7 @@ constexpr LRESULT kEditSelectAll = 5106;
 constexpr WPARAM kFileNew = 1813;
 constexpr WPARAM kFileSaveAs = 1897;
 constexpr WPARAM kHelpAbout = 182;
+constexpr WPARAM kExportPdf = 0x7103;
 
 bool OpusWideContains(LPCWSTR text, LPCWSTR needle) {
     if (text == nullptr || needle == nullptr || *needle == 0) {
@@ -252,6 +253,72 @@ bool ScriptedSaveAsMatched() {
     return stage == 2 && IsWindow(app) &&
            FindWindowA("OpusSdmDialog", nullptr) == nullptr &&
            FindWindowA("#32770", nullptr) == nullptr;
+}
+
+bool FileStartsWithPdfHeader(const char* path) {
+    HANDLE file = CreateFileA(path, GENERIC_READ,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    char header[5] = {};
+    DWORD read = 0;
+    const bool matched = ReadFile(file, header, sizeof(header), &read,
+                                  nullptr) &&
+                         read == sizeof(header) &&
+                         std::memcmp(header, "%PDF-", sizeof(header)) == 0;
+    CloseHandle(file);
+    return matched;
+}
+
+bool ScriptedPdfExportMatched() {
+    const HWND app = FindWindowA("OpusApp", nullptr);
+    const HWND pane = FindDocumentPane();
+    if (app == nullptr || pane == nullptr) {
+        return false;
+    }
+    char temporary_directory[MAX_PATH] = {};
+    char temporary_seed[MAX_PATH] = {};
+    char pdf_path[MAX_PATH + 5] = {};
+    if (GetTempPathA(static_cast<DWORD>(sizeof(temporary_directory)),
+                     temporary_directory) == 0 ||
+        GetTempFileNameA(temporary_directory, "OWP", 0, temporary_seed) == 0) {
+        return false;
+    }
+    DeleteFileA(temporary_seed);
+    const int path_length =
+        std::snprintf(pdf_path, sizeof(pdf_path), "%s.pdf", temporary_seed);
+    if (path_length <= 0 ||
+        path_length >= static_cast<int>(sizeof(pdf_path))) {
+        return false;
+    }
+    DeleteFileA(pdf_path);
+    if (!SetEnvironmentVariableA("WORD1_TEST_PDF_PATH", pdf_path)) {
+        return false;
+    }
+
+    const char text[] = "pdf export text";
+    const LRESULT cp_mac_before =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 41, 0);
+    for (size_t index = 0; index < sizeof(text) - 1; ++index) {
+        if (SendMessageW(pane, kWmOpusX64QuerySelection, 107,
+                         static_cast<LPARAM>(
+                             static_cast<unsigned char>(text[index]))) == 0) {
+            SetEnvironmentVariableA("WORD1_TEST_PDF_PATH", nullptr);
+            DeleteFileA(pdf_path);
+            return false;
+        }
+    }
+    const LRESULT cp_mac_after =
+        SendMessageW(pane, kWmOpusX64QuerySelection, 41, 0);
+    SendMessageW(app, WM_COMMAND, kExportPdf, 0);
+    SetEnvironmentVariableA("WORD1_TEST_PDF_PATH", nullptr);
+    const LRESULT stage = SendMessageW(pane, kWmOpusX64QuerySelection, 105, 0);
+    const bool matched = cp_mac_after > cp_mac_before && stage == 4 &&
+                         FileStartsWithPdfHeader(pdf_path);
+    DeleteFileA(pdf_path);
+    return matched;
 }
 
 void WriteCrashText(HANDLE file, const char* text) {
@@ -635,6 +702,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const LPCWSTR scripted_selection_test = OPUSW("--scripted-selection-test");
     const LPCWSTR scripted_interaction_test = OPUSW("--scripted-interaction-test");
     const LPCWSTR scripted_save_as_test = OPUSW("--scripted-save-as-test");
+    const LPCWSTR scripted_pdf_export_test =
+        OPUSW("--scripted-pdf-export-test");
     if (OpusWideContains(command_line, self_test) ||
         OpusWideContains(GetCommandLineW(), self_test)) {
         return 0;
@@ -663,6 +732,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     const bool run_scripted_save_as_test =
         OpusWideContains(command_line, scripted_save_as_test) ||
         OpusWideContains(GetCommandLineW(), scripted_save_as_test);
+    const bool run_scripted_pdf_export_test =
+        OpusWideContains(command_line, scripted_pdf_export_test) ||
+        OpusWideContains(GetCommandLineW(), scripted_pdf_export_test);
 
     /* Exclude the current directory and PATH from DLL resolution. The app
      * directory remains available for intentionally deployed components and
@@ -714,7 +786,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     } else if (run_scripted_unicode_test || run_scripted_about_test ||
                run_scripted_selection_test || run_scripted_interaction_test ||
-               run_scripted_save_as_test) {
+               run_scripted_save_as_test || run_scripted_pdf_export_test) {
         OpusUser32PushScriptedInput(nullptr, WM_QUIT, 0, 0);
     }
     const int result = OpusOriginalWinMain(instance, previous, command_line_ansi,
@@ -734,6 +806,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous,
     if (run_scripted_selection_test && !ScriptedSelectionMatched()) return 7;
     if (run_scripted_interaction_test && !ScriptedInteractionMatched()) return 8;
     if (run_scripted_save_as_test && !ScriptedSaveAsMatched()) return 9;
+    if (run_scripted_pdf_export_test && !ScriptedPdfExportMatched()) return 10;
     return result;
 }
 

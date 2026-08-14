@@ -180,10 +180,10 @@ out of process with `SendInput` and `GetGUIThreadInfo`
 they become in-process scripted-event tests against the same harness.
 
 Current finding: `word1_port_smoke_test` passes, and the typing, clipboard,
-Unicode, About, selection, interaction, and Save As UI harnesses now run in
-process under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. The remaining item 14
-UI-test work is to convert the richer font-typing and pdf-export tests to
-in-process scripted-event equivalents. The old interaction test's
+Unicode, About, selection, interaction, Save As, and PDF export UI harnesses
+now run in process under `OPUS_HEADLESS=1 SDL_VIDEODRIVER=dummy`. The
+remaining item 14 UI-test work is to convert the richer font-typing test to an
+in-process scripted-event equivalent. The old interaction test's
 out-of-process caption-drag coverage is not preserved yet; add an in-process
 nonclient mouse drag gate when the shim has a scripted cursor/capture path for
 native window movement.
